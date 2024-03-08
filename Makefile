@@ -30,6 +30,11 @@ isort:
 mypy:
 	poetry run mypy src
 
+.PHONY: format
+format:
+	$(MAKE) black
+	$(MAKE) isort
+
 .PHONY: test
 test:
 	poetry run pytest tests --cov=src --cov-report term-missing --durations 5
