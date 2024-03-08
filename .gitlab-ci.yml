@@ -3,7 +3,7 @@ stages:
   - deploy
 
 default:
-  image: python:3.9-slim
+  image: python:3.11-slim
   before_script:
     - apt update
     - apt install -y make
@@ -62,7 +62,7 @@ pytest:
 
 
 deploy:wheel:tags:
-  image: python:3.9-slim
+  image: python:3.11-slim
   extends: .deploy:wheel
   before_script:
     - pip install poetry
