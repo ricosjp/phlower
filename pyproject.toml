@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "phlower"
+version = "0.1.0"
+description = "This is a Python package which helps you handle GNN especially for physics problems."
+authors = ["sakamoto <sakamoto@ricos.co.jp>"]
+readme = "README.md"
+license="Apache-2.0"
+packages = [
+    {include = "phlower", from = "src"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+black = "^24.2.0"
+isort = "^5.13.2"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+pytest-cov = "^4.1.0"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 80
+
+[tool.isort]
+profile = "black"
+line_length = 80
