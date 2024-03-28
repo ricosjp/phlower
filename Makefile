@@ -1,3 +1,5 @@
+IN_PROJECT?=true
+
 
 .PHONY: init
 init:
@@ -45,3 +47,7 @@ lint:
 	$(MAKE) isort-check
 	$(MAKE) flake8
 	$(MAKE) mypy
+
+.PHONY: dev-install
+dev-install: init
+	poetry run python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
