@@ -51,3 +51,9 @@ lint:
 .PHONY: dev-install
 dev-install: init
 	poetry run python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+
+.PHONY: document
+document:
+	$(RM) public
+	$(RUN) sphinx-build -M html docs/source docs/build

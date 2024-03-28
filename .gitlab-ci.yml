@@ -38,17 +38,19 @@ pytest:
     - GenuineIntel
 
 
-# pages:
-#   stage: deploy
-#   script:
-#     - make document
-#   artifacts:
-#     paths:
-#       - public
-#   only:
-#     - main
-#     - develop
-#     - fix_sphinx
+pages:
+  stage: deploy
+  script:
+    - make document
+    - mkdir public
+    - cp -r docs/build/* public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+    - develop
+    - fix_sphinx
 
 
 .deploy:wheel:
