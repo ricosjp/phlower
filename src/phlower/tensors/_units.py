@@ -2,48 +2,57 @@ from __future__ import annotations
 
 import enum
 import functools
+from typing import Callable
 
 import torch
 
-from phlower.utils.exceptions import UnitNotCompatibleError
+from phlower.utils.exceptions import UnitIncompatibleError
 
-_HANDLED_FUNCTIONS: dict[str, callable] = {}
+_HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
 
 class PhysicsUnitType(enum.Enum):
-    kg = 0,
-    m = 1,
-    s = 2,
-    K = 3,
-    mol = 4,
-    A = 5,
+    kg = 0
+    m = 1
+    s = 2
+    K = 3
+    mol = 4
+    A = 5
     Cd = 6
 
 
 class PhysicsUnitTensor:
     @classmethod
-    def create(cls, values: list[int]) -> PhysicsUnitTensor:
+    def create(cls, values: list[int] | tuple[int]) -> PhysicsUnitTensor:
         assert len(values) == len(PhysicsUnitType)
-        _tensor = torch.tensor(values, dtype=torch.int64).reshape(len(PhysicsUnitType), 1)
+        _tensor = torch.tensor(values, dtype=torch.int64).reshape(
+            len(PhysicsUnitType), 1
+        )
         return PhysicsUnitTensor(_tensor)
 
     def __init__(self, tensor: torch.Tensor | None = None) -> None:
-        self._tensor: torch.Tensor = tensor
         if tensor is None:
-            self._tensor = torch.zeros((len(PhysicsUnitType), 1), dtype=torch.int64)
+            self._tensor = torch.zeros(
+                (len(PhysicsUnitType), 1), dtype=torch.int64
+            )
+            return
 
+        self._tensor = tensor
         assert self._tensor.shape[0] == len(PhysicsUnitType)
 
-    def __add__(self, __value: PhysicsUnitTensor) -> PhysicsUnitTensor:
+    def __add__(self, __value: object):
         return torch.add(self, __value)
 
-    def __eq__(self, __value: PhysicsUnitTensor) -> bool:
-        return torch.all(self._tensor == __value._tensor)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PhysicsUnitTensor):
+            return NotImplemented
+
+        return bool(torch.all(self._tensor == other._tensor).item())
 
     def __repr__(self) -> str:
         texts = ", ".join(
             [
-                f"{unit_type.name}: {self._tensor[unit_type.value, 0].item()}" 
+                f"{unit_type.name}: {self._tensor[unit_type.value, 0].item()}"
                 for unit_type in PhysicsUnitType
             ]
         )
@@ -62,10 +71,12 @@ class PhysicsUnitTensor:
 
 def unit_wrap_implements(torch_function):
     """Register a torch function override for PhysicsUnitTensor"""
+
     def decorator(func):
         functools.update_wrapper(func, torch_function)
         _HANDLED_FUNCTIONS[torch_function] = func
         return func
+
     return decorator
 
 
@@ -78,19 +89,19 @@ def mean(inputs: PhysicsUnitTensor):
 def add(inputs, other):
     if all((isinstance(v, PhysicsUnitTensor) for v in (inputs, other))):
         if inputs != other:
-            raise UnitNotCompatibleError()
+            raise UnitIncompatibleError()
 
         return PhysicsUnitTensor(inputs._tensor)
 
-    raise UnitNotCompatibleError()
+    raise UnitIncompatibleError()
 
 
 @unit_wrap_implements(torch.mul)
 def mul(inputs, other):
     if all((isinstance(v, PhysicsUnitTensor) for v in (inputs, other))):
         if inputs != other:
-            raise UnitNotCompatibleError()
+            raise UnitIncompatibleError()
 
         return PhysicsUnitTensor(inputs._tensor + other._tensor)
 
-    raise UnitNotCompatibleError()
+    raise UnitIncompatibleError()

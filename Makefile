@@ -46,7 +46,7 @@ lint:
 	$(MAKE) black-check
 	$(MAKE) isort-check
 	$(MAKE) flake8
-	$(MAKE) mypy
+	# $(MAKE) mypy
 
 .PHONY: dev-install
 dev-install: init

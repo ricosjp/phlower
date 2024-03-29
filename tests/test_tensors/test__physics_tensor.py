@@ -1,7 +1,5 @@
-import pytest
-
-import torch
 import numpy as np
+import torch
 
 from phlower.tensors import PhysicsTensor
 
@@ -17,6 +15,4 @@ def test__add():
     c = (a + b).numpy()
 
     print(cp)
-    np.testing.assert_array_almost_equal(
-        cp, c
-    )
+    np.testing.assert_array_almost_equal(cp, c)

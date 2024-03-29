@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import torch
+from typing import Callable
 
-from enum import Enum
+import torch
 
 # class ISimlVariables():
 #     def __init__(self, value: BuiltInVars) -> None:
@@ -38,7 +38,7 @@ class PhysicsTensor:
     @classmethod
     def __torch_function__(
         cls,
-        func: callable,
+        func: Callable,
         types: list[type],
         args: tuple,
         kwargs: dict | None = None,
@@ -46,6 +46,6 @@ class PhysicsTensor:
         if kwargs is None:
             kwargs = {}
 
-        args = [getattr(a, "_tensor", a) for a in args]
-        ret: torch.Tensor = func(*args, **kwargs)
+        _args = [getattr(a, "_tensor", a) for a in args]
+        ret: torch.Tensor = func(*_args, **kwargs)
         return PhysicsTensor(ret)
