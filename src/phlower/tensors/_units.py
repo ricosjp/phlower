@@ -21,20 +21,37 @@ class PhysicsUnitType(enum.Enum):
     Cd = 6
 
 
+def physics_unit_tensor(
+    values: dict[str, float], dtype: torch.dtype = torch.float32
+) -> PhysicsUnitTensor:
+    _list: list[float] = [0 for _ in range(len(PhysicsUnitType))]
+    for k, v in values.items():
+        if k not in PhysicsUnitType.__members__:
+            raise NotImplementedError(
+                f"unit name: {k} is not implemented."
+                f"Avaliable units are {list(PhysicsUnitType)}"
+            )
+        _list[PhysicsUnitType[k].value] = v
+
+    return PhysicsUnitTensor.create(_list)
+
+
 class PhysicsUnitTensor:
     @classmethod
-    def create(cls, values: list[int] | tuple[int]) -> PhysicsUnitTensor:
+    def create(cls, values: list[float] | tuple[float]) -> PhysicsUnitTensor:
         assert len(values) == len(PhysicsUnitType)
         _tensor = torch.tensor(values, dtype=torch.int64).reshape(
             len(PhysicsUnitType), 1
         )
         return PhysicsUnitTensor(_tensor)
 
-    def __init__(self, tensor: torch.Tensor | None = None) -> None:
+    def __init__(
+        self,
+        tensor: torch.Tensor | None = None,
+        dtype: torch.dtype = torch.float32,
+    ) -> None:
         if tensor is None:
-            self._tensor = torch.zeros(
-                (len(PhysicsUnitType), 1), dtype=torch.int64
-            )
+            self._tensor = torch.zeros((len(PhysicsUnitType), 1), dtype=dtype)
             return
 
         self._tensor = tensor
@@ -99,9 +116,6 @@ def add(inputs, other):
 @unit_wrap_implements(torch.mul)
 def mul(inputs, other):
     if all((isinstance(v, PhysicsUnitTensor) for v in (inputs, other))):
-        if inputs != other:
-            raise UnitIncompatibleError()
-
         return PhysicsUnitTensor(inputs._tensor + other._tensor)
 
     raise UnitIncompatibleError()

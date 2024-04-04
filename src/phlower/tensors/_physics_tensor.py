@@ -2,38 +2,44 @@ from __future__ import annotations
 
 from typing import Callable
 
+import numpy as np
 import torch
 
-# class ISimlVariables():
-#     def __init__(self, value: BuiltInVars) -> None:
-#         raise NotImplementedError()
-
-#     def get_values(self) -> BuiltInVars:
-#         raise NotImplementedError()
-
-#     def slice(self, loss_slice: slice) -> ISimlVariables:
-#         raise NotImplementedError()
-
-#     def send(self, device: str) -> ISimlVariables:
-#         raise NotImplementedError()
-
-#     def min_len(self) -> int:
-#         raise NotImplementedError()
-
-#     def to_numpy(self) -> Any:
-#         raise NotImplementedError()
+from ._units import PhysicsUnitTensor
 
 
 class PhysicsTensor:
-    def __init__(self, tensor: torch.Tensor):
+
+    def __init__(
+        self,
+        tensor: torch.Tensor | np.ndarray,
+        unit_tensor: torch.Tensor | None = None,
+        dtype: torch.dtype = torch.float32,
+    ):
+        self._tensor: torch.Tensor
+        if not isinstance(tensor, torch.Tensor):
+            self._tensor = torch.tensor(tensor, dtype=dtype)
+        else:
+            self._tensor = tensor
+
         self._is_time_series: bool = False
-        self._tensor = tensor
+        self._unit_tensor = unit_tensor
+
+    @property
+    def has_unit(self) -> bool:
+        return self._unit_tensor is not None
 
     def __str__(self) -> str:
         return f"PhysicsTensor: {self._tensor}"
 
     def __add__(self, other) -> PhysicsTensor:
         return torch.add(self, other)
+
+    def __mul__(self, other) -> PhysicsTensor:
+        return torch.mul(self, other)
+
+    def tensor(self) -> torch.Tensor:
+        return self._tensor
 
     @classmethod
     def __torch_function__(
@@ -46,6 +52,14 @@ class PhysicsTensor:
         if kwargs is None:
             kwargs = {}
 
-        _args = [getattr(a, "_tensor", a) for a in args]
-        ret: torch.Tensor = func(*_args, **kwargs)
-        return PhysicsTensor(ret)
+        _tensors = [getattr(a, "_tensor", a) for a in args]
+        ret: torch.Tensor = func(*_tensors, **kwargs)
+
+        _units = [getattr(a, "_unit_tensor", a) for a in args]
+
+        if not all((isinstance(v, PhysicsUnitTensor) for v in _units)):
+            # Unit calculation is not considered when unit tensor is not found.
+            return PhysicsTensor(ret)
+
+        result_units = func(*_units, **kwargs)
+        return PhysicsTensor(ret, result_units)
