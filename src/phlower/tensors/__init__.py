@@ -1,2 +1,2 @@
-from ._physics_tensor import PhysicsTensor  # NOQA
-from ._units import physics_unit_tensor  # NOQA
+from ._phlower_tensor import PhlowerTensor  # NOQA
+from ._dimensions import physical_dimension_tensor  # NOQA

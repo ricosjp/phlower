@@ -5,10 +5,10 @@ from typing import Callable
 import numpy as np
 import torch
 
-from ._units import PhysicsUnitTensor
+from ._dimensions import PhlowerDimensionTensor
 
 
-class PhysicsTensor:
+class PhlowerTensor:
 
     def __init__(
         self,
@@ -32,10 +32,10 @@ class PhysicsTensor:
     def __str__(self) -> str:
         return f"PhysicsTensor: {self._tensor}"
 
-    def __add__(self, other) -> PhysicsTensor:
+    def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
 
-    def __mul__(self, other) -> PhysicsTensor:
+    def __mul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
 
     def tensor(self) -> torch.Tensor:
@@ -57,9 +57,9 @@ class PhysicsTensor:
 
         _units = [getattr(a, "_unit_tensor", a) for a in args]
 
-        if not all((isinstance(v, PhysicsUnitTensor) for v in _units)):
+        if not all((isinstance(v, PhlowerDimensionTensor) for v in _units)):
             # Unit calculation is not considered when unit tensor is not found.
-            return PhysicsTensor(ret)
+            return PhlowerTensor(ret)
 
         result_units = func(*_units, **kwargs)
-        return PhysicsTensor(ret, result_units)
+        return PhlowerTensor(ret, result_units)

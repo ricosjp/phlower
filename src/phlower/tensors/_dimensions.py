@@ -11,7 +11,7 @@ from phlower.utils.exceptions import UnitIncompatibleError
 _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
 
-class PhysicsUnitType(enum.Enum):
+class PhysicalDimensionType(enum.Enum):
     kg = 0
     m = 1
     s = 2
@@ -21,29 +21,29 @@ class PhysicsUnitType(enum.Enum):
     Cd = 6
 
 
-def physics_unit_tensor(
+def physical_dimension_tensor(
     values: dict[str, float], dtype: torch.dtype = torch.float32
-) -> PhysicsUnitTensor:
-    _list: list[float] = [0 for _ in range(len(PhysicsUnitType))]
+) -> PhlowerDimensionTensor:
+    _list: list[float] = [0 for _ in range(len(PhysicalDimensionType))]
     for k, v in values.items():
-        if k not in PhysicsUnitType.__members__:
+        if k not in PhysicalDimensionType.__members__:
             raise NotImplementedError(
                 f"unit name: {k} is not implemented."
-                f"Avaliable units are {list(PhysicsUnitType)}"
+                f"Avaliable units are {list(PhysicalDimensionType)}"
             )
-        _list[PhysicsUnitType[k].value] = v
+        _list[PhysicalDimensionType[k].value] = v
 
-    return PhysicsUnitTensor.create(_list)
+    return PhlowerDimensionTensor.create(_list)
 
 
-class PhysicsUnitTensor:
+class PhlowerDimensionTensor:
     @classmethod
-    def create(cls, values: list[float] | tuple[float]) -> PhysicsUnitTensor:
-        assert len(values) == len(PhysicsUnitType)
+    def create(cls, values: list[float] | tuple[float]) -> PhlowerDimensionTensor:
+        assert len(values) == len(PhysicalDimensionType)
         _tensor = torch.tensor(values, dtype=torch.int64).reshape(
-            len(PhysicsUnitType), 1
+            len(PhysicalDimensionType), 1
         )
-        return PhysicsUnitTensor(_tensor)
+        return PhlowerDimensionTensor(_tensor)
 
     def __init__(
         self,
@@ -51,17 +51,17 @@ class PhysicsUnitTensor:
         dtype: torch.dtype = torch.float32,
     ) -> None:
         if tensor is None:
-            self._tensor = torch.zeros((len(PhysicsUnitType), 1), dtype=dtype)
+            self._tensor = torch.zeros((len(PhysicalDimensionType), 1), dtype=dtype)
             return
 
         self._tensor = tensor
-        assert self._tensor.shape[0] == len(PhysicsUnitType)
+        assert self._tensor.shape[0] == len(PhysicalDimensionType)
 
     def __add__(self, __value: object):
         return torch.add(self, __value)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PhysicsUnitTensor):
+        if not isinstance(other, PhlowerDimensionTensor):
             return NotImplemented
 
         return bool(torch.all(self._tensor == other._tensor).item())
@@ -70,7 +70,7 @@ class PhysicsUnitTensor:
         texts = ", ".join(
             [
                 f"{unit_type.name}: {self._tensor[unit_type.value, 0].item()}"
-                for unit_type in PhysicsUnitType
+                for unit_type in PhysicalDimensionType
             ]
         )
         return f"{self.__class__.__name__}, Unit Dimension Info. {texts}"
@@ -98,24 +98,24 @@ def unit_wrap_implements(torch_function):
 
 
 @unit_wrap_implements(torch.mean)
-def mean(inputs: PhysicsUnitTensor):
-    return PhysicsUnitTensor(inputs._tensor)
+def mean(inputs: PhlowerDimensionTensor):
+    return PhlowerDimensionTensor(inputs._tensor)
 
 
 @unit_wrap_implements(torch.add)
 def add(inputs, other):
-    if all((isinstance(v, PhysicsUnitTensor) for v in (inputs, other))):
+    if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
         if inputs != other:
             raise UnitIncompatibleError()
 
-        return PhysicsUnitTensor(inputs._tensor)
+        return PhlowerDimensionTensor(inputs._tensor)
 
     raise UnitIncompatibleError()
 
 
 @unit_wrap_implements(torch.mul)
 def mul(inputs, other):
-    if all((isinstance(v, PhysicsUnitTensor) for v in (inputs, other))):
-        return PhysicsUnitTensor(inputs._tensor + other._tensor)
+    if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
+        return PhlowerDimensionTensor(inputs._tensor + other._tensor)
 
     raise UnitIncompatibleError()
