@@ -12,13 +12,13 @@ _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
 
 class PhysicalDimensionType(enum.Enum):
-    kg = 0
-    m = 1
-    s = 2
-    K = 3
-    mol = 4
-    A = 5
-    Cd = 6
+    mass = 0  # Ex: kilogram
+    length = 1  # Ex: metre
+    time = 2  # Ex: second
+    thermodynamic_temperature = 3  # Ex: Kelvin
+    amount_of_substance = 4  # Ex: mole
+    electric_current = 5  # Ex. ampere
+    luminous_intensity = 6  # Ex. candela
 
 
 def physical_dimension_tensor(
@@ -28,7 +28,7 @@ def physical_dimension_tensor(
     for k, v in values.items():
         if k not in PhysicalDimensionType.__members__:
             raise NotImplementedError(
-                f"unit name: {k} is not implemented."
+                f"dimension name: {k} is not implemented."
                 f"Avaliable units are {list(PhysicalDimensionType)}"
             )
         _list[PhysicalDimensionType[k].value] = v
@@ -38,7 +38,9 @@ def physical_dimension_tensor(
 
 class PhlowerDimensionTensor:
     @classmethod
-    def create(cls, values: list[float] | tuple[float]) -> PhlowerDimensionTensor:
+    def create(
+        cls, values: list[float] | tuple[float]
+    ) -> PhlowerDimensionTensor:
         assert len(values) == len(PhysicalDimensionType)
         _tensor = torch.tensor(values, dtype=torch.int64).reshape(
             len(PhysicalDimensionType), 1
@@ -51,7 +53,9 @@ class PhlowerDimensionTensor:
         dtype: torch.dtype = torch.float32,
     ) -> None:
         if tensor is None:
-            self._tensor = torch.zeros((len(PhysicalDimensionType), 1), dtype=dtype)
+            self._tensor = torch.zeros(
+                (len(PhysicalDimensionType), 1), dtype=dtype
+            )
             return
 
         self._tensor = tensor

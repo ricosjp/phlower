@@ -20,7 +20,7 @@ def test__add():
 
 
 def test__add_with_unit():
-    units = physical_dimension_tensor({"m": 2, "s": -2})
+    units = physical_dimension_tensor({"length": 2, "time": -2})
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
     c = a + b
@@ -33,8 +33,8 @@ def test__add_with_unit():
 
 
 def test__add_with_unit_incompatible():
-    units_1 = physical_dimension_tensor({"m": 2, "s": -2})
-    units_2 = physical_dimension_tensor({"kg": 1, "s": -2})
+    units_1 = physical_dimension_tensor({"length": 2, "time": -2})
+    units_2 = physical_dimension_tensor({"mass": 1, "time": -2})
 
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
@@ -45,9 +45,9 @@ def test__add_with_unit_incompatible():
 
 
 def test__mul_with_unit():
-    units_1 = physical_dimension_tensor({"m": 2, "s": -2})
-    units_2 = physical_dimension_tensor({"kg": 1, "s": -2})
-    units_3 = physical_dimension_tensor({"m": 2, "kg": 1, "s": -4})
+    units_1 = physical_dimension_tensor({"length": 2, "time": -2})
+    units_2 = physical_dimension_tensor({"mass": 1, "time": -2})
+    units_3 = physical_dimension_tensor({"length": 2, "mass": 1, "time": -4})
 
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
@@ -57,22 +57,16 @@ def test__mul_with_unit():
     bp = PhlowerTensor(b, units_2)
     cp = ap * bp
 
-    np.testing.assert_array_almost_equal(
-        cp.tensor().numpy(),
-        c
-    )
+    np.testing.assert_array_almost_equal(cp.tensor().numpy(), c)
 
     assert cp._unit_tensor == units_3
+
 
 def test__tanh():
     a = np.random.rand(3, 10)
     c = np.tanh(a)
 
     ap = PhlowerTensor(a)
-
     cp = torch.tanh(ap)
 
-    np.testing.assert_array_almost_equal(
-        cp.tensor(),
-        c
-    )
+    np.testing.assert_array_almost_equal(cp.tensor(), c)
