@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from ignite import utils
 
+from phlower.collections.tensors import phlower_tensor_collection, IPhlowerTensorCollections
 from phlower.base.array import IPhlowerArray, phlower_arrray
 from phlower.base.tensors import PhlowerTensor
 from phlower.data._bunched_data import BunchedData, BunchedTensorData
@@ -34,11 +35,13 @@ def _to_tensor(
     dict_data: dict[str, IPhlowerArray],
     device: str | torch.device,
     non_blocking: bool,
-) -> dict[str, PhlowerTensor]:
-    return {
-        k: v.to_tensor(device=device, non_blocking=non_blocking)
-        for k, v in dict_data.items()
-    }
+) -> IPhlowerTensorCollections:
+    return phlower_tensor_collection(
+        {
+            k: v.to_tensor(device=device, non_blocking=non_blocking)
+            for k, v in dict_data.items()
+        }
+    )
 
 
 class PhlowerCollateFn:

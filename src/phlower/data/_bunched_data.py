@@ -2,6 +2,7 @@ import pathlib
 
 import numpy as np
 
+from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.base.tensors import PhlowerTensor
 from phlower.utils.typing import ArrayDataType, SparseArrayType
 
@@ -25,9 +26,9 @@ class BunchedData:
 class BunchedTensorData:
     def __init__(
         self,
-        x_data: dict[str, PhlowerTensor],
-        y_data: dict[str, PhlowerTensor],
-        sparse_supports: dict[str, PhlowerTensor],
+        x_data: IPhlowerTensorCollections,
+        y_data: IPhlowerTensorCollections,
+        sparse_supports: IPhlowerTensorCollections,
         data_directory: pathlib.Path,
     ) -> None:
         self.x_data = x_data

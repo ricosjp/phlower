@@ -1,1 +1,1 @@
-from .encrypt import decrypt_file, encrypt_file  # NOQA
+from .encryption import decrypt_file, encrypt_file  # NOQA

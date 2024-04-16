@@ -58,7 +58,7 @@ class LazyPhlowerDataset(Dataset):
         )
         y_data = self._load_data(
             data_directory,
-            self._x_variable_names,
+            self._y_varaible_names,
             allow_missing=self._allow_no_y_data,
         )
         support_data = self._load_data(
