@@ -3,6 +3,7 @@ from typing import Callable
 
 import torch
 
+from phlower.base.tensors import phlower_tensor, PhlowerTensor
 from phlower.utils.typing import SparseArrayType
 
 from .interface_wrapper import IPhlowerArray
@@ -57,9 +58,12 @@ class SparseArrayWrapper(IPhlowerArray):
         reshaped = self._sparse_data.reshape((self.shape[0] * self.shape[1], 1))
         return reshaped
 
-    def to_tensor(
-        self, device: str | torch.device | None, non_blocking: bool = False
-    ) -> torch.Tensor:
+    def to_phlower_tensor(
+        self,
+        device: str | torch.device | None,
+        non_blocking: bool = False,
+        dimension: dict[str, float] | None = None,
+    ) -> PhlowerTensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(
                 [
@@ -69,8 +73,13 @@ class SparseArrayWrapper(IPhlowerArray):
             ),
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
-        ).to(device)
-        return sparse_tensor
+        )
+        _tensor = phlower_tensor(
+            tensor=sparse_tensor,
+            dimension=dimension
+        )
+        _tensor.to(device=device, non_blocking=non_blocking)
+        return _tensor
 
     def numpy(self) -> SparseArrayType:
         return self._sparse_data

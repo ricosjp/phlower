@@ -15,7 +15,9 @@ class DataLoaderBuilder:
     def __init__(self, setting: PhlowerTrainerSetting) -> None:
         self._setting = setting
         self._collate_fn = PhlowerCollateFn(
-            device=self._setting.device, non_blocking=self._setting.non_blocking
+            device=self._setting.device,
+            non_blocking=self._setting.non_blocking,
+            dimensions=setting.variable_dimensions
         )
 
     def create(

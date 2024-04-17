@@ -7,7 +7,53 @@ from typing import Callable, Any
 import numpy as np
 import torch
 
-from ._dimensions import PhlowerDimensionTensor
+from ._dimensions import PhlowerDimensionTensor, physical_dimension_tensor
+
+from phlower.logging import get_logger
+
+
+logger = get_logger(__name__)
+
+def phlower_tensor(
+    tensor: torch.Tensor | PhlowerTensor,
+    dimension: (
+        PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
+    ) = None,
+    shapes: list[tuple[int]] = None,
+):
+    if isinstance(tensor, PhlowerTensor):
+        if (dimension is not None) and (shapes is not None):
+            logger.warning("input dimension_tensor and shapes are ignored.")
+
+        return tensor
+
+    if isinstance(tensor, torch.Tensor):
+        dimension_tensor = _resolve_dimension_arg(dimension)
+
+        return PhlowerTensor(
+            tensor=tensor, dimension_tensor=dimension_tensor, shapes=shapes
+        )
+
+
+def _resolve_dimension_arg(
+    inputs: PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None,
+) -> PhlowerDimensionTensor | None:
+    if inputs is None:
+        return None
+
+    if isinstance(inputs, PhlowerDimensionTensor):
+        return inputs
+
+    if isinstance(inputs, torch.Tensor):
+        return PhlowerDimensionTensor(inputs)
+
+    if isinstance(inputs, dict):
+        return physical_dimension_tensor(inputs)
+
+    raise NotImplementedError(
+        f"{type(inputs)} is not implemented "
+        "when creating PhlowerDimensionTensor"
+    )
 
 
 class PhlowerTensor:
@@ -15,35 +61,25 @@ class PhlowerTensor:
     def __init__(
         self,
         tensor: torch.Tensor,
-        unit_tensor: torch.Tensor | None = None,
-        shapes: list[tuple[int]] = None
+        dimension_tensor: PhlowerDimensionTensor | None = None,
+        shapes: list[tuple[int]] = None,
     ):
-        if isinstance(tensor, PhlowerTensor):
-            self._copy(tensor)
-            return
-
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
-        self._unit_tensor = unit_tensor
-        self._is_time_series: bool = False  # HACK: UNDER CONSTRUCTION
+        self._dimension_tensor = dimension_tensor
+        # self._is_time_series: bool = False  # HACK: UNDER CONSTRUCTION
         self._shapes = shapes if shapes is not None else [tensor.shape]
 
-    def _copy(self, other: PhlowerTensor) -> None:
-        self._tensor = other._tensor
-        self._unit_tensor = other._unit_tensor
-        self._shapes = other._shapes
-        self._is_time_series = other._is_time_series
-
     @property
-    def has_unit(self) -> bool:
-        return self._unit_tensor is not None
+    def has_dimension(self) -> bool:
+        return self._dimension_tensor is not None
 
     @property
     def shape(self) -> torch.Size:
         return self._tensor.shape
 
     def __str__(self) -> str:
-        return f"PhysicsTensor({self._tensor})"
+        return f"PhysicsTensor({self._tensor}, Dimension: {self._dimension_tensor})"
 
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
@@ -66,14 +102,20 @@ class PhlowerTensor:
 
     def slice(self, slice_range: tuple[slice, ...]) -> PhlowerTensor:
         tmp = self._tensor[slice_range]
-        return PhlowerTensor(tmp, unit_tensor=self._unit_tensor)
+        return PhlowerTensor(tmp, dimension_tensor=self._dimension_tensor)
 
-    def send(self, device: str) -> None:
-        self._tensor.to(device)
+    def to(self, device: str, non_blocking: bool = False) -> None:
+        self._tensor.to(device, non_blocking=non_blocking)
+        if self.has_dimension:
+            self._dimension_tensor.to(device, non_blocking=non_blocking)
 
-    def split(self) -> list[torch.Tensor]:
+    def split(self) -> list[PhlowerTensor]:
         if len(self._shapes) == 1:
-            return [self._tensor]
+            return [
+                PhlowerTensor(
+                    self._tensor, dimension_tensor=self._dimension_tensor
+                )
+            ]
 
         # HACK: NEED TO IMPLEMENT
         # for v1, v2 in zip(self._shapes[:-1], self._shapes[1:]):
@@ -97,13 +139,15 @@ class PhlowerTensor:
         _tensors = _recursive_resolve(args, "_tensor")
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
-        _units = _recursive_resolve(args, "_unit_tensor")
+        _dimensions = _recursive_resolve(args, "_dimension_tensor")
 
-        if not all((isinstance(v, PhlowerDimensionTensor) for v in _units)):
+        if _has_dimension(_dimensions):
             # Unit calculation is not considered when unit tensor is not found.
+            # HACK: NEED TO PASS self._shapes ??
             return PhlowerTensor(ret)
 
-        result_units = func(*_units, **kwargs)
+        result_units = func(*_dimensions, **kwargs)
+        # HACK: NEED TO PASS self._shapes ??
         return PhlowerTensor(ret, result_units)
 
 
@@ -112,3 +156,15 @@ def _recursive_resolve(args: Any, attr: str = None) -> list[str]:
         return [_recursive_resolve(v, attr) for v in args]
 
     return getattr(args, attr, args)
+
+def _has_dimension(args: Any) -> bool:
+    if isinstance(args, (list, tuple, Sequence)):
+        return all([_has_dimension(v) for v in args])
+
+    if isinstance(args, dict):
+        _has_dimension(args.values())
+
+    if isinstance(args, PhlowerTensor):
+        return args.has_dimension
+
+    return False

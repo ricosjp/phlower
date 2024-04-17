@@ -34,20 +34,24 @@ class SequencedDictArray:
 def _to_tensor(
     dict_data: dict[str, IPhlowerArray],
     device: str | torch.device,
-    non_blocking: bool,
+    non_blocking: bool = False,
+    dimensions: dict[str, dict[str, float]] = None
 ) -> IPhlowerTensorCollections:
     return phlower_tensor_collection(
         {
-            k: v.to_tensor(device=device, non_blocking=non_blocking)
+            k: v.to_phlower_tensor(
+                device=device, non_blocking=non_blocking, dimension=dimensions.get(k)
+            )
             for k, v in dict_data.items()
         }
     )
 
 
 class PhlowerCollateFn:
-    def __init__(self, device: str | torch.device, non_blocking: bool) -> None:
+    def __init__(self, device: str | torch.device, non_blocking: bool = False, dimensions: dict[str, dict[str, float]] = None) -> None:
         self._device = device
         self._non_blocking = non_blocking
+        self._dimensions = dimensions
 
     def __call__(self, batch: list[BunchedData]) -> BunchedTensorData:
 
@@ -60,16 +64,19 @@ class PhlowerCollateFn:
             inputs.concatenate(),
             device=self._device,
             non_blocking=self._non_blocking,
+            dimensions=self._dimensions
         )
         outputs = _to_tensor(
             outputs.concatenate(),
             device=self._device,
             non_blocking=self._non_blocking,
+            dimensions=self._dimensions
         )
         sparse_supports = _to_tensor(
             sparse_supports.concatenate(),
             device=self._device,
             non_blocking=self._non_blocking,
+            dimensions=self._dimensions
         )
         data_directories = [b.data_directory for b in batch]
 

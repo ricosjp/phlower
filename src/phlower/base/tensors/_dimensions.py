@@ -6,7 +6,7 @@ from typing import Callable
 
 import torch
 
-from phlower.utils.exceptions import UnitIncompatibleError
+from phlower.utils.exceptions import DimensionIncompatibleError
 
 _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
@@ -33,12 +33,16 @@ def physical_dimension_tensor(
             )
         _list[PhysicalDimensionType[k].value] = v
 
-    return PhlowerDimensionTensor.create(_list)
+    return PhlowerDimensionTensor.from_list(_list)
+
+
+def zero_dimension_tensor() -> PhlowerDimensionTensor:
+    return physical_dimension_tensor({})
 
 
 class PhlowerDimensionTensor:
     @classmethod
-    def create(
+    def from_list(
         cls, values: list[float] | tuple[float]
     ) -> PhlowerDimensionTensor:
         assert len(values) == len(PhysicalDimensionType)
@@ -70,6 +74,9 @@ class PhlowerDimensionTensor:
 
         return bool(torch.all(self._tensor == other._tensor).item())
 
+    def __pow__(self, other: float | int) -> PhlowerDimensionTensor:
+        return PhlowerDimensionTensor(tensor=self._tensor * other)
+
     def __repr__(self) -> str:
         texts = ", ".join(
             [
@@ -77,7 +84,10 @@ class PhlowerDimensionTensor:
                 for unit_type in PhysicalDimensionType
             ]
         )
-        return f"{self.__class__.__name__}, Unit Dimension Info. {texts}"
+        return f"{self.__class__.__name__}({texts})"
+
+    def to(self, device: str | torch.device, non_blocking: bool = False):
+        self._tensor.to(device, non_blocking=non_blocking)
 
     @classmethod
     def __torch_function__(cls, func, types, args: tuple, kwargs=None):
@@ -90,7 +100,7 @@ class PhlowerDimensionTensor:
         return _HANDLED_FUNCTIONS[func](*args, **kwargs)
 
 
-def unit_wrap_implements(torch_function):
+def dimension_wrap_implements(torch_function):
     """Register a torch function override for PhysicsUnitTensor"""
 
     def decorator(func):
@@ -101,25 +111,77 @@ def unit_wrap_implements(torch_function):
     return decorator
 
 
-@unit_wrap_implements(torch.mean)
+@dimension_wrap_implements(torch.mean)
 def mean(inputs: PhlowerDimensionTensor):
     return PhlowerDimensionTensor(inputs._tensor)
 
 
-@unit_wrap_implements(torch.add)
+@dimension_wrap_implements(torch.add)
 def add(inputs, other):
     if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
         if inputs != other:
-            raise UnitIncompatibleError()
+            raise DimensionIncompatibleError()
 
         return PhlowerDimensionTensor(inputs._tensor)
 
-    raise UnitIncompatibleError()
+    raise DimensionIncompatibleError()
 
 
-@unit_wrap_implements(torch.mul)
+@dimension_wrap_implements(torch.mul)
 def mul(inputs, other):
+    _input = inputs if isinstance(inputs, PhlowerDimensionTensor) else zero_dimension_tensor()
+    _other = other if isinstance(other, PhlowerDimensionTensor) else zero_dimension_tensor()
+    return PhlowerDimensionTensor(_input._tensor + _other._tensor)
+
+
+@dimension_wrap_implements(torch.reshape)
+def reshape(inputs, shape):
+    return PhlowerDimensionTensor(inputs._tensor)
+
+
+@dimension_wrap_implements(torch.sparse.mm)
+def sparse_mm(inputs, other):
     if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
         return PhlowerDimensionTensor(inputs._tensor + other._tensor)
 
-    raise UnitIncompatibleError()
+    raise DimensionIncompatibleError(f"input1: {inputs}, input2: {other}")
+
+
+@dimension_wrap_implements(torch.nn.functional.linear)
+def nn_linear(inputs, *args):
+    return inputs
+
+
+@dimension_wrap_implements(torch.nn.functional.dropout)
+def dropout(inputs, *args, **kwards):
+    return inputs
+
+
+@dimension_wrap_implements(torch.stack)
+def stack(inputs):
+    if all((isinstance(v, PhlowerDimensionTensor) for v in inputs)):
+
+        # HACK: is it possible to use unique method ?
+        for v in inputs:
+            if v != inputs[0]:
+                raise DimensionIncompatibleError()
+
+        return PhlowerDimensionTensor(inputs[0]._tensor)
+
+    raise DimensionIncompatibleError()
+
+
+@dimension_wrap_implements(torch.nn.functional.mse_loss)
+def mse_loss(inputs, others, *args, **kwards):
+    if inputs != others:
+        raise DimensionIncompatibleError()
+
+    return inputs ** 2
+
+
+@dimension_wrap_implements(torch.sum)
+def _sum(inputs, *args, **kwards):
+    if isinstance(inputs, PhlowerDimensionTensor):
+        return inputs
+
+    raise DimensionIncompatibleError()

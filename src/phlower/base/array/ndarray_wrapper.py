@@ -7,6 +7,7 @@ import torch
 from phlower.utils.typing import DenseArrayType
 
 from .interface_wrapper import IPhlowerArray
+from phlower.base.tensors import PhlowerTensor, phlower_tensor
 
 
 class NdArrayWrapper(IPhlowerArray):
@@ -52,14 +53,18 @@ class NdArrayWrapper(IPhlowerArray):
             reshaped_wo_nan = reshaped[~np.isnan(reshaped)][:, None]
             return reshaped_wo_nan
 
-    def to_tensor(
-        self, device: str | torch.device | None, non_blocking: bool = False
-    ) -> torch.Tensor:
-        return ignite_utils.convert_tensor(
-            torch.from_numpy(self.data),
-            device=device,
-            non_blocking=non_blocking,
+    def to_phlower_tensor(
+        self,
+        device: str | torch.device | None,
+        non_blocking: bool = False,
+        dimension: dict[str, float] | None = None,
+    ) -> PhlowerTensor:
+        _tensor = phlower_tensor(
+            tensor=torch.from_numpy(self.data),
+            dimension=dimension
         )
+        _tensor.to(device=device, non_blocking=non_blocking)
+        return _tensor
 
     def numpy(self) -> DenseArrayType:
         return self.data

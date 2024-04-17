@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from phlower.utils.typing import ArrayDataType
-from phlower.base.tensors import PhlowerTensor
+from phlower.base.tensors import PhlowerTensor, phlower_tensor
 
 
 class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
@@ -71,8 +71,8 @@ def phlower_tensor_collection(
 
 
 class PhlowerDictTensors(IPhlowerTensorCollections):
-    def __init__(self, value: dict[str, torch.Tensor]):
-        self._x = {k: PhlowerTensor(v) for k, v in value.items()}
+    def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]):
+        self._x = {k: phlower_tensor(v) for k, v in value.items()}
 
     def __str__(self) -> str:
         txt = ""

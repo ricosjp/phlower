@@ -4,6 +4,7 @@ from typing import Callable
 import torch
 
 from phlower.utils.typing import ArrayDataType
+from phlower.base.tensors import PhlowerTensor
 
 
 class IPhlowerArray(metaclass=abc.ABCMeta):
@@ -60,9 +61,12 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def to_tensor(
-        self, device: str | torch.device | None, non_blocking: bool = False
-    ) -> torch.Tensor:
+    def to_phlower_tensor(
+        self,
+        device: str | torch.device | None,
+        non_blocking: bool = False,
+        dimension: dict[str, float] | None = None,
+    ) -> PhlowerTensor:
         raise NotImplementedError()
 
     @abc.abstractmethod

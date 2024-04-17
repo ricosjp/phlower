@@ -3,7 +3,7 @@ import pytest
 import torch
 
 from phlower.tensors import PhlowerTensor, physical_dimension_tensor
-from phlower.utils.exceptions import UnitIncompatibleError
+from phlower.utils.exceptions import DimensionIncompatibleError
 
 
 def test__add():
@@ -38,7 +38,7 @@ def test__add_with_unit_incompatible():
 
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
-    with pytest.raises(UnitIncompatibleError):
+    with pytest.raises(DimensionIncompatibleError):
         ap = PhlowerTensor(a, units_1)
         bp = PhlowerTensor(b, units_2)
         _ = ap + bp

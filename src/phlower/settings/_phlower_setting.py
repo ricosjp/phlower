@@ -1,5 +1,6 @@
 from typing import Iterable, Any
 
+from collections import defaultdict
 import pydantic
 from pydantic import dataclasses as dc
 
@@ -17,6 +18,7 @@ class PhlowerTrainerSetting:
     device: str = "cpu"
     non_blocking: bool = False
 
+    variable_dimensions: dict[str, dict[str, float]] = pydantic.Field(default_factory=lambda: {})
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
 class ModelSetting:
