@@ -1,4 +1,4 @@
-from phlower.logging import get_logger
+from phlower.utils import get_logger
 
 
 def test__get_logger_handlers():

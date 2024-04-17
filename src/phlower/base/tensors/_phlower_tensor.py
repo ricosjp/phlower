@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import torch
 
 from phlower.base.tensors._dimensions import (
     PhlowerDimensionTensor,
-    physical_dimension_tensor,
+    phlower_dimension_tensor,
 )
 from phlower.utils import get_logger
 
@@ -48,13 +48,12 @@ def _resolve_dimension_arg(
         return PhlowerDimensionTensor(inputs)
 
     if isinstance(inputs, dict):
-        return physical_dimension_tensor(inputs)
+        return phlower_dimension_tensor(inputs)
 
     raise NotImplementedError(
         f"{type(inputs)} is not implemented "
         "when creating PhlowerDimensionTensor"
     )
-
 
 class PhlowerTensor:
 
@@ -142,31 +141,30 @@ class PhlowerTensor:
         _tensors = _recursive_resolve(args, "_tensor")
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
-        _dimensions = _recursive_resolve(args, "_dimension_tensor")
-
-        if _has_dimension(_dimensions):
+        if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
             # HACK: NEED TO PASS self._shapes ??
             return PhlowerTensor(ret)
 
+        _dimensions = _recursive_resolve(args, "_dimension_tensor")
         result_units = func(*_dimensions, **kwargs)
         # HACK: NEED TO PASS self._shapes ??
         return PhlowerTensor(ret, result_units)
 
 
-def _recursive_resolve(args: Any, attr: str = None) -> list[str]:
-    if isinstance(args, (list, tuple)):
+def _recursive_resolve(args: Iterable | Any, attr: str = None) -> list[str]:
+    if isinstance(args, (tuple, list)):
         return [_recursive_resolve(v, attr) for v in args]
 
     return getattr(args, attr, args)
 
 
 def _has_dimension(args: Any) -> bool:
-    if isinstance(args, (list, tuple, Sequence)):
-        return all([_has_dimension(v) for v in args])
+    if isinstance(args, (tuple, list)):
+        return any([_has_dimension(v) for v in args])
 
     if isinstance(args, dict):
-        _has_dimension(args.values())
+        return _has_dimension(list(args.values()))
 
     if isinstance(args, PhlowerTensor):
         return args.has_dimension

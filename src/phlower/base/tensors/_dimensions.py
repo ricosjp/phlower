@@ -21,7 +21,7 @@ class PhysicalDimensionType(enum.Enum):
     luminous_intensity = 6  # Ex. candela
 
 
-def physical_dimension_tensor(
+def phlower_dimension_tensor(
     values: dict[str, float], dtype: torch.dtype = torch.float32
 ) -> PhlowerDimensionTensor:
     _list: list[float] = [0 for _ in range(len(PhysicalDimensionType))]
@@ -37,7 +37,7 @@ def physical_dimension_tensor(
 
 
 def zero_dimension_tensor() -> PhlowerDimensionTensor:
-    return physical_dimension_tensor({})
+    return phlower_dimension_tensor({})
 
 
 class PhlowerDimensionTensor:

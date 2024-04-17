@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from phlower.tensors import PhlowerTensor, physical_dimension_tensor
+from phlower.base.tensors import PhlowerTensor, phlower_dimension_tensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 
@@ -20,7 +20,7 @@ def test__add():
 
 
 def test__add_with_unit():
-    units = physical_dimension_tensor({"length": 2, "time": -2})
+    units = phlower_dimension_tensor({"length": 2, "time": -2})
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
     c = a + b
@@ -33,11 +33,11 @@ def test__add_with_unit():
 
 
 def test__add_with_unit_incompatible():
-    units_1 = physical_dimension_tensor({"length": 2, "time": -2})
-    units_2 = physical_dimension_tensor({"mass": 1, "time": -2})
+    units_1 = phlower_dimension_tensor({"length": 2, "time": -2})
+    units_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
 
-    a = np.random.rand(3, 10)
-    b = np.random.rand(3, 10)
+    a = torch.from_numpy(np.random.rand(3, 10))
+    b = torch.from_numpy(np.random.rand(3, 10))
     with pytest.raises(DimensionIncompatibleError):
         ap = PhlowerTensor(a, units_1)
         bp = PhlowerTensor(b, units_2)
@@ -45,28 +45,45 @@ def test__add_with_unit_incompatible():
 
 
 def test__mul_with_unit():
-    units_1 = physical_dimension_tensor({"length": 2, "time": -2})
-    units_2 = physical_dimension_tensor({"mass": 1, "time": -2})
-    units_3 = physical_dimension_tensor({"length": 2, "mass": 1, "time": -4})
+    dims_1 = phlower_dimension_tensor({"length": 2, "time": -2})
+    dims_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
+    dims_3 = phlower_dimension_tensor({"length": 2, "mass": 1, "time": -4})
 
-    a = np.random.rand(3, 10)
-    b = np.random.rand(3, 10)
+    a = torch.tensor(np.random.rand(3, 10))
+    b = torch.tensor(np.random.rand(3, 10))
     c = a * b
 
-    ap = PhlowerTensor(a, units_1)
-    bp = PhlowerTensor(b, units_2)
+    ap = PhlowerTensor(a, dims_1)
+    bp = PhlowerTensor(b, dims_2)
     cp = ap * bp
 
-    np.testing.assert_array_almost_equal(cp.tensor().numpy(), c)
+    np.testing.assert_array_almost_equal(
+        cp.tensor().numpy(),
+        c.numpy()
+    )
 
-    assert cp._unit_tensor == units_3
+    assert cp._dimension_tensor == dims_3
 
 
 def test__tanh():
-    a = np.random.rand(3, 10)
+    a = torch.tensor(np.random.rand(3, 10))
     c = np.tanh(a)
 
     ap = PhlowerTensor(a)
     cp = torch.tanh(ap)
 
     np.testing.assert_array_almost_equal(cp.tensor(), c)
+
+
+# @pytest.mark.parametrize("args, attr, expect", [
+#     (
+#         [
+#             phlower_dimension_tensor({"length": 2, "time": -2}),
+#             phlower_dimension_tensor({"length": 2, "time": -2}),
+#             phlower_dimension_tensor({"length": 2, "time": -2}),
+#         ],
+#         "_"
+#     )
+# ])
+# def test__has_dimension():
+#     ...

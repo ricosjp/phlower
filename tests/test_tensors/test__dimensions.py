@@ -1,13 +1,13 @@
 import pytest
 
-from phlower.tensors._dimensions import PhlowerDimensionTensor
+from phlower.base.tensors import PhlowerDimensionTensor
 
 
 @pytest.mark.parametrize(
     "inputs", [[0, 2, 0, 0, 0, 0, 0], [0, 2, 0, 2, 0, 0, 0]]
 )
 def test__initialize(inputs):
-    _ = PhlowerDimensionTensor.create(inputs)
+    _ = PhlowerDimensionTensor.from_list(inputs)
 
 
 @pytest.mark.parametrize(
@@ -24,7 +24,7 @@ def test__initialize(inputs):
     ],
 )
 def test__add(unit1, unit2):
-    unit1 = PhlowerDimensionTensor.create(unit1)
-    unit2 = PhlowerDimensionTensor.create(unit2)
+    unit1 = PhlowerDimensionTensor.from_list(unit1)
+    unit2 = PhlowerDimensionTensor.from_list(unit2)
 
     assert unit1 == (unit1 + unit2)
