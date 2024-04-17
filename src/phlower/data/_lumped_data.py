@@ -1,13 +1,10 @@
 import pathlib
 
-import numpy as np
-
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.base.tensors import PhlowerTensor
 from phlower.utils.typing import ArrayDataType, SparseArrayType
 
 
-class BunchedData:
+class LumpedArrayData:
     def __init__(
         self,
         x_data: dict[str, ArrayDataType],
@@ -23,7 +20,7 @@ class BunchedData:
     # TODO Check data type is same in each item
 
 
-class BunchedTensorData:
+class LumpedTensorData:
     def __init__(
         self,
         x_data: IPhlowerTensorCollections,

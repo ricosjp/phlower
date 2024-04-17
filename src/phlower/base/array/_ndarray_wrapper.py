@@ -1,13 +1,11 @@
 from typing import Callable
 
-import ignite.utils as ignite_utils
 import numpy as np
 import torch
 
-from phlower.utils.typing import DenseArrayType
-
-from .interface_wrapper import IPhlowerArray
+from phlower.base.array._interface_wrapper import IPhlowerArray
 from phlower.base.tensors import PhlowerTensor, phlower_tensor
+from phlower.utils.typing import DenseArrayType
 
 
 class NdArrayWrapper(IPhlowerArray):
@@ -60,8 +58,7 @@ class NdArrayWrapper(IPhlowerArray):
         dimension: dict[str, float] | None = None,
     ) -> PhlowerTensor:
         _tensor = phlower_tensor(
-            tensor=torch.from_numpy(self.data),
-            dimension=dimension
+            tensor=torch.from_numpy(self.data), dimension=dimension
         )
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor

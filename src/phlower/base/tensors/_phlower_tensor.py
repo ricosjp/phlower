@@ -1,18 +1,18 @@
 from __future__ import annotations
-import abc
 
 from collections.abc import Sequence
-from typing import Callable, Any
+from typing import Any, Callable
 
-import numpy as np
 import torch
 
-from ._dimensions import PhlowerDimensionTensor, physical_dimension_tensor
-
-from phlower.logging import get_logger
-
+from phlower.base.tensors._dimensions import (
+    PhlowerDimensionTensor,
+    physical_dimension_tensor,
+)
+from phlower.utils import get_logger
 
 logger = get_logger(__name__)
+
 
 def phlower_tensor(
     tensor: torch.Tensor | PhlowerTensor,
@@ -79,7 +79,10 @@ class PhlowerTensor:
         return self._tensor.shape
 
     def __str__(self) -> str:
-        return f"PhysicsTensor({self._tensor}, Dimension: {self._dimension_tensor})"
+        return (
+            f"PhysicsTensor({self._tensor}, "
+            f"Dimension: {self._dimension_tensor})"
+        )
 
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
@@ -156,6 +159,7 @@ def _recursive_resolve(args: Any, attr: str = None) -> list[str]:
         return [_recursive_resolve(v, attr) for v in args]
 
     return getattr(args, attr, args)
+
 
 def _has_dimension(args: Any) -> bool:
     if isinstance(args, (list, tuple, Sequence)):

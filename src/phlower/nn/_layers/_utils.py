@@ -1,6 +1,6 @@
-import torch
-
 from typing import Callable
+
+import torch
 
 from phlower.base.tensors import PhlowerTensor
 
@@ -22,10 +22,12 @@ class ExtendedLinearList(torch.nn.Module):
         self._validate_args()
 
         self._n_chains = len(self._nodes)
-        self._linears = torch.nn.ModuleList([
-            torch.nn.Linear(n1, n2, bias=bias)
-            for n1, n2 in zip(self._nodes[:-1], self._nodes[1:])
-        ])
+        self._linears = torch.nn.ModuleList(
+            [
+                torch.nn.Linear(n1, n2, bias=bias)
+                for n1, n2 in zip(self._nodes[:-1], self._nodes[1:])
+            ]
+        )
         self._activators = [
             ActivationSelector.select(name) for name in self._activations
         ]
@@ -35,9 +37,11 @@ class ExtendedLinearList(torch.nn.Module):
 
     def forward(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
-        
+
         h = self._linears[index].forward(x)
-        h = torch.nn.functional.dropout(h, p=self._dropouts[index], training=self.training)
+        h = torch.nn.functional.dropout(
+            h, p=self._dropouts[index], training=self.training
+        )
         h = self._activators[index](h)
         return h
 
@@ -45,7 +49,9 @@ class ExtendedLinearList(torch.nn.Module):
         assert len(self._nodes) >= 2
 
         if len(self._activations) == 0:
-            self._activations = ["identity" for _ in range(len(self._nodes) - 1)]
+            self._activations = [
+                "identity" for _ in range(len(self._nodes) - 1)
+            ]
         assert len(self._nodes) == len(self._activations) + 1
 
         if len(self._dropouts) == 0:
@@ -61,9 +67,9 @@ def identity(x):
 
 class ActivationSelector:
     _REGISTERED_ACTIVATIONS = {
-        'identity': identity,
-        'relu': torch.relu,
-        'tanh': torch.tanh
+        "identity": identity,
+        "relu": torch.relu,
+        "tanh": torch.tanh,
     }
 
     @staticmethod

@@ -1,15 +1,14 @@
 from __future__ import annotations
-import abc
 
-from typing import Iterable
+import abc
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, Iterable
 
 import numpy as np
 import torch
 
-from phlower.utils.typing import ArrayDataType
 from phlower.base.tensors import PhlowerTensor, phlower_tensor
+from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
@@ -26,7 +25,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def slice(self, slice_range: tuple[slice, ...]) -> IPhlowerTensorCollections:
+    def slice(
+        self, slice_range: tuple[slice, ...]
+    ) -> IPhlowerTensorCollections:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -50,18 +51,15 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def values(self):
-        ...
+    def values(self): ...
 
     @abc.abstractmethod
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
         raise NotImplementedError()
 
 
-def phlower_tensor_collection(
-    values: Mapping
-) -> IPhlowerTensorCollections:
- 
+def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
+
     if isinstance(values, dict):
         return PhlowerDictTensors(values)
 
@@ -99,9 +97,13 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
         raise NotImplementedError(f"key must be str. Input: {type(key)}")
 
     def reshape(self, shape: Sequence[int]) -> IPhlowerTensorCollections:
-        return  phlower_tensor_collection({k: v.reshape(shape) for k, v in self._x.items()})
+        return phlower_tensor_collection(
+            {k: v.reshape(shape) for k, v in self._x.items()}
+        )
 
-    def slice(self, slice_range: tuple[slice, ...]) -> IPhlowerTensorCollections:
+    def slice(
+        self, slice_range: tuple[slice, ...]
+    ) -> IPhlowerTensorCollections:
         tmp = {k: v.slice(slice_range) for k, v in self._x.items()}
         return phlower_tensor_collection(tmp)
 
@@ -112,17 +114,23 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
         return np.min([len(x) for x in self._x.values()])
 
     def to_numpy(self) -> dict[str, ArrayDataType]:
-        return {k: v.tensor().detach().cpu().numpy() for k, v in self._x.items()}
+        return {
+            k: v.tensor().detach().cpu().numpy() for k, v in self._x.items()
+        }
 
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
         if weights is None:
             return torch.sum(torch.stack([v for v in self._x.values()]))
 
-        return torch.sum(torch.stack([v * weights[k] for k, v in self._x.items()]))
+        return torch.sum(
+            torch.stack([v * weights[k] for k, v in self._x.items()])
+        )
 
     def unique_item(self) -> PhlowerTensor:
         if len(self) != 1:
-            raise ValueError("This PhlowerCollections have several items. not unique.")
+            raise ValueError(
+                "This PhlowerCollections have several items. not unique."
+            )
 
         key = list(self.keys())[0]
         return self[key]

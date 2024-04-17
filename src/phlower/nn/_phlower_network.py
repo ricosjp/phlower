@@ -1,14 +1,9 @@
-import abc
-
-import torch.nn
-import torch.nn.functional as F
-
 import dagstream
+import torch.nn
 
-from phlower.data._bunched_data import BunchedTensorData
+from phlower.nn._interface_layer import IPhlowerLayer
 
-from phlower.base.tensors import PhlowerTensor
-from phlower.collections.tensors import IPhlowerTensorCollections
+# TODO: UNDER CONSTRUCTION
 
 
 class PhlowerNetworks(torch.nn.Module):
@@ -19,19 +14,14 @@ class PhlowerNetworks(torch.nn.Module):
     def _construct(self):
         # topological-sort
         stream = dagstream.DagStream()
-        _emplaces = stream.emplace(*self._layers)
+        # _emplaces = stream.emplace(*self._layers)
 
         # add relationship
 
         # construct
         stream.construct()
         return stream
-    
-    def draw(self):
-        ...
-    
-    def forward(self):
-        ...
 
+    def draw(self): ...
 
-
+    def forward(self): ...

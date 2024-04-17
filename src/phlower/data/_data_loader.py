@@ -1,10 +1,8 @@
-import pathlib
 import random
-from typing import Optional
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
@@ -17,7 +15,7 @@ class DataLoaderBuilder:
         self._collate_fn = PhlowerCollateFn(
             device=self._setting.device,
             non_blocking=self._setting.non_blocking,
-            dimensions=setting.variable_dimensions
+            dimensions=setting.variable_dimensions,
         )
 
     def create(
@@ -43,7 +41,7 @@ class DataLoaderBuilder:
 
 def _seed_worker(worker_id: int) -> None:
     # To ensure randomness of numpy and random module when multiprocessing
-    # See https://pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading
+    # See https://pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading  # NOQA
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)

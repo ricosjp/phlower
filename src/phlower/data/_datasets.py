@@ -1,24 +1,17 @@
 import abc
 import pathlib
 
-import numpy as np
-import torch
 from torch.utils.data import Dataset
 
-from phlower._io import PhlowerDirectory
 from phlower.base.array import IPhlowerArray
-from phlower.utils.typing import ArrayDataType
-
-from ._bunched_data import BunchedData
+from phlower.data._lumped_data import LumpedArrayData
+from phlower.io import PhlowerDirectory
 
 
 class IPhlowerDataset(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __getitem__(self, idx: int) -> BunchedData:
+    def __getitem__(self, idx: int) -> LumpedArrayData:
         raise NotImplementedError()
-
-
-# HACK add dimension info.
 
 
 class LazyPhlowerDataset(Dataset):
@@ -51,7 +44,7 @@ class LazyPhlowerDataset(Dataset):
     def __len__(self):
         return len(self._directories)
 
-    def __getitem__(self, idx: int) -> BunchedData:
+    def __getitem__(self, idx: int) -> LumpedArrayData:
         data_directory = self._directories[idx]
         x_data = self._load_data(
             data_directory, self._x_variable_names, allow_missing=False
@@ -64,7 +57,7 @@ class LazyPhlowerDataset(Dataset):
         support_data = self._load_data(
             data_directory, self._support_names, allow_missing=False
         )
-        return BunchedData(
+        return LumpedArrayData(
             x_data=x_data,
             y_data=y_data,
             sparse_supports=support_data,

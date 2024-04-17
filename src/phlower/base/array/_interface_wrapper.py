@@ -3,8 +3,8 @@ from typing import Callable
 
 import torch
 
-from phlower.utils.typing import ArrayDataType
 from phlower.base.tensors import PhlowerTensor
+from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerArray(metaclass=abc.ABCMeta):

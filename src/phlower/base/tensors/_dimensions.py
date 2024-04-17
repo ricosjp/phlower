@@ -129,8 +129,16 @@ def add(inputs, other):
 
 @dimension_wrap_implements(torch.mul)
 def mul(inputs, other):
-    _input = inputs if isinstance(inputs, PhlowerDimensionTensor) else zero_dimension_tensor()
-    _other = other if isinstance(other, PhlowerDimensionTensor) else zero_dimension_tensor()
+    _input = (
+        inputs
+        if isinstance(inputs, PhlowerDimensionTensor)
+        else zero_dimension_tensor()
+    )
+    _other = (
+        other
+        if isinstance(other, PhlowerDimensionTensor)
+        else zero_dimension_tensor()
+    )
     return PhlowerDimensionTensor(_input._tensor + _other._tensor)
 
 
@@ -176,7 +184,7 @@ def mse_loss(inputs, others, *args, **kwards):
     if inputs != others:
         raise DimensionIncompatibleError()
 
-    return inputs ** 2
+    return inputs**2
 
 
 @dimension_wrap_implements(torch.sum)

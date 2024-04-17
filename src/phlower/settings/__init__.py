@@ -1,1 +1,1 @@
-from ._phlower_setting import PhlowerTrainerSetting
+from phlower.settings._phlower_setting import PhlowerTrainerSetting

@@ -1,1 +1,4 @@
-from .tensor_collections import IPhlowerTensorCollections, phlower_tensor_collection
+from phlower.collections.tensors._tensor_collections import (
+    IPhlowerTensorCollections,
+    phlower_tensor_collection,
+)

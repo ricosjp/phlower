@@ -10,8 +10,11 @@ exclude =
 max-line-length = 80
 ignore =
     W503,
-    E203 
+    E203,
     # whitespace before ':'.
+
+    E704,
+    E701
 
     # E501
     # line too long; Black prefer 88 characters. We can set length 88 characters to flake8 by "max-line-length" option but we don't need double check.
@@ -20,4 +23,6 @@ ignore =
     # https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
     
     # E231, # whitespace after ','.
-    
+per-file-ignores =
+    # imported but unused
+    __init__.py: F401

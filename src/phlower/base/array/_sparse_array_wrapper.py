@@ -3,10 +3,9 @@ from typing import Callable
 
 import torch
 
-from phlower.base.tensors import phlower_tensor, PhlowerTensor
+from phlower.base.array._interface_wrapper import IPhlowerArray
+from phlower.base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils.typing import SparseArrayType
-
-from .interface_wrapper import IPhlowerArray
 
 
 class SparseArrayWrapper(IPhlowerArray):
@@ -74,10 +73,7 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(
-            tensor=sparse_tensor,
-            dimension=dimension
-        )
+        _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 

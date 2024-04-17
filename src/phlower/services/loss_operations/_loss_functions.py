@@ -1,8 +1,6 @@
-
-from phlower.utils.typing import LossFunctionType
-
 import torch
 
+from phlower.utils.typing import LossFunctionType
 
 _DEFAULT_LOSS_FUNCTIONS: dict[str, LossFunctionType] = {
     "mse": torch.nn.functional.mse_loss

@@ -1,11 +1,10 @@
 # flake8: noqa
 from typing import get_args
 
+from phlower.base.array._interface_wrapper import IPhlowerArray
+from phlower.base.array._ndarray_wrapper import NdArrayWrapper
+from phlower.base.array._sparse_array_wrapper import SparseArrayWrapper
 from phlower.utils.typing import ArrayDataType, DenseArrayType, SparseArrayType
-
-from .interface_wrapper import IPhlowerArray
-from .ndarray_wrapper import NdArrayWrapper
-from .sparse_array_wrapper import SparseArrayWrapper
 
 
 def phlower_arrray(data: ArrayDataType) -> IPhlowerArray:

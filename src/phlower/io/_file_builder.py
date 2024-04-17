@@ -1,6 +1,6 @@
 import pathlib
 
-from ._files import (
+from phlower.io._files import (
     IPhlowerCheckpointFile,
     IPhlowerNumpyFile,
     IPhlowerPickleFile,

@@ -1,8 +1,8 @@
-from typing import Union, Callable
+from typing import Callable, Union
 
-import torch
 import numpy as np
 import scipy.sparse as sp
+import torch
 
 ArrayDataType = Union[np.ndarray, sp.coo_matrix, sp.csr_matrix, sp.csc_matrix]
 

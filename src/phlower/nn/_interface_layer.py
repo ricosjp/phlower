@@ -1,7 +1,7 @@
 import abc
 
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.base.tensors import PhlowerTensor
+from phlower.collections.tensors import IPhlowerTensorCollections
 
 
 class IPhlowerLayer(metaclass=abc.ABCMeta):

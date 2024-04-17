@@ -1,14 +1,13 @@
 from __future__ import annotations
-import torch
-from typing_extensions import Self
+
 import pydantic
 import pydantic.dataclasses as dc
+import torch
+from typing_extensions import Self
 
-
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.base.tensors import PhlowerTensor
+from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._interface_layer import IPhlowerLayer
-from phlower.settings._phlower_setting import ModelSetting
 from phlower.nn._layers import _utils
 
 
@@ -29,7 +28,8 @@ class GCNResolvedSetting:
     def check_n_nodes(cls, v: list[int]) -> list[int]:
         if len(v) < 2:
             raise ValueError(
-                f"size of nodes must be larger than 1 in GCNSettings. input: {len(v)}"
+                "size of nodes must be larger than 1 in GCNSettings."
+                f" input: {len(v)}"
             )
         return v
 
@@ -37,8 +37,9 @@ class GCNResolvedSetting:
     def check_nodes_size(self) -> Self:
         if len(self.nodes) - 1 != len(self.activations):
             raise ValueError(
-                "Size of nodes and activations is not compatible in GCNSettings."
-                "len(nodes) must be equal to 1 + len(activations)."
+                "Size of nodes and activations is not compatible "
+                "in GCNSettings."
+                " len(nodes) must be equal to 1 + len(activations)."
             )
         return self
 
@@ -80,7 +81,7 @@ class GCN(IPhlowerLayer, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor]
+        supports: dict[str, PhlowerTensor],
     ) -> IPhlowerTensorCollections:
         support = supports[self._support_name]
         h = data[self._input_key]
@@ -89,7 +90,9 @@ class GCN(IPhlowerLayer, torch.nn.Module):
             h = self._chains.forward(h, index=i)
         return h
 
-    def _propagate(self, x: PhlowerTensor, support: PhlowerTensor) -> PhlowerTensor:
+    def _propagate(
+        self, x: PhlowerTensor, support: PhlowerTensor
+    ) -> PhlowerTensor:
         n_node = x.shape[0]
         h = torch.reshape(x, (n_node, -1))
         for _ in range(self._repeat):
