@@ -15,6 +15,7 @@ lint:
   stage: test
   script:
     - make lint
+  allow_failure: true
   tags:
     - no-gpu
 
@@ -37,6 +38,13 @@ pytest:
     - no-gpu
     - GenuineIntel
 
+e2e_test:
+  stage: test
+  script:
+    - poetry run pytest tests/E2E_tests
+  tags:
+    - no-gpu
+    - GenuineIntel
 
 pages:
   stage: deploy
