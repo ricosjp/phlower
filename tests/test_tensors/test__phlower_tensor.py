@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from phlower.base.tensors import PhlowerTensor, phlower_dimension_tensor
+from phlower import PhlowerTensor, phlower_dimension_tensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 

@@ -1,7 +1,7 @@
 import abc
 from collections.abc import Sequence
 
-from phlower.base.array import IPhlowerArray
+from phlower._base.array import IPhlowerArray
 from phlower.utils.typing import ArrayDataType
 
 

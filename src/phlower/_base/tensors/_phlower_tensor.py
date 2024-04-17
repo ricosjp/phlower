@@ -5,7 +5,7 @@ from typing import Any, Callable, Iterable
 
 import torch
 
-from phlower.base.tensors._dimensions import (
+from phlower._base.tensors._dimensions import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
 )

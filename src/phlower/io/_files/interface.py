@@ -1,7 +1,7 @@
 import abc
 import pathlib
 
-from phlower.base.array import IPhlowerArray
+from phlower._base.array import IPhlowerArray
 
 
 class IPhlowerBaseFile(metaclass=abc.ABCMeta):

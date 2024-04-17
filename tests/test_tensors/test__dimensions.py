@@ -1,6 +1,6 @@
 import pytest
 
-from phlower.base.tensors import PhlowerDimensionTensor
+from phlower import PhlowerDimensionTensor
 
 
 @pytest.mark.parametrize(

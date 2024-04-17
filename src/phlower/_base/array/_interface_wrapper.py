@@ -3,7 +3,7 @@ from typing import Callable
 
 import torch
 
-from phlower.base.tensors import PhlowerTensor
+from phlower._base.tensors import PhlowerTensor
 from phlower.utils.typing import ArrayDataType
 
 

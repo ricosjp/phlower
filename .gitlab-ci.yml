@@ -15,7 +15,6 @@ lint:
   stage: test
   script:
     - make lint
-  allow_failure: true
   tags:
     - no-gpu
 
@@ -41,24 +40,24 @@ pytest:
 e2e_test:
   stage: test
   script:
-    - poetry run pytest tests/E2E_tests
+    - poetry run pytest tests/e2e_tests
   tags:
     - no-gpu
     - GenuineIntel
 
-pages:
-  stage: deploy
-  script:
-    - make document
-    - mkdir public
-    - cp -r docs/build/* public/
-  artifacts:
-    paths:
-      - public
-  only:
-    - main
-    - develop
-    - fix_sphinx
+# pages:
+#   stage: deploy
+#   script:
+#     - make document
+#     - mkdir public
+#     - cp -r docs/build/* public/
+#   artifacts:
+#     paths:
+#       - public
+#   only:
+#     - main
+#     - develop
+#     - fix_sphinx
 
 
 .deploy:wheel:

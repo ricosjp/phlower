@@ -5,7 +5,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from phlower import utils
-from phlower.base.array import IPhlowerArray, phlower_arrray
+from phlower._base.array import IPhlowerArray, phlower_arrray
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
 

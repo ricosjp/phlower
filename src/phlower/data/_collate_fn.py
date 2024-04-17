@@ -1,6 +1,6 @@
 import torch
 
-from phlower.base.array import IPhlowerArray
+from phlower._base.array import IPhlowerArray
 from phlower.collections.arrays import SequencedDictArray
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,

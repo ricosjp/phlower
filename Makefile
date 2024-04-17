@@ -41,6 +41,9 @@ format:
 test:
 	poetry run pytest tests --cov=src --cov-report term-missing --durations 5
 
+test_all: test
+	poetry run pytest tests/e2e_test
+
 .PHONY: lint
 lint:
 	$(MAKE) black-check

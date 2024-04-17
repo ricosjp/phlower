@@ -3,7 +3,7 @@ import pathlib
 
 from torch.utils.data import Dataset
 
-from phlower.base.array import IPhlowerArray
+from phlower._base.array import IPhlowerArray
 from phlower.data._lumped_data import LumpedArrayData
 from phlower.io import PhlowerDirectory
 

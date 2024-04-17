@@ -5,7 +5,7 @@ import pydantic.dataclasses as dc
 import torch
 from typing_extensions import Self
 
-from phlower.base.tensors import PhlowerTensor
+from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._interface_layer import IPhlowerLayer
 from phlower.nn._layers import _utils
