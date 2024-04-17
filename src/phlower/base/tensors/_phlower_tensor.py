@@ -55,6 +55,7 @@ def _resolve_dimension_arg(
         "when creating PhlowerDimensionTensor"
     )
 
+
 class PhlowerTensor:
 
     def __init__(

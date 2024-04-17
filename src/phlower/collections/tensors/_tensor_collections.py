@@ -13,49 +13,44 @@ from phlower.utils.typing import ArrayDataType
 
 class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]) -> None:
-        raise NotImplementedError()
+    def __init__(
+        self, value: dict[str, torch.Tensor | PhlowerTensor]
+    ) -> None: ...
 
     @abc.abstractmethod
-    def __contains__(self, key: str):
-        raise NotImplementedError()
+    def __contains__(self, key: str): ...
 
     @abc.abstractmethod
-    def __len__(self) -> int:
-        raise NotImplementedError()
+    def __len__(self) -> int: ...
 
     @abc.abstractmethod
     def slice(
         self, slice_range: tuple[slice, ...]
-    ) -> IPhlowerTensorCollections:
-        raise NotImplementedError()
+    ) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
-    def __getitem__(self, key: int | str) -> PhlowerTensor:
-        raise NotImplementedError()
+    def __getitem__(self, key: int | str) -> PhlowerTensor: ...
 
     @abc.abstractmethod
-    def send(self, device: str) -> None:
-        raise NotImplementedError()
+    def send(self, device: str) -> None: ...
 
     @abc.abstractmethod
-    def min_len(self) -> int:
-        raise NotImplementedError()
+    def min_len(self) -> int: ...
 
     @abc.abstractmethod
-    def to_numpy(self) -> dict[str, ArrayDataType]:
-        raise NotImplementedError()
+    def to_numpy(self) -> dict[str, ArrayDataType]: ...
 
     @abc.abstractmethod
-    def keys(self) -> Iterable[str]:
-        raise NotImplementedError()
+    def keys(self) -> Iterable[str]: ...
 
     @abc.abstractmethod
     def values(self): ...
 
     @abc.abstractmethod
-    def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
-        raise NotImplementedError()
+    def sum(self, weights: dict[str, float] = None) -> PhlowerTensor: ...
+
+    @abc.abstractmethod
+    def reshape(self, shape: Sequence[int]) -> IPhlowerTensorCollections: ...
 
 
 def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:

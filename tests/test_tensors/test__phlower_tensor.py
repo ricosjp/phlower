@@ -57,10 +57,7 @@ def test__mul_with_unit():
     bp = PhlowerTensor(b, dims_2)
     cp = ap * bp
 
-    np.testing.assert_array_almost_equal(
-        cp.tensor().numpy(),
-        c.numpy()
-    )
+    np.testing.assert_array_almost_equal(cp.tensor().numpy(), c.numpy())
 
     assert cp._dimension_tensor == dims_3
 
