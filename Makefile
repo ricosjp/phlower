@@ -10,7 +10,7 @@ init:
 
 .PHONY: black-check
 black-check:
-	poetry run black --check src tests
+	poetry run black --check --diff src tests
 
 .PHONY: black
 black:
@@ -22,7 +22,7 @@ flake8:
 
 .PHONY: isort-check
 isort-check:
-	poetry run isort --check-only src tests
+	poetry run isort --check-only --diff src tests
 
 .PHONY: isort
 isort:
