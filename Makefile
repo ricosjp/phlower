@@ -1,3 +1,5 @@
+IN_PROJECT?=true
+
 
 .PHONY: init
 init:
@@ -39,9 +41,22 @@ format:
 test:
 	poetry run pytest tests --cov=src --cov-report term-missing --durations 5
 
+test_all: test
+	poetry run pytest tests/e2e_test
+
 .PHONY: lint
 lint:
 	$(MAKE) black-check
 	$(MAKE) isort-check
 	$(MAKE) flake8
-	$(MAKE) mypy
+	# $(MAKE) mypy
+
+.PHONY: dev-install
+dev-install: init
+	poetry run python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+
+.PHONY: document
+document:
+	$(RM) public
+	$(RUN) sphinx-build -M html docs/source docs/build

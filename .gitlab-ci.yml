@@ -9,7 +9,7 @@ default:
     - apt install -y make
     - pip install poetry
     - poetry config virtualenvs.in-project false
-    - poetry install
+    - make dev-install
 
 lint:
   stage: test
@@ -37,11 +37,20 @@ pytest:
     - no-gpu
     - GenuineIntel
 
+e2e_test:
+  stage: test
+  script:
+    - poetry run pytest tests/e2e_tests
+  tags:
+    - no-gpu
+    - GenuineIntel
 
 # pages:
 #   stage: deploy
 #   script:
 #     - make document
+#     - mkdir public
+#     - cp -r docs/build/* public/
 #   artifacts:
 #     paths:
 #       - public
