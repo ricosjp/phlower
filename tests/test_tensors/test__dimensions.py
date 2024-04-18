@@ -1,5 +1,4 @@
 import pytest
-
 import torch
 
 from phlower import PhlowerDimensionTensor
@@ -40,10 +39,7 @@ def test__add(unit1, unit2):
         [1, 2, 0, 2, 0, 0, 0],
     ],
 )
-@pytest.mark.parametrize(
-    "dim",
-    [0, 2]
-)
+@pytest.mark.parametrize("dim", [0, 2])
 def test__cat(unit, dim):
     unit1 = PhlowerDimensionTensor.from_list(unit)
     unit2 = PhlowerDimensionTensor.from_list(unit)

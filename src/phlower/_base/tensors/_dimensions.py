@@ -149,9 +149,10 @@ def reshape(inputs, shape):
 
 @dimension_wrap_implements(torch.cat)
 def cat(
-        tensors: Union[PhlowerDimensionTensor, torch.Tensor],
-        dim: int, *,
-        out: PhlowerDimensionTensor = None
+    tensors: Union[PhlowerDimensionTensor, torch.Tensor],
+    dim: int,
+    *,
+    out: PhlowerDimensionTensor = None,
 ) -> PhlowerDimensionTensor:
     if all((isinstance(v, PhlowerDimensionTensor) for v in tensors)):
 
