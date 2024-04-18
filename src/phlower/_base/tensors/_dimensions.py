@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import functools
-from typing import Callable
+from typing import Callable, Union
 
 import torch
 
@@ -145,6 +145,21 @@ def mul(inputs, other):
 @dimension_wrap_implements(torch.reshape)
 def reshape(inputs, shape):
     return PhlowerDimensionTensor(inputs._tensor)
+
+
+@dimension_wrap_implements(torch.cat)
+def cat(
+        tensors: Union[PhlowerDimensionTensor, torch.Tensor],
+        dim: int, *,
+        out: PhlowerDimensionTensor = None
+) -> PhlowerDimensionTensor:
+    if all((isinstance(v, PhlowerDimensionTensor) for v in tensors)):
+
+        # HACK: is it possible to use unique method ?
+        for v in tensors:
+            if v != tensors[0]:
+                raise DimensionIncompatibleError()
+    return PhlowerDimensionTensor(tensors[0]._tensor)
 
 
 @dimension_wrap_implements(torch.sparse.mm)
