@@ -93,6 +93,9 @@ class PhlowerTensor:
     def __len__(self) -> int:
         return len(self._tensor)
 
+    def __getitem__(self, key: Any) -> PhlowerTensor:
+        return PhlowerTensor(self._tensor[key], self._dimension_tensor)
+
     def tensor(self) -> torch.Tensor:
         return self._tensor
 

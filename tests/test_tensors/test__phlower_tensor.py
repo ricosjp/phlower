@@ -84,3 +84,19 @@ def test__tanh():
 # ])
 # def test__has_dimension():
 #     ...
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        3,
+        [1, 3, 4],
+        [True, False, False, True, True],
+    ],
+)
+def test__getitem(key):
+    torch_tensor = torch.rand(5)
+    phlower_tensor = PhlowerTensor(torch_tensor)
+    np.testing.assert_array_almost_equal(
+        phlower_tensor[key].tensor(), torch_tensor[key]
+    )
