@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import functools
-from typing import Callable, Union
+from typing import Callable
 
 import torch
 
@@ -149,7 +149,7 @@ def reshape(inputs, shape):
 
 @dimension_wrap_implements(torch.cat)
 def cat(
-    tensors: Union[PhlowerDimensionTensor, torch.Tensor],
+    tensors: tuple[PhlowerDimensionTensor | torch.Tensor, ...],
     dim: int,
     *,
     out: PhlowerDimensionTensor = None,

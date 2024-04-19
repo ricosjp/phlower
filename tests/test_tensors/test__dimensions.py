@@ -44,7 +44,7 @@ def test__cat(unit, dim):
     unit1 = PhlowerDimensionTensor.from_list(unit)
     unit2 = PhlowerDimensionTensor.from_list(unit)
 
-    unit1 == torch.cat([unit1, unit2], dim=dim)
+    assert unit1 == torch.cat([unit1, unit2], dim=dim)
 
 
 @pytest.mark.parametrize(
