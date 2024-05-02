@@ -7,16 +7,17 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._interface_layer import IPhlowerLayer
-from phlower.nn._layers import _utils
+from phlower.nn._interface_layer import (
+    IPhlowerCoreModule,
+    IPhlowerLayerParameters,
+)
+from phlower.nn._modules import _utils
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class GCNResolvedSetting:
+class GCNResolvedSetting(IPhlowerLayerParameters):
     nodes: list[int]
-    input_key: str
     support_name: str
-
     repeat: int = 1
     factor: float = 1.0
     activations: list[str] = pydantic.Field(default_factory=lambda: [])
@@ -44,7 +45,7 @@ class GCNResolvedSetting:
         return self
 
 
-class GCN(IPhlowerLayer, torch.nn.Module):
+class GCN(IPhlowerCoreModule, torch.nn.Module):
     @classmethod
     def create(cls, setting: GCNResolvedSetting) -> GCN:
         return GCN(**setting.__dict__)
@@ -52,7 +53,6 @@ class GCN(IPhlowerLayer, torch.nn.Module):
     def __init__(
         self,
         nodes: list[int],
-        input_key: str,
         support_name: str,
         activations: list[str] = None,
         dropouts: list[float] = None,
@@ -72,7 +72,6 @@ class GCN(IPhlowerLayer, torch.nn.Module):
         )
         self._nodes = nodes
         self._activations = activations
-        self._input_key = input_key
         self._support_name = support_name
         self._repeat = repeat
         self._factor = factor
@@ -82,9 +81,9 @@ class GCN(IPhlowerLayer, torch.nn.Module):
         data: IPhlowerTensorCollections,
         *,
         supports: dict[str, PhlowerTensor],
-    ) -> IPhlowerTensorCollections:
+    ) -> PhlowerTensor:
         support = supports[self._support_name]
-        h = data[self._input_key]
+        h = data.unique_item()
         for i in range(len(self._chains)):
             h = self._propagate(h, support)
             h = self._chains.forward(h, index=i)

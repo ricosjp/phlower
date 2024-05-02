@@ -52,6 +52,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def reshape(self, shape: Sequence[int]) -> IPhlowerTensorCollections: ...
 
+    @abc.abstractmethod
+    def unique_item(self) -> PhlowerTensor: ...
+
 
 def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
 
