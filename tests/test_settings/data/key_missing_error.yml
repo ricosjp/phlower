@@ -3,9 +3,9 @@ model:
   nn_type: GROUP
   name: CYCLE_MODEL
   inputs:
-    - name: feature0
+    - name: feature0_1
       n_dim: 10
-    - name: feature1
+    - name: feature1_1
       n_dim: 12
   
   outputs:
@@ -40,8 +40,6 @@ model:
       name: GCN1
       input_keys:
         - out_feature0
-      destinations:
-        - MLP0
       output_key: feature0
       nn_parameters:
         nodes: [-1, 5]

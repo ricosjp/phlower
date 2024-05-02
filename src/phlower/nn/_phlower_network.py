@@ -70,8 +70,13 @@ class PhlowerGroupNetworks(IPhlowerModuleAdapter, torch.nn.Module):
         self._input_keys: list[str] = []
         self._destinations = []
         self._output_keys: list[str] = []
+        self._name = ""
 
         self._dag_modules = self.construct()
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def construct(self):
         for module in self._phlower_modules:

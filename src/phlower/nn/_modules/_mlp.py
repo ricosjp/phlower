@@ -14,19 +14,13 @@ from phlower.nn._interface_layer import (
 from phlower.nn._modules import _utils
 
 
-class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
+class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     nodes: list[int] = Field(
         ...
     )  # This property only overwritten when resolving.
-    support_name: str = Field(..., frozen=True)
-    repeat: int = Field(1, frozen=True)
-    factor: float = Field(1.0, frozen=True)
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
 
     @classmethod
     def gather_input_dims(cls, *input_dims: int) -> int:
@@ -67,30 +61,29 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
         return self
 
-    def get_nodes(self) -> list[int]:
+    def get_nodes(self) -> list[int] | None:
         return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
 
 
-class GCN(IPhlowerCoreModule, torch.nn.Module):
+class MLP(IPhlowerCoreModule, torch.nn.Module):
+    """Multi Layer Perceptron."""
+
     @classmethod
-    def from_setting(cls, setting: GCNSetting) -> GCN:
-        return GCN(**setting.__dict__)
+    def from_setting(cls, setting: MLPSetting) -> Self:
+        return MLP(**setting.__dict__)
 
     @classmethod
     def get_nn_name(cls):
-        return "GCN"
+        return "MLP"
 
     def __init__(
         self,
         nodes: list[int],
-        support_name: str,
         activations: list[str] = None,
         dropouts: list[float] = None,
-        repeat: int = 1,
-        factor: float = 1.0,
         bias: bool = False,
     ) -> None:
         super().__init__()
@@ -105,28 +98,14 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         )
         self._nodes = nodes
         self._activations = activations
-        self._support_name = support_name
-        self._repeat = repeat
-        self._factor = factor
 
     def forward(
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        supports: dict[str, PhlowerTensor] = None,
     ) -> PhlowerTensor:
-        support = supports[self._support_name]
         h = data.unique_item()
         for i in range(len(self._chains)):
-            h = self._propagate(h, support)
             h = self._chains.forward(h, index=i)
         return h
-
-    def _propagate(
-        self, x: PhlowerTensor, support: PhlowerTensor
-    ) -> PhlowerTensor:
-        n_node = x.shape[0]
-        h = torch.reshape(x, (n_node, -1))
-        for _ in range(self._repeat):
-            h = torch.sparse.mm(support, h) * self._factor
-        return torch.reshape(h, x.shape)

@@ -15,11 +15,15 @@ class PhlowerModuleKeyError(ValueError):
 
 
 class PhlowerModuleDuplicateKeyError(ValueError):
-    """This error raises when duplicate key is detected in phlower module settings."""
+    """This error raises when duplicate key is
+    detected in phlower module settings.
+    """
 
 
 class PhlowerModuleDuplicateNameError(ValueError):
-    """This error raises when duplicate name is detected in phlower GROUP module settings."""
+    """This error raises when duplicate name is
+    detected in phlower GROUP module settings.
+    """
 
 
 class PhlowerModuleCycleError(ValueError):

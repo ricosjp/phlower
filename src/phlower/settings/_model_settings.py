@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Literal
+from typing import Literal
 
 import dagstream
 import pydantic
 from dagstream.utils.errors import DagStreamCycleError
-from pydantic import Field
+from pydantic import Field, ValidationInfo
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
 import phlower.nn
-from phlower.nn._modules import IPhlowerLayerParameters
+from phlower.nn import IPhlowerLayerParameters
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -132,7 +132,8 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
         for input_v in self.inputs:
             if input_v.name not in _to_input_keys:
                 raise PhlowerModuleKeyError(
-                    f"{input_v.name} is not passed to {self.name}. Please check precedents."
+                    f"{input_v.name} is not passed to {self.name}. "
+                    "Please check precedents."
                 )
 
     def _check_nodes(self, *resolved_outputs: dict[str, int]) -> None:
@@ -144,7 +145,8 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
         for input_item in self.inputs:
             if key2node[input_item.name] != input_item.n_dim:
                 raise PhlowerModuleNodeDimSizeError(
-                    f"n_dim of {input_item.name} in {self.name} is {input_item.n_dim}. "
+                    f"n_dim of {input_item.name} in {self.name} "
+                    f"is {input_item.n_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
@@ -162,12 +164,14 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
         for self_output in self.outputs:
             if self_output.name not in key2node:
                 raise PhlowerModuleKeyError(
-                    f"{self_output.name} is not created in {self.name}. Please check last module in this group."
+                    f"{self_output.name} is not created in {self.name}. "
+                    "Please check last module in this group."
                 )
 
             if key2node[self_output.name] != self_output.n_dim:
                 raise PhlowerModuleNodeDimSizeError(
-                    f"n_dim of {self_output.name} in {self.name} is {self_output.n_dim}. "
+                    f"n_dim of {self_output.name} in {self.name} "
+                    f"is {self_output.n_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
@@ -181,30 +185,28 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         ..., default_factory=lambda: [], frozen=True
     )
     no_grad: bool = Field(False, frozen=True)
-    nn_parameters: dict[str, Any] = Field(
-        ..., default_factory=lambda: {}, frozen=True
-    )  # Use pydantic function to convert ?
-
-    # This property only overwritten when resolving.
-    nodes: list[int] | None = Field(None)
+    nn_parameters: IPhlowerLayerParameters = Field(
+        default_factory=lambda: {}, validate_default=True
+    )
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(
+        extra="forbid", arbitrary_types_allowed=True
+    )
 
-    @pydantic.field_validator("nodes", mode="after")
+    @pydantic.field_validator("nn_parameters", mode="before")
     @classmethod
-    def validate_nodes(cls, vals):
-        if vals is None:
-            return vals
-
-        if len(vals) <= 1:
-            raise ValueError()
-
-        for v in vals:
-            if v < -1:
-                raise ValueError()
-
-        return vals
+    def validate_nn_parameters(cls, vals, info: ValidationInfo):
+        # MAYBE pydantic union feature is useful
+        try:
+            return phlower.nn.parse_parameter_setting(
+                name=info.data["nn_type"], **vals
+            )
+        except pydantic.ValidationError as ex:
+            name = info.data.get("name")
+            raise ValueError(
+                f"setting content in {name} is not correnct. {str(ex)}"
+            )
 
     def get_name(self) -> str:
         return self.name
@@ -213,18 +215,13 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         return self.destinations
 
     def get_output_info(self) -> dict[str, int]:
-        return {self.output_key: self.nodes[-1]}
-
-    def parse_parameter_setting(self) -> IPhlowerLayerParameters:
-        return phlower.nn.parse_parameter_setting(
-            name=self.nn_type, **self.nn_parameters
-        )
+        return {self.output_key: self.nn_parameters.get_nodes()[-1]}
 
     def resolve(self, *resolved_outputs: dict[str, int]) -> None:
         self._check_keys(*resolved_outputs)
         _resolved_nodes = self._resolve_nodes(*resolved_outputs)
         # NOTE: overwrite nodes
-        self.nodes = _resolved_nodes
+        self.nn_parameters.overwrite_nodes(_resolved_nodes)
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _to_input_keys: set[str] = set()
@@ -243,7 +240,8 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         for input_key in self.input_keys:
             if input_key not in _to_input_keys:
                 raise PhlowerModuleKeyError(
-                    f"{input_key} is not passed to {self.name}. Please check precedents."
+                    f"{input_key} is not passed to {self.name}. "
+                    "Please check precedents."
                 )
 
     def _resolve_nodes(self, *resolved_outputs: dict[str, int]) -> list[int]:
@@ -251,24 +249,35 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         for output in resolved_outputs:
             key2node.update(output)
 
-        first_node = sum(key2node[key] for key in self.input_keys)
-
-        if self.nodes is None:
-            return [first_node, first_node]
-
-        if (self.nodes[0] != -1) and (self.nodes[0] != first_node):
+        try:
+            first_node = phlower.nn.gather_input_dims(
+                self.nn_type, *(key2node[key] for key in self.input_keys)
+            )
+        except ValueError as ex:
             raise PhlowerModuleNodeDimSizeError(
-                f"nodes in {self.name} is {self.nodes}. It is not consistent with the precedent modules"
+                f"inputs for {self.name} have problems. {ex}"
             )
 
-        assert len(self.nodes) > 1
-        if self.nodes[-1] == -1:
+        nodes = self.nn_parameters.get_nodes()
+        if nodes is None:
+            return [first_node, first_node]
+
+        if (nodes[0] != -1) and (nodes[0] != first_node):
             raise PhlowerModuleNodeDimSizeError(
-                f"last number of nodes is must be integer larger than 0. {self._setting.name}"
+                f"nodes in {self.name} is {nodes}. "
+                "It is not consistent with the precedent modules"
+            )
+
+        assert len(nodes) > 1
+        if nodes[-1] == -1:
+            raise PhlowerModuleNodeDimSizeError(
+                "last number of nodes is must be "
+                "integer number which is larger than 0."
+                f" {self.name}"
             )
 
         new_nodes = [first_node]
-        new_nodes.extend(self.nodes[1:])
+        new_nodes.extend(nodes[1:])
         return new_nodes
 
 

@@ -20,13 +20,16 @@ model:
       output_key: mlp0
       destinations:
         - GCN0
-      nodes: [-1, 20, 100]
+      nn_parameters:
+        nodes: [-1, 20, 100]
+        activations: ["Identity", "identity"]
 
     - nn_type: GCN
       name: GCN0
       input_keys:
         - mlp0
       output_key: out_feature0
-      nodes: [-1, 5]
       nn_parameters:
+        nodes: [-1, 5]
+        activations: ["identity"]
         support_name: support1

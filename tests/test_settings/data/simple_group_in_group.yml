@@ -23,22 +23,26 @@ model:
   
   modules:
     - nn_type: MLP
-      name: MLP0
+      name: ENCODER0
       input_keys:
         - feature0
       output_key: mlp0
       destinations:
         - SUB_GROUP
-      nodes: [-1, 20, 100]
+      nn_parameters:
+        nodes: [-1, 20, 100]
+        activations: ["relu", "relu"]
 
     - nn_type: MLP
-      name: MLP1
+      name: ENCODER1
       input_keys:
         - feature1
       output_key: mlp1
       destinations:
         - SUB_GROUP
-      nodes: [-1, 20, 200]
+      nn_parameters:
+        nodes: [-1, 20, 200]
+        activations: ["relu", "relu"]
 
     - nn_type: GROUP
       name: SUB_GROUP
@@ -59,8 +63,10 @@ model:
             - mlp0
           output_key: mlp0
           destinations:
-            - MLP2
-          nodes: [-1, 20, 200]
+            - CONCAT
+          nn_parameters:
+            nodes: [-1, 20, 200]
+            activations: ["relu", "relu"]
 
         - nn_type: MLP
           name: MLP1
@@ -68,22 +74,24 @@ model:
             - mlp1
           output_key: mlp1
           destinations:
-            - MLP2
-          nodes: [-1, 20, 100]
+            - CONCAT
+          nn_parameters:
+            nodes: [-1, 20, 200]
+            activations: ["relu", "relu"]
 
-        - nn_type: MLP
-          name: MLP2
+        - nn_type: Concatenator
+          name: CONCAT
           input_keys:
             - mlp0
             - mlp1
           output_key: mlp2
-          nodes: [-1, 400]
 
     - nn_type: GCN
       name: GCN0
       input_keys:
         - mlp2
       output_key: out_feature0
-      nodes: [-1, 5]
       nn_parameters:
+        nodes: [-1, 5]
+        activations: ["identity"]
         support_name: support1

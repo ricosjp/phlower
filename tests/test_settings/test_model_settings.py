@@ -3,7 +3,7 @@ import pathlib
 import pytest
 import yaml
 
-from phlower.settings import GroupModuleSetting, ModuleSetting
+from phlower.settings import GroupModuleSetting
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -54,4 +54,13 @@ def test__detect_duplicate_errors(file_name):
     setting = GroupModuleSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleDuplicateKeyError):
+        setting.resolve(is_first=True)
+
+
+@pytest.mark.parametrize("file_name", ["key_missing_error.yml"])
+def test__detect_key_missing(file_name):
+    data = parse_file(file_name)
+    setting = GroupModuleSetting(**data["model"])
+
+    with pytest.raises(PhlowerModuleKeyError):
         setting.resolve(is_first=True)
