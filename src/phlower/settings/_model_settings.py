@@ -115,6 +115,15 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
         # check last state
         self._check_last_outputs(*results)
 
+    def find_module(
+        self, name: str
+    ) -> ModuleSetting | GroupModuleSetting | None:
+        for v in self.modules:
+            if v.name == name:
+                return v
+
+        return None
+
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _to_input_keys: set[str] = set()
         n_keys: int = 0

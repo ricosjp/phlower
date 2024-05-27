@@ -1,12 +1,12 @@
 misc:
   tests:
-    MLP0: 10
-    MLP1: 12
+    ENCODER0: 10
+    ENCODER1: 12
     SUB_GROUP:
       MLP0: 100
       MLP1: 200
-      MLP2: 300
-    GCN: 400
+      CONCAT: 400
+    GCN0: 400
 
 model:
   nn_type: GROUP

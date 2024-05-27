@@ -1,3 +1,9 @@
+misc:
+
+  tests:
+    MLP0: 10
+    GCN0: 100
+
 
 model:
   nn_type: GROUP

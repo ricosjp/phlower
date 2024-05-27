@@ -3,7 +3,7 @@ import pathlib
 import pytest
 import yaml
 
-from phlower.settings import GroupModuleSetting
+from phlower.settings import GroupModuleSetting, ModuleSetting
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -20,6 +20,22 @@ def parse_file(file_name: str) -> dict:
     return data
 
 
+def _recursive_check(
+    setting: GroupModuleSetting, desired: dict[str, int | dict[str, int]]
+):
+    """check first n dims recursively"""
+
+    for k, v in desired.items():
+        if isinstance(v, dict):
+            _recursive_check(setting.find_module(k), v)
+            continue
+
+        model = setting.find_module(k)
+        assert isinstance(model, ModuleSetting)
+
+        assert model.nn_parameters.get_nodes()[0] == v
+
+
 @pytest.mark.parametrize(
     "file_name", ["simple_module.yml", "simple_group_in_group.yml"]
 )
@@ -28,6 +44,8 @@ def test__can_resolve_phlower_networks(file_name):
 
     setting = GroupModuleSetting(**data["model"])
     setting.resolve(is_first=True)
+
+    _recursive_check(setting, data["misc"]["tests"])
 
 
 @pytest.mark.parametrize("file_name", ["cycle_error.yml"])
