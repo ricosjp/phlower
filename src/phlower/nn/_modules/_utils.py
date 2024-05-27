@@ -75,3 +75,7 @@ class ActivationSelector:
     @staticmethod
     def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
         return ActivationSelector._REGISTERED_ACTIVATIONS[name]
+
+    @staticmethod
+    def is_exists(name: str) -> bool:
+        return name in ActivationSelector._REGISTERED_ACTIVATIONS

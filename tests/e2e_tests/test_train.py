@@ -87,9 +87,7 @@ def test__simple_training(prepare_sample_preprocessed_files):
 
     # loss_function = torch.nn.functional.mse_loss
     loss_function = LossCalculator.from_dict(name2loss={"nodal_last_u": "mse"})
-    model = GCN(
-        nodes=[1, 16, 1], input_key="nodal_initial_u", support_name="nodal_nadj"
-    )
+    model = GCN(nodes=[1, 16, 1], support_name="nodal_nadj")
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
     counter = 0

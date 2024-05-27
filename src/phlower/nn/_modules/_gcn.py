@@ -1,37 +1,61 @@
 from __future__ import annotations
 
 import pydantic
-import pydantic.dataclasses as dc
 import torch
+from pydantic import Field
 from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._interface_layer import IPhlowerLayer
-from phlower.nn._layers import _utils
+from phlower.nn._interface_layer import (
+    IPhlowerCoreModule,
+    IPhlowerLayerParameters,
+)
+from phlower.nn._modules import _utils
 
 
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class GCNResolvedSetting:
-    nodes: list[int]
-    input_key: str
-    support_name: str
+class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
+    nodes: list[int] = Field(
+        ...
+    )  # This property only overwritten when resolving.
+    support_name: str = Field(..., frozen=True)
+    repeat: int = Field(1, frozen=True)
+    factor: float = Field(1.0, frozen=True)
+    activations: list[str] = Field(default_factory=lambda: [], frozen=True)
+    dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
+    bias: bool = Field(False, frozen=True)
 
-    repeat: int = 1
-    factor: float = 1.0
-    activations: list[str] = pydantic.Field(default_factory=lambda: [])
-    dropouts: list[float] = pydantic.Field(default_factory=lambda: [])
-    bias: bool = False
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    @classmethod
+    def gather_input_dims(cls, *input_dims: int) -> int:
+        if len(input_dims) != 1:
+            raise ValueError("only one input is allowed in GCN.")
+        return input_dims[0]
 
     @pydantic.field_validator("nodes")
     @classmethod
-    def check_n_nodes(cls, v: list[int]) -> list[int]:
-        if len(v) < 2:
+    def check_n_nodes(cls, vals: list[int]) -> list[int]:
+        if len(vals) < 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in GCNSettings."
-                f" input: {len(v)}"
+                f" input: {vals}"
             )
-        return v
+
+        for i, v in enumerate(vals):
+            if v > 0:
+                continue
+
+            if (i == 0) and (v == -1):
+                continue
+
+            raise ValueError(
+                "nodes in GCN is inconsistent. "
+                f"value {v} in {i}-th of nodes is not allowed."
+            )
+
+        return vals
 
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
@@ -43,16 +67,25 @@ class GCNResolvedSetting:
             )
         return self
 
+    def get_nodes(self) -> list[int]:
+        return self.nodes
 
-class GCN(IPhlowerLayer, torch.nn.Module):
+    def overwrite_nodes(self, nodes: list[int]) -> None:
+        self.nodes = nodes
+
+
+class GCN(IPhlowerCoreModule, torch.nn.Module):
     @classmethod
-    def create(cls, setting: GCNResolvedSetting) -> GCN:
+    def from_setting(cls, setting: GCNSetting) -> GCN:
         return GCN(**setting.__dict__)
+
+    @classmethod
+    def get_nn_name(cls):
+        return "GCN"
 
     def __init__(
         self,
         nodes: list[int],
-        input_key: str,
         support_name: str,
         activations: list[str] = None,
         dropouts: list[float] = None,
@@ -72,7 +105,6 @@ class GCN(IPhlowerLayer, torch.nn.Module):
         )
         self._nodes = nodes
         self._activations = activations
-        self._input_key = input_key
         self._support_name = support_name
         self._repeat = repeat
         self._factor = factor
@@ -82,9 +114,9 @@ class GCN(IPhlowerLayer, torch.nn.Module):
         data: IPhlowerTensorCollections,
         *,
         supports: dict[str, PhlowerTensor],
-    ) -> IPhlowerTensorCollections:
+    ) -> PhlowerTensor:
         support = supports[self._support_name]
-        h = data[self._input_key]
+        h = data.unique_item()
         for i in range(len(self._chains)):
             h = self._propagate(h, support)
             h = self._chains.forward(h, index=i)

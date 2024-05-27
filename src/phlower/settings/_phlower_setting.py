@@ -1,4 +1,6 @@
-from typing import Any, Iterable
+from __future__ import annotations
+
+from typing import Iterable
 
 import pydantic
 from pydantic import dataclasses as dc
@@ -20,19 +22,6 @@ class PhlowerTrainerSetting:
     variable_dimensions: dict[str, dict[str, float]] = pydantic.Field(
         default_factory=lambda: {}
     )
-
-
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class ModelSetting: ...
-
-
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class LayerSetting:
-    type: str
-    input_keys: list[str]
-    output_key: str
-    destinations: list[str]
-    parameters: dict[str, Any]
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
