@@ -33,7 +33,7 @@ def _recursive_check(
         model = setting.find_module(k)
         assert isinstance(model, ModuleSetting)
 
-        assert model.nn_parameters.get_nodes()[0] == v
+        assert model.nn_parameters.get_n_nodes()[0] == v
 
 
 @pytest.mark.parametrize(

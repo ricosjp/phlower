@@ -229,7 +229,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         return self.destinations
 
     def get_output_info(self) -> dict[str, int]:
-        return {self.output_key: self.nn_parameters.get_nodes()[-1]}
+        return {self.output_key: self.nn_parameters.get_n_nodes()[-1]}
 
     def resolve(self, *resolved_outputs: dict[str, int]) -> None:
         self._check_keys(*resolved_outputs)
@@ -272,7 +272,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
                 f"inputs for {self.name} have problems. {ex}"
             )
 
-        nodes = self.nn_parameters.get_nodes()
+        nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:
             return [first_node, first_node]
 

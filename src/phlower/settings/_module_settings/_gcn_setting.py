@@ -60,7 +60,7 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
         return self
 
-    def get_nodes(self) -> list[int]:
+    def get_n_nodes(self) -> list[int]:
         return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:

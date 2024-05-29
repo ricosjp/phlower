@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing_extensions import Self
 
+import pathlib
 import dagstream
-from dagstream.viewers import MermaidDrawer
 import torch
 
 from phlower import PhlowerTensor
@@ -19,6 +19,7 @@ from phlower.nn._interface_module import (
 )
 from phlower.nn._core_modules import get_module
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
+from phlower.services.drawers import MermaidDrawer
 
 
 class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
@@ -73,6 +74,12 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
     def name(self) -> str:
         return self._name
 
+    def get_display_info(self) -> str:
+        return f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
+
+    def get_n_nodes(self) -> list[int]:
+        return None
+
     def resolve(self):
         for module in self._phlower_modules:
             module.resolve()
@@ -93,7 +100,21 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
         return stream
 
-    def draw(self): ...
+    def draw(self, output_directory: pathlib.Path | str, recursive: bool = True):
+        
+        # TODO: Need to apply Dependency Injection. Use composition pattern.
+        drawer = MermaidDrawer()
+
+        if isinstance(output_directory, str):
+            output_directory = pathlib.Path(output_directory)
+
+        drawer.output(self._phlower_modules, output_directory / f"{self.name}.mmd")
+
+        if not recursive:
+            return
+
+        for module in self._phlower_modules:
+            module.draw(output_directory, recursive=recursive)
 
     def forward(
         self,
@@ -117,9 +138,7 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
                     node.receive_args(inputs)
 
                 args = reduce_collections(node.get_received_args())
-
                 _module: PhlowerModuleAdapter = node.get_user_function()
-
                 _result = _module.forward(args, supports=supports)
 
                 dag_modules.send(node.mut_name, _result)

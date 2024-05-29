@@ -54,7 +54,7 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
         return self
 
-    def get_nodes(self) -> list[int] | None:
+    def get_n_nodes(self) -> list[int] | None:
         return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:

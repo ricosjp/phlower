@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing_extensions import Self
 
 import dagstream
@@ -30,7 +31,15 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         cls, setting: ModuleSetting
     ) -> PhlowerModuleAdapter:
         layer = get_module(setting.nn_type).from_setting(setting.nn_parameters)
-        return cls(layer, **setting.__dict__)
+        return cls(
+            layer,
+            name=setting.name,
+            input_keys=setting.input_keys,
+            output_key=setting.output_key,
+            destinations=setting.destinations,
+            no_grad=setting.no_grad,
+            n_nodes=setting.nn_parameters.get_n_nodes()
+        )
 
     def __init__(
         self, 
@@ -40,20 +49,30 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         output_key: str,
         destinations: list[str],
         no_grad: bool,
-        **kwards
+        n_nodes: list[int]
     ) -> None:
         super().__init__()
         self._layer = layer
-        self._name: str = name
+        self._name = name
         self._no_grad = no_grad
-        self._input_keys: list[str] = input_keys
+        self._input_keys = input_keys
         self._destinations = destinations
-        self._output_key: str = output_key
+        self._output_key = output_key
+        self._n_nodes = n_nodes
 
     def get_destinations(self) -> list[str]:
         return self._destinations
 
     def resolve(self) -> None: ...
+
+    def get_n_nodes(self) -> list[int]:
+        return self._n_nodes
+
+    def get_display_info(self) -> str:
+        return f"nn_type: {self._layer.get_nn_name()}\nn_nodes: {self.get_n_nodes()}"
+
+    def draw(self, output_directory: Path, recursive: bool):
+        ...
 
     @property
     def name(self) -> str:

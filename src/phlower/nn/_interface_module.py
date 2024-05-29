@@ -1,6 +1,7 @@
 import abc
 
 from typing_extensions import Self
+import pathlib
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -46,3 +47,13 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_destinations(self) -> list[str]: ...
+
+    @abc.abstractmethod
+    def get_n_nodes(self) -> list[int]: ...
+
+    @abc.abstractmethod
+    def get_display_info(self) -> str: ...
+
+    @abc.abstractmethod
+    def draw(self, output_directory: pathlib.Path, recursive: bool):
+        ...
