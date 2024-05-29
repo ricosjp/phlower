@@ -1,24 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing_extensions import Self
 
-import dagstream
-from dagstream.viewers import MermaidDrawer
 import torch
 
 from phlower import PhlowerTensor
-from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
-    reduce_collections
 )
+from phlower.nn._core_modules import get_module
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IPhlowerModuleAdapter,
 )
-from phlower.nn._core_modules import get_module
+from phlower.settings._model_settings import ModuleSetting
 
 
 class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
@@ -27,9 +23,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
     """
 
     @classmethod
-    def from_setting(
-        cls, setting: ModuleSetting
-    ) -> PhlowerModuleAdapter:
+    def from_setting(cls, setting: ModuleSetting) -> PhlowerModuleAdapter:
         layer = get_module(setting.nn_type).from_setting(setting.nn_parameters)
         return cls(
             layer,
@@ -38,18 +32,18 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
             output_key=setting.output_key,
             destinations=setting.destinations,
             no_grad=setting.no_grad,
-            n_nodes=setting.nn_parameters.get_n_nodes()
+            n_nodes=setting.nn_parameters.get_n_nodes(),
         )
 
     def __init__(
-        self, 
+        self,
         layer: IPhlowerCoreModule,
         name: str,
         input_keys: list[str],
         output_key: str,
         destinations: list[str],
         no_grad: bool,
-        n_nodes: list[int]
+        n_nodes: list[int],
     ) -> None:
         super().__init__()
         self._layer = layer
@@ -69,10 +63,12 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         return self._n_nodes
 
     def get_display_info(self) -> str:
-        return f"nn_type: {self._layer.get_nn_name()}\nn_nodes: {self.get_n_nodes()}"
+        return (
+            f"nn_type: {self._layer.get_nn_name()}\n"
+            f"n_nodes: {self.get_n_nodes()}"
+        )
 
-    def draw(self, output_directory: Path, recursive: bool):
-        ...
+    def draw(self, output_directory: Path, recursive: bool): ...
 
     @property
     def name(self) -> str:
@@ -95,5 +91,3 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
             result = self._layer.forward(inputs, supports=supports)
 
         return phlower_tensor_collection({self._output_key: result})
-
-

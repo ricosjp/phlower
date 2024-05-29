@@ -1,25 +1,21 @@
 from __future__ import annotations
 
-from typing_extensions import Self
-
 import pathlib
+
 import dagstream
 import torch
+from typing_extensions import Self
 
 from phlower import PhlowerTensor
-from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
-    reduce_collections
+    reduce_collections,
 )
-from phlower.nn._interface_module import (
-    IPhlowerCoreModule,
-    IPhlowerModuleAdapter,
-)
-from phlower.nn._core_modules import get_module
+from phlower.nn._interface_module import IPhlowerModuleAdapter
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
+from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
 
 
 class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
@@ -46,7 +42,7 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
             no_grad=setting.no_grad,
             input_keys=setting.get_input_keys(),
             output_keys=setting.get_output_keys(),
-            destinations=setting.destinations
+            destinations=setting.destinations,
         )
 
     def __init__(
@@ -75,7 +71,9 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
         return self._name
 
     def get_display_info(self) -> str:
-        return f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
+        return (
+            f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
+        )
 
     def get_n_nodes(self) -> list[int]:
         return None
@@ -100,15 +98,19 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
         return stream
 
-    def draw(self, output_directory: pathlib.Path | str, recursive: bool = True):
-        
+    def draw(
+        self, output_directory: pathlib.Path | str, recursive: bool = True
+    ):
+
         # TODO: Need to apply Dependency Injection. Use composition pattern.
         drawer = MermaidDrawer()
 
         if isinstance(output_directory, str):
             output_directory = pathlib.Path(output_directory)
 
-        drawer.output(self._phlower_modules, output_directory / f"{self.name}.mmd")
+        drawer.output(
+            self._phlower_modules, output_directory / f"{self.name}.mmd"
+        )
 
         if not recursive:
             return
@@ -151,4 +153,3 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
     def get_destinations(self) -> list[str]:
         return self._destinations
-

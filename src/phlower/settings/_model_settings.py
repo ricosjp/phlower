@@ -10,6 +10,11 @@ from pydantic import Field, ValidationInfo
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
+from phlower.settings._interface import IPhlowerLayerParameters
+from phlower.settings._module_settings import (
+    gather_input_dims,
+    parse_parameter_setting,
+)
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -17,9 +22,6 @@ from phlower.utils.exceptions import (
     PhlowerModuleKeyError,
     PhlowerModuleNodeDimSizeError,
 )
-
-from phlower.settings._module_settings import gather_input_dims, parse_parameter_setting
-from phlower.settings._interface import IPhlowerLayerParameters
 
 
 class IModuleSetting(metaclass=abc.ABCMeta):
@@ -50,9 +52,7 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
     destinations: list[str] = Field(default_factory=lambda: [])
     nn_type: Literal["GROUP"] = "GROUP"
     no_grad: bool = False
-    support_names: list[str] = pydantic.Field(
-        default_factory=lambda: []
-    )
+    support_names: list[str] = pydantic.Field(default_factory=lambda: [])
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -216,9 +216,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     def validate_nn_parameters(cls, vals, info: ValidationInfo):
         # MAYBE pydantic union feature is useful
         try:
-            return parse_parameter_setting(
-                name=info.data["nn_type"], **vals
-            )
+            return parse_parameter_setting(name=info.data["nn_type"], **vals)
         except pydantic.ValidationError as ex:
             name = info.data.get("name")
             raise ValueError(

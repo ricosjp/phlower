@@ -1,12 +1,11 @@
 import abc
+import pathlib
 
 from typing_extensions import Self
-import pathlib
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._interface import IPhlowerLayerParameters
-
 
 
 class IPhlowerCoreModule(metaclass=abc.ABCMeta):
@@ -14,8 +13,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
     def from_setting(cls, setting: IPhlowerLayerParameters) -> Self: ...
 
     @abc.abstractclassmethod
-    def get_parameter_setting_cls(cls) -> IPhlowerLayerParameters:
-        ...
+    def get_parameter_setting_cls(cls) -> IPhlowerLayerParameters: ...
 
     @abc.abstractclassmethod
     def get_nn_name(cls) -> str: ...
@@ -55,5 +53,4 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def get_display_info(self) -> str: ...
 
     @abc.abstractmethod
-    def draw(self, output_directory: pathlib.Path, recursive: bool):
-        ...
+    def draw(self, output_directory: pathlib.Path, recursive: bool): ...

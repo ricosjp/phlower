@@ -1,1 +1,2 @@
-from phlower.services.drawers.mermaid_drawer import IDrawer, MermaidDrawer
+from phlower.services.drawers._interface import IPhlowerDrawer
+from phlower.services.drawers.mermaid_drawer import MermaidDrawer

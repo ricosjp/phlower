@@ -51,9 +51,7 @@ class LossCalculator(ILossCalculator):
         name2weight: dict[str, float] = None,
         user_loss_functions: dict[str, LossFunctionType] = None,
     ) -> LossCalculator:
-        loss_setting = LossSetting(
-            name2loss=name2loss, name2weight=name2weight
-        )
+        loss_setting = LossSetting(name2loss=name2loss, name2weight=name2weight)
 
         return cls(
             setting=loss_setting, user_loss_functions=user_loss_functions

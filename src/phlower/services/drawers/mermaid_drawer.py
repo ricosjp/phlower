@@ -1,23 +1,19 @@
-import abc
 import pathlib
 from typing import Union
 
 from phlower.nn._interface_module import IPhlowerModuleAdapter
+from phlower.services.drawers._interface import IPhlowerDrawer
 
 
-class IDrawer(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def output(self, modules: list[IPhlowerModuleAdapter], file_path: pathlib.Path) -> None:
-        ...
-
-
-class MermaidDrawer(IDrawer):
+class MermaidDrawer(IPhlowerDrawer):
     def __init__(self) -> None:
         self._spliter = "\n" + " " * 4
         self._dir = "LR"
 
     def output(
-        self, modules: list[IPhlowerModuleAdapter], file_path: Union[pathlib.Path, str]
+        self,
+        modules: list[IPhlowerModuleAdapter],
+        file_path: Union[pathlib.Path, str],
     ) -> None:
         """output content to file_path
 

@@ -39,4 +39,3 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
-

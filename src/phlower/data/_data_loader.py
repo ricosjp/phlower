@@ -1,9 +1,9 @@
 import random
-from typing_extensions import Self
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from typing_extensions import Self
 
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
@@ -19,7 +19,7 @@ class DataLoaderBuilder:
             variable_dimensions=setting.variable_dimensions,
             random_seed=setting.random_seed,
             batch_size=setting.batch_size,
-            num_workers=setting.num_workers
+            num_workers=setting.num_workers,
         )
 
     def __init__(
@@ -29,7 +29,7 @@ class DataLoaderBuilder:
         variable_dimensions: dict[str, dict[str, float]],
         random_seed: int,
         batch_size: int,
-        num_workers: int
+        num_workers: int,
     ) -> None:
         self._non_blocking = non_blocking
         self._device = device
@@ -45,8 +45,8 @@ class DataLoaderBuilder:
         shuffle: bool = True,
         disable_dimensions: bool = False
     ) -> DataLoader:
-        
-        #NOTE: Arguments are variables which are different between datasets
+
+        # NOTE: Arguments are variables which are different between datasets
         dimensions = None if disable_dimensions else self._variable_dimensions
         _collate_fn = PhlowerCollateFn(
             device=self._device,

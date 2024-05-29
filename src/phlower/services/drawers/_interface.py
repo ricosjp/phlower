@@ -1,31 +1,11 @@
 import abc
+import pathlib
+
+from phlower.nn._interface_module import IPhlowerModuleAdapter
 
 
-class IPhlowerDrawableModule(metaclass=abc.ABCMeta):
-    @property
+class IPhlowerDrawer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def name(self) -> str: ...
-
-    @property
-    def is_group(self) -> bool:
-        ...
-
-    @abc.abstractmethod
-    def resolve(self) -> None: ...
-
-    @abc.abstractmethod
-    def forward(
-        self,
-        data: IPhlowerTensorCollections,
-        *,
-        supports: dict[str, PhlowerTensor]
-    ) -> IPhlowerTensorCollections: ...
-
-    @abc.abstractmethod
-    def get_destinations(self) -> list[str]: ...
-
-    @abc.abstractmethod
-    def get_n_nodes(self) -> list[int]: ...
-
-    @abc.abstractmethod
-    def get_display_info(self) -> str: ...
+    def output(
+        self, modules: list[IPhlowerModuleAdapter], file_path: pathlib.Path
+    ) -> None: ...
