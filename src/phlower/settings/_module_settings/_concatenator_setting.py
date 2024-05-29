@@ -1,17 +1,9 @@
 from __future__ import annotations
 
 import pydantic
-import torch
 from pydantic import Field
-from typing_extensions import Self
 
-from phlower._base.tensors import PhlowerTensor
-from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._interface_layer import (
-    IPhlowerCoreModule,
-    IPhlowerLayerParameters,
-)
-from phlower.nn._modules import _utils
+from phlower.settings._interface import IPhlowerLayerParameters
 
 
 class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
@@ -48,25 +40,3 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
 
-
-class Concatenator(IPhlowerCoreModule, torch.nn.Module):
-    @classmethod
-    def from_setting(cls, setting: ConcatenatorSetting) -> Self:
-        return Concatenator(**setting.__dict__)
-
-    @classmethod
-    def get_nn_name(cls):
-        return "Concatenator"
-
-    def __init__(self, activation: str, nodes: list[int] = None):
-        self._nodes = nodes
-        self._activation_name = activation
-        self._activation_func = _utils.ActivationSelector.select(activation)
-
-    def forward(
-        self,
-        data: IPhlowerTensorCollections,
-        *,
-        supports: dict[str, PhlowerTensor] = None,
-    ) -> PhlowerTensor:
-        return self._activation_func(torch.cat(data.values(), dim=-1))

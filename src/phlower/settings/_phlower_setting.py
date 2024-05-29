@@ -1,14 +1,27 @@
 from __future__ import annotations
 
+import yaml
+import pathlib
 from typing import Iterable
+from typing_extensions import Self
 
 import pydantic
 from pydantic import dataclasses as dc
 
+from phlower.settings._model_settings import GroupModuleSetting
+
 
 @dc.dataclass(frozen=True)
 class PhlowerSetting:
-    data_setting: dict
+    trainer: PhlowerTrainerSetting
+    model: GroupModuleSetting
+
+    @classmethod
+    def read_yaml(cls, file_path: pathlib.Path | str) -> Self:
+        with open(file_path) as fr:
+            data = yaml.load(fr, yaml.SafeLoader)
+        
+        return PhlowerSetting(**data)
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))

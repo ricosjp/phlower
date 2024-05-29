@@ -15,6 +15,9 @@ def _to_tensor(
     non_blocking: bool = False,
     dimensions: dict[str, dict[str, float]] = None,
 ) -> IPhlowerTensorCollections:
+    if dimensions is None:
+        dimensions = {}
+
     return phlower_tensor_collection(
         {
             k: v.to_phlower_tensor(

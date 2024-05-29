@@ -55,6 +55,10 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def unique_item(self) -> PhlowerTensor: ...
 
+    @abc.abstractmethod
+    def update(self, data: IPhlowerTensorCollections) -> None:
+        ...
+
 
 def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
 
@@ -132,3 +136,17 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
         key = list(self.keys())[0]
         return self[key]
+
+    def update(self, data: IPhlowerTensorCollections, overwrite: bool = False) -> None:
+        for k in data.keys():
+            if (k in self) and (not overwrite):
+                raise ValueError(f"{k} already exists. If you want to overwrite it, use overwrite=True")
+            
+            self._x[k] = data[k]
+
+
+def reduce_collections(values: list[IPhlowerTensorCollections]) -> IPhlowerTensorCollections:
+    result = phlower_tensor_collection({})
+    for v in values:
+        result.update(v)
+    return result

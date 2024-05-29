@@ -4,22 +4,17 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
+from phlower.settings._interface import IPhlowerLayerParameters
 
-
-class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
-    def gather_input_dims(cls, *input_dims: int) -> int: ...
-
-    @abc.abstractmethod
-    def get_nodes(self) -> list[int] | None: ...
-
-    @abc.abstractmethod
-    def overwrite_nodes(self, nodes: list[int]) -> None: ...
 
 
 class IPhlowerCoreModule(metaclass=abc.ABCMeta):
     @abc.abstractclassmethod
     def from_setting(cls, setting: IPhlowerLayerParameters) -> Self: ...
+
+    @abc.abstractclassmethod
+    def get_parameter_setting_cls(cls) -> IPhlowerLayerParameters:
+        ...
 
     @abc.abstractclassmethod
     def get_nn_name(cls) -> str: ...
@@ -39,7 +34,7 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def name(self) -> str: ...
 
     @abc.abstractmethod
-    def construct(self) -> None: ...
+    def resolve(self) -> None: ...
 
     @abc.abstractmethod
     def forward(

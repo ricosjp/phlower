@@ -12,24 +12,27 @@ from phlower.settings._phlower_setting import PhlowerTrainerSetting
 class DataLoaderBuilder:
     def __init__(self, setting: PhlowerTrainerSetting) -> None:
         self._setting = setting
-        self._collate_fn = PhlowerCollateFn(
-            device=self._setting.device,
-            non_blocking=self._setting.non_blocking,
-            dimensions=setting.variable_dimensions,
-        )
 
     def create(
         self,
         dataset: IPhlowerDataset,
         *,
         shuffle: bool = True,
+        disable_dimensions: bool = False
     ) -> DataLoader:
+        
+        dimensions = None if disable_dimensions else self._setting.variable_dimensions
+        _collate_fn = PhlowerCollateFn(
+            device=self._setting.device,
+            non_blocking=self._setting.non_blocking,
+            dimensions=dimensions,
+        )
 
         random_generator = torch.Generator()
         random_generator.manual_seed(self._setting.random_seed)
         data_loader = DataLoader(
             dataset,
-            collate_fn=self._collate_fn,
+            collate_fn=_collate_fn,
             batch_size=self._setting.batch_size,
             shuffle=shuffle,
             num_workers=self._setting.num_workers,
