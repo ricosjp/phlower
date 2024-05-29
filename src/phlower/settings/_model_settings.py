@@ -50,6 +50,9 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
     destinations: list[str] = Field(default_factory=lambda: [])
     nn_type: Literal["GROUP"] = "GROUP"
     no_grad: bool = False
+    support_names: list[str] = pydantic.Field(
+        default_factory=lambda: []
+    )
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)

@@ -23,9 +23,9 @@ class PhlowerSetting:
         
         return PhlowerSetting(**data)
 
-
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
 class PhlowerTrainerSetting:
+    loss_setting: LossSetting
     random_seed: int = 0
     batch_size: int = 1
     num_workers: int = 1
@@ -38,7 +38,7 @@ class PhlowerTrainerSetting:
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class LossSettings:
+class LossSetting:
     name2loss: dict[str, str]
     name2weight: dict[str, str] | None = None
 
