@@ -5,14 +5,10 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
-import torch
 
-from phlower.collections.tensors import phlower_tensor_collection
-from phlower.data import DataLoaderBuilder, LazyPhlowerDataset
 from phlower.io import PhlowerDirectory
-from phlower.nn import GCN
-from phlower.services.loss_operations import LossCalculator
-from phlower.settings import PhlowerTrainerSetting
+from phlower.services.trainer import PhlowerTrainer
+from phlower.settings import PhlowerSetting
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp"
 
@@ -60,51 +56,22 @@ def test__simple_training(prepare_sample_preprocessed_files):
     path = _OUTPUT_DIR
     phlower_path = PhlowerDirectory(path)
 
-    targets = [
+    preprocessed_directories = [
         p
         for p in phlower_path.find_directory(
             required_filename="preprocessed", recursive=True
         )
     ]
 
-    dataset = LazyPhlowerDataset(
-        x_variable_names=["nodal_initial_u"],
-        y_variable_names=["nodal_last_u"],
-        support_names=["nodal_nadj"],
-        directories=targets,
+    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/setting.yml")
+    setting.model.resolve(is_first=True)
+
+    trainer = PhlowerTrainer(setting)
+
+    model, loss = trainer.train(
+        preprocessed_directories=preprocessed_directories, n_epoch=2
     )
 
-    setting = PhlowerTrainerSetting(
-        variable_dimensions={
-            "nodal_initial_u": {"length": 1, "time": -1},
-            "nodal_last_u": {"length": 1, "time": -1},
-            "nodal_nadj": {},
-        }
-    )
-    builder = DataLoaderBuilder(setting)
+    model.draw(_OUTPUT_DIR)
 
-    data_loader = builder.create(dataset, shuffle=True)
-
-    # loss_function = torch.nn.functional.mse_loss
-    loss_function = LossCalculator.from_dict(name2loss={"nodal_last_u": "mse"})
-    model = GCN(nodes=[1, 16, 1], support_name="nodal_nadj")
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
-    counter = 0
-    for batch in data_loader:
-        optimizer.zero_grad()
-
-        h = model.forward(batch.x_data, supports=batch.sparse_supports)
-
-        dict_data = phlower_tensor_collection({"nodal_last_u": h})
-        losses = loss_function.calculate(dict_data, batch.y_data)
-        loss = loss_function.aggregate(losses)
-        loss.backward()
-
-        optimizer.step()
-
-        assert loss.has_dimension
-        counter += 1
-
-    # confirm that codes in the loop has finished
-    assert counter == len(dataset)
+    assert loss.has_dimension

@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from typing_extensions import Self
 
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
@@ -10,29 +11,57 @@ from phlower.settings._phlower_setting import PhlowerTrainerSetting
 
 
 class DataLoaderBuilder:
-    def __init__(self, setting: PhlowerTrainerSetting) -> None:
-        self._setting = setting
-        self._collate_fn = PhlowerCollateFn(
-            device=self._setting.device,
-            non_blocking=self._setting.non_blocking,
-            dimensions=setting.variable_dimensions,
+    @classmethod
+    def from_setting(cls, setting: PhlowerTrainerSetting) -> Self:
+        return DataLoaderBuilder(
+            non_blocking=setting.non_blocking,
+            device=setting.device,
+            variable_dimensions=setting.variable_dimensions,
+            random_seed=setting.random_seed,
+            batch_size=setting.batch_size,
+            num_workers=setting.num_workers,
         )
+
+    def __init__(
+        self,
+        non_blocking: bool,
+        device: str,
+        variable_dimensions: dict[str, dict[str, float]],
+        random_seed: int,
+        batch_size: int,
+        num_workers: int,
+    ) -> None:
+        self._non_blocking = non_blocking
+        self._device = device
+        self._variable_dimensions = variable_dimensions
+        self._random_seed = random_seed
+        self._batch_size = batch_size
+        self._num_workers = num_workers
 
     def create(
         self,
         dataset: IPhlowerDataset,
         *,
         shuffle: bool = True,
+        disable_dimensions: bool = False
     ) -> DataLoader:
 
+        # NOTE: Arguments are variables which are different between datasets
+        dimensions = None if disable_dimensions else self._variable_dimensions
+        _collate_fn = PhlowerCollateFn(
+            device=self._device,
+            non_blocking=self._non_blocking,
+            dimensions=dimensions,
+        )
+
         random_generator = torch.Generator()
-        random_generator.manual_seed(self._setting.random_seed)
+        random_generator.manual_seed(self._random_seed)
         data_loader = DataLoader(
             dataset,
-            collate_fn=self._collate_fn,
-            batch_size=self._setting.batch_size,
+            collate_fn=_collate_fn,
+            batch_size=self._batch_size,
             shuffle=shuffle,
-            num_workers=self._setting.num_workers,
+            num_workers=self._num_workers,
             worker_init_fn=_seed_worker,
             generator=random_generator,
         )

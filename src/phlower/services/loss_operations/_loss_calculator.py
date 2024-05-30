@@ -10,7 +10,7 @@ from phlower.collections.tensors import (
     phlower_tensor_collection,
 )
 from phlower.services.loss_operations._loss_functions import get_loss_function
-from phlower.settings._phlower_setting import LossSettings
+from phlower.settings._phlower_setting import LossSetting, PhlowerTrainerSetting
 from phlower.utils.typing import LossFunctionType
 
 
@@ -34,15 +34,24 @@ class ILossCalculator(metaclass=abc.ABCMeta):
 
 class LossCalculator(ILossCalculator):
     @classmethod
+    def from_setting(
+        cls,
+        setting: PhlowerTrainerSetting,
+        user_loss_functions: dict[str, LossFunctionType] = None,
+    ) -> LossCalculator:
+        loss_setting = setting.loss_setting
+        return cls(
+            setting=loss_setting, user_loss_functions=user_loss_functions
+        )
+
+    @classmethod
     def from_dict(
         cls,
         name2loss: dict[str, str],
         name2weight: dict[str, float] = None,
         user_loss_functions: dict[str, LossFunctionType] = None,
     ) -> LossCalculator:
-        loss_setting = LossSettings(
-            name2loss=name2loss, name2weight=name2weight
-        )
+        loss_setting = LossSetting(name2loss=name2loss, name2weight=name2weight)
 
         return cls(
             setting=loss_setting, user_loss_functions=user_loss_functions
@@ -50,7 +59,7 @@ class LossCalculator(ILossCalculator):
 
     def __init__(
         self,
-        setting: LossSettings,
+        setting: LossSetting,
         *,
         user_loss_functions: dict[str, LossFunctionType] = None,
     ):

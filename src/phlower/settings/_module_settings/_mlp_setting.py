@@ -1,17 +1,10 @@
 from __future__ import annotations
 
 import pydantic
-import torch
 from pydantic import Field
 from typing_extensions import Self
 
-from phlower._base.tensors import PhlowerTensor
-from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._interface_layer import (
-    IPhlowerCoreModule,
-    IPhlowerLayerParameters,
-)
-from phlower.nn._modules import _utils
+from phlower.settings._interface import IPhlowerLayerParameters
 
 
 class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
@@ -61,51 +54,8 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
         return self
 
-    def get_nodes(self) -> list[int] | None:
+    def get_n_nodes(self) -> list[int] | None:
         return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
-
-
-class MLP(IPhlowerCoreModule, torch.nn.Module):
-    """Multi Layer Perceptron."""
-
-    @classmethod
-    def from_setting(cls, setting: MLPSetting) -> Self:
-        return MLP(**setting.__dict__)
-
-    @classmethod
-    def get_nn_name(cls):
-        return "MLP"
-
-    def __init__(
-        self,
-        nodes: list[int],
-        activations: list[str] = None,
-        dropouts: list[float] = None,
-        bias: bool = False,
-    ) -> None:
-        super().__init__()
-
-        if activations is None:
-            activations = []
-        if dropouts is None:
-            dropouts = []
-
-        self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
-        )
-        self._nodes = nodes
-        self._activations = activations
-
-    def forward(
-        self,
-        data: IPhlowerTensorCollections,
-        *,
-        supports: dict[str, PhlowerTensor] = None,
-    ) -> PhlowerTensor:
-        h = data.unique_item()
-        for i in range(len(self._chains)):
-            h = self._chains.forward(h, index=i)
-        return h

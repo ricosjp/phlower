@@ -10,8 +10,11 @@ from pydantic import Field, ValidationInfo
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
-import phlower.nn
-from phlower.nn import IPhlowerLayerParameters
+from phlower.settings._interface import IPhlowerLayerParameters
+from phlower.settings._module_settings import (
+    gather_input_dims,
+    parse_parameter_setting,
+)
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -48,6 +51,8 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
     modules: list[ModuleSetting | GroupModuleSetting]
     destinations: list[str] = Field(default_factory=lambda: [])
     nn_type: Literal["GROUP"] = "GROUP"
+    no_grad: bool = False
+    support_names: list[str] = pydantic.Field(default_factory=lambda: [])
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -89,6 +94,9 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
 
     def get_destinations(self) -> list[str]:
         return self.destinations
+
+    def get_input_keys(self) -> list[str]:
+        return [v.name for v in self.inputs]
 
     def get_output_keys(self) -> list[str]:
         return [v.name for v in self.outputs]
@@ -208,9 +216,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     def validate_nn_parameters(cls, vals, info: ValidationInfo):
         # MAYBE pydantic union feature is useful
         try:
-            return phlower.nn.parse_parameter_setting(
-                name=info.data["nn_type"], **vals
-            )
+            return parse_parameter_setting(name=info.data["nn_type"], **vals)
         except pydantic.ValidationError as ex:
             name = info.data.get("name")
             raise ValueError(
@@ -224,7 +230,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         return self.destinations
 
     def get_output_info(self) -> dict[str, int]:
-        return {self.output_key: self.nn_parameters.get_nodes()[-1]}
+        return {self.output_key: self.nn_parameters.get_n_nodes()[-1]}
 
     def resolve(self, *resolved_outputs: dict[str, int]) -> None:
         self._check_keys(*resolved_outputs)
@@ -259,7 +265,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
             key2node.update(output)
 
         try:
-            first_node = phlower.nn.gather_input_dims(
+            first_node = gather_input_dims(
                 self.nn_type, *(key2node[key] for key in self.input_keys)
             )
         except ValueError as ex:
@@ -267,7 +273,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
                 f"inputs for {self.name} have problems. {ex}"
             )
 
-        nodes = self.nn_parameters.get_nodes()
+        nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:
             return [first_node, first_node]
 
