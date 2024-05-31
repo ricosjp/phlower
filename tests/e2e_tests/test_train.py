@@ -71,7 +71,6 @@ def test__simple_training(prepare_sample_preprocessed_files):
     model, loss = trainer.train(
         preprocessed_directories=preprocessed_directories, n_epoch=2
     )
-
     model.draw(_OUTPUT_DIR)
 
     assert loss.has_dimension

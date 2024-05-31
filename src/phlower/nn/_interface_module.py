@@ -13,9 +13,6 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
     def from_setting(cls, setting: IPhlowerLayerParameters) -> Self: ...
 
     @abc.abstractclassmethod
-    def get_parameter_setting_cls(cls) -> IPhlowerLayerParameters: ...
-
-    @abc.abstractclassmethod
     def get_nn_name(cls) -> str: ...
 
     @abc.abstractmethod

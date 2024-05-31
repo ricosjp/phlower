@@ -47,7 +47,6 @@ class PhlowerTrainer:
                 optimizer.zero_grad()
 
                 h = model.forward(batch.x_data, supports=batch.sparse_supports)
-
                 losses = loss_function.calculate(h, batch.y_data)
                 loss = loss_function.aggregate(losses)
                 loss.backward()
