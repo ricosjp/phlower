@@ -32,6 +32,7 @@ class PhlowerTrainerSetting:
     num_workers: int = 1
     device: str = "cpu"
     non_blocking: bool = False
+    lr: float = 0.001
 
     variable_dimensions: dict[str, dict[str, float]] = pydantic.Field(
         default_factory=lambda: {}

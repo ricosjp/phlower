@@ -33,6 +33,4 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
         *,
         supports: dict[str, PhlowerTensor] = None,
     ) -> PhlowerTensor:
-        return self._activation_func(
-            torch.cat(tuple(data.values()), dim=-1)
-        )
+        return self._activation_func(torch.cat(tuple(data.values()), dim=-1))
