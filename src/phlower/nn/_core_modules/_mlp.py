@@ -21,10 +21,6 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
     def get_nn_name(cls):
         return "MLP"
 
-    @classmethod
-    def get_parameter_setting_cls(cls):
-        return MLPSetting
-
     def __init__(
         self,
         nodes: list[int],

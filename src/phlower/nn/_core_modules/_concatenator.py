@@ -21,11 +21,8 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
     def get_nn_name(cls):
         return "Concatenator"
 
-    @classmethod
-    def get_parameter_setting_cls(cls):
-        return ConcatenatorSetting
-
     def __init__(self, activation: str, nodes: list[int] = None):
+        super().__init__()
         self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
@@ -36,4 +33,4 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
         *,
         supports: dict[str, PhlowerTensor] = None,
     ) -> PhlowerTensor:
-        return self._activation_func(torch.cat(data.values(), dim=-1))
+        return self._activation_func(torch.cat(tuple(data.values()), dim=-1))

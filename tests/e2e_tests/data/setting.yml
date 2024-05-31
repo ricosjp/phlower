@@ -6,6 +6,7 @@ trainer:
     nodal_last_u: {"length": 1, "time": -1}
     nodal_nadj: {}
 
+  lr: 0.0001
   loss_setting:
     name2loss:
       nodal_last_u: "mse"
@@ -24,13 +25,12 @@ model:
   support_names: ["nodal_nadj"]
 
   modules:
-    - nn_type: GCN
-      name: GCN0
+    - nn_type: MLP
+      name: MLP0
       input_keys:
         - nodal_initial_u
       output_key: nodal_last_u
       nn_parameters:
         nodes: [-1, 16, 1]
         activations: ["identity", "identity"]
-        support_name: nodal_nadj
 

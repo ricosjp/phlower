@@ -38,7 +38,9 @@ class PhlowerTrainer:
         model = PhlowerGroupModule.from_setting(self._setting.model)
 
         loss_function = LossCalculator.from_setting(self._setting.trainer)
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=self._setting.trainer.lr, momentum=0.9
+        )
 
         loss: PhlowerTensor | None = None
         for _ in range(n_epoch):
@@ -47,7 +49,6 @@ class PhlowerTrainer:
                 optimizer.zero_grad()
 
                 h = model.forward(batch.x_data, supports=batch.sparse_supports)
-
                 losses = loss_function.calculate(h, batch.y_data)
                 loss = loss_function.aggregate(losses)
                 loss.backward()

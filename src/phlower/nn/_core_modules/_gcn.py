@@ -18,10 +18,6 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
     def get_nn_name(cls):
         return "GCN"
 
-    @classmethod
-    def get_parameter_setting_cls(cls):
-        return GCNSetting
-
     def __init__(
         self,
         nodes: list[int],
