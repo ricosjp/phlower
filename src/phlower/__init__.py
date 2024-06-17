@@ -1,8 +1,8 @@
+from phlower._base import array
+from phlower._base.array import IPhlowerArray
 from phlower._base import (
-    IPhlowerArray,
     PhlowerDimensionTensor,
     PhlowerTensor,
-    phlower_arrray,
     phlower_dimension_tensor,
     phlower_tensor,
 )

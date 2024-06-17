@@ -1,15 +1,15 @@
 import pathlib
 
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.utils.typing import ArrayDataType, SparseArrayType
+from phlower import IPhlowerArray
 
 
 class LumpedArrayData:
     def __init__(
         self,
-        x_data: dict[str, ArrayDataType],
-        y_data: dict[str, ArrayDataType],
-        sparse_supports: dict[str, SparseArrayType],
+        x_data: dict[str, IPhlowerArray],
+        y_data: dict[str, IPhlowerArray],
+        sparse_supports: dict[str, IPhlowerArray],
         data_directory: pathlib.Path,
     ) -> None:
         self.x_data = x_data
