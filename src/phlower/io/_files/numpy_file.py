@@ -5,7 +5,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from phlower import utils
-from phlower._base.array import IPhlowerArray, phlower_arrray
+from phlower._base.array import IPhlowerArray, phlower_array
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
 
@@ -62,7 +62,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         if check_nan and np.any(np.isnan(loaded_data)):
             raise ValueError(f"NaN found in {self._path}")
 
-        return phlower_arrray(loaded_data)
+        return phlower_array(loaded_data)
 
     def _load(self, *, decrypt_key: bytes = None) -> ArrayDataType:
         if self._ext_type == PhlowerFileExtType.NPY:

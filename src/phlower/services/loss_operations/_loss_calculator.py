@@ -108,8 +108,8 @@ class LossCalculator(ILossCalculator):
                     f"prediction keys: {list(prediction.keys())}"
                 )
 
-            _preds = prediction[key].split()
-            _ans = answer[key].split()
+            _preds = prediction[key]
+            _ans = answer[key]
             if len(_preds) != len(_preds):
                 raise ValueError(
                     "Sizes of splited tensors in predictions and "
@@ -117,8 +117,6 @@ class LossCalculator(ILossCalculator):
                 )
 
             loss_func = self.get_loss_function(key)
-            loss_items[key] = torch.mean(
-                torch.stack([loss_func(p, a) for p, a in zip(_preds, _ans)])
-            )
+            loss_items[key] = torch.mean(loss_func(_preds, _ans))
 
         return phlower_tensor_collection(loss_items)

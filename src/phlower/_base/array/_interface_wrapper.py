@@ -9,13 +9,19 @@ from phlower.utils.typing import ArrayDataType
 
 class IPhlowerArray(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __init__(self, data: ArrayDataType) -> None:
-        raise NotImplementedError()
+    def __init__(self, data: ArrayDataType) -> None: ...
 
     @property
     @abc.abstractmethod
-    def shape(self) -> tuple[int]:
-        raise NotImplementedError()
+    def is_time_series(self) -> int | None: ...
+
+    @property
+    @abc.abstractmethod
+    def is_sparse(self) -> bool: ...
+
+    @property
+    @abc.abstractmethod
+    def shape(self) -> tuple[int]: ...
 
     @abc.abstractmethod
     def apply(
@@ -47,7 +53,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         T: Same type of instance caraible
 
         """
-        raise NotImplementedError()
+        ...
 
     @abc.abstractmethod
     def reshape(
@@ -57,8 +63,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         skip_nan: bool = False,
         use_diagonal: bool = False,
         **kwrds
-    ) -> ArrayDataType:
-        raise NotImplementedError()
+    ) -> ArrayDataType: ...
 
     @abc.abstractmethod
     def to_phlower_tensor(
@@ -66,9 +71,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         device: str | torch.device | None,
         non_blocking: bool = False,
         dimension: dict[str, float] | None = None,
-    ) -> PhlowerTensor:
-        raise NotImplementedError()
+    ) -> PhlowerTensor: ...
 
     @abc.abstractmethod
-    def numpy(self) -> ArrayDataType:
-        raise NotImplementedError()
+    def numpy(self) -> ArrayDataType: ...

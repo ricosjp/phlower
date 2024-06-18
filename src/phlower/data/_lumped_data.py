@@ -1,7 +1,7 @@
 import pathlib
 
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower import IPhlowerArray
+from phlower.collections.tensors import IPhlowerTensorCollections
 
 
 class LumpedArrayData:

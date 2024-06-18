@@ -1,14 +1,12 @@
 # flake8: noqa
 from typing import get_args
 
-from phlower._base.array import dense
-from phlower._base.array import sparse
-
+from phlower._base.array import dense, sparse
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower.utils.typing import ArrayDataType, DenseArrayType, SparseArrayType
 
 
-def phlower_arrray(data: ArrayDataType) -> IPhlowerArray:
+def phlower_array(data: ArrayDataType) -> IPhlowerArray:
     if isinstance(data, DenseArrayType):
         return dense.NdArrayWrapper(data)
 

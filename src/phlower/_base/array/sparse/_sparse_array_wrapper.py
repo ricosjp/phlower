@@ -1,38 +1,43 @@
 from __future__ import annotations
+
 import warnings
+from functools import reduce
 from typing import Callable, Optional, Sequence
 
-import scipy.sparse as sp
 import numpy as np
+import scipy.sparse as sp
 import torch
 
-from functools import reduce
-
-from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base._batch import SparseBatchInfo
+from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils.typing import SparseArrayType
 
 
 class SparseArrayWrapper(IPhlowerArray):
     def __init__(
-            self,
-            arr: SparseArrayType,
-            batch_info: Optional[SparseBatchInfo] = None
-        ) -> None:
+        self, arr: SparseArrayType, batch_info: Optional[SparseBatchInfo] = None
+    ) -> None:
         if batch_info is None:
             batch_info = SparseBatchInfo(
-                sizes=[len(arr.data)],
-                shapes=[arr.shape]
+                sizes=[len(arr.data)], shapes=[arr.shape]
             )
 
         self._sparse_data = arr
         self._batch_info = batch_info
 
     @property
+    def is_sparse(self) -> bool:
+        return True
+
+    @property
+    def is_time_series(self):
+        return False
+
+    @property
     def row(self):
         return self._sparse_data.row
-    
+
     @property
     def col(self):
         return self._sparse_data.col
@@ -58,7 +63,7 @@ class SparseArrayWrapper(IPhlowerArray):
         componentwise: bool,
         *,
         use_diagonal: bool = False,
-        **kwards
+        **kwards,
     ) -> SparseArrayType:
 
         if use_diagonal:
@@ -130,15 +135,10 @@ def concatenate(arrays: Sequence[SparseArrayWrapper]):
         )
     )
     concat_sizes = list(
-        reduce(
-            lambda x, y: x + y, [arr.batch_info.sizes for arr in arrays], []
-        )
+        reduce(lambda x, y: x + y, [arr.batch_info.sizes for arr in arrays], [])
     )
 
-    info = SparseBatchInfo(
-        sizes=concat_sizes,
-        shapes=concat_shapes
-    )
+    info = SparseBatchInfo(sizes=concat_sizes, shapes=concat_shapes)
     return SparseArrayWrapper(concat_arr, info)
 
 
@@ -153,32 +153,31 @@ def _sparse_concatenate(*arrays: SparseArrayType):
             [
                 arrays[i - 1].shape if i != 0 else (0, 0)
                 for i in range(len(arrays))
-                
             ]
         ),
-        axis=0
+        axis=0,
     )
 
     shape = np.sum([arr.shape for arr in arrays], axis=0)
 
-    rows = np.concatenate([arr.row + offsets[i, 0] for i, arr in enumerate(arrays)], dtype=np.int32)
-    cols = np.concatenate([arr.col + offsets[i, 1] for i, arr in enumerate(arrays)], dtype=np.int32)
+    rows = np.concatenate(
+        [arr.row + offsets[i, 0] for i, arr in enumerate(arrays)],
+        dtype=np.int32,
+    )
+    cols = np.concatenate(
+        [arr.col + offsets[i, 1] for i, arr in enumerate(arrays)],
+        dtype=np.int32,
+    )
     data = np.concatenate([arr.data for arr in arrays], dtype=np.float32)
 
-    sparse_arr = sp.coo_matrix(
-        (data, (rows, cols)), shape=shape
-    )
+    sparse_arr = sp.coo_matrix((data, (rows, cols)), shape=shape)
     return sparse_arr
 
 
 def _sparse_decompose(array: SparseArrayType, batch_info: SparseBatchInfo):
     sizes = np.cumsum(batch_info.sizes)
     offsets = np.cumsum(
-        np.array(
-            [[0, 0]] + batch_info.shapes[:-1],
-            dtype=np.int32
-            ),
-        axis=0
+        np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32), axis=0
     )
 
     rows = np.split(array.row, sizes)
@@ -186,8 +185,10 @@ def _sparse_decompose(array: SparseArrayType, batch_info: SparseBatchInfo):
     data = np.split(array.data, sizes)
 
     results = [
-        sp.coo_matrix((data[i], (rows[i] - offsets[i][0], cols[i] - offsets[i][1])), shape=batch_info.shapes[i])
+        sp.coo_matrix(
+            (data[i], (rows[i] - offsets[i][0], cols[i] - offsets[i][1])),
+            shape=batch_info.shapes[i],
+        )
         for i in range(len(batch_info))
     ]
-    return results        
-
+    return results

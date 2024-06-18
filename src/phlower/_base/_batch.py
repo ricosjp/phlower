@@ -10,4 +10,7 @@ class SparseBatchInfo(NamedTuple):
         return len(self.sizes)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}, shapes: {self.shapes}, sizes: {self.sizes}"
+        return (
+            f"{self.__class__.__name__}, shapes: {self.shapes}, "
+            f"sizes: {self.sizes}"
+        )
