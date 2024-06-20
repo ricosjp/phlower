@@ -1,39 +1,89 @@
-import abc
+from collections import defaultdict
 from collections.abc import Sequence
 
-from phlower._base.array import IPhlowerArray
-from phlower.utils.typing import ArrayDataType
+import numpy as np
+
+from phlower._base.array import IPhlowerArray, phlower_array, sparse
 
 
-class IPhlowerDictArray(metaclass=abc.ABCMeta):
+class _PhlowerSequenceArray:
+    def __init__(self, name: str, data: list[IPhlowerArray]) -> None:
+        self._name = name
+        self._data = data
+        assert len(self._data) > 0
+
+        self._is_sparse = self._reduce_is_sparse()
+        self._is_timeseries = self._reduce_is_timeseries()
+
+    def _reduce_is_sparse(self):
+        _is_sparse = np.unique(np.array([v.is_sparse for v in self._data]))
+        if len(_is_sparse) != 1:
+            raise ValueError(
+                "Sparse array and dense array are mixed "
+                f"in the same variable name; {self._name}"
+            )
+        return _is_sparse.item()
+
+    def _reduce_is_timeseries(self):
+        _is_time_series = np.unique(
+            np.array([v.is_time_series for v in self._data])
+        )
+        if len(_is_time_series) != 1:
+            raise ValueError(
+                "time-series array and steady array are mixed "
+                f"in the same variable name; {self._name}"
+            )
+        return _is_time_series.item()
+
+    def __len__(self) -> int:
+        return len(self._data)
+
     @property
-    @abc.abstractmethod
+    def is_timeseries(self) -> bool:
+        return self._is_timeseries
+
+    @property
     def is_sparse(self) -> bool:
-        raise NotImplementedError()
+        return self._is_sparse
 
-    @abc.abstractmethod
-    def __getitem__(self, key: str) -> ArrayDataType:
-        raise NotImplementedError()
+    def concatenate(self) -> IPhlowerArray:
+        if len(self) == 1:
+            return self._data[0]
 
-    @abc.abstractmethod
-    def concatenate(self, key: str) -> ArrayDataType:
-        raise NotImplementedError()
+        if self._is_sparse:
+            return sparse.concatenate(self._data)
+
+        if self._is_timeseries:
+            return phlower_array(np.concatenate(self._data, axis=1))
+
+        return phlower_array(np.concatenate(self._data, axis=0))
 
 
 class SequencedDictArray:
     def __init__(self, data: list[dict[str, IPhlowerArray]]) -> None:
-        self._data = data
+        _sequece_array_dict: dict[str, list[IPhlowerArray]] = defaultdict(list)
+
+        for dict_data in data:
+            for k, v in dict_data.items():
+                _sequece_array_dict[k].append(v)
+
+        for k, v in _sequece_array_dict.items():
+            if len(v) != len(data):
+                raise ValueError(
+                    f"the number of data is not consistent in {k}. "
+                    f"Please check that {k} exists in all data"
+                )
+
+        self._phlower_sequece_dict = {
+            k: _PhlowerSequenceArray(k, arr)
+            for k, arr in _sequece_array_dict.items()
+        }
 
     def get_names(self) -> Sequence[str]:
-        return self._data[0].keys()
+        return self._phlower_sequece_dict.keys()
 
     def concatenate(self) -> dict[str, IPhlowerArray]:
-        return {name: self._concatenate(name) for name in self.get_names()}
-
-    def _concatenate(self, name: str) -> IPhlowerArray:
-        assert len(self._data) == 1
-        return self._data[0][name]
-        # TODO: Under construction
-        # change how to concatenate ndarray
-        # according to properties such as time_series, sparse
-        # return np.concatenate([v[name] for v in self._data])
+        return {
+            name: arr.concatenate()
+            for name, arr in self._phlower_sequece_dict.items()
+        }

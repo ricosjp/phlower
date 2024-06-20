@@ -9,12 +9,21 @@ from phlower.utils.typing import DenseArrayType
 
 
 class NdArrayWrapper(IPhlowerArray):
-    def __init__(self, data: np.ndarray):
+    def __init__(self, data: np.ndarray, is_timeseries: bool = False):
         self.data = data
+        self._is_time_series = is_timeseries
 
     @property
     def shape(self) -> tuple[int]:
         return self.data.shape
+
+    @property
+    def is_time_series(self) -> bool:
+        return self._is_time_series
+
+    @property
+    def is_sparse(self) -> bool:
+        return False
 
     def apply(
         self,

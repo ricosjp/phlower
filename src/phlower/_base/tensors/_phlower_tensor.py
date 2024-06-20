@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Callable, Iterable
 
+import numpy as np
 import torch
 
+from phlower._base._batch import SparseBatchInfo
 from phlower._base.tensors._dimensions import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
@@ -19,11 +21,13 @@ def phlower_tensor(
     dimension: (
         PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
     ) = None,
-    shapes: list[tuple[int]] = None,
+    sparse_batch_info: SparseBatchInfo | None = None,
 ):
     if isinstance(tensor, PhlowerTensor):
-        if (dimension is not None) and (shapes is not None):
-            logger.warning("input dimension_tensor and shapes are ignored.")
+        if (dimension is not None) or (sparse_batch_info is not None):
+            logger.warning(
+                "Input dimension_tensor and sparse_batch_info are ignored."
+            )
 
         return tensor
 
@@ -31,8 +35,12 @@ def phlower_tensor(
         dimension_tensor = _resolve_dimension_arg(dimension)
 
         return PhlowerTensor(
-            tensor=tensor, dimension_tensor=dimension_tensor, shapes=shapes
+            tensor=tensor,
+            dimension_tensor=dimension_tensor,
+            sparse_batch_info=sparse_batch_info,
         )
+
+    raise NotImplementedError(f"PhlowerTensor cannot be created from {tensor}.")
 
 
 def _resolve_dimension_arg(
@@ -62,13 +70,12 @@ class PhlowerTensor:
         self,
         tensor: torch.Tensor,
         dimension_tensor: PhlowerDimensionTensor | None = None,
-        shapes: list[tuple[int]] = None,
+        sparse_batch_info: SparseBatchInfo | None = None,
     ):
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
-        # self._is_time_series: bool = False  # HACK: UNDER CONSTRUCTION
-        self._shapes = shapes if shapes is not None else [tensor.shape]
+        self._sparse_batch_info = sparse_batch_info
 
     @property
     def has_dimension(self) -> bool:
@@ -115,18 +122,11 @@ class PhlowerTensor:
         if self.has_dimension:
             self._dimension_tensor.to(device, non_blocking=non_blocking)
 
-    def split(self) -> list[PhlowerTensor]:
-        if len(self._shapes) == 1:
-            return [
-                PhlowerTensor(
-                    self._tensor, dimension_tensor=self._dimension_tensor
-                )
-            ]
+    def unbatch(self) -> list[torch.Tensor]:
+        if self._sparse_batch_info is None:
+            return [self._tensor]
 
-        # HACK: NEED TO IMPLEMENT
-        # for v1, v2 in zip(self._shapes[:-1], self._shapes[1:]):
-        #     ...
-        raise NotImplementedError()
+        return _sparse_decompose(self._tensor, self._sparse_batch_info)
 
     def backward(self) -> None:
         self._tensor.backward()
@@ -174,3 +174,33 @@ def _has_dimension(args: Any) -> bool:
         return args.has_dimension
 
     return False
+
+
+def _sparse_decompose(sparse_tensor: torch.Tensor, batch_info: SparseBatchInfo):
+    sizes = torch.tensor(batch_info.sizes, dtype=torch.int32)
+    offsets = torch.tensor(
+        np.cumsum(
+            np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32),
+            axis=0,
+            dtype=np.int32,
+        )
+    )
+    sparse_tensor = sparse_tensor.coalesce()
+
+    rows = sparse_tensor.indices()[0] - offsets[:, 0].repeat_interleave(sizes)
+    rows = rows.split(batch_info.sizes)
+
+    cols = sparse_tensor.indices()[1] - offsets[:, 1].repeat_interleave(sizes)
+    cols = cols.split(batch_info.sizes)
+
+    data = sparse_tensor.values().split(batch_info.sizes)
+
+    results = [
+        torch.sparse_coo_tensor(
+            indices=torch.stack([rows[i], cols[i]]),
+            values=data[i],
+            size=batch_info.shapes[i],
+        )
+        for i in range(len(batch_info))
+    ]
+    return results
