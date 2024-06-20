@@ -118,7 +118,11 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
+        _tensor = phlower_tensor(
+            tensor=sparse_tensor,
+            dimension=dimension,
+            sparse_batch_info=self._batch_info
+        )
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 

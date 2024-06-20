@@ -39,6 +39,10 @@ def phlower_tensor(
             dimension_tensor=dimension_tensor,
             sparse_batch_info=sparse_batch_info,
         )
+    
+    raise NotImplementedError(
+        f"PhlowerTensor cannot be created from {tensor}."
+    )
 
 
 def _resolve_dimension_arg(
@@ -120,7 +124,7 @@ class PhlowerTensor:
         if self.has_dimension:
             self._dimension_tensor.to(device, non_blocking=non_blocking)
 
-    def decompose(self) -> list[torch.Tensor]:
+    def unbatch(self) -> list[torch.Tensor]:
         if self._sparse_batch_info is None:
             return [self._tensor]
 
@@ -174,21 +178,26 @@ def _has_dimension(args: Any) -> bool:
     return False
 
 
-def _sparse_decompose(tensor: PhlowerTensor, batch_info: SparseBatchInfo):
-    sizes = np.cumsum(batch_info.sizes)
-    offsets = np.cumsum(
-        np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32), axis=0
-    )
+def _sparse_decompose(sparse_tensor: torch.Tensor, batch_info: SparseBatchInfo):
+    sizes = torch.tensor(batch_info.sizes, dtype=torch.int32)
+    offsets = torch.tensor(np.cumsum(
+        np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32),
+        axis=0,
+        dtype=np.int32
+    ))
+    sparse_tensor = sparse_tensor.coalesce()
 
-    sparse_tensor = tensor.tensor()
+    rows = sparse_tensor.indices()[0] - offsets[:, 0].repeat_interleave(sizes)
+    rows = rows.split(batch_info.sizes)
+    
+    cols = sparse_tensor.indices()[1] - offsets[:, 1].repeat_interleave(sizes)
+    cols = cols.split(batch_info.sizes)
 
-    rows = np.split(sparse_tensor.indices[0], sizes)
-    cols = np.split(sparse_tensor.indices[1], sizes)
-    data = np.split(sparse_tensor.values, sizes)
+    data = sparse_tensor.values().split(batch_info.sizes)
 
     results = [
         torch.sparse_coo_tensor(
-            indices=[rows[i] - offsets[i][0], cols[i] - offsets[i][1]],
+            indices=torch.stack([rows[i], cols[i]]),
             values=data[i],
             size=batch_info.shapes[i],
         )
