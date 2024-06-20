@@ -39,10 +39,8 @@ def phlower_tensor(
             dimension_tensor=dimension_tensor,
             sparse_batch_info=sparse_batch_info,
         )
-    
-    raise NotImplementedError(
-        f"PhlowerTensor cannot be created from {tensor}."
-    )
+
+    raise NotImplementedError(f"PhlowerTensor cannot be created from {tensor}.")
 
 
 def _resolve_dimension_arg(
@@ -180,16 +178,18 @@ def _has_dimension(args: Any) -> bool:
 
 def _sparse_decompose(sparse_tensor: torch.Tensor, batch_info: SparseBatchInfo):
     sizes = torch.tensor(batch_info.sizes, dtype=torch.int32)
-    offsets = torch.tensor(np.cumsum(
-        np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32),
-        axis=0,
-        dtype=np.int32
-    ))
+    offsets = torch.tensor(
+        np.cumsum(
+            np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32),
+            axis=0,
+            dtype=np.int32,
+        )
+    )
     sparse_tensor = sparse_tensor.coalesce()
 
     rows = sparse_tensor.indices()[0] - offsets[:, 0].repeat_interleave(sizes)
     rows = rows.split(batch_info.sizes)
-    
+
     cols = sparse_tensor.indices()[1] - offsets[:, 1].repeat_interleave(sizes)
     cols = cols.split(batch_info.sizes)
 

@@ -121,7 +121,7 @@ class SparseArrayWrapper(IPhlowerArray):
         _tensor = phlower_tensor(
             tensor=sparse_tensor,
             dimension=dimension,
-            sparse_batch_info=self._batch_info
+            sparse_batch_info=self._batch_info,
         )
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor

@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
-import torch
 import scipy.sparse as sp
+import torch
 
 from phlower import PhlowerTensor, phlower_dimension_tensor
+from phlower._base.array.sparse import SparseArrayWrapper, concatenate
 from phlower.utils.exceptions import DimensionIncompatibleError
-from phlower._base.array.sparse import SparseArrayWrapper, concatenate 
 
 
 def test__add():
