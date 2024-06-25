@@ -6,6 +6,6 @@ from .interface import (
     IPhlowerPickleFile,
     IPhlowerYamlFile,
 )
-from .numpy_file import PhlowerNumpyFile, save_array
+from .numpy_file import PhlowerNumpyFile
 from .pickle_file import PhlowerPickleFile
 from .yaml_file import PhlowerYamlFile

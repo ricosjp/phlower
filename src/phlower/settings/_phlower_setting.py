@@ -78,7 +78,7 @@ class PhlowerScalingSetting:
     def collect_interim_directories(self) -> list[pathlib.Path]:
         raise NotImplementedError()
 
-    def get_effective_scalers(self) -> dict[str, ScalerParameters]:
+    def get_effective_scaler_parameters(self) -> dict[str, ScalerParameters]:
         results = {
             self.get_scaler_name(name): v
             for name, v in self.varaible_name_to_scalers.items()
@@ -94,7 +94,7 @@ class PhlowerScalingSetting:
         return f"scaler_{param.same_as}"
 
     def collect_fitting_files(self, scaler_name: str) -> list[pathlib.Path]:
-        targets = self._variable_to_scaler.keys() | where(
+        targets = self.varaible_name_to_scalers.keys() | where(
             lambda x: self.get_scaler_name(x) == scaler_name
         )
 

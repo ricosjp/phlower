@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import multiprocessing as multi
 import pathlib
-import warnings
 from typing import Optional
 
 from phlower.io._files import PhlowerNumpyFile
@@ -29,15 +28,23 @@ class ScalersComposition(IPhlowerScaler):
             pkl_file_path, decrypt_key=decrypt_key
         )
 
-        return cls(
+        return ScalersComposition(
             variable_name_to_scaler=variable_name_to_scaler,
-            scalers_dict=scalers_dict,
+            scalers_dict=scalers_dict
         )
 
     @classmethod
     def from_setting(cls, setting: PhlowerScalingSetting) -> ScalersComposition:
-        variable_name_to_scaler = setting.varaible_name_to_scalers
-        scalers_dict = setting.get_effective_scalers()
+        variable_name_to_scaler = {
+            k: setting.get_scaler_name(k)
+            for k in setting.get_variable_names()
+        }
+
+        scalers_dict = {
+            k: ScalerWrapper.from_setting(v)
+            for k, v in setting.get_effective_scaler_parameters().items()
+        }
+
         return cls(
             variable_name_to_scaler=variable_name_to_scaler,
             scalers_dict=scalers_dict,
@@ -45,10 +52,10 @@ class ScalersComposition(IPhlowerScaler):
 
     def __init__(
         self,
+        variable_name_to_scaler: dict[str, str],
         scalers_dict: dict[str, ScalerWrapper],
     ) -> None:
-
-        # variable_name to siml_scelar
+        self._variable_name_to_scaler_name = variable_name_to_scaler
         self._scalers_dict = scalers_dict
 
     def get_scaler_names(self) -> list[str]:
@@ -56,28 +63,29 @@ class ScalersComposition(IPhlowerScaler):
         return scaler_names
 
     def get_scaler(
-        self, scaler_name: str, allow_missing: bool = False
+        self, variable_name: str, allow_missing: bool = False
     ) -> ScalerWrapper | None:
+        scaler_name = self._variable_name_to_scaler_name.get(variable_name)
         scaler = self._scalers_dict.get(scaler_name)
         if allow_missing:
             return scaler
 
         if scaler is None:
-            raise ValueError(f"No Scaler for {scaler_name} is found.")
+            raise ValueError(f"Scaler named {scaler_name} is not found.")
         return scaler
 
     def save(
         self, pickle_file_path: pathlib.Path, encrypt_key: bytes | None = None
     ) -> None:
         scalers_dict = {
-            k: self.get_scaler(k).get_dumped_dict()
-            for k in self.get_scaler_names()
+            k: scaler.get_dumped_data()
+            for k, scaler in self._scalers_dict.items()
         }
 
         fileio = ScalerFileIO()
         fileio.save_pickle(
             pkl_file_path=pickle_file_path,
-            variable_name_to_scalers=self._variable_name_to_scaler,
+            variable_name_to_scalers=self._variable_name_to_scaler_name,
             scalers_dict=scalers_dict,
             encrypt_key=encrypt_key,
         )
@@ -156,7 +164,7 @@ class ScalersComposition(IPhlowerScaler):
             scaler = self.get_scaler(variable_name, allow_missing=True)
             if scaler is None:
                 if raise_missing_warning:
-                    warnings.warn(
+                    logger.warning(
                         f"Scaler for {variable_name} is not found. Skipped"
                     )
                 continue

@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing_extensions import Self
 import io
 import pathlib
 
@@ -20,6 +22,26 @@ _logger = get_logger(__name__)
 
 
 class PhlowerNumpyFile(IPhlowerNumpyFile):
+    @classmethod
+    def save_variables(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: np.ndarray | sp.coo_matrix,
+        *,
+        dtype: type = np.float32,
+        encrypt_key: bytes = None,
+    ) -> Self:
+        saved_path = _save_variable(
+            output_directory=output_directory,
+            file_basename=file_basename,
+            data=data,
+            dtype=dtype,
+            encrypt_key=encrypt_key
+        )
+        _logger.info(f"{file_basename} is saved in: {saved_path}")
+        return cls(saved_path)
+
     def __init__(self, path: pathlib.Path) -> None:
         ext = self._check_extension_type(path)
         self._path = path
@@ -121,7 +143,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
                 )
 
         file_basename = self._path.name.removesuffix(self._ext_type.value)
-        save_array(
+        _save_variable(
             self._path.parent,
             file_basename=file_basename,
             data=data,
@@ -129,7 +151,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         )
 
 
-def save_array(
+def _save_variable(
     output_directory: pathlib.Path,
     file_basename: str,
     data: np.ndarray | sp.coo_matrix,
@@ -180,5 +202,4 @@ def save_array(
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
-    _logger.info(f"{file_basename} is saved in: {save_file_path}")
-    return
+    return save_file_path
