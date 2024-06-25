@@ -15,7 +15,7 @@ _registered_scaler: list[IPhlowerScaler] = [
     MaxAbsScaler,
     MinMaxScaler,
     SparseStandardScaler,
-    StandardScaler
+    StandardScaler,
 ]
 
 
@@ -29,6 +29,4 @@ def create_scaler(scaler_name: str, **kwards) -> IPhlowerScaler:
         if scaler_name in cls.get_registered_names():
             return cls.create(scaler_name, **kwards)
 
-    raise NotImplementedError(
-        f"{scaler_name} is not defined."
-    )
+    raise NotImplementedError(f"{scaler_name} is not defined.")

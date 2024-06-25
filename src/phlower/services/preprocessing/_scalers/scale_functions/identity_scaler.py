@@ -1,10 +1,11 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from phlower.services.preprocessing._scalers import  IPhlowerScaler
+from phlower.services.preprocessing._scalers import IPhlowerScaler
 
 
 class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     """Class to perform identity conversion (do nothing)."""
+
     @classmethod
     def create(cls, name: str, **kwards):
         if name == "identity":

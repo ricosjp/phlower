@@ -6,10 +6,13 @@ import scipy.sparse as sp
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
 
 from .interface import IPhlowerNumpyFile
+
+_logger = get_logger(__name__)
 
 # NOTE
 # IF branches due to difference of extensions (.npy, .npy.enc,..) increases,
@@ -118,7 +121,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
                 )
 
         file_basename = self._path.name.removesuffix(self._ext_type.value)
-        _save_variable(
+        save_array(
             self._path.parent,
             file_basename=file_basename,
             data=data,
@@ -126,10 +129,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         )
 
 
-# HACK NEED TO REAFCTOR !!!!!!
-
-
-def _save_variable(
+def save_array(
     output_directory: pathlib.Path,
     file_basename: str,
     data: np.ndarray | sp.coo_matrix,
@@ -180,5 +180,5 @@ def _save_variable(
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
-    print(f"{file_basename} is saved in: {save_file_path}")
+    _logger.info(f"{file_basename} is saved in: {save_file_path}")
     return

@@ -28,3 +28,6 @@ class PhlowerModuleDuplicateNameError(ValueError):
 
 class PhlowerModuleCycleError(ValueError):
     """This error raises when a cycle is detected in modules."""
+
+
+class PhlowerMultiProcessError(ValueError): ...

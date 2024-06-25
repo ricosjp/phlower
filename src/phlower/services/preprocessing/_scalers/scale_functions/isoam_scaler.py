@@ -1,6 +1,7 @@
+from typing import Optional
+
 import numpy as np
 import scipy.sparse as sp
-from typing import Optional
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
@@ -15,7 +16,7 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     def create(cls, name: str, **kwards):
         if name == "isoam_scale":
             return IsoAMScaler(**kwards)
-        
+
         raise NotImplementedError()
 
     @classmethod
@@ -23,9 +24,9 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         return ["isoam_scale"]
 
     def __init__(self, other_components: Optional[list[str]] = None, **kwargs):
-        self.var_ = 0.
-        self.std_ = 0.
-        self.mean_square_ = 0.
+        self.var_ = 0.0
+        self.std_ = 0.0
+        self.mean_square_ = 0.0
         self.n_ = 0
         self.other_components = []
         if other_components is not None:
@@ -34,8 +35,9 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         self.component_dim = len(self.other_components) + 1
         if self.component_dim == 1:
             raise ValueError(
-                'To use IsoAMScaler, feed other_components: '
-                f"{other_components}")
+                "To use IsoAMScaler, feed other_components: "
+                f"{other_components}"
+            )
         return
 
     @property
@@ -53,8 +55,9 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         if len(diagonal_data.shape) != 1:
             raise ValueError(f"Input data should be 1D: {diagonal_data}")
         m = len(diagonal_data)
-        mean_square = (self.mean_square_ * self.n_ + np.sum(diagonal_data**2)) \
-            / (self.n_ + m)
+        mean_square = (
+            self.mean_square_ * self.n_ + np.sum(diagonal_data**2)
+        ) / (self.n_ + m)
 
         self.mean_square_ = mean_square
         self.n_ += m
@@ -66,14 +69,14 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     def _raise_if_not_sparse(self, data):
         if not sp.issparse(data):
-            raise ValueError('Data is not sparse')
+            raise ValueError("Data is not sparse")
         return
 
     def transform(self, data):
-        if self.std_ == 0.:
-            scale = 0.
+        if self.std_ == 0.0:
+            scale = 0.0
         else:
-            scale = (1 / self.std_)
+            scale = 1 / self.std_
         return data * scale
 
     def inverse_transform(self, data):

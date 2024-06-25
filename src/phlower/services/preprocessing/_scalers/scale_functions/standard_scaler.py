@@ -14,13 +14,13 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
             if not with_mean:
                 raise ValueError("with_mean must be True in standardize scaler")
             return StandardScaler(with_mean=with_mean, **kwards)
-        
+
         if name == "std_scale":
             with_mean = kwards.pop("with_mean", False)
             if with_mean:
                 raise ValueError("with_mean must be False in std_scale")
             return StandardScaler(with_mean=with_mean, **kwards)
-        
+
         raise NotImplementedError(
             f"Instance for {name} is not implemented in {cls.__class__}"
         )
@@ -35,13 +35,9 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
         copy: bool = True,
         with_mean: bool = True,
         with_std: bool = True,
-        **kwargs
+        **kwargs,
     ):
-        super().__init__(
-            copy=copy,
-            with_mean=with_mean,
-            with_std=with_std
-        )
+        super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
 
     @property
     def use_diagonal(self) -> bool:
@@ -49,4 +45,3 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
 
     def is_erroneous(self) -> bool:
         return np.any(np.isnan(self.var_))
-

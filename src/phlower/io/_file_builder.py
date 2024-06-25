@@ -22,7 +22,9 @@ class PhlowerFileBuilder:
         return PhlowerPickleFile(file_path)
 
     @staticmethod
-    def checkpoint_file(file_path: pathlib.Path | str) -> IPhlowerCheckpointFile:
+    def checkpoint_file(
+        file_path: pathlib.Path | str,
+    ) -> IPhlowerCheckpointFile:
         return PhlowerCheckpointFile(file_path)
 
     @staticmethod
