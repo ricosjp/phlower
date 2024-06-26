@@ -1,4 +1,4 @@
-from phlower.services.preprocessing import IPhlowerScaler
+from phlower.services.preprocessing._scalers import IPhlowerScaler
 
 from .identity_scaler import IdentityScaler
 from .isoam_scaler import IsoAMScaler

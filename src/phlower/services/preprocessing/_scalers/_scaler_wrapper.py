@@ -6,8 +6,7 @@ import scipy.sparse as sp
 
 from phlower._base.array import phlower_array
 from phlower.io._files import IPhlowerNumpyFile
-from phlower.services.preprocessing import IPhlowerScaler
-from phlower.services.preprocessing._scalers import scale_functions
+from phlower.services.preprocessing._scalers import scale_functions, IPhlowerScaler
 from phlower.settings import ScalerParameters
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
