@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import io
 import pathlib
 
 import numpy as np
 import scipy.sparse as sp
+from typing_extensions import Self
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
 
 from .interface import IPhlowerNumpyFile
+
+_logger = get_logger(__name__)
 
 # NOTE
 # IF branches due to difference of extensions (.npy, .npy.enc,..) increases,
@@ -17,6 +23,26 @@ from .interface import IPhlowerNumpyFile
 
 
 class PhlowerNumpyFile(IPhlowerNumpyFile):
+    @classmethod
+    def save_variables(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: np.ndarray | sp.coo_matrix,
+        *,
+        dtype: type = np.float32,
+        encrypt_key: bytes = None,
+    ) -> Self:
+        saved_path = _save_variable(
+            output_directory=output_directory,
+            file_basename=file_basename,
+            data=data,
+            dtype=dtype,
+            encrypt_key=encrypt_key,
+        )
+        _logger.info(f"{file_basename} is saved in: {saved_path}")
+        return cls(saved_path)
+
     def __init__(self, path: pathlib.Path) -> None:
         ext = self._check_extension_type(path)
         self._path = path
@@ -126,9 +152,6 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         )
 
 
-# HACK NEED TO REAFCTOR !!!!!!
-
-
 def _save_variable(
     output_directory: pathlib.Path,
     file_basename: str,
@@ -180,5 +203,4 @@ def _save_variable(
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
-    print(f"{file_basename} is saved in: {save_file_path}")
-    return
+    return save_file_path

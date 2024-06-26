@@ -1,7 +1,10 @@
 import abc
 import pathlib
 
+import numpy as np
+
 from phlower._base.array import IPhlowerArray
+from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerBaseFile(metaclass=abc.ABCMeta):
@@ -25,6 +28,17 @@ class IPhlowerBaseFile(metaclass=abc.ABCMeta):
 
 
 class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
+    @abc.abstractclassmethod
+    def save_variables(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: ArrayDataType,
+        *,
+        dtype: type = np.float32,
+        encrypt_key: bytes = None,
+    ): ...
+
     @property
     @abc.abstractmethod
     def file_extension(self) -> str:
@@ -35,6 +49,15 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         self, *, check_nan: bool = False, decrypt_key: bytes = None
     ) -> IPhlowerArray:
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def save(
+        self,
+        data: ArrayDataType,
+        *,
+        encrypt_key: bytes = None,
+        overwrite: bool = True,
+    ) -> None: ...
 
 
 class IPhlowerPickleFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
