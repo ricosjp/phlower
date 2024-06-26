@@ -140,7 +140,6 @@ class ScalingService:
         force_renew: bool = False,
         decrypt_key: bytes | None = None,
     ) -> None:
-
         for path in directories:
             output_dir = PhlowerDirectory(setting.get_output_directory(path))
             if self._can_skip(output_dir, variable_name, force_renew):

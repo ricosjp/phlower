@@ -8,47 +8,23 @@ init:
 	poetry install
 
 
-.PHONY: black-check
-black-check:
-	poetry run black --check --diff src tests
-
-.PHONY: black
-black:
-	poetry run black src tests
-
-.PHONY: flake8
-flake8:
-	poetry run flake8 src tests
-
-.PHONY: isort-check
-isort-check:
-	poetry run isort --check-only --diff src tests
-
-.PHONY: isort
-isort:
-	poetry run isort src tests
-
 .PHONY: mypy
 mypy:
 	poetry run mypy src
 
 .PHONY: format
 format:
-	$(MAKE) black
-	$(MAKE) isort
+	poetry run python3 -m ruff check --fix
+	poetry run python3 -m ruff format
 
 .PHONY: test
 test:
 	poetry run pytest tests --cov=src --cov-report term-missing --durations 5
 
-test_all: test
-	poetry run pytest tests/e2e_test
 
 .PHONY: lint
 lint:
-	$(MAKE) black-check
-	$(MAKE) isort-check
-	$(MAKE) flake8
+	poetry run python3 -m ruff check --diff
 	# $(MAKE) mypy
 
 .PHONY: dev-install

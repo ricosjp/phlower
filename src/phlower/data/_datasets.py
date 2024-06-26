@@ -27,9 +27,8 @@ class LazyPhlowerDataset(Dataset):
         num_workers: int = 0,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
-        **kwargs
+        **kwargs,
     ):
-
         self._x_variable_names = x_variable_names
         self._y_varaible_names = y_variable_names
         self._directories: list[PhlowerDirectory] = [

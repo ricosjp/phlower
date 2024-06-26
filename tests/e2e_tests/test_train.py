@@ -58,12 +58,11 @@ def test__simple_training(prepare_sample_preprocessed_files):
     path = _OUTPUT_DIR
     phlower_path = PhlowerDirectory(path)
 
-    preprocessed_directories = [
-        p
-        for p in phlower_path.find_directory(
+    preprocessed_directories = list(
+        phlower_path.find_directory(
             required_filename="preprocessed", recursive=True
         )
-    ]
+    )
 
     setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/setting.yml")
     setting.model.resolve(is_first=True)

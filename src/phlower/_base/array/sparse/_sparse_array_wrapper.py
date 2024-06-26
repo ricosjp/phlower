@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import warnings
+from collections.abc import Callable, Sequence
 from functools import reduce
-from typing import Callable, Optional, Sequence
 
 import numpy as np
 import scipy.sparse as sp
@@ -11,12 +10,15 @@ import torch
 from phlower._base._batch import SparseBatchInfo
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
+from phlower.utils import get_logger
 from phlower.utils.typing import SparseArrayType
+
+logger = get_logger(__name__)
 
 
 class SparseArrayWrapper(IPhlowerArray):
     def __init__(
-        self, arr: SparseArrayType, batch_info: Optional[SparseBatchInfo] = None
+        self, arr: SparseArrayType, batch_info: SparseBatchInfo | None = None
     ) -> None:
         if batch_info is None:
             batch_info = SparseBatchInfo(
@@ -65,7 +67,6 @@ class SparseArrayWrapper(IPhlowerArray):
         use_diagonal: bool = False,
         **kwards,
     ) -> SparseArrayType:
-
         if use_diagonal:
             raise ValueError(
                 "Cannot set use_diagonal=True in self.apply function. "
@@ -83,7 +84,7 @@ class SparseArrayWrapper(IPhlowerArray):
         self, componentwise: bool, *, use_diagonal: bool = False, **kwards
     ) -> SparseArrayType:
         if componentwise and use_diagonal:
-            warnings.warn(
+            logger.warning(
                 "component_wise and use_diagonal cannnot use"
                 " at the same time. use_diagonal is ignored"
             )

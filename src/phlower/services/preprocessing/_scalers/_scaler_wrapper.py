@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import warnings
-
 import scipy.sparse as sp
 
 from phlower._base.array import phlower_array
@@ -11,8 +9,11 @@ from phlower.services.preprocessing._scalers import (
     scale_functions,
 )
 from phlower.settings._phlower_setting import ScalerParameters
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
+
+logger = get_logger(__name__)
 
 
 class ScalerWrapper(IPhlowerScaler):
@@ -36,7 +37,6 @@ class ScalerWrapper(IPhlowerScaler):
         componentwise: bool = True,
         parameters: dict = None,
     ):
-
         self.method_name = method_name
         self._scaler = scale_functions.create_scaler(method_name, **parameters)
         self.componentwise = componentwise
@@ -56,7 +56,7 @@ class ScalerWrapper(IPhlowerScaler):
             use_diagonal=self.use_diagonal,
         )
         if reshaped_data.size == 0:
-            warnings.warn(
+            logger.warning(
                 "Found array with 0 sample(s) after deleting nan items"
             )
             return
@@ -65,7 +65,6 @@ class ScalerWrapper(IPhlowerScaler):
         return
 
     def transform(self, data: ArrayDataType) -> ArrayDataType:
-
         wrapped_data = phlower_array(data)
         result = wrapped_data.apply(
             self._scaler.transform,
@@ -102,7 +101,6 @@ class ScalerWrapper(IPhlowerScaler):
     def _load_file(
         self, siml_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None
     ) -> ArrayDataType:
-
         loaded_data = siml_file.load(decrypt_key=decrypt_key)
 
         if siml_file.file_extension in [

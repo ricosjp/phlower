@@ -1,5 +1,4 @@
 import pathlib
-from typing import Union
 
 from phlower.nn._interface_module import IPhlowerModuleAdapter
 from phlower.services.drawers._interface import IPhlowerDrawer
@@ -13,7 +12,7 @@ class MermaidDrawer(IPhlowerDrawer):
     def output(
         self,
         modules: list[IPhlowerModuleAdapter],
-        file_path: Union[pathlib.Path, str],
+        file_path: pathlib.Path | str,
     ) -> None:
         """output content to file_path
 
@@ -40,10 +39,10 @@ class MermaidDrawer(IPhlowerDrawer):
                 _context += f"\n{module.get_display_info()}"
             context.append(f'state "{_context}" as {state_name}')
 
-        for i, node in enumerate(modules):
+        for _, node in enumerate(modules):
             state_name = name2id[node.name]
 
-            succesors = [v for v in node.get_destinations()]
+            succesors = list(node.get_destinations())
             if len(succesors) == 0:
                 context.append(f"{state_name} --> [*]")
                 continue

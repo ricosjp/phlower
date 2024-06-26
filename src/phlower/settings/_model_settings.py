@@ -115,10 +115,10 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
 
         try:
             results = _resolve_modules(input_info, self.modules)
-        except DagStreamCycleError:
+        except DagStreamCycleError as ex:
             raise PhlowerModuleCycleError(
                 f"A cycle is detected in {self.name}."
-            )
+            ) from ex
 
         # check last state
         self._check_last_outputs(*results)
@@ -220,8 +220,8 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         except pydantic.ValidationError as ex:
             name = info.data.get("name")
             raise ValueError(
-                f"setting content in {name} is not correnct. {str(ex)}"
-            )
+                f"setting content in {name} is not correnct."
+            ) from ex
 
     def get_name(self) -> str:
         return self.name
@@ -270,8 +270,8 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
             )
         except ValueError as ex:
             raise PhlowerModuleNodeDimSizeError(
-                f"inputs for {self.name} have problems. {ex}"
-            )
+                f"inputs for {self.name} have problems"
+            ) from ex
 
         nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:

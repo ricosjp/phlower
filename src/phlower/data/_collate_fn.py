@@ -42,7 +42,6 @@ class PhlowerCollateFn:
         self._dimensions = dimensions
 
     def __call__(self, batch: list[LumpedArrayData]) -> LumpedTensorData:
-
         inputs = SequencedDictArray([v.x_data for v in batch])
         outputs = SequencedDictArray([v.y_data for v in batch])
         sparse_supports = SequencedDictArray([v.sparse_supports for v in batch])

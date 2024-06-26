@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any
 
 import numpy as np
 import torch
+from pipe import select
 
 from phlower._base._batch import SparseBatchInfo
 from phlower._base.tensors._dimensions import (
@@ -65,7 +66,6 @@ def _resolve_dimension_arg(
 
 
 class PhlowerTensor:
-
     def __init__(
         self,
         tensor: torch.Tensor,
@@ -157,15 +157,15 @@ class PhlowerTensor:
 
 
 def _recursive_resolve(args: Iterable | Any, attr: str = None) -> list[str]:
-    if isinstance(args, (tuple, list)):
+    if isinstance(args, tuple | list):
         return [_recursive_resolve(v, attr) for v in args]
 
     return getattr(args, attr, args)
 
 
 def _has_dimension(args: Any) -> bool:
-    if isinstance(args, (tuple, list)):
-        return any([_has_dimension(v) for v in args])
+    if isinstance(args, tuple | list):
+        return any(list(args | select(lambda x: _has_dimension(x))))
 
     if isinstance(args, dict):
         return _has_dimension(list(args.values()))

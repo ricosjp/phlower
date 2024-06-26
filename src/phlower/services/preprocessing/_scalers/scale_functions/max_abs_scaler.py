@@ -7,7 +7,6 @@ from phlower.utils.enums import PhlowerScalerName
 
 
 class MaxAbsScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
-
     @classmethod
     def create(cls, name: str, **kwards):
         if name == PhlowerScalerName.MAX_ABS.name:

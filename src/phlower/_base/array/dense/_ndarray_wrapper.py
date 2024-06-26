@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import torch
@@ -31,9 +31,8 @@ class NdArrayWrapper(IPhlowerArray):
         componentwise: bool,
         *,
         skip_nan: bool = False,
-        **kwards
+        **kwards,
     ) -> np.ndarray:
-
         reshaped = self.reshape(componentwise=componentwise, skip_nan=skip_nan)
         result = function(reshaped)
         return np.reshape(result, self.shape)
@@ -41,7 +40,6 @@ class NdArrayWrapper(IPhlowerArray):
     def reshape(
         self, componentwise: bool, *, skip_nan: bool = False, **kwards
     ) -> np.ndarray:
-
         if componentwise:
             reshaped = np.reshape(
                 self.data, (np.prod(self.shape[:-1]), self.shape[-1])

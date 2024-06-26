@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Mapping, Sequence
-from typing import Any, Iterable
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -60,7 +60,6 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
 
 
 def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
-
     if isinstance(values, dict):
         return PhlowerDictTensors(values)
 
@@ -121,7 +120,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
         if weights is None:
-            return torch.sum(torch.stack([v for v in self._x.values()]))
+            return torch.sum(torch.stack(list(self._x.values())))
 
         return torch.sum(
             torch.stack([v * weights[k] for k, v in self._x.items()])

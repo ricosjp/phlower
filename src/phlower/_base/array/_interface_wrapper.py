@@ -1,5 +1,5 @@
 import abc
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -31,7 +31,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         *,
         skip_nan: bool = False,
         use_diagonal: bool = False,
-        **kwards
+        **kwards,
     ) -> ArrayDataType:
         """Apply user defined function
 
@@ -62,7 +62,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         *,
         skip_nan: bool = False,
         use_diagonal: bool = False,
-        **kwrds
+        **kwrds,
     ) -> ArrayDataType: ...
 
     @abc.abstractmethod

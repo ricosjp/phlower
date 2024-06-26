@@ -43,9 +43,8 @@ class DataLoaderBuilder:
         dataset: IPhlowerDataset,
         *,
         shuffle: bool = True,
-        disable_dimensions: bool = False
+        disable_dimensions: bool = False,
     ) -> DataLoader:
-
         # NOTE: Arguments are variables which are different between datasets
         dimensions = None if disable_dimensions else self._variable_dimensions
         _collate_fn = PhlowerCollateFn(

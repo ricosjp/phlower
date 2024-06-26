@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import functools
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -118,7 +118,7 @@ def mean(inputs: PhlowerDimensionTensor):
 
 @dimension_wrap_implements(torch.add)
 def add(inputs, other):
-    if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
+    if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         if inputs != other:
             raise DimensionIncompatibleError()
 
@@ -154,8 +154,7 @@ def cat(
     *,
     out: PhlowerDimensionTensor = None,
 ) -> PhlowerDimensionTensor:
-    if all((isinstance(v, PhlowerDimensionTensor) for v in tensors)):
-
+    if all(isinstance(v, PhlowerDimensionTensor) for v in tensors):
         # HACK: is it possible to use unique method ?
         for v in tensors:
             if v != tensors[0]:
@@ -165,7 +164,7 @@ def cat(
 
 @dimension_wrap_implements(torch.sparse.mm)
 def sparse_mm(inputs, other):
-    if all((isinstance(v, PhlowerDimensionTensor) for v in (inputs, other))):
+    if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         return PhlowerDimensionTensor(inputs._tensor + other._tensor)
 
     raise DimensionIncompatibleError(f"input1: {inputs}, input2: {other}")
@@ -183,8 +182,7 @@ def dropout(inputs, *args, **kwards):
 
 @dimension_wrap_implements(torch.stack)
 def stack(inputs):
-    if all((isinstance(v, PhlowerDimensionTensor) for v in inputs)):
-
+    if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
         # HACK: is it possible to use unique method ?
         for v in inputs:
             if v != inputs[0]:
