@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from collections.abc import Callable, Sequence
 from functools import reduce
 
@@ -11,7 +10,10 @@ import torch
 from phlower._base._batch import SparseBatchInfo
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
+from phlower.utils import get_logger
 from phlower.utils.typing import SparseArrayType
+
+logger = get_logger(__name__)
 
 
 class SparseArrayWrapper(IPhlowerArray):
@@ -82,7 +84,7 @@ class SparseArrayWrapper(IPhlowerArray):
         self, componentwise: bool, *, use_diagonal: bool = False, **kwards
     ) -> SparseArrayType:
         if componentwise and use_diagonal:
-            warnings.warn(
+            logger.warning(
                 "component_wise and use_diagonal cannnot use"
                 " at the same time. use_diagonal is ignored"
             )

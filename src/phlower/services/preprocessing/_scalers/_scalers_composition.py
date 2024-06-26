@@ -91,9 +91,9 @@ class ScalersComposition(IPhlowerScaler):
         scaler_name_to_files: dict[str, list[PhlowerNumpyFile]],
         max_process: int = None,
     ) -> None:
-        preprocessor_inputs: list[tuple[str, list[PhlowerNumpyFile]]] = [
-            (name, files) for name, files in scaler_name_to_files.items()
-        ]
+        preprocessor_inputs: list[tuple[str, list[PhlowerNumpyFile]]] = list(
+            scaler_name_to_files.items()
+        )
 
         n_process = determine_n_process(max_process)
         with multi.Pool(n_process) as pool:

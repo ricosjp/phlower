@@ -24,7 +24,9 @@ class ExtendedLinearList(torch.nn.Module):
         self._linears = torch.nn.ModuleList(
             [
                 torch.nn.Linear(n1, n2, bias=bias)
-                for n1, n2 in zip(self._nodes[:-1], self._nodes[1:], strict=False)
+                for n1, n2 in zip(
+                    self._nodes[:-1], self._nodes[1:], strict=False
+                )
             ]
         )
         self._activators = [

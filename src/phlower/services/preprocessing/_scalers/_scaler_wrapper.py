@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import warnings
-
 import scipy.sparse as sp
 
 from phlower._base.array import phlower_array
@@ -11,8 +9,11 @@ from phlower.services.preprocessing._scalers import (
     scale_functions,
 )
 from phlower.settings._phlower_setting import ScalerParameters
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
+
+logger = get_logger(__name__)
 
 
 class ScalerWrapper(IPhlowerScaler):
@@ -55,7 +56,7 @@ class ScalerWrapper(IPhlowerScaler):
             use_diagonal=self.use_diagonal,
         )
         if reshaped_data.size == 0:
-            warnings.warn(
+            logger.warning(
                 "Found array with 0 sample(s) after deleting nan items"
             )
             return

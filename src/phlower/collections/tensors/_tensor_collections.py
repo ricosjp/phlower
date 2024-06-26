@@ -120,7 +120,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
         if weights is None:
-            return torch.sum(torch.stack([v for v in self._x.values()]))
+            return torch.sum(torch.stack(list(self._x.values())))
 
         return torch.sum(
             torch.stack([v * weights[k] for k, v in self._x.items()])

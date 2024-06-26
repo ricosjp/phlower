@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import pathlib
+from typing import get_args
 
 import numpy as np
 import scipy.sparse as sp
@@ -11,7 +12,7 @@ from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
-from phlower.utils.typing import ArrayDataType
+from phlower.utils.typing import ArrayDataType, SparseArrayType
 
 from .interface import IPhlowerNumpyFile
 
@@ -191,7 +192,7 @@ def _save_variable(
             np.save(bytesio, data.astype(dtype))
             utils.encrypt_file(encrypt_key, save_file_path, bytesio)
 
-    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
+    elif isinstance(data, get_args(SparseArrayType)):
         if encrypt_key is None:
             save_file_path = output_directory / (file_basename + ".npz")
             sp.save_npz(save_file_path, data.tocoo().astype(dtype))
