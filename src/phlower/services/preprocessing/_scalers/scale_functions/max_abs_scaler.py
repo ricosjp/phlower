@@ -3,20 +3,21 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
+from phlower.utils.enums import PhlowerScalerName
 
 
 class MaxAbsScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards):
-        if name == "max_abs":
+        if name == PhlowerScalerName.MAX_ABS.name:
             return MaxAbsScaler(**kwards)
 
         raise NotImplementedError()
 
     @classmethod
     def get_registered_names(self) -> list[str]:
-        return ["max_abs"]
+        return [PhlowerScalerName.MAX_ABS.name]
 
     def __init__(self, power=1.0, **kwargs):
         self.max_ = 0.0

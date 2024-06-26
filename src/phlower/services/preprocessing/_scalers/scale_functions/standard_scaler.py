@@ -4,18 +4,19 @@ import numpy as np
 from sklearn import preprocessing
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
+from phlower.utils.enums import PhlowerScalerName
 
 
 class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
     @classmethod
     def create(cls, name: str, **kwards) -> StandardScaler:
-        if name == "standardize":
+        if name == PhlowerScalerName.STANDARDIZE.name:
             with_mean = kwards.pop("with_mean", True)
             if not with_mean:
                 raise ValueError("with_mean must be True in standardize scaler")
             return StandardScaler(with_mean=with_mean, **kwards)
 
-        if name == "std_scale":
+        if name == PhlowerScalerName.STD_SCALE.name:
             with_mean = kwards.pop("with_mean", False)
             if with_mean:
                 raise ValueError("with_mean must be False in std_scale")
@@ -27,7 +28,10 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
 
     @classmethod
     def get_registered_names(self) -> list[str]:
-        return ["standardize", "std_scale"]
+        return [
+            PhlowerScalerName.STANDARDIZE.name,
+            PhlowerScalerName.STD_SCALE.name,
+        ]
 
     def __init__(
         self,

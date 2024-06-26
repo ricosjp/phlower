@@ -3,6 +3,7 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
+from phlower.utils.enums import PhlowerScalerName
 
 
 class SparseStandardScaler(TransformerMixin, BaseEstimator, IPhlowerScaler):
@@ -10,14 +11,14 @@ class SparseStandardScaler(TransformerMixin, BaseEstimator, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards):
-        if name == "sparse_std":
+        if name == PhlowerScalerName.SPARSE_STD.name:
             return SparseStandardScaler(**kwards)
 
         raise NotImplementedError()
 
     @classmethod
     def get_registered_names(self) -> list[str]:
-        return ["sparse_std"]
+        return [PhlowerScalerName.SPARSE_STD.name]
 
     def __init__(
         self, power: float = 1.0, other_components: list | None = None, **kwargs

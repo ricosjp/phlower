@@ -19,11 +19,6 @@ _registered_scaler: list[IPhlowerScaler] = [
 ]
 
 
-def get_registered_scaler_names() -> list[str]:
-    names = [v.get_registered_names() for v in _registered_scaler]
-    return sum(names, [])
-
-
 def create_scaler(scaler_name: str, **kwards) -> IPhlowerScaler:
     for cls in _registered_scaler:
         if scaler_name in cls.get_registered_names():

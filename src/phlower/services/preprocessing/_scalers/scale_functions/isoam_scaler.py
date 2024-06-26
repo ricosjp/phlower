@@ -5,6 +5,7 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
+from phlower.utils.enums import PhlowerScalerName
 
 
 class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
@@ -14,14 +15,14 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards):
-        if name == "isoam_scale":
+        if name == PhlowerScalerName.ISOAM_SCALE.name:
             return IsoAMScaler(**kwards)
 
         raise NotImplementedError()
 
     @classmethod
     def get_registered_names(cls) -> list[str]:
-        return ["isoam_scale"]
+        return [PhlowerScalerName.ISOAM_SCALE.name]
 
     def __init__(self, other_components: Optional[list[str]] = None, **kwargs):
         self.var_ = 0.0

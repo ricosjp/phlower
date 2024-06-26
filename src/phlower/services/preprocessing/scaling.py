@@ -3,8 +3,8 @@ from __future__ import annotations
 import pathlib
 from functools import partial
 
-from phlower.io._files import PhlowerNumpyFile
 from phlower.io import PhlowerDirectory
+from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing import ScalersComposition
 from phlower.settings import PhlowerScalingSetting
 from phlower.utils import get_logger
@@ -58,7 +58,9 @@ class ScalingService:
         self.transform_interim()
         self.save()
 
-    def lazy_fit_all(self, scaler_name_to_files: dict[str, list[pathlib.Path]]) -> None:
+    def lazy_fit_all(
+        self, scaler_name_to_files: dict[str, list[pathlib.Path]]
+    ) -> None:
         """Determine preprocessing parameters
         by reading data files lazily.
 
@@ -119,11 +121,15 @@ class ScalingService:
     ) -> dict[str, ArrayDataType]:
         return self._scalers.inverse_transform(dict_data)
 
-    def save(self, pickle_file_path: pathlib.Path, encrypt_key: bytes = None) -> None:
+    def save(
+        self, pickle_file_path: pathlib.Path, encrypt_key: bytes = None
+    ) -> None:
         """
         Save Parameters of scaling converters
         """
-        self._scalers.save(pickle_file_path=pickle_file_path, encrypt_key=encrypt_key)
+        self._scalers.save(
+            pickle_file_path=pickle_file_path, encrypt_key=encrypt_key
+        )
 
     def _transform_directories(
         self,
@@ -136,9 +142,7 @@ class ScalingService:
     ) -> None:
 
         for path in directories:
-            output_dir = PhlowerDirectory(
-                setting.get_output_directory(path)
-            )
+            output_dir = PhlowerDirectory(setting.get_output_directory(path))
             if self._can_skip(output_dir, variable_name, force_renew):
                 return
 
@@ -159,7 +163,7 @@ class ScalingService:
                 output_directory=output_dir,
                 file_basename=variable_name,
                 data=transformed_data,
-                encrypt_key=decrypt_key
+                encrypt_key=decrypt_key,
             )
 
     def _can_skip(

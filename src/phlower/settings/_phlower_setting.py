@@ -9,8 +9,8 @@ from pipe import chain, select, where
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
+import phlower.utils as utils
 from phlower.io import PhlowerDirectory
-from phlower.services.preprocessing import get_registered_scaler_names
 from phlower.settings._model_settings import GroupModuleSetting
 
 
@@ -115,8 +115,7 @@ class ScalerParameters:
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
     same_as: str | None = None
 
-    @pydantic.model_validator()
-    @classmethod
+    @pydantic.model_validator(mode="after")
     def _not_allowed_both_None(self):
         is_none_method = self.method is None
         is_none_same = self.same_as is None
@@ -128,7 +127,10 @@ class ScalerParameters:
     @pydantic.field_validator("method")
     @classmethod
     def is_exist_method(cls, v):
-        names = get_registered_scaler_names()
+        logger = utils.get_logger(__name__)
+
+        names = utils.get_registered_scaler_names()
         if v not in names:
-            raise ValueError(f"Scaler name: {v} is not implemented.")
+            # NOTE: Just warn in case that users define their own method.
+            logger.warning(f"Scaler name: {v} is not implemented.")
         return v

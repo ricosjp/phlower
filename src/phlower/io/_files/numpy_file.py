@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing_extensions import Self
+
 import io
 import pathlib
 
 import numpy as np
 import scipy.sparse as sp
+from typing_extensions import Self
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
@@ -37,7 +38,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
             file_basename=file_basename,
             data=data,
             dtype=dtype,
-            encrypt_key=encrypt_key
+            encrypt_key=encrypt_key,
         )
         _logger.info(f"{file_basename} is saved in: {saved_path}")
         return cls(saved_path)

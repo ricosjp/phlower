@@ -37,8 +37,7 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         *,
         dtype: type = np.float32,
         encrypt_key: bytes = None,
-    ):
-        ...
+    ): ...
 
     @property
     @abc.abstractmethod
@@ -58,8 +57,8 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         *,
         encrypt_key: bytes = None,
         overwrite: bool = True,
-    ) -> None:
-        ...
+    ) -> None: ...
+
 
 class IPhlowerPickleFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     @abc.abstractmethod

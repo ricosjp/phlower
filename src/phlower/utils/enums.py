@@ -32,3 +32,13 @@ class DirectoryType(Enum):
     RAW = 0
     INTERIM = 1
     PREPROCESSED = 2
+
+
+class PhlowerScalerName(Enum):
+    IDENTITY = "identity"
+    ISOAM_SCALE = "isoam_scale"
+    MAX_ABS = "max_abs"
+    MIN_MAX = "min_max"
+    SPARSE_STD = "sparse_std"
+    STANDARDIZE = "standardize"
+    STD_SCALE = "std_scale"

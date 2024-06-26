@@ -30,14 +30,13 @@ class ScalersComposition(IPhlowerScaler):
 
         return ScalersComposition(
             variable_name_to_scaler=variable_name_to_scaler,
-            scalers_dict=scalers_dict
+            scalers_dict=scalers_dict,
         )
 
     @classmethod
     def from_setting(cls, setting: PhlowerScalingSetting) -> ScalersComposition:
         variable_name_to_scaler = {
-            k: setting.get_scaler_name(k)
-            for k in setting.get_variable_names()
+            k: setting.get_scaler_name(k) for k in setting.get_variable_names()
         }
 
         scalers_dict = {

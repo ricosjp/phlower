@@ -6,8 +6,11 @@ import scipy.sparse as sp
 
 from phlower._base.array import phlower_array
 from phlower.io._files import IPhlowerNumpyFile
-from phlower.services.preprocessing._scalers import scale_functions, IPhlowerScaler
-from phlower.settings import ScalerParameters
+from phlower.services.preprocessing._scalers import (
+    IPhlowerScaler,
+    scale_functions,
+)
+from phlower.settings._phlower_setting import ScalerParameters
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
 
@@ -108,7 +111,8 @@ class ScalerWrapper(IPhlowerScaler):
         ]:
             if not sp.issparse(loaded_data):
                 raise ValueError(
-                    f"Data type not understood for: {siml_file.file_path}"
+                    "Data type is not understandable for: "
+                    f"{siml_file.file_path}"
                 )
 
         return loaded_data

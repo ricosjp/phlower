@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
+from phlower.utils.enums import PhlowerScalerName
 
 
 class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
@@ -8,12 +9,12 @@ class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards):
-        if name == "identity":
+        if name == PhlowerScalerName.IDENTITY.name:
             return IdentityScaler(**kwards)
 
     @classmethod
     def get_registered_names(cls) -> list[str]:
-        return ["identity"]
+        return [PhlowerScalerName.IDENTITY.name]
 
     def __init__(self, **kwards) -> None:
         super().__init__()
