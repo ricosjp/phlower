@@ -22,7 +22,6 @@ class PhlowerTrainer:
         n_epoch: int,
         disable_dimensions: bool = False,
     ) -> tuple[PhlowerGroupModule, PhlowerTensor]:
-
         dataset = LazyPhlowerDataset(
             x_variable_names=self._setting.model.get_input_keys(),
             y_variable_names=self._setting.model.get_output_keys(),

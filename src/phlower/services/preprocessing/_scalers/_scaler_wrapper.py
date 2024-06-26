@@ -36,7 +36,6 @@ class ScalerWrapper(IPhlowerScaler):
         componentwise: bool = True,
         parameters: dict = None,
     ):
-
         self.method_name = method_name
         self._scaler = scale_functions.create_scaler(method_name, **parameters)
         self.componentwise = componentwise
@@ -65,7 +64,6 @@ class ScalerWrapper(IPhlowerScaler):
         return
 
     def transform(self, data: ArrayDataType) -> ArrayDataType:
-
         wrapped_data = phlower_array(data)
         result = wrapped_data.apply(
             self._scaler.transform,
@@ -102,7 +100,6 @@ class ScalerWrapper(IPhlowerScaler):
     def _load_file(
         self, siml_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None
     ) -> ArrayDataType:
-
         loaded_data = siml_file.load(decrypt_key=decrypt_key)
 
         if siml_file.file_extension in [

@@ -1,4 +1,3 @@
-from typing import Optional
 
 import numpy as np
 import scipy.sparse as sp
@@ -24,7 +23,7 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     def get_registered_names(cls) -> list[str]:
         return [PhlowerScalerName.ISOAM_SCALE.name]
 
-    def __init__(self, other_components: Optional[list[str]] = None, **kwargs):
+    def __init__(self, other_components: list[str] | None = None, **kwargs):
         self.var_ = 0.0
         self.std_ = 0.0
         self.mean_square_ = 0.0

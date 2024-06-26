@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import Any, Callable, Iterable, Union
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from phlower.io._file_builder import PhlowerFileBuilder
 from phlower.io._files import (
@@ -52,7 +53,7 @@ class PhlowerDirectory:
 
     def find_pickle_file(
         self, file_base_name: str, *, allow_missing: bool = False
-    ) -> Union[IPhlowerPickleFile, None]:
+    ) -> IPhlowerPickleFile | None:
         extensions = [PhlowerFileExtType.PKL, PhlowerFileExtType.PKLENC]
 
         return self._find_file(
@@ -64,7 +65,7 @@ class PhlowerDirectory:
 
     def find_yaml_file(
         self, file_base_name: str, *, allow_missing: bool = False
-    ) -> Union[IPhlowerYamlFile, None]:
+    ) -> IPhlowerYamlFile | None:
         extensions = [
             PhlowerFileExtType.YAML,
             PhlowerFileExtType.YAMLENC,
@@ -81,8 +82,7 @@ class PhlowerDirectory:
 
     def find_variable_file(
         self, variable_name: str, *, allow_missing: bool = False
-    ) -> Union[IPhlowerNumpyFile, None]:
-
+    ) -> IPhlowerNumpyFile | None:
         extensions = [
             PhlowerFileExtType.NPY,
             PhlowerFileExtType.NPYENC,

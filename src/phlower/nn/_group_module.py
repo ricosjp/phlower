@@ -19,7 +19,6 @@ from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
 
 
 class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
-
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> Self:
         _modules: list[IPhlowerModuleAdapter] = []
@@ -101,7 +100,6 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
     def draw(
         self, output_directory: pathlib.Path | str, recursive: bool = True
     ):
-
         # TODO: Need to apply Dependency Injection. Use composition pattern.
         drawer = MermaidDrawer()
 
@@ -124,7 +122,6 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
         *,
         supports: dict[str, PhlowerTensor],
     ) -> IPhlowerTensorCollections:
-
         results = phlower_tensor_collection({})
 
         # construct (and check dags)

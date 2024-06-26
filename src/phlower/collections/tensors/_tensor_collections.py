@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Mapping, Sequence
-from typing import Any, Iterable
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -60,7 +60,6 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
 
 
 def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
-
     if isinstance(values, dict):
         return PhlowerDictTensors(values)
 

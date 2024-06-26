@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import multiprocessing as multi
 import pathlib
-from typing import Optional
 
 from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
@@ -18,12 +17,10 @@ logger = get_logger(__name__)
 
 
 class ScalersComposition(IPhlowerScaler):
-
     @classmethod
     def from_pickle_file(
-        cls, pkl_file_path: pathlib.Path, decrypt_key: Optional[bytes] = None
+        cls, pkl_file_path: pathlib.Path, decrypt_key: bytes | None = None
     ) -> ScalersComposition:
-
         variable_name_to_scaler, scalers_dict = ScalerFileIO.load_pickle(
             pkl_file_path, decrypt_key=decrypt_key
         )
@@ -119,7 +116,6 @@ class ScalersComposition(IPhlowerScaler):
         siml_file: PhlowerNumpyFile,
         decrypt_key: bytes | None = None,
     ) -> ArrayDataType:
-
         loaded_data = siml_file.load(decrypt_key=decrypt_key)
         scaler = self.get_scaler(variable_name)
         transformed_data = scaler.transform(loaded_data)
@@ -130,7 +126,6 @@ class ScalersComposition(IPhlowerScaler):
         dict_data: dict[str, ArrayDataType],
         raise_missing_warning: bool = True,
     ) -> dict[str, ArrayDataType]:
-
         converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)
@@ -157,7 +152,6 @@ class ScalersComposition(IPhlowerScaler):
         dict_data: dict[str, ArrayDataType],
         raise_missing_warning: bool = True,
     ) -> dict[str, ArrayDataType]:
-
         converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)

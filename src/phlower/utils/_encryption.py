@@ -43,7 +43,7 @@ def decrypt_file(
     """
 
     with open(file_path, "rb") as f:
-        nonce, tag, ciphertext = [f.read(x) for x in (16, 16, -1)]
+        nonce, tag, ciphertext = (f.read(x) for x in (16, 16, -1))
     cipher = AES.new(key, AES.MODE_EAX, nonce)
     if return_stringio:
         return cipher.decrypt_and_verify(ciphertext, tag).decode("utf-8")

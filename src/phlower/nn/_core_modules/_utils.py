@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -6,7 +6,6 @@ from phlower._base.tensors import PhlowerTensor
 
 
 class ExtendedLinearList(torch.nn.Module):
-
     def __init__(
         self,
         nodes: list[int],
@@ -25,7 +24,7 @@ class ExtendedLinearList(torch.nn.Module):
         self._linears = torch.nn.ModuleList(
             [
                 torch.nn.Linear(n1, n2, bias=bias)
-                for n1, n2 in zip(self._nodes[:-1], self._nodes[1:])
+                for n1, n2 in zip(self._nodes[:-1], self._nodes[1:], strict=False)
             ]
         )
         self._activators = [

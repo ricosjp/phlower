@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -65,7 +65,6 @@ def _resolve_dimension_arg(
 
 
 class PhlowerTensor:
-
     def __init__(
         self,
         tensor: torch.Tensor,

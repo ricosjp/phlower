@@ -1,7 +1,8 @@
 import concurrent.futures as cf
 import itertools
+from collections.abc import Callable, Iterable
 from functools import partial
-from typing import Any, Callable, Iterable, TypeVar
+from typing import Any, TypeVar
 
 from phlower.utils.exceptions import PhlowerMultiProcessError
 
@@ -26,7 +27,7 @@ def _get_chunks(
     *iterables: Iterable[Any], chunksize: int
 ) -> Iterable[list[Any]]:
     """Iterates over zip()ed iterables in chunks."""
-    it = zip(*iterables)
+    it = zip(*iterables, strict=False)
     while True:
         chunk = tuple(itertools.islice(it, chunksize))
         if not chunk:

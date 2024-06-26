@@ -13,7 +13,6 @@ class ScalerFileIO:
     def load_pickle(
         self, pkl_file_path: pathlib.Path, decrypt_key: bytes | None = None
     ) -> tuple[dict[str, str], dict[str, ScalerWrapper]]:
-
         pickle_file = PhlowerFileBuilder.pickle_file(pkl_file_path)
         _parameters: dict[str, dict] = pickle_file.load(decrypt_key=decrypt_key)
         variable_name_to_scalers = _parameters[self._name_map_key]

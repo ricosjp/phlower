@@ -1,5 +1,4 @@
 import pathlib
-from typing import Union
 
 from phlower.nn._interface_module import IPhlowerModuleAdapter
 from phlower.services.drawers._interface import IPhlowerDrawer
@@ -13,7 +12,7 @@ class MermaidDrawer(IPhlowerDrawer):
     def output(
         self,
         modules: list[IPhlowerModuleAdapter],
-        file_path: Union[pathlib.Path, str],
+        file_path: pathlib.Path | str,
     ) -> None:
         """output content to file_path
 

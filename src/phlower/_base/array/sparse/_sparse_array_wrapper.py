@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import reduce
-from typing import Callable, Optional, Sequence
 
 import numpy as np
 import scipy.sparse as sp
@@ -16,7 +16,7 @@ from phlower.utils.typing import SparseArrayType
 
 class SparseArrayWrapper(IPhlowerArray):
     def __init__(
-        self, arr: SparseArrayType, batch_info: Optional[SparseBatchInfo] = None
+        self, arr: SparseArrayType, batch_info: SparseBatchInfo | None = None
     ) -> None:
         if batch_info is None:
             batch_info = SparseBatchInfo(
@@ -65,7 +65,6 @@ class SparseArrayWrapper(IPhlowerArray):
         use_diagonal: bool = False,
         **kwards,
     ) -> SparseArrayType:
-
         if use_diagonal:
             raise ValueError(
                 "Cannot set use_diagonal=True in self.apply function. "

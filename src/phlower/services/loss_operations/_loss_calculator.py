@@ -99,7 +99,6 @@ class LossCalculator(ILossCalculator):
         prediction: IPhlowerTensorCollections,
         answer: IPhlowerTensorCollections,
     ) -> IPhlowerTensorCollections:
-
         loss_items: dict[str, torch.Tensor] = {}
         for key in answer.keys():
             if key not in prediction:

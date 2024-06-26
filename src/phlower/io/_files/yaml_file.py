@@ -104,7 +104,7 @@ def _load_yaml_file(file_path: str | pathlib.Path):
     dict_data: dict
         YAML contents.
     """
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         dict_data = yaml.load(f, Loader=yaml.SafeLoader)
     return dict_data
 

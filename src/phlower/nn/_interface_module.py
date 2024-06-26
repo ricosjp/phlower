@@ -20,7 +20,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] = None
+        supports: dict[str, PhlowerTensor] = None,
     ) -> PhlowerTensor: ...
 
 
@@ -37,7 +37,7 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor]
+        supports: dict[str, PhlowerTensor],
     ) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod

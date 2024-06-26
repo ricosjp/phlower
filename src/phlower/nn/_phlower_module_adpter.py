@@ -80,7 +80,6 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         *,
         supports: dict[str, PhlowerTensor],
     ) -> IPhlowerTensorCollections:
-
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
         )
