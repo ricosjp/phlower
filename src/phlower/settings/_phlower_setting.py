@@ -19,6 +19,7 @@ from phlower.settings._model_settings import GroupModuleSetting
 class PhlowerSetting:
     trainer: PhlowerTrainerSetting
     model: GroupModuleSetting
+    scaling: PhlowerScalingSetting
 
     @classmethod
     def read_yaml(cls, file_path: pathlib.Path | str) -> Self:

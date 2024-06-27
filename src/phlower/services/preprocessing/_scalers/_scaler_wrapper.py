@@ -99,18 +99,18 @@ class ScalerWrapper(IPhlowerScaler):
         return ScalerParameters(**dumped_dict)
 
     def _load_file(
-        self, siml_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None
+        self, numpy_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None
     ) -> ArrayDataType:
-        loaded_data = siml_file.load(decrypt_key=decrypt_key)
+        loaded_data = numpy_file.load(decrypt_key=decrypt_key)
 
-        if siml_file.file_extension in [
+        if numpy_file.file_extension in [
             PhlowerFileExtType.NPZENC.value,
             PhlowerFileExtType.NPZ.value,
         ]:
             if not sp.issparse(loaded_data):
                 raise ValueError(
                     "Data type is not understandable for: "
-                    f"{siml_file.file_path}"
+                    f"{numpy_file.file_path}"
                 )
 
         return loaded_data

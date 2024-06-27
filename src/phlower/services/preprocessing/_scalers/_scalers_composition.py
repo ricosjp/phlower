@@ -113,10 +113,10 @@ class ScalersComposition(IPhlowerScaler):
     def transform_file(
         self,
         variable_name: str,
-        siml_file: PhlowerNumpyFile,
+        numpy_file: PhlowerNumpyFile,
         decrypt_key: bytes | None = None,
     ) -> ArrayDataType:
-        loaded_data = siml_file.load(decrypt_key=decrypt_key)
+        loaded_data = numpy_file.load(decrypt_key=decrypt_key)
         scaler = self.get_scaler(variable_name)
         transformed_data = scaler.transform(loaded_data)
         return transformed_data

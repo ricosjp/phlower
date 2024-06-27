@@ -31,3 +31,9 @@ class PhlowerModuleCycleError(ValueError):
 
 
 class PhlowerMultiProcessError(ValueError): ...
+
+
+class PhlowerFeatureStoreOverwriteError(ValueError):
+    """This error raises when to try to overwrite feature store item"""
+
+    ...

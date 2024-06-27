@@ -68,10 +68,6 @@ class ScalingService:
         -------
         None
         """
-        scaler_name_to_files = {
-            s: self._setting.collect_fitting_files(s)
-            for s in self._scalers.get_scaler_names()
-        }
         self._scalers.lazy_partial_fit(scaler_name_to_files)
 
     def transform_interim(
@@ -145,17 +141,17 @@ class ScalingService:
             if self._can_skip(output_dir, variable_name, force_renew):
                 return
 
-            siml_file = PhlowerDirectory(path).find_variable_file(
+            numpy_file = PhlowerDirectory(path).find_variable_file(
                 variable_name, allow_missing=allow_missing
             )
-            if siml_file is None:
+            if numpy_file is None:
                 logger.warning(
                     f"Scaling skipped. {variable_name} is missing in {path}"
                 )
                 return
 
             transformed_data = self._scalers.transform_file(
-                variable_name, siml_file, decrypt_key=decrypt_key
+                variable_name, numpy_file, decrypt_key=decrypt_key
             )
 
             PhlowerNumpyFile.save_variables(
