@@ -79,7 +79,7 @@ class PhlowerMultiprocessor:
 
         Raises
         -------
-        SimlMultiprocessError:
+        PhlowerMultiprocessError:
             If some processes are killed by host system such as OOM killer,
              this error raises.
         """
