@@ -8,7 +8,7 @@ from phlower.services.preprocessing._scalers import (
     IPhlowerScaler,
     scale_functions,
 )
-from phlower.settings._phlower_setting import ScalerParameters
+from phlower.settings import ScalerInputParameters, ScalerResolvedParameters
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 class ScalerWrapper(IPhlowerScaler):
     @classmethod
-    def from_setting(cls, setting: ScalerParameters) -> ScalerWrapper:
+    def from_setting(cls, setting: ScalerResolvedParameters) -> ScalerWrapper:
         _cls = cls(
             method=setting.method,
             componentwise=setting.component_wise,
@@ -90,13 +90,14 @@ class ScalerWrapper(IPhlowerScaler):
             self.partial_fit(data)
         return
 
-    def get_dumped_data(self) -> ScalerParameters:
-        dumped_dict = {
-            "method": self.method_name,
-            "componentwise": self.componentwise,
-            "parameters": vars(self._scaler),
-        }
-        return ScalerParameters(**dumped_dict)
+    def get_dumped_data(self) -> dict:
+        # NOTE: Refer to setting file in order to ensure readable by program.
+        _setting = ScalerInputParameters(
+            method=self.method_name,
+            component_wise=self.componentwise,
+            parameters=vars(self._scaler),
+        )
+        return _setting.model_dump()
 
     def _load_file(
         self, numpy_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None

@@ -22,22 +22,23 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     def get_registered_names(cls) -> list[str]:
         return [PhlowerScalerName.ISOAM_SCALE.name]
 
-    def __init__(self, other_components: list[str] | None = None, **kwargs):
-        self.var_ = 0.0
-        self.std_ = 0.0
-        self.mean_square_ = 0.0
-        self.n_ = 0
-        self.other_components = []
-        if other_components is not None:
-            self.other_components = other_components
+    def __init__(self, other_components: list[str], **kwargs):
+        self.var_: float = 0.0
+        self.std_: float = 0.0
+        self.mean_square_: float = 0.0
+        self.n_: int = 0
+        self.other_components = other_components
 
-        self.component_dim = len(self.other_components) + 1
-        if self.component_dim == 1:
+        if len(self.other_components) == 0:
             raise ValueError(
                 "To use IsoAMScaler, feed other_components: "
-                f"{other_components}"
+                f"{self.other_components}"
             )
         return
+
+    @property
+    def component_dim(self) -> int:
+        return len(self.other_components) + 1
 
     @property
     def use_diagonal(self) -> bool:
