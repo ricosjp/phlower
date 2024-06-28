@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import pathlib
 from collections.abc import Iterable
 from typing import Any
@@ -56,14 +57,14 @@ class LossSetting:
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
 class PhlowerScalingSetting:
     interim_base_directory: pathlib.Path
-    varaible_name_to_scalers: dict[str, ScalerParameters] = pydantic.Field(
-        default_factory=lambda: {}
+    varaible_name_to_scalers: dict[str, ScalerParameters | SameAsParameters] = (
+        pydantic.Field(default_factory=lambda: {})
     )
 
     @pydantic.model_validator(mode="after")
     def _check_same_as(self):
         for k, v in self.varaible_name_to_scalers.items():
-            if v.same_as is None:
+            if v.is_parent_scaler:
                 continue
 
             if v.same_as not in self.varaible_name_to_scalers:
@@ -84,47 +85,56 @@ class PhlowerScalingSetting:
         results = {
             self.get_scaler_name(name): v
             for name, v in self.varaible_name_to_scalers.items()
-            if v.same_as is None
+            if not v.is_parent_scaler
         }
         return results
 
     def get_scaler_name(self, variable_name: str):
         param = self.varaible_name_to_scalers[variable_name]
-        if param.same_as is None:
+        if not param.is_parent_scaler:
             return f"scaler_{variable_name}"
 
         return f"scaler_{param.same_as}"
 
     def collect_fitting_files(self, scaler_name: str) -> list[pathlib.Path]:
-        targets = self.varaible_name_to_scalers.keys() | where(
-            lambda x: self.get_scaler_name(x) == scaler_name
+        target_variables: list[str] = list(
+            self.varaible_name_to_scalers.items()
+            | where(lambda x: self.get_scaler_name(x) == scaler_name)
+            | where(lambda k, v: v.join_fitting)
+            | select(lambda k, v: k)
         )
-
-        # NOTE: Maybe need to filter by same_as or other_components
 
         directory = PhlowerDirectory()
         file_paths = list(
-            targets | select(lambda x: directory.find_variable_file(x)) | chain
+            target_variables
+            | select(lambda x: directory.find_variable_file(x))
+            | chain
         )
 
         return file_paths
 
 
+class IScalerParameter(metaclass=abc.ABCMeta):
+    @abc.abstractproperty
+    def is_parent_scaler(self) -> bool: ...
+
+    @abc.abstractproperty
+    def join_fitting(self) -> bool: ...
+
+
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class ScalerParameters:
-    method: str | None = None
+class ScalerParameters(IScalerParameter):
+    method: str
     component_wise: bool = True
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
-    same_as: str | None = None
 
-    @pydantic.model_validator(mode="after")
-    def _not_allowed_both_None(self):
-        is_none_method = self.method is None
-        is_none_same = self.same_as is None
+    @property
+    def is_parent_scaler(self) -> bool:
+        return True
 
-        if is_none_method and is_none_same:
-            raise ValueError("method or same_as must be set.")
-        return self
+    @property
+    def join_fitting(self) -> bool:
+        return True
 
     @pydantic.field_validator("method")
     @classmethod
@@ -136,3 +146,17 @@ class ScalerParameters:
             # NOTE: Just warn in case that users define their own method.
             logger.warning(f"Scaler name: {v} is not implemented.")
         return v
+
+
+@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
+class SameAsParameters(IScalerParameter):
+    same_as: str
+    join_fitting: bool = False
+
+    @property
+    def is_parent_scaler(self) -> bool:
+        return False
+
+    @property
+    def join_fitting(self) -> bool:
+        return self.join_fitting
