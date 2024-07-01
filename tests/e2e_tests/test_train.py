@@ -75,5 +75,5 @@ def test__simple_training(prepare_sample_preprocessed_files):
     model.draw(_OUTPUT_DIR)
 
     assert loss.has_dimension
-    assert not torch.isinf(loss.tensor())
-    assert not torch.isnan(loss.tensor())
+    assert not torch.isinf(loss.to_tensor())
+    assert not torch.isnan(loss.to_tensor())

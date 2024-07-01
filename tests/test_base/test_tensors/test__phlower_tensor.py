@@ -1,10 +1,8 @@
 import numpy as np
 import pytest
-import scipy.sparse as sp
 import torch
 
 from phlower import PhlowerTensor, phlower_dimension_tensor
-from phlower._base.array.sparse import SparseArrayWrapper, concatenate
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 
@@ -16,7 +14,7 @@ def test__add():
     ap = PhlowerTensor(a)
     bp = PhlowerTensor(b)
     cp = ap + bp
-    cp = cp.tensor().numpy()
+    cp = cp.to_tensor().numpy()
 
     np.testing.assert_array_almost_equal(cp, c)
 
@@ -31,7 +29,7 @@ def test__add_with_unit():
     bp = PhlowerTensor(torch.tensor(b), units)
     cp = ap + bp
 
-    np.testing.assert_array_almost_equal(cp.tensor().numpy(), c)
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
 
 
 def test__add_with_unit_incompatible():
@@ -59,7 +57,7 @@ def test__mul_with_unit():
     bp = PhlowerTensor(b, dims_2)
     cp = ap * bp
 
-    np.testing.assert_array_almost_equal(cp.tensor().numpy(), c.numpy())
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 
     assert cp._dimension_tensor == dims_3
 
@@ -71,7 +69,7 @@ def test__tanh():
     ap = PhlowerTensor(a)
     cp = torch.tanh(ap)
 
-    np.testing.assert_array_almost_equal(cp.tensor(), c)
+    np.testing.assert_array_almost_equal(cp.to_tensor(), c)
 
 
 @pytest.mark.parametrize(
@@ -86,34 +84,5 @@ def test__getitem(key):
     torch_tensor = torch.rand(5)
     phlower_tensor = PhlowerTensor(torch_tensor)
     np.testing.assert_array_almost_equal(
-        phlower_tensor[key].tensor(), torch_tensor[key]
+        phlower_tensor[key].to_tensor(), torch_tensor[key]
     )
-
-
-@pytest.mark.parametrize(
-    "shapes, expected_shape",
-    [
-        ([(5, 6), (4, 9), (10, 11)], (19, 26)),
-        ([(1, 1), (2, 1), (1, 1)], (4, 3)),
-        ([(3, 5)], (3, 5)),
-    ],
-)
-def test__decompose(shapes, expected_shape):
-    rng = np.random.default_rng()
-
-    sparse_arrays = [
-        SparseArrayWrapper(sp.random(*arr_shape, density=0.1, random_state=rng))
-        for arr_shape in shapes
-    ]
-
-    concat_arr = concatenate(sparse_arrays)
-    tensor = concat_arr.to_phlower_tensor(device="cpu")
-    assert tensor.shape == expected_shape
-
-    tensors = tensor.unbatch()
-    assert len(tensors) == len(shapes)
-
-    for i in range(len(shapes)):
-        np.testing.assert_array_almost_equal(
-            sparse_arrays[i].numpy().todense(), tensors[i].to_dense()
-        )

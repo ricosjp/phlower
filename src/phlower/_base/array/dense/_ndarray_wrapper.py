@@ -60,7 +60,7 @@ class NdArrayWrapper(IPhlowerArray):
 
     def to_phlower_tensor(
         self,
-        device: str | torch.device | None,
+        device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimension: dict[str, float] | None = None,
     ) -> PhlowerTensor:

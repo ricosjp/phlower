@@ -7,7 +7,7 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
-from phlower._base._batch import SparseBatchInfo
+from phlower._base._batch import BatchInfo
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils import get_logger
@@ -18,12 +18,10 @@ logger = get_logger(__name__)
 
 class SparseArrayWrapper(IPhlowerArray):
     def __init__(
-        self, arr: SparseArrayType, batch_info: SparseBatchInfo | None = None
+        self, arr: SparseArrayType, batch_info: BatchInfo | None = None
     ) -> None:
         if batch_info is None:
-            batch_info = SparseBatchInfo(
-                sizes=[len(arr.data)], shapes=[arr.shape]
-            )
+            batch_info = BatchInfo(sizes=[len(arr.data)], shapes=[arr.shape])
 
         self._sparse_data = arr
         self._batch_info = batch_info
@@ -53,7 +51,7 @@ class SparseArrayWrapper(IPhlowerArray):
         return self._sparse_data.shape
 
     @property
-    def batch_info(self) -> SparseBatchInfo:
+    def batch_info(self) -> BatchInfo:
         return self._batch_info
 
     def __repr__(self) -> str:
@@ -105,7 +103,7 @@ class SparseArrayWrapper(IPhlowerArray):
 
     def to_phlower_tensor(
         self,
-        device: str | torch.device | None,
+        device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimension: dict[str, float] | None = None,
     ) -> PhlowerTensor:
@@ -119,11 +117,7 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(
-            tensor=sparse_tensor,
-            dimension=dimension,
-            sparse_batch_info=self._batch_info,
-        )
+        _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 
@@ -143,7 +137,7 @@ def concatenate(arrays: Sequence[SparseArrayWrapper]):
         reduce(lambda x, y: x + y, [arr.batch_info.sizes for arr in arrays], [])
     )
 
-    info = SparseBatchInfo(sizes=concat_sizes, shapes=concat_shapes)
+    info = BatchInfo(sizes=concat_sizes, shapes=concat_shapes)
     return SparseArrayWrapper(concat_arr, info)
 
 
@@ -179,7 +173,7 @@ def _sparse_concatenate(*arrays: SparseArrayType):
     return sparse_arr
 
 
-def _sparse_decompose(array: SparseArrayType, batch_info: SparseBatchInfo):
+def _sparse_decompose(array: SparseArrayType, batch_info: BatchInfo):
     sizes = np.cumsum(batch_info.sizes)
     offsets = np.cumsum(
         np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32), axis=0
