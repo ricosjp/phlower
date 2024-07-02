@@ -3,15 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
-import numpy as np
 import torch
 from pipe import select
 
-from phlower._base._batch import SparseBatchInfo
 from phlower._base.tensors._dimensions import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
 )
+from phlower._base.tensors._interface import IPhlowerTensor
 from phlower.utils import get_logger
 
 logger = get_logger(__name__)
@@ -22,10 +21,9 @@ def phlower_tensor(
     dimension: (
         PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
     ) = None,
-    sparse_batch_info: SparseBatchInfo | None = None,
 ):
     if isinstance(tensor, PhlowerTensor):
-        if (dimension is not None) or (sparse_batch_info is not None):
+        if dimension is not None:
             logger.warning(
                 "Input dimension_tensor and sparse_batch_info are ignored."
             )
@@ -35,11 +33,7 @@ def phlower_tensor(
     if isinstance(tensor, torch.Tensor):
         dimension_tensor = _resolve_dimension_arg(dimension)
 
-        return PhlowerTensor(
-            tensor=tensor,
-            dimension_tensor=dimension_tensor,
-            sparse_batch_info=sparse_batch_info,
-        )
+        return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
 
     raise NotImplementedError(f"PhlowerTensor cannot be created from {tensor}.")
 
@@ -65,31 +59,43 @@ def _resolve_dimension_arg(
     )
 
 
-class PhlowerTensor:
+class PhlowerTensor(IPhlowerTensor):
     def __init__(
         self,
         tensor: torch.Tensor,
         dimension_tensor: PhlowerDimensionTensor | None = None,
-        sparse_batch_info: SparseBatchInfo | None = None,
     ):
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
-        self._sparse_batch_info = sparse_batch_info
 
     @property
     def has_dimension(self) -> bool:
         return self._dimension_tensor is not None
 
     @property
+    def dimension(self) -> PhlowerDimensionTensor | None:
+        return self._dimension_tensor
+
+    @property
     def shape(self) -> torch.Size:
         return self._tensor.shape
+
+    @property
+    def is_sparse(self) -> bool:
+        return self._tensor.layout == torch.sparse_coo
 
     def __str__(self) -> str:
         return (
             f"PhysicsTensor({self._tensor}, "
             f"Dimension: {self._dimension_tensor})"
         )
+
+    def __abs__(self) -> PhlowerTensor:
+        return torch.abs(self)
+
+    def __sub__(self, other: PhlowerTensor):
+        return torch.subtract(self, other)
 
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
@@ -103,11 +109,20 @@ class PhlowerTensor:
     def __getitem__(self, key: Any) -> PhlowerTensor:
         return PhlowerTensor(self._tensor[key], self._dimension_tensor)
 
-    def tensor(self) -> torch.Tensor:
+    def to_tensor(self) -> torch.Tensor:
         return self._tensor
+
+    def coalesce(self) -> torch.Tensor:
+        return PhlowerTensor(self._tensor.coalesce(), self._dimension_tensor)
 
     def size(self) -> torch.Size:
         return self._tensor.size()
+
+    def indices(self) -> torch.Tensor:
+        return self._tensor.indices()
+
+    def values(self) -> torch.Tensor:
+        return self._tensor.values()
 
     def reshape(self, shape: Sequence[int]) -> PhlowerTensor:
         self._tensor = self._tensor.reshape(shape)
@@ -121,12 +136,6 @@ class PhlowerTensor:
         self._tensor.to(device, non_blocking=non_blocking)
         if self.has_dimension:
             self._dimension_tensor.to(device, non_blocking=non_blocking)
-
-    def unbatch(self) -> list[torch.Tensor]:
-        if self._sparse_batch_info is None:
-            return [self._tensor]
-
-        return _sparse_decompose(self._tensor, self._sparse_batch_info)
 
     def backward(self) -> None:
         self._tensor.backward()
@@ -174,33 +183,3 @@ def _has_dimension(args: Any) -> bool:
         return args.has_dimension
 
     return False
-
-
-def _sparse_decompose(sparse_tensor: torch.Tensor, batch_info: SparseBatchInfo):
-    sizes = torch.tensor(batch_info.sizes, dtype=torch.int32)
-    offsets = torch.tensor(
-        np.cumsum(
-            np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32),
-            axis=0,
-            dtype=np.int32,
-        )
-    )
-    sparse_tensor = sparse_tensor.coalesce()
-
-    rows = sparse_tensor.indices()[0] - offsets[:, 0].repeat_interleave(sizes)
-    rows = rows.split(batch_info.sizes)
-
-    cols = sparse_tensor.indices()[1] - offsets[:, 1].repeat_interleave(sizes)
-    cols = cols.split(batch_info.sizes)
-
-    data = sparse_tensor.values().split(batch_info.sizes)
-
-    results = [
-        torch.sparse_coo_tensor(
-            indices=torch.stack([rows[i], cols[i]]),
-            values=data[i],
-            size=batch_info.shapes[i],
-        )
-        for i in range(len(batch_info))
-    ]
-    return results

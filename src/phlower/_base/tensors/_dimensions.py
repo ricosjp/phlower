@@ -86,6 +86,12 @@ class PhlowerDimensionTensor:
         )
         return f"{self.__class__.__name__}({texts})"
 
+    def to_dict(self) -> dict[str, float]:
+        return {
+            k: self._tensor[v.value].numpy().item()
+            for k, v in PhysicalDimensionType.__members__.items()
+        }
+
     def to(self, device: str | torch.device, non_blocking: bool = False):
         self._tensor.to(device, non_blocking=non_blocking)
 
@@ -205,5 +211,18 @@ def mse_loss(inputs, others, *args, **kwards):
 def _sum(inputs, *args, **kwards):
     if isinstance(inputs, PhlowerDimensionTensor):
         return inputs
+
+    raise DimensionIncompatibleError()
+
+
+@dimension_wrap_implements(torch.concatenate)
+def concatenate(inputs, *args, **kwards):
+    if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
+        # HACK: is it possible to use unique method ?
+        for v in inputs:
+            if v != inputs[0]:
+                raise DimensionIncompatibleError()
+
+        return PhlowerDimensionTensor(inputs[0]._tensor)
 
     raise DimensionIncompatibleError()

@@ -51,7 +51,7 @@ class _PhlowerSequenceArray:
             return self._data[0]
 
         if self._is_sparse:
-            return sparse.concatenate(self._data)
+            return sparse.batch(self._data)
 
         if self._is_timeseries:
             return phlower_array(np.concatenate(self._data, axis=1))
