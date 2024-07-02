@@ -1,13 +1,12 @@
 import torch
-from pipe import where
 
 from phlower._base import phlower_tensor
-from phlower._base._batch import BatchInfo
+from phlower._base._batch import GraphBatchInfo
 from phlower._base.tensors._interface import IPhlowerTensor
 
 
 def unbatch(
-    tensor: IPhlowerTensor, batch_info: BatchInfo
+    tensor: IPhlowerTensor, batch_info: GraphBatchInfo
 ) -> list[IPhlowerTensor]:
     if tensor.is_sparse:
         results = _sparse_unbatch(tensor.to_tensor(), batch_info)
@@ -18,7 +17,7 @@ def unbatch(
 
 
 def _sparse_unbatch(
-    sparse_tensor: torch.Tensor, batch_info: BatchInfo
+    sparse_tensor: torch.Tensor, batch_info: GraphBatchInfo
 ) -> list[torch.Tensor]:
     sizes = torch.tensor(batch_info.sizes, dtype=torch.int32)
     offsets = torch.tensor(
@@ -50,17 +49,17 @@ def _sparse_unbatch(
 
 
 def _dense_unbatch(
-    tensor: torch.Tensor, batch_info: BatchInfo
+    tensor: torch.Tensor, batch_info: GraphBatchInfo
 ) -> list[torch.Tensor]:
-    n_nodes = batch_info.get_total_nodes()
+    n_nodes = batch_info.total_n_nodes
 
     index_dim = _get_n_node_dim(tensor, n_nodes)
-    n_rows = [v[0] for v in batch_info.shapes]
+    n_rows = [v[index_dim] for v in batch_info.shapes]
     return tensor.split(n_rows, dim=index_dim)
 
 
 def _get_n_node_dim(tensor: torch.Tensor, n_nodes: int) -> int:
-    _index = list(tensor.shape | where(lambda x: x == n_nodes))
+    _index = [i for i, v in enumerate(tensor.shape) if v == n_nodes]
 
     if len(_index) == 0:
         raise ValueError(

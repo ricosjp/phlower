@@ -91,6 +91,12 @@ class PhlowerTensor(IPhlowerTensor):
             f"Dimension: {self._dimension_tensor})"
         )
 
+    def __abs__(self) -> PhlowerTensor:
+        return torch.abs(self)
+
+    def __sub__(self, other: PhlowerTensor):
+        return torch.subtract(self, other)
+
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
 

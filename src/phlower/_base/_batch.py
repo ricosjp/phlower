@@ -1,16 +1,14 @@
 from typing import NamedTuple
 
 
-class BatchInfo(NamedTuple):
+class GraphBatchInfo(NamedTuple):
     sizes: list[int]
     shapes: list[tuple[int]]
+    total_n_nodes: int
 
     @property
     def is_concatenated(self) -> bool:
         return len(self.sizes) > 1
-
-    def get_total_nodes(self) -> int:
-        return sum(v[0] for v in self.shapes)
 
     def __len__(self):
         assert len(self.sizes) == len(self.shapes)

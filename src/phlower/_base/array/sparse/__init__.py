@@ -1,1 +1,1 @@
-from ._sparse_array_wrapper import SparseArrayWrapper, concatenate, decompose
+from ._sparse_array_wrapper import SparseArrayWrapper, batch, unbatch
