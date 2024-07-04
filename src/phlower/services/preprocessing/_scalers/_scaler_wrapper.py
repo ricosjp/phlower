@@ -34,7 +34,7 @@ class ScalerWrapper(IPhlowerScaler):
         self,
         method_name: str,
         *,
-        componentwise: bool = True,
+        componentwise: bool = False,
         parameters: dict = None,
     ):
         self.method_name = method_name

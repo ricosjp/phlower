@@ -1,25 +1,29 @@
+from __future__ import annotations
+
 import numpy as np
 import scipy.sparse as sp
+from numpy.typing import NDArray
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
 from phlower.utils.enums import PhlowerScalerName
+from phlower.utils.typing import ArrayDataType
 
 
-class MaxAbsScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
+class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     @classmethod
-    def create(cls, name: str, **kwards):
-        if name == PhlowerScalerName.MAX_ABS.name:
-            return MaxAbsScaler(**kwards)
+    def create(cls, name: str, **kwards) -> MaxAbsPoweredScaler:
+        if name == PhlowerScalerName.MAX_ABS_POWERED.value:
+            return MaxAbsPoweredScaler(**kwards)
 
         raise NotImplementedError()
 
     @classmethod
     def get_registered_names(self) -> list[str]:
-        return [PhlowerScalerName.MAX_ABS.name]
+        return [PhlowerScalerName.MAX_ABS_POWERED.value]
 
-    def __init__(self, power=1.0, **kwargs):
-        self.max_ = 0.0
+    def __init__(self, power: float = 1.0, **kwargs):
+        self._max: NDArray | None = None
         self.power = power
         return
 
@@ -30,31 +34,48 @@ class MaxAbsScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     def is_erroneous(self) -> bool:
         return False
 
-    def partial_fit(self, data):
+    def partial_fit(self, data: ArrayDataType) -> None:
         if sp.issparse(data):
-            self.max_ = np.maximum(
-                np.ravel(np.max(np.abs(data), axis=0).toarray()), self.max_
+            _max = np.ravel(np.max(np.abs(data), axis=0).toarray())
+        else:
+            _max = np.max(np.abs(data), axis=0)
+
+        if self._max is None:
+            self._max = _max
+        else:
+            self._max = np.maximum(_max, self._max)
+
+    def is_fitted(self) -> bool:
+        return self._max is not None
+
+    def transform(self, data: ArrayDataType):
+        if not self.is_fitted():
+            raise ValueError(
+                f"This scaler has not fitted yet. {self.__class__.__name__}"
             )
-        else:
-            self.max_ = np.maximum(np.max(np.abs(data), axis=0), self.max_)
-        return self
 
-    def transform(self, data):
-        if np.max(self.max_) == 0.0:
-            scale = 0.0
-        else:
-            scale = (1 / self.max_) ** self.power
+        if np.max(self._max) == 0.0:
+            raise ValueError(
+                "Transform cannot be performed because one of max values is 0."
+            )
 
         if sp.issparse(data):
-            if len(scale) != 1:
+            if len(self._max) != 1:
                 raise ValueError("Should be componentwise: false")
-            scale = scale[0]
-        return data * scale
+            return data * ((1.0 / self._max[0]) ** self.power)
 
-    def inverse_transform(self, data):
-        inverse_scale = self.max_
+        return data * ((1.0 / self._max) ** self.power)
+
+    def inverse_transform(self, data: ArrayDataType):
+        if not self.is_fitted():
+            raise ValueError(
+                f"This scaler has not fitted yet. {self.__class__.__name__}"
+            )
+
         if sp.issparse(data):
-            if len(inverse_scale) != 1:
+            if len(self._max) != 1:
                 raise ValueError("Should be componentwise: false")
-            inverse_scale = inverse_scale[0] ** (self.power)
-        return data * inverse_scale
+            inverse_scale = self._max[0] ** (self.power)
+            return data * inverse_scale
+
+        return data * (self._max**self.power)

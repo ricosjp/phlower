@@ -2,9 +2,8 @@ from phlower.services.preprocessing._scalers import IPhlowerScaler
 
 from .identity_scaler import IdentityScaler
 from .isoam_scaler import IsoAMScaler
-from .max_abs_scaler import MaxAbsScaler
+from .max_abs_scaler import MaxAbsPoweredScaler
 from .min_max_scaler import MinMaxScaler
-from .sparse_standard_scaler import SparseStandardScaler
 from .standard_scaler import StandardScaler
 
 # name to scaler class and default arguments
@@ -12,9 +11,8 @@ from .standard_scaler import StandardScaler
 _registered_scaler: list[IPhlowerScaler] = [
     IdentityScaler,
     IsoAMScaler,
-    MaxAbsScaler,
+    MaxAbsPoweredScaler,
     MinMaxScaler,
-    SparseStandardScaler,
     StandardScaler,
 ]
 

@@ -10,13 +10,13 @@ from phlower.utils.enums import PhlowerScalerName
 class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
     @classmethod
     def create(cls, name: str, **kwards) -> StandardScaler:
-        if name == PhlowerScalerName.STANDARDIZE.name:
+        if name == PhlowerScalerName.STANDARDIZE.value:
             with_mean = kwards.pop("with_mean", True)
             if not with_mean:
                 raise ValueError("with_mean must be True in standardize scaler")
             return StandardScaler(with_mean=with_mean, **kwards)
 
-        if name == PhlowerScalerName.STD_SCALE.name:
+        if name == PhlowerScalerName.STD_SCALE.value:
             with_mean = kwards.pop("with_mean", False)
             if with_mean:
                 raise ValueError("with_mean must be False in std_scale")
@@ -29,8 +29,8 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
     @classmethod
     def get_registered_names(self) -> list[str]:
         return [
-            PhlowerScalerName.STANDARDIZE.name,
-            PhlowerScalerName.STD_SCALE.name,
+            PhlowerScalerName.STANDARDIZE.value,
+            PhlowerScalerName.STD_SCALE.value,
         ]
 
     def __init__(
