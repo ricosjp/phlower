@@ -13,7 +13,7 @@ from phlower.services.preprocessing._scalers.scale_functions import IsoAMScaler
 )
 def test__create(name, kwards):
     scaler = IsoAMScaler.create(name, **kwards)
-    assert scaler.other_components_ == kwards["other_components"]
+    assert scaler.other_components == kwards["other_components"]
 
 
 @pytest.mark.parametrize(

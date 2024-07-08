@@ -40,3 +40,6 @@ class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     def inverse_transform(self, data: ArrayDataType):
         return data
+
+    def get_dumped_data(self) -> dict[str, str | int | float]:
+        return {}

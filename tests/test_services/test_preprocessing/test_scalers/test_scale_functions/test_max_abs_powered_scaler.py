@@ -67,7 +67,7 @@ def test__partial_fit(data, desired):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered")
     for v in data:
         scaler.partial_fit(v)
-    np.testing.assert_array_almost_equal(scaler._max, desired)
+    np.testing.assert_array_almost_equal(scaler.max_, desired)
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def test__partial_fit(data, desired):
 )
 def test__transform(max_data, power, inputs, desired):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
-    scaler._max = max_data
+    scaler.max_ = max_data
 
     transformed = scaler.transform(inputs)
     np.testing.assert_array_almost_equal(transformed, desired)
@@ -151,7 +151,7 @@ def test__transform(max_data, power, inputs, desired):
 )
 def test__transform_sparse_array(max_data, power, inputs, desired):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
-    scaler._max = max_data
+    scaler.max_ = max_data
 
     transformed = scaler.transform(inputs)
     assert isinstance(transformed, sp.coo_matrix)
@@ -183,7 +183,7 @@ def test__transform_sparse_array(max_data, power, inputs, desired):
 )
 def test__inverse_transform(max_data, power, inputs):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
-    scaler._max = max_data
+    scaler.max_ = max_data
 
     result = scaler.inverse_transform(scaler.transform(inputs))
 
@@ -207,7 +207,7 @@ def test__inverse_transform(max_data, power, inputs):
 )
 def test__inverse_transform_sparse_array(max_data, power, inputs):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
-    scaler._max = max_data
+    scaler.max_ = max_data
 
     result = scaler.inverse_transform(scaler.transform(inputs))
     np.testing.assert_array_almost_equal(inputs.toarray(), result.toarray())

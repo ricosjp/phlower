@@ -1,8 +1,11 @@
+from typing import Any
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler
 from phlower.utils.enums import PhlowerScalerName
+from phlower.utils.preprocess import convert_to_dumped
 from phlower.utils.typing import ArrayDataType
 
 
@@ -27,18 +30,20 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         self.std_: float = 0.0
         self.mean_square_: float = 0.0
         self.n_: int = 0
-        self.other_components_ = other_components
+        self.other_components = other_components
 
-        if len(self.other_components_) == 0:
+        if len(self.other_components) == 0:
             raise ValueError(
                 "To use IsoAMScaler, feed other_components: "
-                f"{self.other_components_}"
+                f"{self.other_components}"
             )
-        return
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     @property
     def component_dim(self) -> int:
-        return len(self.other_components_) + 1
+        return len(self.other_components) + 1
 
     @property
     def use_diagonal(self) -> bool:
@@ -76,3 +81,6 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     def inverse_transform(self, data: ArrayDataType):
         return data * self.std_
+
+    def get_dumped_data(self) -> dict[str, Any]:
+        return {k: convert_to_dumped(v) for k, v in vars(self).items()}

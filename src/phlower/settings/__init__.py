@@ -6,5 +6,5 @@ from phlower.settings._phlower_setting import (
 from phlower.settings._scaling_setting import (
     PhlowerScalingSetting,
     ScalerInputParameters,
-    ScalerResolvedParameters,
+    ScalerResolvedParameter,
 )

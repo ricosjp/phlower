@@ -42,12 +42,11 @@ def _santize_futures(futures: list[cf.Future]) -> None:
             continue
 
         raise PhlowerMultiProcessError(
-            "Some jobs are failed under multiprocess conditions. "
-            f"Exception: {ex}. "
+            "Some jobs are failed during multiprocess execution. "
             "If content of exception shown above is only a integer number "
             "such as '1', it means that child process is killed by host system"
             " like OOM killer."
-        )
+        ) from ex
 
 
 class PhlowerMultiprocessor:

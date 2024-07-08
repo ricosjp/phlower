@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import scipy.sparse as sp
 from numpy.typing import NDArray
@@ -23,9 +25,22 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         return [PhlowerScalerName.MAX_ABS_POWERED.value]
 
     def __init__(self, power: float = 1.0, **kwargs):
-        self._max: NDArray | None = None
+        self.max_: NDArray | None = None
         self.power = power
-        return
+
+        for k, v in kwargs.items():
+            setattr(self, k, self._convert(k, v))
+
+    def _convert(self, field_name: str, value: Any):
+        if field_name == "max_":
+            if value is None:
+                return value
+            return np.array(value)
+
+        if field_name == "power":
+            return float(value)
+
+        raise NotImplementedError(f"Unknown field name : {field_name}")
 
     @property
     def use_diagonal(self) -> bool:
@@ -40,13 +55,13 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         else:
             _max = np.max(np.abs(data), axis=0)
 
-        if self._max is None:
-            self._max = _max
+        if self.max_ is None:
+            self.max_ = _max
         else:
-            self._max = np.maximum(_max, self._max)
+            self.max_ = np.maximum(_max, self.max_)
 
     def is_fitted(self) -> bool:
-        return self._max is not None
+        return self.max_ is not None
 
     def transform(self, data: ArrayDataType):
         if not self.is_fitted():
@@ -54,17 +69,17 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
                 f"This scaler has not fitted yet. {self.__class__.__name__}"
             )
 
-        if np.max(self._max) == 0.0:
+        if np.max(self.max_) == 0.0:
             raise ValueError(
                 "Transform cannot be performed because one of max values is 0."
             )
 
         if sp.issparse(data):
-            if len(self._max) != 1:
+            if len(self.max_) != 1:
                 raise ValueError("Should be componentwise: false")
-            return data * ((1.0 / self._max[0]) ** self.power)
+            return data * ((1.0 / self.max_[0]) ** self.power)
 
-        return data * ((1.0 / self._max) ** self.power)
+        return data * ((1.0 / self.max_) ** self.power)
 
     def inverse_transform(self, data: ArrayDataType):
         if not self.is_fitted():
@@ -73,9 +88,15 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
             )
 
         if sp.issparse(data):
-            if len(self._max) != 1:
+            if len(self.max_) != 1:
                 raise ValueError("Should be componentwise: false")
-            inverse_scale = self._max[0] ** (self.power)
+            inverse_scale = self.max_[0] ** (self.power)
             return data * inverse_scale
 
-        return data * (self._max**self.power)
+        return data * (self.max_**self.power)
+
+    def get_dumped_data(self) -> dict[str, str | int | float]:
+        return {
+            "max_": None if self.max_ is None else self.max_.tolist(),
+            "power": self.power,
+        }

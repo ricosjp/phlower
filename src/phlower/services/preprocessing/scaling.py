@@ -3,10 +3,13 @@ from __future__ import annotations
 import pathlib
 from functools import partial
 
-from phlower.io import PhlowerDirectory
-from phlower.io._files import PhlowerNumpyFile
+from pipe import chain, select, where
+
+from phlower.io import PhlowerDirectory, PhlowerFileBuilder
+from phlower.io._files import IPhlowerNumpyFile, PhlowerNumpyFile
 from phlower.services.preprocessing import ScalersComposition
-from phlower.settings import PhlowerScalingSetting
+from phlower.services.preprocessing._scalers import ScalerWrapper
+from phlower.settings import PhlowerScalingSetting, ScalerResolvedParameter
 from phlower.utils import get_logger
 from phlower.utils._multiprocessor import PhlowerMultiprocessor
 from phlower.utils.typing import ArrayDataType
@@ -19,32 +22,19 @@ class ScalingService:
     This is Facade Class for scaling process
     """
 
-    @classmethod
-    def from_pickle(
-        cls,
-        pickle_file_path: pathlib.Path,
-        decrypt_key: bytes = None,
-    ):
-        scalers = ScalersComposition.from_pickle_file(
-            pickle_file_path, decrypt_key=decrypt_key
-        )
-        return ScalingService(scalers)
-
-    @classmethod
-    def from_setting(
-        cls,
-        scaling_setting: PhlowerScalingSetting,
-    ):
-        _scalers = ScalersComposition.from_setting(scaling_setting)
-        return ScalingService(scalers=_scalers)
-
     def __init__(
         self,
-        scalers: ScalersComposition,
+        scaling_setting: PhlowerScalingSetting,
     ) -> None:
-        self._scalers = scalers
+        self._scaling_setting = scaling_setting
+        self._parameters = scaling_setting.resolve_scalers()
+        self._scalers = ScalersComposition.from_setting(self._parameters)
 
-    def fit_transform(self) -> None:
+    def fit_transform(
+        self,
+        interim_data_directories: list[pathlib.Path],
+        decrypt_key: bytes | None = None,
+    ) -> None:
         """This function is consisted of these three process.
         - Determine parameters of scalers by reading data files lazily
         - Transform interim data and save result
@@ -54,127 +44,185 @@ class ScalingService:
         -------
         None
         """
-        self.lazy_fit_all()
-        self.transform_interim()
-        self.save()
+        self.lazy_fit_all(
+            data_directories=interim_data_directories, decrypt_key=decrypt_key
+        )
+        self.transform_interim(
+            data_directories=interim_data_directories,
+            output_base_directory=self._scaling_setting.output_directory,
+            decrypt_key=decrypt_key,
+        )
+        save_file_path = (
+            self._scaling_setting.output_directory / "preprocess.yml"
+        )
+        self.save(save_file_path)
 
     def lazy_fit_all(
-        self, scaler_name_to_files: dict[str, list[pathlib.Path]]
+        self,
+        data_directories: list[pathlib.Path],
+        *,
+        max_process: int = None,
+        decrypt_key: bytes | None = None,
     ) -> None:
-        """Determine preprocessing parameters
-        by reading data files lazily.
+        processor = PhlowerMultiprocessor(max_process=max_process)
+        results = processor.run(
+            self._parameters,
+            target_fn=partial(
+                self._lazy_fit,
+                data_directories=data_directories,
+                decrypt_key=decrypt_key,
+            ),
+            chunksize=1,
+        )
 
-        Returns
-        -------
-        None
-        """
-        self._scalers.lazy_partial_fit(scaler_name_to_files)
+        # NOTE: When using multiprocessing, parameters of each scaler are
+        #  updated in each process. However, it is not reflected in parent process.
+        #  because we do not share memory.
+        # Thus, in this implementation, recreate scalers compositions
+
+        self._scalers.force_update(dict(results))
+        return
+
+    def _lazy_fit(
+        self,
+        parameter: ScalerResolvedParameter,
+        data_directories: list[pathlib.Path],
+        decrypt_key: bytes | None = bytes,
+    ) -> tuple[str, ScalerWrapper]:
+        fitting_files = list(
+            data_directories
+            | select(lambda x: parameter.collect_fitting_files(x))
+            | chain
+        )
+        scaler_name = parameter.scaler_name
+        self._scalers.lazy_partial_fit(
+            scaler_name, fitting_files, decrypt_key=decrypt_key
+        )
+        return scaler_name, self._scalers.get_scaler(scaler_name)
 
     def transform_interim(
         self,
-        setting: PhlowerScalingSetting,
+        data_directories: list[pathlib.Path],
+        output_base_directory: pathlib.Path,
         *,
         max_process: int = None,
         allow_missing: bool = False,
-        force_renew: bool = False,
+        allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
     ) -> None:
         """
         Apply scaling process to data in interim directory and save results
         in preprocessed directory.
 
-        Parameters
-        ----------
-            group_id: int, optional
-                group_id to specify chunk of preprocessing group. Useful when
-                MemoryError occurs with all variables preprocessed in one node.
-                If not specified, process all variables.
-
         Returns
         -------
         None
         """
 
-        interim_dirs = setting.collect_interim_directories()
-        variable_names = setting.get_variable_names()
-
         processor = PhlowerMultiprocessor(max_process=max_process)
         processor.run(
-            variable_names,
+            self._parameters,
             target_fn=partial(
                 self._transform_directories,
-                setting=setting,
-                directories=interim_dirs,
+                data_directories=data_directories,
+                output_base_directory=output_base_directory,
                 allow_missing=allow_missing,
-                force_renew=force_renew,
+                allow_overwrite=allow_overwrite,
                 decrypt_key=decrypt_key,
             ),
             chunksize=1,
         )
 
+    def _transform_directories(
+        self,
+        parameter: ScalerResolvedParameter,
+        data_directories: list[pathlib.Path],
+        output_base_directory: pathlib.Path,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
+        decrypt_key: bytes | None = None,
+    ) -> None:
+        transform_files: list[IPhlowerNumpyFile] = list(
+            data_directories
+            | select(
+                lambda x: parameter.collect_transform_files(
+                    x, allow_missing=allow_missing
+                )
+            )
+            | chain
+        )
+
+        for numpy_file in transform_files:
+            # HACK: Apply path rule
+            output_directory = (
+                output_base_directory / numpy_file.file_path.parent
+            )
+
+            transformed_data = self._scalers.transform_file(
+                parameter.scaler_name, numpy_file, decrypt_key=decrypt_key
+            )
+
+            PhlowerNumpyFile.save(
+                output_directory=output_directory,
+                file_basename=numpy_file.get_variable_name(),
+                data=transformed_data,
+                encrypt_key=decrypt_key,
+                allow_overwrite=allow_overwrite,
+            )
+
     def inverse_transform(
-        self, dict_data: dict[str, ArrayDataType]
+        self,
+        dict_data: dict[str, ArrayDataType],
+        raise_missing_message: bool = False,
     ) -> dict[str, ArrayDataType]:
-        return self._scalers.inverse_transform(dict_data)
+        _filtered = self._filter_scalable_variables(
+            dict_data.keys(), raise_missing_message=raise_missing_message
+        )
+        return {
+            name: self._scalers.inverse_transform(scaler_name, dict_data[name])
+            for name, scaler_name in _filtered
+        }
+
+    def _filter_scalable_variables(
+        self, variable_names: list[str], raise_missing_message: bool = False
+    ) -> list[tuple[str, str]]:
+        _filtered: list[tuple[str, str]] = list(
+            variable_names
+            | where(lambda x: self._scaling_setting.is_scaler_exist(x))
+            | select(lambda x: (x, self._scaling_setting.get_scaler_name(x)))
+        )
+
+        if not raise_missing_message:
+            return _filtered
+
+        for v in variable_names:
+            if not self._scaling_setting.is_scaler_exist(v):
+                logger.warning(f"scaler for {v} is not found.")
+
+        return _filtered
 
     def save(
-        self, pickle_file_path: pathlib.Path, encrypt_key: bytes = None
+        self, save_file_path: pathlib.Path, encrypt_key: bytes = None
     ) -> None:
         """
         Save Parameters of scaling converters
         """
-        self._scalers.save(
-            pickle_file_path=pickle_file_path, encrypt_key=encrypt_key
+
+        scalers_data = self._scalers.get_dumped_data()
+
+        _dumped_scalers: dict = {}
+        for name in self._scaling_setting.get_variable_names():
+            _setting = self._scaling_setting.varaible_name_to_scalers[name]
+            if _setting.is_parent_scaler:
+                _dumped_scalers[name] = scalers_data[
+                    _setting.get_scaler_name(name)
+                ]
+            else:
+                _dumped_scalers[name] = _setting
+
+        dump_setting = PhlowerScalingSetting(
+            varaible_name_to_scalers=_dumped_scalers
         )
 
-    def _transform_directories(
-        self,
-        setting: PhlowerScalingSetting,
-        variable_name: str,
-        directories: list[pathlib.Path],
-        allow_missing: bool = False,
-        force_renew: bool = False,
-        decrypt_key: bytes | None = None,
-    ) -> None:
-        for path in directories:
-            output_dir = PhlowerDirectory(setting.get_output_directory(path))
-            if self._can_skip(output_dir, variable_name, force_renew):
-                return
-
-            numpy_file = PhlowerDirectory(path).find_variable_file(
-                variable_name, allow_missing=allow_missing
-            )
-            if numpy_file is None:
-                logger.warning(
-                    f"Scaling skipped. {variable_name} is missing in {path}"
-                )
-                return
-
-            transformed_data = self._scalers.transform_file(
-                variable_name, numpy_file, decrypt_key=decrypt_key
-            )
-
-            PhlowerNumpyFile.save_variables(
-                output_directory=output_dir,
-                file_basename=variable_name,
-                data=transformed_data,
-                encrypt_key=decrypt_key,
-            )
-
-    def _can_skip(
-        self,
-        output_dir: PhlowerDirectory,
-        variable_name: str,
-        force_renew: bool,
-    ) -> bool:
-        if force_renew:
-            return False
-
-        if output_dir.exist_variable_file(variable_name):
-            logger.info(
-                f"{output_dir.path} / {variable_name} "
-                "already exists. Skipped."
-            )
-            return True
-
-        return False
+        yaml_file = PhlowerFileBuilder.yaml_file(save_file_path)
+        yaml_file.save(dump_setting.model_dump(), overwrite=True)

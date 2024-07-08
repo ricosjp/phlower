@@ -8,7 +8,7 @@ from phlower.services.preprocessing._scalers import (
     IPhlowerScaler,
     scale_functions,
 )
-from phlower.settings import ScalerInputParameters, ScalerResolvedParameters
+from phlower.settings import ScalerInputParameters, ScalerResolvedParameter
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType
@@ -16,29 +16,27 @@ from phlower.utils.typing import ArrayDataType
 logger = get_logger(__name__)
 
 
-class ScalerWrapper(IPhlowerScaler):
+class ScalerWrapper:
     @classmethod
-    def from_setting(cls, setting: ScalerResolvedParameters) -> ScalerWrapper:
+    def from_setting(cls, setting: ScalerResolvedParameter) -> ScalerWrapper:
         _cls = cls(
             method=setting.method,
             componentwise=setting.component_wise,
-            **setting.parameters,
+            parameters=setting.parameters,
         )
-
-        # After initialization, set other private properties such as var_, max_
-        for k, v in setting.parameters.items():
-            setattr(_cls._scaler, k, v)
         return _cls
 
     def __init__(
         self,
-        method_name: str,
+        method: str,
         *,
         componentwise: bool = False,
-        parameters: dict = None,
+        parameters: dict | None = None,
     ):
-        self.method_name = method_name
-        self._scaler = scale_functions.create_scaler(method_name, **parameters)
+        if parameters is None:
+            parameters = {}
+        self.method_name = method
+        self._scaler = scale_functions.create_scaler(method, **parameters)
         self.componentwise = componentwise
 
     @property
@@ -84,20 +82,24 @@ class ScalerWrapper(IPhlowerScaler):
         )
         return result
 
-    def lazy_partial_fit(self, data_files: list[IPhlowerNumpyFile]) -> None:
+    def lazy_partial_fit(
+        self,
+        data_files: list[IPhlowerNumpyFile],
+        decrypt_key: bytes | None = None,
+    ) -> None:
         for data_file in data_files:
-            data = self._load_file(data_file)
+            data = self._load_file(data_file, decrypt_key=decrypt_key)
             self.partial_fit(data)
         return
 
-    def get_dumped_data(self) -> dict:
+    def get_dumped_data(self) -> ScalerInputParameters:
         # NOTE: Refer to setting file in order to ensure readable by program.
         _setting = ScalerInputParameters(
             method=self.method_name,
             component_wise=self.componentwise,
-            parameters=vars(self._scaler),
+            parameters=self._scaler.get_dumped_data(),
         )
-        return _setting.model_dump()
+        return _setting
 
     def _load_file(
         self, numpy_file: IPhlowerNumpyFile, decrypt_key: bytes | None = None
@@ -108,7 +110,7 @@ class ScalerWrapper(IPhlowerScaler):
             PhlowerFileExtType.NPZENC.value,
             PhlowerFileExtType.NPZ.value,
         ]:
-            if not sp.issparse(loaded_data):
+            if not loaded_data.is_sparse:
                 raise ValueError(
                     "Data type is not understandable for: "
                     f"{numpy_file.file_path}"
