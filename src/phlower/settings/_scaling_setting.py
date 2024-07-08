@@ -4,6 +4,8 @@ import abc
 import pathlib
 from collections import defaultdict
 from typing import Any
+from typing_extensions import Self
+import yaml
 
 import pydantic
 from pipe import chain, select
@@ -85,7 +87,6 @@ InputParameterSetting = ScalerInputParameters | SameAsInputParameters
 
 
 class PhlowerScalingSetting(pydantic.BaseModel):
-    output_directory: pathlib.Path | None = None
     varaible_name_to_scalers: dict[
         str, ScalerInputParameters | SameAsInputParameters
     ] = pydantic.Field(default_factory=lambda: {})
@@ -106,6 +107,13 @@ class PhlowerScalingSetting(pydantic.BaseModel):
                 )
 
         return self
+
+    @classmethod
+    def read_yaml(cls, file_path: pathlib.Path | str) -> Self:
+        with open(file_path) as fr:
+            data = yaml.load(fr, yaml.SafeLoader)
+
+        return PhlowerScalingSetting(**data)
 
     def resolve_scalers(self) -> list[ScalerResolvedParameter]:
         return _resolve(self.varaible_name_to_scalers)

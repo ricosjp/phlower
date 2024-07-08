@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import pathlib
 from functools import partial
+from typing_extensions import Self
 
 from pipe import chain, select, where
 
+from phlower.settings import PhlowerSetting
 from phlower.io import PhlowerDirectory, PhlowerFileBuilder
 from phlower.io._files import IPhlowerNumpyFile, PhlowerNumpyFile
 from phlower.services.preprocessing import ScalersComposition
@@ -17,10 +19,18 @@ from phlower.utils.typing import ArrayDataType
 logger = get_logger(__name__)
 
 
-class ScalingService:
+class PhlowerScalingService:
     """
     This is Facade Class for scaling process
     """
+
+    @classmethod
+    def from_setting(cls, setting: PhlowerSetting) -> Self:
+
+        if setting.scaling is None:
+            raise ValueError("setting content about scaling is not found.")
+
+        return cls(setting.scaling)
 
     def __init__(
         self,
@@ -30,9 +40,10 @@ class ScalingService:
         self._parameters = scaling_setting.resolve_scalers()
         self._scalers = ScalersComposition.from_setting(self._parameters)
 
-    def fit_transform(
+    def fit_transform_all(
         self,
         interim_data_directories: list[pathlib.Path],
+        output_base_directory: pathlib.Path,
         decrypt_key: bytes | None = None,
     ) -> None:
         """This function is consisted of these three process.
@@ -47,14 +58,13 @@ class ScalingService:
         self.lazy_fit_all(
             data_directories=interim_data_directories, decrypt_key=decrypt_key
         )
-        self.transform_interim(
+        self.transform_interim_all(
             data_directories=interim_data_directories,
-            output_base_directory=self._scaling_setting.output_directory,
+            output_base_directory=output_base_directory,
             decrypt_key=decrypt_key,
         )
-        save_file_path = (
-            self._scaling_setting.output_directory / "preprocess.yml"
-        )
+        # HACK: Need to change
+        save_file_path = output_base_directory / "preprocess.yml"
         self.save(save_file_path)
 
     def lazy_fit_all(
@@ -100,7 +110,18 @@ class ScalingService:
         )
         return scaler_name, self._scalers.get_scaler(scaler_name)
 
-    def transform_interim(
+    def transform_file(
+        self,
+        variable_name: str,
+        file_path: pathlib.Path | IPhlowerNumpyFile,
+        decrypt_key: bytes | None = None
+    ):
+        scaler_name = self._scaling_setting.get_scaler_name(variable_name)
+        return self._scalers.transform_file(
+            scaler_name, file_path, decrypt_key=decrypt_key
+        )
+
+    def transform_interim_all(
         self,
         data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,
@@ -155,7 +176,7 @@ class ScalingService:
         for numpy_file in transform_files:
             # HACK: Apply path rule
             output_directory = (
-                output_base_directory / numpy_file.file_path.parent
+                output_base_directory / numpy_file.file_path.parent.name
             )
 
             transformed_data = self._scalers.transform_file(

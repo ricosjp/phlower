@@ -72,6 +72,7 @@ class PhlowerYamlFile(IPhlowerYamlFile):
             if self.file_path.exists():
                 raise FileExistsError(f"{self.file_path} already exists")
 
+        self.file_path.parent.mkdir(exist_ok=True, parents=True)
         if self.is_encrypted:
             self._save_encrypted(dump_data=dump_data, key=encrypt_key)
         else:

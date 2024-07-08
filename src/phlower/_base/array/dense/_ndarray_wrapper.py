@@ -70,5 +70,5 @@ class NdArrayWrapper(IPhlowerArray):
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 
-    def numpy(self) -> DenseArrayType:
+    def to_numpy(self) -> DenseArrayType:
         return self.data

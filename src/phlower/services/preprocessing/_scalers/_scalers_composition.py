@@ -3,6 +3,7 @@ from __future__ import annotations
 import multiprocessing as multi
 import pathlib
 
+from phlower.io import PhlowerFileBuilder
 from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
     IPhlowerScaler,
@@ -59,9 +60,10 @@ class ScalersComposition:
     def transform_file(
         self,
         scaler_name: str,
-        numpy_file: PhlowerNumpyFile,
+        numpy_file: PhlowerNumpyFile | pathlib.Path,
         decrypt_key: bytes | None = None,
     ) -> ArrayDataType:
+        numpy_file = PhlowerFileBuilder.numpy_file(numpy_file)
         loaded_data = numpy_file.load(decrypt_key=decrypt_key)
         scaler = self.get_scaler(scaler_name)
         transformed_data = scaler.transform(loaded_data)
