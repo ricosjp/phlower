@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import pathlib
 from functools import partial
-from typing_extensions import Self
 
 from pipe import chain, select, where
+from typing_extensions import Self
 
-from phlower.settings import PhlowerSetting
-from phlower.io import PhlowerDirectory, PhlowerFileBuilder
+from phlower.io import PhlowerFileBuilder
 from phlower.io._files import IPhlowerNumpyFile, PhlowerNumpyFile
 from phlower.services.preprocessing import ScalersComposition
 from phlower.services.preprocessing._scalers import ScalerWrapper
-from phlower.settings import PhlowerScalingSetting, ScalerResolvedParameter
+from phlower.settings import (
+    PhlowerScalingSetting,
+    PhlowerSetting,
+    ScalerResolvedParameter,
+)
 from phlower.utils import get_logger
 from phlower.utils._multiprocessor import PhlowerMultiprocessor
 from phlower.utils.typing import ArrayDataType
@@ -26,7 +29,6 @@ class PhlowerScalingService:
 
     @classmethod
     def from_setting(cls, setting: PhlowerSetting) -> Self:
-
         if setting.scaling is None:
             raise ValueError("setting content about scaling is not found.")
 
@@ -114,7 +116,7 @@ class PhlowerScalingService:
         self,
         variable_name: str,
         file_path: pathlib.Path | IPhlowerNumpyFile,
-        decrypt_key: bytes | None = None
+        decrypt_key: bytes | None = None,
     ):
         scaler_name = self._scaling_setting.get_scaler_name(variable_name)
         return self._scalers.transform_file(

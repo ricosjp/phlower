@@ -1,7 +1,6 @@
-from typing import Any, get_args
+from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
 from sklearn import preprocessing
 
 from phlower.services.preprocessing._scalers import IPhlowerScaler

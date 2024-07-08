@@ -14,7 +14,9 @@ from phlower.io._files import (
 
 class PhlowerFileBuilder:
     @staticmethod
-    def numpy_file(file_path: pathlib.Path | str | PhlowerNumpyFile) -> IPhlowerNumpyFile:
+    def numpy_file(
+        file_path: pathlib.Path | str | PhlowerNumpyFile,
+    ) -> IPhlowerNumpyFile:
         if isinstance(file_path, IPhlowerNumpyFile):
             return PhlowerNumpyFile(file_path.file_path)
 

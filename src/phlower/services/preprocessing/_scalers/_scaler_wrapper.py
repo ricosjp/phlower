@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import scipy.sparse as sp
-
 from phlower._base.array import phlower_array
 from phlower.io._files import IPhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
-    IPhlowerScaler,
     scale_functions,
 )
 from phlower.settings import ScalerInputParameters, ScalerResolvedParameter

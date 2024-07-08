@@ -4,12 +4,12 @@ import abc
 import pathlib
 from collections import defaultdict
 from typing import Any
-from typing_extensions import Self
-import yaml
 
 import pydantic
-from pipe import chain, select
+import yaml
+from pipe import select
 from pydantic import dataclasses as dc
+from typing_extensions import Self
 
 import phlower.utils as utils
 from phlower.io import PhlowerDirectory

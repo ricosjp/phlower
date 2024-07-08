@@ -1,19 +1,16 @@
 import pathlib
-import random
 import shutil
 
 import numpy as np
 import pytest
 import scipy.sparse as sp
-import torch
+from pipe import select, where
 
 from phlower.io import PhlowerDirectory, PhlowerFileBuilder
 from phlower.services.preprocessing import PhlowerScalingService
-from phlower.settings import PhlowerSetting, PhlowerScalingSetting
-from pipe import select, where
+from phlower.settings import PhlowerScalingSetting, PhlowerSetting
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp_preprocess"
-
 
 
 @pytest.fixture(scope="module")
@@ -52,9 +49,7 @@ def prepare_sample_interim_files():
         rng = np.random.default_rng()
         for name in sparse_array_names:
             arr = sp.random(n_nodes, n_nodes, density=0.1, random_state=rng)
-            sp.save_npz(
-                preprocessed_dir / name, arr.tocoo().astype(dtype)
-            )
+            sp.save_npz(preprocessed_dir / name, arr.tocoo().astype(dtype))
 
         (preprocessed_dir / "converted").touch()
 
@@ -76,18 +71,16 @@ def perform_scaling(prepare_sample_interim_files):
     scaler = PhlowerScalingService.from_setting(setting)
     scaler.fit_transform_all(
         interim_data_directories=interim_directories,
-        output_base_directory=output_base_directory
+        output_base_directory=output_base_directory,
     )
 
     return setting
 
 
-@pytest.mark.parametrize("interim_base_directory, scaling_base_directory", [
-    (
-        _OUTPUT_DIR / "interim",
-        _OUTPUT_DIR / "preprocessed"
-    )
-])
+@pytest.mark.parametrize(
+    "interim_base_directory, scaling_base_directory",
+    [(_OUTPUT_DIR / "interim", _OUTPUT_DIR / "preprocessed")],
+)
 def test__saved_array_is_same_as_saved_scalers_transformed(
     interim_base_directory, scaling_base_directory, perform_scaling
 ):
@@ -106,26 +99,28 @@ def test__saved_array_is_same_as_saved_scalers_transformed(
     )
     assert len(variable_names) > 0
 
-    saved_setting = PhlowerScalingSetting.read_yaml(scaling_base_directory / "preprocess.yml")
+    saved_setting = PhlowerScalingSetting.read_yaml(
+        scaling_base_directory / "preprocess.yml"
+    )
     restored_scaler = PhlowerScalingService(saved_setting)
 
     for interim_dir in interim_directories:
         path = PhlowerDirectory(interim_dir)
-        saved_path = PhlowerDirectory(_OUTPUT_DIR / f"preprocessed/{interim_dir.name}")
+        saved_path = PhlowerDirectory(
+            _OUTPUT_DIR / f"preprocessed/{interim_dir.name}"
+        )
         for name in variable_names:
             file_path = path.find_variable_file(name)
-            transformed = restored_scaler.transform_file(
-                name, file_path
-            )
+            transformed = restored_scaler.transform_file(name, file_path)
 
             saved_file_path = saved_path.find_variable_file(name)
             saved_arr = saved_file_path.load()
 
             if saved_arr.is_sparse:
                 np.testing.assert_array_almost_equal(
-                    transformed.todense() , saved_arr.to_numpy().todense()
+                    transformed.todense(), saved_arr.to_numpy().todense()
                 )
             else:
                 np.testing.assert_array_almost_equal(
-                    transformed , saved_arr.to_numpy()
+                    transformed, saved_arr.to_numpy()
                 )
