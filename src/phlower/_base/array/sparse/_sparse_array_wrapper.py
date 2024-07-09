@@ -110,7 +110,7 @@ class SparseArrayWrapper(IPhlowerArray):
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 
-    def numpy(self) -> SparseArrayType:
+    def to_numpy(self) -> SparseArrayType:
         return self._sparse_data
 
 
@@ -130,7 +130,7 @@ def batch(
 
 
 def unbatch(array: SparseArrayWrapper, batch_info: GraphBatchInfo):
-    results = _sparse_decompose(array.numpy(), batch_info)
+    results = _sparse_decompose(array.to_numpy(), batch_info)
     return [SparseArrayWrapper(arr) for arr in results]
 
 

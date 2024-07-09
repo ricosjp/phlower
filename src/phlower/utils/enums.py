@@ -37,8 +37,8 @@ class DirectoryType(Enum):
 class PhlowerScalerName(Enum):
     IDENTITY = "identity"
     ISOAM_SCALE = "isoam_scale"
-    MAX_ABS = "max_abs"
+    MAX_ABS_POWERED = "max_abs_powered"
     MIN_MAX = "min_max"
-    SPARSE_STD = "sparse_std"
+    # SPARSE_STD = "sparse_std"
     STANDARDIZE = "standardize"
     STD_SCALE = "std_scale"

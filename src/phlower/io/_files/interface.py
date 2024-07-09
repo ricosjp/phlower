@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import pathlib
 
@@ -29,7 +31,7 @@ class IPhlowerBaseFile(metaclass=abc.ABCMeta):
 
 class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     @abc.abstractclassmethod
-    def save_variables(
+    def save(
         cls,
         output_directory: pathlib.Path,
         file_basename: str,
@@ -37,7 +39,8 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         *,
         dtype: type = np.float32,
         encrypt_key: bytes = None,
-    ): ...
+        allow_overwrite: bool = False,
+    ) -> IPhlowerNumpyFile: ...
 
     @property
     @abc.abstractmethod
@@ -51,13 +54,8 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def save(
-        self,
-        data: ArrayDataType,
-        *,
-        encrypt_key: bytes = None,
-        overwrite: bool = True,
-    ) -> None: ...
+    def get_variable_name(self) -> str:
+        raise NotImplementedError()
 
 
 class IPhlowerPickleFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):

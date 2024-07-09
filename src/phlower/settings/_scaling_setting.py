@@ -6,11 +6,14 @@ from collections import defaultdict
 from typing import Any
 
 import pydantic
-from pipe import chain, select
+import yaml
+from pipe import select
 from pydantic import dataclasses as dc
+from typing_extensions import Self
 
 import phlower.utils as utils
 from phlower.io import PhlowerDirectory
+from phlower.io._files import IPhlowerNumpyFile
 from phlower.utils.enums import PhlowerScalerName
 
 
@@ -18,17 +21,15 @@ class IScalerParameter(metaclass=abc.ABCMeta):
     @abc.abstractproperty
     def is_parent_scaler(self) -> bool: ...
 
-    @abc.abstractproperty
-    def join_fitting(self) -> bool: ...
-
     @abc.abstractmethod
     def get_scaler_name(self, variable_name: str): ...
 
 
 class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
     method: str
-    component_wise: bool = True
+    component_wise: bool = False
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
+    join_fitting: bool = True
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
@@ -39,9 +40,12 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
     def is_parent_scaler(self) -> bool:
         return True
 
-    @property
-    def join_fitting(self) -> bool:
-        return True
+    @pydantic.field_validator("join_fitting")
+    @classmethod
+    def must_be_true(cls, v):
+        if not v:
+            raise ValueError("join_fitting must be True except same_as.")
+        return v
 
     @pydantic.field_validator("method")
     @classmethod
@@ -82,12 +86,13 @@ class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
 InputParameterSetting = ScalerInputParameters | SameAsInputParameters
 
 
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class PhlowerScalingSetting:
-    interim_base_directory: pathlib.Path
+class PhlowerScalingSetting(pydantic.BaseModel):
     varaible_name_to_scalers: dict[
         str, ScalerInputParameters | SameAsInputParameters
     ] = pydantic.Field(default_factory=lambda: {})
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     @pydantic.model_validator(mode="after")
     def _check_same_as(self):
@@ -103,20 +108,38 @@ class PhlowerScalingSetting:
 
         return self
 
-    def resolve_scalers(self) -> list[ScalerResolvedParameters]:
+    @classmethod
+    def read_yaml(cls, file_path: pathlib.Path | str) -> Self:
+        with open(file_path) as fr:
+            data = yaml.load(fr, yaml.SafeLoader)
+
+        return PhlowerScalingSetting(**data)
+
+    def resolve_scalers(self) -> list[ScalerResolvedParameter]:
         return _resolve(self.varaible_name_to_scalers)
 
     def get_variable_names(self) -> list[str]:
         return list(self.varaible_name_to_scalers.keys())
 
+    def is_scaler_exist(self, variable_name: str) -> bool:
+        return variable_name in self.varaible_name_to_scalers
+
+    def get_scaler_name(self, variable_name: str) -> str | None:
+        scaler_setting = self.varaible_name_to_scalers.get(variable_name)
+        if scaler_setting is None:
+            return None
+
+        return scaler_setting.get_scaler_name(variable_name)
+
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class ScalerResolvedParameters(IScalerParameter):
+class ScalerResolvedParameter:
     scaler_name: str
     transform_members: list[str]
     fitting_members: list[str]
     method: str
-    component_wise: bool = True
+    component_wise: bool = False
+    join_fitting: bool = True
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
 
     @pydantic.field_validator("method")
@@ -135,25 +158,46 @@ class ScalerResolvedParameters(IScalerParameter):
         _validate_scaler(self.method, self)
         return self
 
-    def collect_fitting_files(self) -> list[pathlib.Path]:
-        directory = PhlowerDirectory()
+    def collect_fitting_files(
+        self,
+        directory: PhlowerDirectory | pathlib.Path,
+        allow_missing: bool = False,
+    ) -> list[IPhlowerNumpyFile]:
+        _directory = PhlowerDirectory(directory)
         file_paths = list(
             self.fitting_members
-            | select(lambda x: directory.find_variable_file(x))
-            | chain
+            | select(
+                lambda x: _directory.find_variable_file(
+                    x, allow_missing=allow_missing
+                )
+            )
         )
 
         return file_paths
 
-    def collect_interim_directories(self) -> list[pathlib.Path]:
-        raise NotImplementedError()
+    def collect_transform_files(
+        self,
+        directory: PhlowerDirectory | pathlib.Path,
+        allow_missing: bool = False,
+    ) -> list[IPhlowerNumpyFile]:
+        _directory = PhlowerDirectory(directory)
+        file_paths = list(
+            self.transform_members
+            | select(
+                lambda x: _directory.find_variable_file(
+                    x, allow_missing=allow_missing
+                )
+            )
+        )
+
+        return file_paths
 
 
 # validation functions
 
 
 def _validate_scaler(
-    method_name: str, setting: ScalerResolvedParameters
+    method_name: str, setting: ScalerResolvedParameter
 ) -> None:
     if method_name == PhlowerScalerName.ISOAM_SCALE.name:
         _validate_isoam(setting)
@@ -162,7 +206,7 @@ def _validate_scaler(
     return
 
 
-def _validate_isoam(setting: ScalerResolvedParameters):
+def _validate_isoam(setting: ScalerResolvedParameter):
     # validate same_as
     other_components = setting.parameters.get("other_components", [])
     if len(other_components) == 0:
@@ -176,6 +220,7 @@ def _validate_isoam(setting: ScalerResolvedParameters):
             "Please check join_fitting is correctly set in the varaibles "
             "in other_components"
         )
+    return
 
 
 # endregion
@@ -185,7 +230,7 @@ def _validate_isoam(setting: ScalerResolvedParameters):
 
 def _resolve(
     variable_name_to_scalers: dict[str, InputParameterSetting],
-) -> list[ScalerResolvedParameters]:
+) -> list[ScalerResolvedParameter]:
     _scaler_name_to_setting: dict[str, ScalerInputParameters] = {}
     _scaler_to_fitting_items: dict[str, list[str]] = defaultdict(list)
     _scaler_to_transform_items: dict[str, list[str]] = defaultdict(list)
@@ -198,11 +243,11 @@ def _resolve(
             _scaler_name_to_setting[scaler_name] = setting
 
     _resolved = [
-        ScalerResolvedParameters(
+        ScalerResolvedParameter(
             scaler_name=name,
             transform_members=_scaler_to_transform_items[name],
             fitting_members=_scaler_to_fitting_items[name],
-            **setting.__members__,
+            **setting.model_dump(),
         )
         for name, setting in _scaler_name_to_setting.items()
     ]

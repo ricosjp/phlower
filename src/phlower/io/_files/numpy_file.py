@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import io
 import pathlib
 from typing import get_args
@@ -18,14 +19,10 @@ from .interface import IPhlowerNumpyFile
 
 _logger = get_logger(__name__)
 
-# NOTE
-# IF branches due to difference of extensions (.npy, .npy.enc,..) increases,
-# introduce new interface class to absorb it.
-
 
 class PhlowerNumpyFile(IPhlowerNumpyFile):
     @classmethod
-    def save_variables(
+    def save(
         cls,
         output_directory: pathlib.Path,
         file_basename: str,
@@ -33,21 +30,27 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         *,
         dtype: type = np.float32,
         encrypt_key: bytes = None,
+        allow_overwrite: bool = False,
     ) -> Self:
-        saved_path = _save_variable(
-            output_directory=output_directory,
-            file_basename=file_basename,
-            data=data,
-            dtype=dtype,
-            encrypt_key=encrypt_key,
+        fileio = _get_fileio(data, encrypt_key=encrypt_key)
+        save_path = fileio.get_save_path(output_directory, file_basename)
+        if not allow_overwrite:
+            if save_path.exists():
+                raise FileExistsError(f"{save_path} already exists.")
+
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        fileio.save(
+            save_path=save_path, data=data, dtype=dtype, encrypt_key=encrypt_key
         )
-        _logger.info(f"{file_basename} is saved in: {saved_path}")
-        return cls(saved_path)
+        _logger.info(f"{file_basename} is saved in: {save_path}")
+        return cls(save_path)
 
     def __init__(self, path: pathlib.Path) -> None:
         ext = self._check_extension_type(path)
         self._path = path
         self._ext_type = ext
+        self._file_io = self._get_fileio(ext)
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}: {self._path}"
@@ -64,6 +67,21 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
                 return ext
 
         raise NotImplementedError(f"Unknown file extension: {path}")
+
+    def _get_fileio(self, ext: PhlowerFileExtType) -> INumpyFileIOCore:
+        if ext == PhlowerFileExtType.NPY:
+            return _NpyFileIO
+
+        if ext == PhlowerFileExtType.NPYENC:
+            return _NpyEncFileIO
+
+        if ext == PhlowerFileExtType.NPZ:
+            return _NpzFileIO
+
+        if ext == PhlowerFileExtType.NPZENC:
+            return _NpzEncFileIO
+
+        raise NotImplementedError(f"{ext} is not implemented")
 
     @property
     def is_encrypted(self) -> bool:
@@ -85,123 +103,167 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
     def load(
         self, *, check_nan: bool = False, decrypt_key: bytes = None
     ) -> IPhlowerArray:
-        loaded_data = self._load(decrypt_key=decrypt_key)
+        loaded_data = self._file_io.load(self._path, decrypt_key=decrypt_key)
         if check_nan and np.any(np.isnan(loaded_data)):
             raise ValueError(f"NaN found in {self._path}")
 
         return phlower_array(loaded_data)
 
-    def _load(self, *, decrypt_key: bytes = None) -> ArrayDataType:
-        if self._ext_type == PhlowerFileExtType.NPY:
-            return self._load_npy()
-
-        if self._ext_type == PhlowerFileExtType.NPYENC:
-            return self._load_npy_enc(decrypt_key)
-
-        if self._ext_type == PhlowerFileExtType.NPZ:
-            return self._load_npz()
-
-        if self._ext_type == PhlowerFileExtType.NPZENC:
-            return self._load_npz_enc(decrypt_key)
-
-        raise NotImplementedError(
-            "Loading function for this file extenstion is not implemented: "
-            f"{self._path}"
-        )
-
-    def _load_npy(self):
-        return np.load(self._path)
-
-    def _load_npz(self):
-        return sp.load_npz(self._path)
-
-    def _load_npy_enc(self, decrypt_key: bytes):
-        if decrypt_key is None:
-            raise ValueError("Key is None. Cannot decrypt encrypted file.")
-
-        return np.load(utils.decrypt_file(decrypt_key, self._path))
-
-    def _load_npz_enc(self, decrypt_key: bytes):
-        if decrypt_key is None:
-            raise ValueError("Key is None. Cannot decrypt encrypted file.")
-
-        return sp.load_npz(utils.decrypt_file(decrypt_key, self._path))
-
-    def save(
-        self,
-        data: ArrayDataType,
-        *,
-        encrypt_key: bytes = None,
-        overwrite: bool = True,
-    ) -> None:
-        if not overwrite:
-            if self.file_path.exists():
-                raise FileExistsError(f"{self._path} already exists")
-
-        if self.is_encrypted:
-            if encrypt_key is None:
-                raise ValueError(
-                    f"key is empty when encrpting file: {self._path}"
-                )
-
-        file_basename = self._path.name.removesuffix(self._ext_type.value)
-        _save_variable(
-            self._path.parent,
-            file_basename=file_basename,
-            data=data,
-            encrypt_key=encrypt_key,
-        )
+    def get_variable_name(self) -> str:
+        ext = self.file_extension
+        name = self._path.name.removesuffix(ext)
+        return name
 
 
-def _save_variable(
-    output_directory: pathlib.Path,
-    file_basename: str,
-    data: np.ndarray | sp.coo_matrix,
-    *,
-    dtype: type = np.float32,
-    encrypt_key: bytes = None,
-):
-    """Save variable data.
-
-    Parameters
-    ----------
-    output_directory: pathlib.Path
-        Save directory path.
-    file_basename: str
-        Save file base name without extenstion.
-    data: np.ndarray or scipy.sparse.coo_matrix
-        Data to be saved.
-    dtype: type, optional
-        Data type to be saved.
-    encrypt_key: bytes, optional
-        Data for encryption.
-
-    Returns
-    --------
-        None
-    """
-    output_directory.mkdir(parents=True, exist_ok=True)
-
+def _get_fileio(data: ArrayDataType, encrypt_key: bytes | None = None):
     if isinstance(data, np.ndarray):
-        if encrypt_key is None:
-            save_file_path = output_directory / (file_basename + ".npy")
-            np.save(save_file_path, data.astype(dtype))
-        else:
-            save_file_path = output_directory / (file_basename + ".npy.enc")
-            bytesio = io.BytesIO()
-            np.save(bytesio, data.astype(dtype))
-            utils.encrypt_file(encrypt_key, save_file_path, bytesio)
+        if encrypt_key is not None:
+            return _NpyEncFileIO()
 
-    elif isinstance(data, get_args(SparseArrayType)):
-        if encrypt_key is None:
-            save_file_path = output_directory / (file_basename + ".npz")
-            sp.save_npz(save_file_path, data.tocoo().astype(dtype))
-        else:
-            save_file_path = output_directory / (file_basename + ".npz.enc")
-            bytesio = io.BytesIO()
-            sp.save_npz(bytesio, data.tocoo().astype(dtype))
-            utils.encrypt_file(encrypt_key, save_file_path, bytesio)
-    else:
-        raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
+        return _NpyFileIO()
 
-    return save_file_path
+    if isinstance(data, get_args(SparseArrayType)):
+        if encrypt_key is not None:
+            return _NpzEncFileIO()
+
+        return _NpzFileIO()
+
+    raise NotImplementedError(f"File IO for {type(data)} is not implemented.")
+
+
+class INumpyFileIOCore(metaclass=abc.ABCMeta):
+    @abc.abstractclassmethod
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None): ...
+
+    @abc.abstractclassmethod
+    def get_save_path(
+        cls, output_directory: pathlib.Path, file_basename: str
+    ) -> pathlib.Path: ...
+
+    @abc.abstractclassmethod
+    def save(
+        cls,
+        save_path: pathlib.Path,
+        data: ArrayDataType,
+        dtype: np.dtype = np.float32,
+        encrypt_key: bytes = None,
+    ) -> None: ...
+
+
+class _NpyFileIO(INumpyFileIOCore):
+    @classmethod
+    def load(
+        cls, path: pathlib.Path, decrypt_key: bytes = None
+    ) -> ArrayDataType:
+        return np.load(path)
+
+    @classmethod
+    def get_save_path(
+        cls, output_directory: pathlib.Path, file_basename: str
+    ) -> pathlib.Path:
+        return output_directory / (file_basename + PhlowerFileExtType.NPY.value)
+
+    @classmethod
+    def save(
+        cls,
+        save_path: pathlib.Path,
+        data: ArrayDataType,
+        dtype: np.dtype = np.float32,
+        encrypt_key: bytes = None,
+    ) -> None:
+        np.save(save_path, data.astype(dtype))
+        return save_path
+
+
+class _NpyEncFileIO(INumpyFileIOCore):
+    @classmethod
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+        if decrypt_key is None:
+            raise ValueError(
+                "encrpt key is None. Cannot decrypt encrypted file."
+            )
+
+        return np.load(utils.decrypt_file(decrypt_key, path))
+
+    @classmethod
+    def get_save_path(
+        cls, output_directory: pathlib.Path, file_basename: str
+    ) -> pathlib.Path:
+        return output_directory / (
+            file_basename + PhlowerFileExtType.NPYENC.value
+        )
+
+    @classmethod
+    def save(
+        cls,
+        save_path: pathlib.Path,
+        data: ArrayDataType,
+        dtype: np.dtype = np.float32,
+        encrypt_key: bytes = None,
+    ) -> None:
+        if encrypt_key is None:
+            raise ValueError(
+                "Encrption key is None. Cannot create encrypted file."
+            )
+
+        bytesio = io.BytesIO()
+        np.save(bytesio, data.astype(dtype))
+        utils.encrypt_file(encrypt_key, save_path, bytesio)
+        return
+
+
+class _NpzFileIO(INumpyFileIOCore):
+    @classmethod
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+        return sp.load_npz(path)
+
+    @classmethod
+    def get_save_path(
+        cls, output_directory: pathlib.Path, file_basename: str
+    ) -> pathlib.Path:
+        return output_directory / (file_basename + PhlowerFileExtType.NPZ.value)
+
+    @classmethod
+    def save(
+        cls,
+        save_path: pathlib.Path,
+        data: ArrayDataType,
+        dtype: np.dtype = np.float32,
+        encrypt_key: bytes = None,
+    ) -> None:
+        sp.save_npz(save_path, data.tocoo().astype(dtype))
+        return save_path
+
+
+class _NpzEncFileIO(INumpyFileIOCore):
+    @classmethod
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+        if decrypt_key is None:
+            raise ValueError("Key is None. Cannot decrypt encrypted file.")
+
+        return sp.load_npz(utils.decrypt_file(decrypt_key, path))
+
+    @classmethod
+    def get_save_path(
+        cls, output_directory: pathlib.Path, file_basename: str
+    ) -> pathlib.Path:
+        return output_directory / (
+            file_basename + PhlowerFileExtType.NPZENC.value
+        )
+
+    @classmethod
+    def save(
+        cls,
+        save_path: pathlib.Path,
+        data: ArrayDataType,
+        dtype: np.dtype = np.float32,
+        encrypt_key: bytes = None,
+    ) -> None:
+        if encrypt_key is None:
+            raise ValueError(
+                "Encrption key is None. Cannot create encrypted file."
+            )
+        bytesio = io.BytesIO()
+        sp.save_npz(bytesio, data.tocoo().astype(dtype))
+        utils.encrypt_file(encrypt_key, save_path, bytesio)
+        return save_path

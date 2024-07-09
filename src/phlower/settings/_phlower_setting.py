@@ -14,8 +14,8 @@ from phlower.settings._scaling_setting import PhlowerScalingSetting
 
 @dc.dataclass(frozen=True)
 class PhlowerSetting:
-    trainer: PhlowerTrainerSetting
-    model: GroupModuleSetting
+    trainer: PhlowerTrainerSetting | None = None
+    model: GroupModuleSetting | None = None
     scaling: PhlowerScalingSetting | None = None
 
     @classmethod
