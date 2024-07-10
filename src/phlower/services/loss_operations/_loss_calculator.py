@@ -4,6 +4,8 @@ import abc
 
 import torch
 
+from phlower._base import GraphBatchInfo
+from phlower._base._functionals import unbatch
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
@@ -98,6 +100,7 @@ class LossCalculator(ILossCalculator):
         self,
         prediction: IPhlowerTensorCollections,
         answer: IPhlowerTensorCollections,
+        batch_info_dict: dict[str, GraphBatchInfo],
     ) -> IPhlowerTensorCollections:
         loss_items: dict[str, torch.Tensor] = {}
         for key in answer.keys():
@@ -107,15 +110,31 @@ class LossCalculator(ILossCalculator):
                     f"prediction keys: {list(prediction.keys())}"
                 )
 
-            _preds = prediction[key]
-            _ans = answer[key]
-            if len(_preds) != len(_preds):
+            batch_info = batch_info_dict[key]
+            _preds = unbatch(prediction[key], batch_info)
+            _answers = unbatch(answer[key], batch_info)
+            if len(_preds) != len(_answers):
                 raise ValueError(
-                    "Sizes of splited tensors in predictions and "
+                    "Sizes of unbatched tensors in predictions and "
                     "that in answers are not equal."
                 )
 
             loss_func = self.get_loss_function(key)
-            loss_items[key] = torch.mean(loss_func(_preds, _ans))
+
+            # _tmp_losses = [
+            #     loss_func(p, a) for p, a in zip(_preds, _answers, strict=True)
+            # ]
+            # print(f"batch size in loss: {len(_tmp_losses)}")
+            # for i in range(len(_tmp_losses)):
+            #     print(_tmp_losses[i])
+
+            loss_items[key] = torch.mean(
+                torch.stack(
+                    [
+                        loss_func(p, a)
+                        for p, a in zip(_preds, _answers, strict=True)
+                    ]
+                )
+            )
 
         return phlower_tensor_collection(loss_items)

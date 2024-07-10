@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 import numpy as np
@@ -59,12 +59,14 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def update(self, data: IPhlowerTensorCollections) -> None: ...
 
 
-def phlower_tensor_collection(values: Mapping) -> IPhlowerTensorCollections:
+def phlower_tensor_collection(
+    values: dict[str, torch.Tensor | PhlowerTensor],
+) -> IPhlowerTensorCollections:
     if isinstance(values, dict):
         return PhlowerDictTensors(values)
 
     raise NotImplementedError(
-        f"input data type: {type(values)} is not implemented"
+        f"input data type: {type(values)} cannot be converted."
     )
 
 

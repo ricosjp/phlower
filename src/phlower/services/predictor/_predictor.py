@@ -49,6 +49,7 @@ class PhlowerPredictor:
             dataset,
             variable_dimensions=self._model_setting.variable_dimensions,
             disable_dimensions=disable_dimensions,
+            shuffle=False,
         )
 
         for batch in data_loader:

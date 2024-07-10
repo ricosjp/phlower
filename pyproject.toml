@@ -33,6 +33,7 @@ ruff = "^0.4.10"
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
+    "-p no:cacheprovider"
 ]
 
 [build-system]

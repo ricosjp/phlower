@@ -1,4 +1,5 @@
 import pathlib
+import random
 
 import numpy as np
 import torch
@@ -7,7 +8,7 @@ from typing_extensions import Self
 
 from phlower._base import PhlowerTensor
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
-from phlower.io import PhlowerCheckpointFile, PhlowerDirectory, PhlowerYamlFile
+from phlower.io import PhlowerCheckpointFile, PhlowerYamlFile
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._trainer_logger import LogRecord, LogRecordIO
@@ -22,12 +23,12 @@ _logger = get_logger(__name__)
 
 
 class PhlowerTrainer:
-    @classmethod
-    def from_directory(cls, saved_directory: pathlib.Path) -> Self:
-        ph_directory = PhlowerDirectory(saved_directory)
-        yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
-        setting = PhlowerSetting.read_yaml(yaml_file)
-        return cls.from_setting(setting)
+    # @classmethod
+    # def from_directory(cls, saved_directory: pathlib.Path) -> Self:
+    #     ph_directory = PhlowerDirectory(saved_directory)
+    #     yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
+    #     setting = PhlowerSetting.read_yaml(yaml_file)
+    #     return cls.from_setting(setting)
 
     @classmethod
     def from_setting(cls, setting: PhlowerSetting) -> Self:
@@ -42,18 +43,29 @@ class PhlowerTrainer:
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
     ):
+        # NOTE: Must Call at first
+        self._fix_seed(trainer_setting.random_seed)
+
         self._model_setting = model_setting
         self._trainer_setting = trainer_setting
-        self._model = PhlowerGroupModule.from_setting(
-            self._model_setting.network
-        )
-        self._optimizer = torch.optim.SGD(
-            self._model.parameters(), lr=self._trainer_setting.lr, momentum=0.9
-        )
 
         self._progress_bar = PhlowerProgressBar(
             total=self._trainer_setting.n_epoch
         )
+
+        # initialize model
+        self._model = PhlowerGroupModule.from_setting(
+            self._model_setting.network
+        )
+        self._model.to(self._trainer_setting.device)
+        self._optimizer = torch.optim.SGD(
+            self._model.parameters(), lr=self._trainer_setting.lr, momentum=0.9
+        )
+
+    def _fix_seed(self, seed: int):
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
 
     def train(
         self,
@@ -102,27 +114,45 @@ class PhlowerTrainer:
             train_losses: list[float] = []
             validation_losses: list[float] = []
 
-            for batch in train_loader:
-                batch: LumpedTensorData
+            self._model.train()
+            for tr_batch in train_loader:
+                tr_batch: LumpedTensorData
                 self._optimizer.zero_grad()
 
+                # print(tr_batch.data_directories)
+                # tmp = tr_batch.x_data["nodal_initial_u"].to_tensor()
+                # print(f"{torch.mean(tmp)}, {torch.var(tmp)}, {tmp.shape}")
+
                 h = self._model.forward(
-                    batch.x_data, supports=batch.sparse_supports
+                    tr_batch.x_data, supports=tr_batch.sparse_supports
                 )
-                losses = loss_function.calculate(h, batch.y_data)
+                # tmp = h["nodal_last_u"].to_tensor()
+                # print(tmp)
+                # print(f"{torch.mean(tmp)}, {torch.var(tmp)}, {tmp.shape}")
+
+                losses = loss_function.calculate(
+                    h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
+                )
                 loss = loss_function.aggregate(losses)
-                train_losses.append(loss.to_tensor().float().item())
+                train_losses.append(loss.detach().to_tensor().float().item())
                 loss.backward()
                 self._optimizer.step()
 
-            for batch in validation_loader:
+            self._model.eval()
+            for val_batch in validation_loader:
                 with torch.no_grad():
                     h = self._model.forward(
-                        batch.x_data, supports=batch.sparse_supports
+                        val_batch.x_data, supports=val_batch.sparse_supports
                     )
-                    losses = loss_function.calculate(h, batch.y_data)
-                    loss = loss_function.aggregate(losses)
-                    validation_losses.append(loss.to_tensor().float().item())
+                    val_losses = loss_function.calculate(
+                        h,
+                        val_batch.y_data,
+                        batch_info_dict=val_batch.y_batch_info,
+                    )
+                    val_loss = loss_function.aggregate(val_losses)
+                    validation_losses.append(
+                        val_loss.detach().to_tensor().float().item()
+                    )
 
             train_loss = np.average(train_losses)
             validation_loss = np.average(validation_losses)

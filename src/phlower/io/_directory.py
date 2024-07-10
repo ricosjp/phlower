@@ -22,7 +22,7 @@ class PhlowerDirectory:
         else:
             self._path = pathlib.Path(path)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"PhlowerDirectory: {self._path}"
 
     @property

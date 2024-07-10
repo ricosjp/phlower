@@ -33,6 +33,9 @@ class ExtendedLinearList(torch.nn.Module):
             ActivationSelector.select(name) for name in self._activations
         ]
 
+        # for m in self._linears:
+        #     torch.nn.init.xavier_uniform_(m.weight.data)
+
     def __len__(self) -> int:
         return len(self._linears)
 

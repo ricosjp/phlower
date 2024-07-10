@@ -138,8 +138,10 @@ class PhlowerTensor(IPhlowerTensor):
             self._dimension_tensor.to(device, non_blocking=non_blocking)
 
     def detach(self) -> PhlowerTensor:
-        _tensor = self._tensor.detach()
-        return PhlowerTensor(_tensor, dimension_tensor=self._dimension_tensor)
+        return PhlowerTensor(
+            self._tensor.detach(),
+            dimension_tensor=self._dimension_tensor.detach(),
+        )
 
     def backward(self) -> None:
         self._tensor.backward()

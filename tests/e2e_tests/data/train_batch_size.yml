@@ -1,6 +1,6 @@
 
 training:
-  batch_size: 1
+  batch_size: 3
   random_seed: 0
   lr: 0.0001
   loss_setting:

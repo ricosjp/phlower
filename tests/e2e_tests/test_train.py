@@ -15,13 +15,11 @@ from phlower.settings import PhlowerSetting
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp"
 
-random.seed(11)
-np.random.seed(11)
-torch.manual_seed(11)
-
 
 @pytest.fixture(scope="module")
 def prepare_sample_preprocessed_files():
+    random.seed(11)
+    np.random.seed(11)
     if _OUTPUT_DIR.exists():
         shutil.rmtree(_OUTPUT_DIR)
     _OUTPUT_DIR.mkdir()
@@ -81,10 +79,40 @@ def simple_training(prepare_sample_preprocessed_files):
     return loss
 
 
+def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        "tests/e2e_tests/data/train_batch_size.yml"
+    )
+    assert setting.training.batch_size > 1
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_batch_size"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    assert loss.has_dimension
+    assert not torch.isinf(loss.to_tensor())
+    assert not torch.isnan(loss.to_tensor())
+
+
 def test__simple_training(simple_training):
     loss: PhlowerTensor = simple_training
 
     print(loss)
+    print(loss.shape)
     assert loss.has_dimension
     assert not torch.isinf(loss.to_tensor())
     assert not torch.isnan(loss.to_tensor())
