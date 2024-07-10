@@ -6,12 +6,42 @@ from typing import Any
 import torch
 
 from phlower import utils
+from phlower.io._files._interface import IPhlowerCheckpointFile
 from phlower.utils.enums import PhlowerFileExtType
-
-from .interface import IPhlowerCheckpointFile
 
 
 class PhlowerCheckpointFile(IPhlowerCheckpointFile):
+    _FIXED_PREFIX = "snapshot_epoch_"
+
+    @classmethod
+    def save(
+        cls,
+        output_directory: pathlib.Path,
+        epoch_number: int,
+        dump_data: object,
+        overwrite: bool = False,
+        encrypt_key: bytes = None,
+    ) -> IPhlowerCheckpointFile:
+        file_basename = f"{cls._FIXED_PREFIX}{epoch_number}"
+        ext = (
+            PhlowerFileExtType.PTH.value
+            if encrypt_key is None
+            else PhlowerFileExtType.PTHENC.value
+        )
+
+        file_path = output_directory / f"{file_basename}{ext}"
+        if not overwrite:
+            if file_path.exists():
+                raise FileExistsError(f"{file_path} already exists")
+
+        file_path.parent.mkdir(exist_ok=True, parents=True)
+        _save(file_path, dump_data, encrypt_key=encrypt_key)
+        return PhlowerCheckpointFile(file_path)
+
+    @classmethod
+    def get_fixed_prefix(self) -> int:
+        return self._FIXED_PREFIX
+
     def __init__(self, path: pathlib.Path):
         self._ext_type = self._check_extension_type(path)
         self._path = path
@@ -30,9 +60,9 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
         return f"{self.__class__.__name__}: {self._path}"
 
     def _check_format(self):
-        if not self._path.name.startswith("snapshot_epoch_"):
+        if not self._path.name.startswith(self._FIXED_PREFIX):
             raise ValueError(
-                "File name does not start with 'snapshot_epoch_': "
+                f"File name does not start with '{self._FIXED_PREFIX}': "
                 f"{self._path.name}"
             )
 
@@ -45,7 +75,7 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
         self._check_format()
 
         num_epoch = re.search(
-            r"snapshot_epoch_(\d+)", self._path.name
+            rf"{self._FIXED_PREFIX}(\d+)", self._path.name
         ).groups()[0]
         return int(num_epoch)
 
@@ -71,29 +101,14 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
         )
         return checkpoint
 
-    def save(
-        self,
-        dump_data: object,
-        overwrite: bool = False,
-        encrypt_key: bytes = None,
-    ):
-        if not overwrite:
-            if self.file_path.exists():
-                raise FileExistsError(f"{self.file_path} already exists")
 
-        if self.is_encrypted:
-            self._save_encrypted(dump_data=dump_data, key=encrypt_key)
-        else:
-            self._save(dump_data)
+def _save(
+    file_path: pathlib.Path, dump_data: object, encrypt_key: bytes | None = None
+) -> None:
+    if encrypt_key is None:
+        torch.save(dump_data, file_path)
+        return
 
-    def _save_encrypted(self, dump_data: object, key: bytes) -> None:
-        if key is None:
-            raise ValueError(
-                f"key is empty when encrpting file: {self.file_path}"
-            )
-        buffer = io.BytesIO()
-        torch.save(dump_data, buffer)
-        utils.encrypt_file(key, self.file_path, buffer)
-
-    def _save(self, dump_data: object) -> None:
-        torch.save(dump_data, self.file_path)
+    buffer = io.BytesIO()
+    torch.save(dump_data, buffer)
+    utils.encrypt_file(encrypt_key, file_path, buffer)

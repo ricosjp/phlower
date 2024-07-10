@@ -21,7 +21,7 @@ lint:
 pytest:
   stage: test
   script:
-    - poetry run pytest tests --cov=src --cov-report term-missing
+    - make test
     - poetry run python3 -m coverage html -d coverage
     - poetry run python3 -m coverage xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -40,7 +40,7 @@ pytest:
 e2e_test:
   stage: test
   script:
-    - poetry run pytest tests/e2e_tests
+    - make e2e_test
   tags:
     - no-gpu
     - GenuineIntel

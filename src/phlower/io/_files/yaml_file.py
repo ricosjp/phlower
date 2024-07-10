@@ -3,18 +3,65 @@ import pathlib
 from typing import Any
 
 import yaml
+from typing_extensions import Self
 
 from phlower import utils
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 
-from .interface import IPhlowerYamlFile
+from ._interface import IPhlowerYamlFile
+
+_logger = get_logger(__name__)
 
 
 class PhlowerYamlFile(IPhlowerYamlFile):
-    def __init__(self, path: pathlib.Path) -> None:
+    @classmethod
+    def save(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: object,
+        *,
+        encrypt_key: bytes = None,
+        allow_overwrite: bool = False,
+    ) -> Self:
+        ext = (
+            PhlowerFileExtType.YML.value
+            if encrypt_key is None
+            else PhlowerFileExtType.YMLENC.value
+        )
+        file_path = output_directory / f"{file_basename}{ext}"
+
+        if not allow_overwrite:
+            if file_path.exists():
+                raise FileExistsError(f"{file_path} already exists.")
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if encrypt_key is None:
+            _save(file_path, data)
+        else:
+            _save_encrypted(file_path, data, key=encrypt_key)
+        _logger.info(f"{file_basename} is saved in: {file_path}")
+        return cls(file_path)
+
+    def __init__(self, path: pathlib.Path | str | IPhlowerYamlFile) -> None:
+        path = self._to_pathlib_object(path)
         ext = self._check_extension_type(path)
         self._path = path
         self._ext_type = ext
+
+    def _to_pathlib_object(
+        self, path: pathlib.Path | str | IPhlowerYamlFile
+    ) -> pathlib.Path:
+        if isinstance(path, pathlib.Path):
+            return path
+        if isinstance(path, IPhlowerYamlFile):
+            return path.file_path
+        if isinstance(path, str):
+            return pathlib.Path(path)
+
+        raise NotImplementedError(f"{path} cannot be converted to pathlib.Path")
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}: {self._path}"
@@ -62,34 +109,20 @@ class PhlowerYamlFile(IPhlowerYamlFile):
         )
         return parameters
 
-    def save(
-        self,
-        dump_data: object,
-        overwrite: bool = False,
-        encrypt_key: bytes = None,
-    ):
-        if not overwrite:
-            if self.file_path.exists():
-                raise FileExistsError(f"{self.file_path} already exists")
 
-        self.file_path.parent.mkdir(exist_ok=True, parents=True)
-        if self.is_encrypted:
-            self._save_encrypted(dump_data=dump_data, key=encrypt_key)
-        else:
-            self._save(dump_data)
+def _save_encrypted(
+    file_path: pathlib.Path, dump_data: object, key: bytes
+) -> None:
+    if key is None:
+        raise ValueError(f"key is empty when encrpting file: {file_path}")
+    data_string: str = yaml.dump(dump_data, None)
+    bio = io.BytesIO(data_string.encode("utf-8"))
+    utils.encrypt_file(key, file_path, bio)
 
-    def _save_encrypted(self, dump_data: object, key: bytes) -> None:
-        if key is None:
-            raise ValueError(
-                f"key is empty when encrpting file: {self.file_path}"
-            )
-        data_string: str = yaml.dump(dump_data, None)
-        bio = io.BytesIO(data_string.encode("utf-8"))
-        utils.encrypt_file(key, self.file_path, bio)
 
-    def _save(self, dump_data: object) -> None:
-        with open(self.file_path, "w") as fw:
-            yaml.dump(dump_data, fw)
+def _save(file_path: pathlib.Path, dump_data: object) -> None:
+    with open(file_path, "w") as fw:
+        yaml.dump(dump_data, fw)
 
 
 def _load_yaml_file(file_path: str | pathlib.Path):

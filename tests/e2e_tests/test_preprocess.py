@@ -77,6 +77,7 @@ def perform_scaling(prepare_sample_interim_files):
     return setting
 
 
+@pytest.mark.e2e_test
 @pytest.mark.parametrize(
     "interim_base_directory, scaling_base_directory",
     [(_OUTPUT_DIR / "interim", _OUTPUT_DIR / "preprocessed")],

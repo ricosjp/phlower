@@ -95,6 +95,9 @@ class PhlowerDimensionTensor:
     def to(self, device: str | torch.device, non_blocking: bool = False):
         self._tensor.to(device, non_blocking=non_blocking)
 
+    def detach(self) -> PhlowerDimensionTensor:
+        return PhlowerDimensionTensor(tensor=self._tensor.detach())
+
     @classmethod
     def __torch_function__(cls, func, types, args: tuple, kwargs=None):
         if kwargs is None:

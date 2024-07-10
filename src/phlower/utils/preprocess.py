@@ -1,4 +1,3 @@
-from functools import cache
 from typing import Any
 
 import numpy as np
@@ -7,7 +6,6 @@ from phlower.utils.enums import PhlowerScalerName
 from phlower.utils.typing import DenseArrayType
 
 
-@cache
 def get_registered_scaler_names() -> list[str]:
     return [v.value for v in PhlowerScalerName]
 

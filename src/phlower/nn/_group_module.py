@@ -12,10 +12,12 @@ from phlower.collections.tensors import (
     phlower_tensor_collection,
     reduce_collections,
 )
+from phlower.io._files import IPhlowerCheckpointFile
 from phlower.nn._interface_module import IPhlowerModuleAdapter
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
+from phlower.utils.enums import TrainerSavedKeyType
 
 
 class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
@@ -150,3 +152,21 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
     def get_destinations(self) -> list[str]:
         return self._destinations
+
+    def load_checkpoint_file(
+        self,
+        checkpoint_file: IPhlowerCheckpointFile,
+        device: str | None = None,
+        decrypt_key: bytes | None = None,
+    ) -> None:
+        content = checkpoint_file.load(device=device, decrypt_key=decrypt_key)
+
+        key_name = TrainerSavedKeyType.MODEL_STATE_DICT.value
+        if key_name not in content:
+            raise KeyError(
+                f"Key named {key_name} is not found in "
+                f"{checkpoint_file.file_path}"
+            )
+        self.load_state_dict(
+            content[TrainerSavedKeyType.MODEL_STATE_DICT.value]
+        )

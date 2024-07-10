@@ -15,7 +15,7 @@ from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType, SparseArrayType
 
-from .interface import IPhlowerNumpyFile
+from ._interface import IPhlowerNumpyFile
 
 _logger = get_logger(__name__)
 

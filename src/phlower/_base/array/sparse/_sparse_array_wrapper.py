@@ -107,6 +107,7 @@ class SparseArrayWrapper(IPhlowerArray):
             self._sparse_data.shape,
         )
         _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
+        _tensor = _tensor.coalesce()
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
 
