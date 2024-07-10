@@ -137,6 +137,10 @@ class PhlowerTensor(IPhlowerTensor):
         if self.has_dimension:
             self._dimension_tensor.to(device, non_blocking=non_blocking)
 
+    def detach(self) -> PhlowerTensor:
+        _tensor = self._tensor.detach()
+        return PhlowerTensor(_tensor, dimension_tensor=self._dimension_tensor)
+
     def backward(self) -> None:
         self._tensor.backward()
 
@@ -156,12 +160,10 @@ class PhlowerTensor(IPhlowerTensor):
 
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
-            # HACK: NEED TO PASS self._shapes ??
             return PhlowerTensor(ret)
 
         _dimensions = _recursive_resolve(args, "_dimension_tensor")
         result_units = func(*_dimensions, **kwargs)
-        # HACK: NEED TO PASS self._shapes ??
         return PhlowerTensor(ret, result_units)
 
 

@@ -7,6 +7,7 @@ from typing import Any
 
 from phlower.io._file_builder import PhlowerFileBuilder
 from phlower.io._files import (
+    IPhlowerCheckpointFile,
     IPhlowerNumpyFile,
     IPhlowerPickleFile,
     IPhlowerYamlFile,
@@ -100,10 +101,13 @@ class PhlowerDirectory:
         self,
         file_base_name: str,
         extensions: list[PhlowerFileExtType],
-        builder: Callable[[pathlib.Path], Any],
+        builder: Callable[[pathlib.Path], Any] | None = None,
         *,
         allow_missing: bool = False,
     ):
+        if builder is None:
+            builder = lambda x: x  # NOQA
+
         for ext in extensions:
             path: pathlib.Path = self._path / (file_base_name + ext.value)
             if path.exists():
@@ -118,7 +122,20 @@ class PhlowerDirectory:
 
     def exist_variable_file(self, variable_name: str) -> bool:
         _file = self.find_variable_file(variable_name, allow_missing=True)
-        if _file is None:
-            return False
-        else:
-            return True
+        return _file is not None
+
+    def find_snapshot_files(self) -> list[IPhlowerCheckpointFile]:
+        snapshots = [
+            PhlowerFileBuilder.checkpoint_file(p)
+            for p in list(self._path.glob("snapshot_epoch_*"))
+        ]
+        return snapshots
+
+    def find_csv_file(
+        self, file_base_name: str, *, allow_missing: bool = False
+    ) -> pathlib.Path | None:
+        return self._find_file(
+            file_base_name,
+            extensions=[PhlowerFileExtType.CSV],
+            allow_missing=allow_missing,
+        )

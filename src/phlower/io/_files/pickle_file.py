@@ -5,7 +5,7 @@ import pickle
 from phlower import utils
 from phlower.utils.enums import PhlowerFileExtType
 
-from .interface import IPhlowerPickleFile
+from ._interface import IPhlowerPickleFile
 
 
 class PhlowerPickleFile(IPhlowerPickleFile):

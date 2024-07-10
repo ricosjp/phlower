@@ -14,6 +14,7 @@ class PhlowerFileExtType(Enum):
     YML = ".yml"
     YAMLENC = ".yaml.enc"
     YMLENC = ".yml.enc"
+    CSV = ".csv"
 
 
 class ModelSelectionType(Enum):
@@ -21,7 +22,10 @@ class ModelSelectionType(Enum):
     LATEST = "latest"
     TRAIN_BEST = "train_best"
     SPECIFIED = "specified"
-    DEPLOYED = "deployed"
+
+
+class TrainerSavedKeyType(Enum):
+    MODEL_STATE_DICT = "model_state_dict"
 
 
 class LossType(Enum):

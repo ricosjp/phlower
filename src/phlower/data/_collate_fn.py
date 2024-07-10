@@ -1,33 +1,7 @@
 import torch
 
-from phlower._base.array import IPhlowerArray
 from phlower.collections.arrays import SequencedDictArray
-from phlower.collections.tensors import (
-    IPhlowerTensorCollections,
-    phlower_tensor_collection,
-)
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
-
-
-def _to_tensor(
-    dict_data: dict[str, IPhlowerArray],
-    device: str | torch.device,
-    non_blocking: bool = False,
-    dimensions: dict[str, dict[str, float]] = None,
-) -> IPhlowerTensorCollections:
-    if dimensions is None:
-        dimensions = {}
-
-    return phlower_tensor_collection(
-        {
-            k: v.to_phlower_tensor(
-                device=device,
-                non_blocking=non_blocking,
-                dimension=dimensions.get(k),
-            )
-            for k, v in dict_data.items()
-        }
-    )
 
 
 class PhlowerCollateFn:
@@ -47,29 +21,32 @@ class PhlowerCollateFn:
         sparse_supports = SequencedDictArray([v.sparse_supports for v in batch])
 
         # concatenate and send
-        inputs = _to_tensor(
-            inputs.concatenate(),
+        inputs_tensors, inputs_batch_info = inputs.to_batched_tensor(
             device=self._device,
             non_blocking=self._non_blocking,
             dimensions=self._dimensions,
         )
-        outputs = _to_tensor(
-            outputs.concatenate(),
+
+        outputs_tensors, outputs_batch_info = outputs.to_batched_tensor(
             device=self._device,
             non_blocking=self._non_blocking,
             dimensions=self._dimensions,
         )
-        sparse_supports = _to_tensor(
-            sparse_supports.concatenate(),
-            device=self._device,
-            non_blocking=self._non_blocking,
-            dimensions=self._dimensions,
+        sparse_supports_tensors, support_batch_info = (
+            sparse_supports.to_batched_tensor(
+                device=self._device,
+                non_blocking=self._non_blocking,
+                dimensions=self._dimensions,
+            )
         )
         data_directories = [b.data_directory for b in batch]
 
         return LumpedTensorData(
-            x_data=inputs,
-            y_data=outputs,
-            sparse_supports=sparse_supports,
-            data_directory=data_directories,
+            x_data=inputs_tensors,
+            y_data=outputs_tensors,
+            sparse_supports=sparse_supports_tensors,
+            data_directories=data_directories,
+            x_batch_info=inputs_batch_info,
+            y_batch_info=outputs_batch_info,
+            supports_batch_info=support_batch_info,
         )

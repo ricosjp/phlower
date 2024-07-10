@@ -5,7 +5,7 @@ import pathlib
 
 import numpy as np
 
-from phlower._base.array import IPhlowerArray
+from phlower._base import IPhlowerArray
 from phlower.utils.typing import ArrayDataType
 
 
@@ -74,35 +74,45 @@ class IPhlowerPickleFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
 
 
 class IPhlowerYamlFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
+    @abc.abstractclassmethod
+    def save(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: object,
+        *,
+        encrypt_key: bytes = None,
+        allow_overwrite: bool = False,
+    ) -> IPhlowerYamlFile: ...
+
     @abc.abstractmethod
     def load(self, *, decrypt_key: bytes = None) -> dict:
         raise NotImplementedError()
 
+
+class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
+    @classmethod
     @abc.abstractmethod
     def save(
-        self,
+        cls,
+        output_directory: pathlib.Path,
+        epoch_number: int,
         dump_data: object,
         overwrite: bool = False,
         encrypt_key: bytes = None,
-    ) -> None:
-        raise NotImplementedError()
+    ) -> IPhlowerCheckpointFile: ...
 
+    @classmethod
+    @abc.abstractmethod
+    def get_fixed_prefix(self) -> int: ...
 
-class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def epoch(self) -> int:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def load(self, device: str, *, decrypt_key: bytes = None) -> dict:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def save(
-        self,
-        dump_data: object,
-        overwrite: bool = False,
-        encrypt_key: bytes = None,
-    ) -> None:
+    def load(
+        self, device: str | None = None, *, decrypt_key: bytes = None
+    ) -> dict:
         raise NotImplementedError()

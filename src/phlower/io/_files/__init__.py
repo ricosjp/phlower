@@ -1,6 +1,6 @@
 # flake8: noqa
 from .checkpoint_file import PhlowerCheckpointFile
-from .interface import (
+from ._interface import (
     IPhlowerCheckpointFile,
     IPhlowerNumpyFile,
     IPhlowerPickleFile,

@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from phlower._base.tensors import PhlowerTensor, phlower_tensor
+from phlower._base import PhlowerTensor, phlower_tensor
 from phlower.utils.typing import ArrayDataType
 
 

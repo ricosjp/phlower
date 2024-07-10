@@ -7,7 +7,9 @@ import pytest
 import scipy.sparse as sp
 import torch
 
+from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory
+from phlower.services.predictor import PhlowerPredictor
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
 
@@ -54,9 +56,9 @@ def prepare_sample_preprocessed_files():
         (preprocessed_dir / "preprocessed").touch()
 
 
-def test__simple_training(prepare_sample_preprocessed_files):
-    path = _OUTPUT_DIR
-    phlower_path = PhlowerDirectory(path)
+@pytest.fixture(scope="module")
+def simple_training(prepare_sample_preprocessed_files):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
         phlower_path.find_directory(
@@ -64,16 +66,45 @@ def test__simple_training(prepare_sample_preprocessed_files):
         )
     )
 
-    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/setting.yml")
-    setting.model.resolve(is_first=True)
+    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/train.yml")
 
-    trainer = PhlowerTrainer(setting)
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
 
-    model, loss = trainer.train(
-        preprocessed_directories=preprocessed_directories, n_epoch=2
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
     )
-    model.draw(_OUTPUT_DIR)
+    return loss
 
+
+def test__simple_training(simple_training):
+    loss: PhlowerTensor = simple_training
+
+    print(loss)
     assert loss.has_dimension
     assert not torch.isinf(loss.to_tensor())
     assert not torch.isnan(loss.to_tensor())
+
+
+def test__predict(simple_training):
+    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/predict.yml")
+    model_directory = _OUTPUT_DIR / "model"
+
+    predictor = PhlowerPredictor(
+        model_directory=model_directory, predict_setting=setting.prediction
+    )
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    for result in predictor.predict(preprocessed_directories):
+        for k in result.keys():
+            print(f"{k}: {result[k].dimension}")
