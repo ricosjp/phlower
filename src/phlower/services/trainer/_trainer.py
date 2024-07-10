@@ -17,7 +17,7 @@ from phlower.settings import (
     PhlowerSetting,
     PhlowerTrainerSetting,
 )
-from phlower.utils import PhlowerProgressBar, get_logger
+from phlower.utils import PhlowerProgressBar, get_logger, StopWatch
 
 _logger = get_logger(__name__)
 
@@ -61,6 +61,7 @@ class PhlowerTrainer:
         self._optimizer = torch.optim.SGD(
             self._model.parameters(), lr=self._trainer_setting.lr, momentum=0.9
         )
+        self._timer = StopWatch()
 
     def _fix_seed(self, seed: int):
         random.seed(seed)
@@ -109,7 +110,7 @@ class PhlowerTrainer:
         loss: PhlowerTensor | None = None
 
         tqdm.write(record_io.get_header())
-
+        self._timer.start()
         for epoch in range(self._trainer_setting.n_epoch):
             train_losses: list[float] = []
             validation_losses: list[float] = []
@@ -119,16 +120,9 @@ class PhlowerTrainer:
                 tr_batch: LumpedTensorData
                 self._optimizer.zero_grad()
 
-                # print(tr_batch.data_directories)
-                # tmp = tr_batch.x_data["nodal_initial_u"].to_tensor()
-                # print(f"{torch.mean(tmp)}, {torch.var(tmp)}, {tmp.shape}")
-
                 h = self._model.forward(
                     tr_batch.x_data, supports=tr_batch.sparse_supports
                 )
-                # tmp = h["nodal_last_u"].to_tensor()
-                # print(tmp)
-                # print(f"{torch.mean(tmp)}, {torch.var(tmp)}, {tmp.shape}")
 
                 losses = loss_function.calculate(
                     h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
@@ -160,7 +154,7 @@ class PhlowerTrainer:
                 epoch=epoch,
                 train_loss=train_loss,
                 validation_loss=validation_loss,
-                elapsed_time=0,
+                elapsed_time=self._timer.watch(),
             )
             tqdm.write(record_io.to_str(log_record))
 

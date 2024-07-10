@@ -35,6 +35,7 @@ pytest:
         path: coverage.xml
   tags:
     - no-gpu
+    - avx
     - GenuineIntel
 
 e2e_test:
@@ -43,6 +44,7 @@ e2e_test:
     - poetry run pytest tests/e2e_tests
   tags:
     - no-gpu
+    - avx
     - GenuineIntel
 
 # pages:

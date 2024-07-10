@@ -50,6 +50,7 @@ class PhlowerScalingService:
         interim_data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,
         decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None
     ) -> None:
         """This function is consisted of these three process.
         - Determine parameters of scalers by reading data files lazily
@@ -67,12 +68,13 @@ class PhlowerScalingService:
             data_directories=interim_data_directories,
             output_base_directory=output_base_directory,
             decrypt_key=decrypt_key,
+            encrypt_key=encrypt_key
         )
 
         self.save(
             output_directory=output_base_directory,
             file_base_name="preprocess",
-            encrypt_key=decrypt_key,
+            encrypt_key=encrypt_key,
         )
 
     def lazy_fit_all(
@@ -138,6 +140,7 @@ class PhlowerScalingService:
         allow_missing: bool = False,
         allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None
     ) -> None:
         """
         Apply scaling process to data in interim directory and save results
@@ -158,6 +161,7 @@ class PhlowerScalingService:
                 allow_missing=allow_missing,
                 allow_overwrite=allow_overwrite,
                 decrypt_key=decrypt_key,
+                encrypt_key=encrypt_key
             ),
             chunksize=1,
         )
@@ -170,6 +174,7 @@ class PhlowerScalingService:
         allow_missing: bool = False,
         allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None
     ) -> None:
         transform_files: list[IPhlowerNumpyFile] = list(
             data_directories
@@ -195,7 +200,7 @@ class PhlowerScalingService:
                 output_directory=output_directory,
                 file_basename=numpy_file.get_variable_name(),
                 data=transformed_data,
-                encrypt_key=decrypt_key,
+                encrypt_key=encrypt_key,
                 allow_overwrite=allow_overwrite,
             )
 
