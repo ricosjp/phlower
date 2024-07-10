@@ -21,7 +21,7 @@ scikit-learn = "^1.5.0"
 pipe = "^2.2"
 pyvista = "^0.43.10"
 tqdm = "^4.66.4"
-polars-lts-cpu = "^1.1.0"
+pandas = "^2.2.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
@@ -34,6 +34,9 @@ ruff = "^0.4.10"
 addopts = [
     "--import-mode=importlib",
     "-p no:cacheprovider"
+]
+markers = [
+    "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')"
 ]
 
 [build-system]

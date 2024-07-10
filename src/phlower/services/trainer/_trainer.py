@@ -17,7 +17,7 @@ from phlower.settings import (
     PhlowerSetting,
     PhlowerTrainerSetting,
 )
-from phlower.utils import PhlowerProgressBar, get_logger, StopWatch
+from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 
 _logger = get_logger(__name__)
 

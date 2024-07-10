@@ -19,7 +19,12 @@ format:
 
 .PHONY: test
 test:
-	poetry run pytest tests --cov=src --cov-report term-missing --durations 5
+	poetry run pytest tests -m "not e2e_test" --cov=src --cov-report term-missing --durations 5
+
+
+.PHONY: test
+e2e_test:
+	poetry run pytest tests -m "e2e_test"
 
 
 .PHONY: lint

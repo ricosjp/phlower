@@ -79,6 +79,7 @@ def simple_training(prepare_sample_preprocessed_files):
     return loss
 
 
+@pytest.mark.e2e_test
 def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
@@ -108,6 +109,7 @@ def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
     assert not torch.isnan(loss.to_tensor())
 
 
+@pytest.mark.e2e_test
 def test__simple_training(simple_training):
     loss: PhlowerTensor = simple_training
 
@@ -118,6 +120,7 @@ def test__simple_training(simple_training):
     assert not torch.isnan(loss.to_tensor())
 
 
+@pytest.mark.e2e_test
 def test__predict(simple_training):
     setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/predict.yml")
     model_directory = _OUTPUT_DIR / "model"

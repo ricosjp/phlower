@@ -10,9 +10,7 @@ class StopWatch:
 
     def start(self) -> None:
         if self._start is not None:
-            raise ValueError(
-                "siml timer has already started."
-            )
+            raise ValueError("siml timer has already started.")
         self._start = time.time()
 
     def stop(self) -> float:
