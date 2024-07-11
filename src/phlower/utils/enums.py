@@ -46,3 +46,18 @@ class PhlowerScalerName(Enum):
     # SPARSE_STD = "sparse_std"
     STANDARDIZE = "standardize"
     STD_SCALE = "std_scale"
+
+
+class PhysicalDimensionType(Enum):
+    mass = 0  # Ex: kilogram
+    length = 1  # Ex: metre
+    time = 2  # Ex: second
+    thermodynamic_temperature = 3  # Ex: Kelvin
+    amount_of_substance = 4  # Ex: mole
+    electric_current = 5  # Ex. ampere
+    luminous_intensity = 6  # Ex. candela
+
+    @classmethod
+    def is_exist(cls, name: str) -> bool:
+        registered_names = [item.name for item in PhysicalDimensionType]
+        return name in registered_names

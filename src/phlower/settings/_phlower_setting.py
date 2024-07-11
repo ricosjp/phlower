@@ -10,7 +10,8 @@ from typing_extensions import Self
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_settings import GroupModuleSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
-from phlower.utils.enums import ModelSelectionType
+from phlower.utils.enums import ModelSelectionType, PhysicalDimensionType
+from phlower.utils.exceptions import InvalidDimensionError
 
 
 class PhlowerSetting(pydantic.BaseModel):
@@ -46,7 +47,18 @@ class PhlowerModelSetting(pydantic.BaseModel):
         frozen=True, extra="forbid", arbitrary_types_allowed=True
     )
 
-    # HACK: check valid dimension !!
+    @pydantic.field_validator("variable_dimensions")
+    @classmethod
+    def check_dimension_name(cls, value: dict[str, dict[str, float]]):
+        for dict_data in value.values():
+            for name in dict_data:
+                if PhysicalDimensionType.is_exist(name):
+                    continue
+                raise InvalidDimensionError(
+                    f"{name} is not valid dimension name."
+                )
+
+        return value
 
 
 class PhlowerTrainerSetting(pydantic.BaseModel):
