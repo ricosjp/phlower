@@ -1,24 +1,14 @@
 from __future__ import annotations
 
-import enum
 import functools
 from collections.abc import Callable
 
 import torch
 
+from phlower.utils.enums import PhysicalDimensionType
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 _HANDLED_FUNCTIONS: dict[str, Callable] = {}
-
-
-class PhysicalDimensionType(enum.Enum):
-    mass = 0  # Ex: kilogram
-    length = 1  # Ex: metre
-    time = 2  # Ex: second
-    thermodynamic_temperature = 3  # Ex: Kelvin
-    amount_of_substance = 4  # Ex: mole
-    electric_current = 5  # Ex. ampere
-    luminous_intensity = 6  # Ex. candela
 
 
 def phlower_dimension_tensor(

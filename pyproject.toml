@@ -32,11 +32,11 @@ ruff = "^0.4.10"
 
 [tool.pytest.ini_options]
 addopts = [
-    "--import-mode=importlib",
-    "-p no:cacheprovider"
+    "--import-mode=importlib"
 ]
 markers = [
-    "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')"
+    "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')",
+    "need_multicore: marks tests which need multiple core"
 ]
 
 [build-system]
