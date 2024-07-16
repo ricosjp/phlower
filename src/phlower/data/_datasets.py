@@ -24,7 +24,6 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         directories: list[pathlib.Path],
         *,
         support_names: list[str] = None,
-        num_workers: int = 0,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         **kwargs,
@@ -36,7 +35,6 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         self._directories = [PhlowerDirectory(d) for d in directories]
         self._support_names = support_names if support_names is not None else []
 
-        self._num_workers = num_workers
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
 

@@ -1,5 +1,6 @@
 import torch
 
+from phlower._base import PhysicsDimensions
 from phlower.collections.arrays import SequencedDictArray
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
 
@@ -9,7 +10,7 @@ class PhlowerCollateFn:
         self,
         device: str | torch.device,
         non_blocking: bool = False,
-        dimensions: dict[str, dict[str, float]] = None,
+        dimensions: dict[str, PhysicsDimensions] | None = None,
     ) -> None:
         self._device = device
         self._non_blocking = non_blocking

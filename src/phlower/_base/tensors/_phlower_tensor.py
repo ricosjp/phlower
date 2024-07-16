@@ -6,10 +6,11 @@ from typing import Any
 import torch
 from pipe import select
 
-from phlower._base.tensors._dimensions import (
+from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
 )
+from phlower._base._dimension import PhysicsDimensions
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower.utils import get_logger
 
@@ -19,7 +20,7 @@ logger = get_logger(__name__)
 def phlower_tensor(
     tensor: torch.Tensor | PhlowerTensor,
     dimension: (
-        PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
+        PhysicsDimensions | PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
     ) = None,
 ):
     if isinstance(tensor, PhlowerTensor):
@@ -30,16 +31,14 @@ def phlower_tensor(
 
         return tensor
 
-    if isinstance(tensor, torch.Tensor):
-        dimension_tensor = _resolve_dimension_arg(dimension)
+    dimension_tensor = _resolve_dimension_arg(dimension)
 
-        return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
+    return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
 
-    raise NotImplementedError(f"PhlowerTensor cannot be created from {tensor}.")
 
 
 def _resolve_dimension_arg(
-    inputs: PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None,
+    inputs: PhysicsDimensions | PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None,
 ) -> PhlowerDimensionTensor | None:
     if inputs is None:
         return None
@@ -50,7 +49,7 @@ def _resolve_dimension_arg(
     if isinstance(inputs, torch.Tensor):
         return PhlowerDimensionTensor(inputs)
 
-    if isinstance(inputs, dict):
+    if isinstance(inputs, dict | PhysicsDimensions):
         return phlower_dimension_tensor(inputs)
 
     raise NotImplementedError(

@@ -12,6 +12,7 @@ from phlower.settings._model_settings import GroupModuleSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.utils.enums import ModelSelectionType, PhysicalDimensionType
 from phlower.utils.exceptions import InvalidDimensionError
+from phlower._base import PhysicsDimensions
 
 
 class PhlowerSetting(pydantic.BaseModel):
@@ -37,7 +38,7 @@ class PhlowerSetting(pydantic.BaseModel):
 
 
 class PhlowerModelSetting(pydantic.BaseModel):
-    variable_dimensions: dict[str, dict[str, float]] = pydantic.Field(
+    variable_dimensions: dict[str, PhysicsDimensions] = pydantic.Field(
         default_factory=lambda: {}
     )
     network: GroupModuleSetting
@@ -46,19 +47,6 @@ class PhlowerModelSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(
         frozen=True, extra="forbid", arbitrary_types_allowed=True
     )
-
-    @pydantic.field_validator("variable_dimensions")
-    @classmethod
-    def check_dimension_name(cls, value: dict[str, dict[str, float]]):
-        for dict_data in value.values():
-            for name in dict_data:
-                if PhysicalDimensionType.is_exist(name):
-                    continue
-                raise InvalidDimensionError(
-                    f"{name} is not valid dimension name."
-                )
-
-        return value
 
 
 class PhlowerTrainerSetting(pydantic.BaseModel):

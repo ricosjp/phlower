@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import numpy as np
 import torch
 
-from phlower._base import GraphBatchInfo, IPhlowerArray, PhlowerTensor
+from phlower._base import GraphBatchInfo, IPhlowerArray, PhlowerTensor, PhysicsDimensions
 from phlower._base._functionals import to_batch
 
 
@@ -52,7 +52,7 @@ class _PhlowerSequenceArray:
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimensions: dict[str, float] | None = None,
+        dimensions: PhysicsDimensions | None = None,
     ):
         tensors = [
             v.to_phlower_tensor(
@@ -97,8 +97,11 @@ class SequencedDictArray:
         self,
         device: str,
         non_blocking: bool,
-        dimensions: dict[str, dict[str, float]] | None = None,
+        dimensions: dict[str, PhysicsDimensions] | None = None,
     ) -> tuple[dict[str, PhlowerTensor], dict[str, GraphBatchInfo]]:
+        if dimensions is None:
+            dimensions = {}
+
         _batched = [
             (
                 name,

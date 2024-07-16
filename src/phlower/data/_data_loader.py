@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from typing_extensions import Self
 
+from phlower._base import PhysicsDimensions
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
 from phlower.settings._phlower_setting import (
@@ -44,9 +45,10 @@ class DataLoaderBuilder:
         self,
         dataset: IPhlowerDataset,
         *,
-        variable_dimensions: dict[str, dict[str, float]] | None = None,
+        variable_dimensions: dict[str, PhysicsDimensions] | None = None,
         shuffle: bool = True,
         disable_dimensions: bool = False,
+        drop_last: bool = False
     ) -> DataLoader:
         dimensions = None if disable_dimensions else variable_dimensions
         _collate_fn = PhlowerCollateFn(
@@ -55,7 +57,7 @@ class DataLoaderBuilder:
             dimensions=dimensions,
         )
 
-        random_generator = torch.Generator()
+        random_generator = torch.Generator(device=self._device)
         random_generator.manual_seed(self._random_seed)
         data_loader = DataLoader(
             dataset,
@@ -65,6 +67,7 @@ class DataLoaderBuilder:
             num_workers=self._num_workers,
             worker_init_fn=_seed_worker,
             generator=random_generator,
+            drop_last=drop_last
         )
         return data_loader
 
@@ -72,6 +75,10 @@ class DataLoaderBuilder:
 def _seed_worker(worker_id: int) -> None:
     # To ensure randomness of numpy and random module when multiprocessing
     # See https://pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading  # NOQA
+    # each worker will have its PyTorch seed set to base_seed + worker_id
+    # However, seeds for other libraries may be duplicated upon initializing
+    # workers, causing each worker to return identical random numbers.
+
     worker_seed = torch.initial_seed() % (2**32)
     np.random.seed(worker_seed)
     random.seed(worker_seed)
