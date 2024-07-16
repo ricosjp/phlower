@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import torch
 
-from phlower._base._dimension import PhysicsDimensions
+from phlower._base._dimension import PhysicalDimensions
 from phlower.utils.enums import PhysicalDimensionType
 from phlower.utils.exceptions import DimensionIncompatibleError
 
@@ -13,11 +13,11 @@ _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
 
 def phlower_dimension_tensor(
-    values: dict[str, float] | PhysicsDimensions,
+    values: dict[str, float] | PhysicalDimensions,
     dtype: torch.dtype = torch.float32,
 ) -> PhlowerDimensionTensor:
-    if not isinstance(values, PhysicsDimensions):
-        values = PhysicsDimensions(values)
+    if not isinstance(values, PhysicalDimensions):
+        values = PhysicalDimensions(values)
 
     _list = values.to_list()
     return PhlowerDimensionTensor.from_list(_list)
@@ -75,7 +75,7 @@ class PhlowerDimensionTensor:
 
     def to_physics_dimension(self):
         _dict = self.to_dict()
-        return PhysicsDimensions(_dict)
+        return PhysicalDimensions(_dict)
 
     def to_dict(self) -> dict[str, float]:
         return {

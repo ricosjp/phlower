@@ -6,7 +6,7 @@ from typing import Any
 import torch
 from pipe import select
 
-from phlower._base._dimension import PhysicsDimensions
+from phlower._base._dimension import PhysicalDimensions
 from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 def phlower_tensor(
     tensor: torch.Tensor | PhlowerTensor,
     dimension: (
-        PhysicsDimensions
+        PhysicalDimensions
         | PhlowerDimensionTensor
         | torch.Tensor
         | dict[str, float]
@@ -41,7 +41,7 @@ def phlower_tensor(
 
 
 def _resolve_dimension_arg(
-    inputs: PhysicsDimensions
+    inputs: PhysicalDimensions
     | PhlowerDimensionTensor
     | torch.Tensor
     | dict[str, float]
@@ -56,7 +56,7 @@ def _resolve_dimension_arg(
     if isinstance(inputs, torch.Tensor):
         return PhlowerDimensionTensor(inputs)
 
-    if isinstance(inputs, dict | PhysicsDimensions):
+    if isinstance(inputs, dict | PhysicalDimensions):
         return phlower_dimension_tensor(inputs)
 
     raise NotImplementedError(

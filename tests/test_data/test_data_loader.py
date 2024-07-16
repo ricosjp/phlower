@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from phlower._base import PhysicsDimensions
+from phlower._base import PhysicalDimensions
 from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
@@ -100,11 +100,11 @@ def test__consider_batch_size(
             },
             False,
             {
-                "x0": PhysicsDimensions({"length": 2, "time": -2}),
-                "x1": PhysicsDimensions({"mass": 2}),
-                "x2": PhysicsDimensions({"electric_current": 1}),
-                "y0": PhysicsDimensions({"amount_of_substance": -2}),
-                "s0": PhysicsDimensions({"electric_current": 1}),
+                "x0": PhysicalDimensions({"length": 2, "time": -2}),
+                "x1": PhysicalDimensions({"mass": 2}),
+                "x2": PhysicalDimensions({"electric_current": 1}),
+                "y0": PhysicalDimensions({"amount_of_substance": -2}),
+                "s0": PhysicalDimensions({"electric_current": 1}),
             },
         )
     ],

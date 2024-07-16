@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import torch
 
-from phlower._base import PhysicsDimensions
+from phlower._base import PhysicalDimensions
 from phlower._base.tensors import PhlowerTensor
 from phlower.utils.typing import ArrayDataType
 
@@ -71,7 +71,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicsDimensions | None = None,
+        dimension: PhysicalDimensions | None = None,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod

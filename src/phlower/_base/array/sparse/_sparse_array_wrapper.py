@@ -7,7 +7,7 @@ import scipy.sparse as sp
 import torch
 
 from phlower._base._batch import GraphBatchInfo
-from phlower._base._dimension import PhysicsDimensions
+from phlower._base._dimension import PhysicalDimensions
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils import get_logger
@@ -95,7 +95,7 @@ class SparseArrayWrapper(IPhlowerArray):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicsDimensions | None = None,
+        dimension: PhysicalDimensions | None = None,
     ) -> PhlowerTensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(

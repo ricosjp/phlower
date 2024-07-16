@@ -7,7 +7,7 @@ import pydantic
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
-from phlower._base import PhysicsDimensions
+from phlower._base import PhysicalDimensionsClass
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_settings import GroupModuleSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
@@ -37,8 +37,8 @@ class PhlowerSetting(pydantic.BaseModel):
 
 
 class PhlowerModelSetting(pydantic.BaseModel):
-    variable_dimensions: dict[str, PhysicsDimensions] = pydantic.Field(
-        default_factory=lambda: {}
+    variable_dimensions: dict[str, PhysicalDimensionsClass] = pydantic.Field(
+        default_factory=lambda: {}, validate_default=True
     )
     network: GroupModuleSetting
 
