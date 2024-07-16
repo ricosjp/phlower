@@ -6,11 +6,11 @@ from typing import Any
 import torch
 from pipe import select
 
+from phlower._base._dimension import PhysicsDimensions
 from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
 )
-from phlower._base._dimension import PhysicsDimensions
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower.utils import get_logger
 
@@ -20,7 +20,11 @@ logger = get_logger(__name__)
 def phlower_tensor(
     tensor: torch.Tensor | PhlowerTensor,
     dimension: (
-        PhysicsDimensions | PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None
+        PhysicsDimensions
+        | PhlowerDimensionTensor
+        | torch.Tensor
+        | dict[str, float]
+        | None
     ) = None,
 ):
     if isinstance(tensor, PhlowerTensor):
@@ -36,9 +40,12 @@ def phlower_tensor(
     return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
 
 
-
 def _resolve_dimension_arg(
-    inputs: PhysicsDimensions | PhlowerDimensionTensor | torch.Tensor | dict[str, float] | None,
+    inputs: PhysicsDimensions
+    | PhlowerDimensionTensor
+    | torch.Tensor
+    | dict[str, float]
+    | None,
 ) -> PhlowerDimensionTensor | None:
     if inputs is None:
         return None

@@ -8,7 +8,6 @@ import scipy.sparse as sp
 
 from phlower.io import PhlowerNumpyFile
 from phlower.utils.typing import ArrayDataType
-from phlower.data import LazyPhlowerDataset
 
 _output_base_directory = pathlib.Path(__file__).parent / "tmp/datasets"
 
@@ -52,4 +51,3 @@ def create_tmp_dataset():
             results[name][v_name] = arr
 
     return results
-

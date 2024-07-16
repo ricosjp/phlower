@@ -13,9 +13,9 @@ _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 
 
 def phlower_dimension_tensor(
-    values: dict[str, float] | PhysicsDimensions, dtype: torch.dtype = torch.float32
+    values: dict[str, float] | PhysicsDimensions,
+    dtype: torch.dtype = torch.float32,
 ) -> PhlowerDimensionTensor:
-
     if not isinstance(values, PhysicsDimensions):
         values = PhysicsDimensions(values)
 

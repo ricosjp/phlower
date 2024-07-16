@@ -48,7 +48,7 @@ class DataLoaderBuilder:
         variable_dimensions: dict[str, PhysicsDimensions] | None = None,
         shuffle: bool = True,
         disable_dimensions: bool = False,
-        drop_last: bool = False
+        drop_last: bool = False,
     ) -> DataLoader:
         dimensions = None if disable_dimensions else variable_dimensions
         _collate_fn = PhlowerCollateFn(
@@ -67,7 +67,7 @@ class DataLoaderBuilder:
             num_workers=self._num_workers,
             worker_init_fn=_seed_worker,
             generator=random_generator,
-            drop_last=drop_last
+            drop_last=drop_last,
         )
         return data_loader
 

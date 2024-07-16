@@ -4,7 +4,12 @@ from collections.abc import Sequence
 import numpy as np
 import torch
 
-from phlower._base import GraphBatchInfo, IPhlowerArray, PhlowerTensor, PhysicsDimensions
+from phlower._base import (
+    GraphBatchInfo,
+    IPhlowerArray,
+    PhlowerTensor,
+    PhysicsDimensions,
+)
 from phlower._base._functionals import to_batch
 
 

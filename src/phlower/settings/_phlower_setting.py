@@ -7,12 +7,11 @@ import pydantic
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
+from phlower._base import PhysicsDimensions
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_settings import GroupModuleSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
-from phlower.utils.enums import ModelSelectionType, PhysicalDimensionType
-from phlower.utils.exceptions import InvalidDimensionError
-from phlower._base import PhysicsDimensions
+from phlower.utils.enums import ModelSelectionType
 
 
 class PhlowerSetting(pydantic.BaseModel):

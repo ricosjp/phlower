@@ -1,4 +1,3 @@
-
 import numpy as np
 import pytest
 
@@ -6,12 +5,13 @@ from phlower.data import LazyPhlowerDataset
 from phlower.utils.typing import ArrayDataType
 
 
-
 @pytest.mark.parametrize(
     "directories, desired",
     [(["data0", "data1"], 2), (["data0", "data1", "data2"], 3)],
 )
-def test__lazy_dataset_length(directories, desired, create_tmp_dataset, output_base_directory):
+def test__lazy_dataset_length(
+    directories, desired, create_tmp_dataset, output_base_directory
+):
     directories = [output_base_directory / v for v in directories]
     dataset = LazyPhlowerDataset(
         x_variable_names=["x0", "x1"],
@@ -32,7 +32,7 @@ def test__lazy_dataset_getitem(
     support_names,
     directory_names,
     create_tmp_dataset,
-    output_base_directory
+    output_base_directory,
 ):
     directories = [output_base_directory / v for v in directory_names]
     dataset = LazyPhlowerDataset(
@@ -80,7 +80,7 @@ def test__lazy_dataset_getitem_when_no_ydata(
     support_names,
     directory_names,
     create_tmp_dataset,
-    output_base_directory
+    output_base_directory,
 ):
     directories = [output_base_directory / v for v in directory_names]
     dataset = LazyPhlowerDataset(

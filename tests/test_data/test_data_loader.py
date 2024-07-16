@@ -1,15 +1,15 @@
-from unittest import mock
 import pytest
-
 from hypothesis import given
 from hypothesis import strategies as st
 
 from phlower._base import PhysicsDimensions
-from phlower.data._collate_fn import PhlowerCollateFn
-from phlower.data import DataLoaderBuilder, IPhlowerDataset, LazyPhlowerDataset
+from phlower.data import (
+    DataLoaderBuilder,
+    LazyPhlowerDataset,
+    LumpedTensorData,
+)
 from phlower.settings import PhlowerPredictorSetting, PhlowerTrainerSetting
 from phlower.utils.enums import ModelSelectionType
-from phlower.data import LumpedTensorData
 
 
 @st.composite
@@ -20,7 +20,7 @@ def trainer_setting(draw):
         device=draw(st.text()),
         random_seed=draw(st.integers(min_value=0)),
         batch_size=draw(st.integers(min_value=1)),
-        num_workers=draw(st.integers(min_value=1))
+        num_workers=draw(st.integers(min_value=1)),
     )
     return setting
 
@@ -32,7 +32,7 @@ def predictor_setting(draw):
         non_blocking=draw(st.booleans()),
         device=draw(st.text()),
         batch_size=draw(st.integers(min_value=1)),
-        num_workers=draw(st.integers(min_value=1))
+        num_workers=draw(st.integers(min_value=1)),
     )
     return setting
 
@@ -59,12 +59,13 @@ def test__create_from_predictor_setting(setting: PhlowerPredictorSetting):
     assert dataloader._num_workers == setting.num_workers
 
 
-
-@pytest.mark.parametrize("batch_size", [
-    1, 2, 3
-])
-def test__consider_batch_size(batch_size, create_tmp_dataset, output_base_directory):
-    directories=[output_base_directory / v for v in ["data0", "data1", "data2"]]
+@pytest.mark.parametrize("batch_size", [1, 2, 3])
+def test__consider_batch_size(
+    batch_size, create_tmp_dataset, output_base_directory
+):
+    directories = [
+        output_base_directory / v for v in ["data0", "data1", "data2"]
+    ]
     dataset = LazyPhlowerDataset(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
@@ -79,7 +80,7 @@ def test__consider_batch_size(batch_size, create_tmp_dataset, output_base_direct
         batch_size=batch_size,
         num_workers=1,
     )
-    dataloader =  builder.create(dataset, drop_last=True)
+    dataloader = builder.create(dataset, drop_last=True)
 
     for item in dataloader:
         item: LumpedTensorData
@@ -109,9 +110,15 @@ def test__consider_batch_size(batch_size, create_tmp_dataset, output_base_direct
     ],
 )
 def test__consider_dimensions(
-    dimensions, disable_dimensions, desired, create_tmp_dataset, output_base_directory
+    dimensions,
+    disable_dimensions,
+    desired,
+    create_tmp_dataset,
+    output_base_directory,
 ):
-    directories=[output_base_directory / v for v in ["data0", "data1", "data2"]]
+    directories = [
+        output_base_directory / v for v in ["data0", "data1", "data2"]
+    ]
     dataset = LazyPhlowerDataset(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
@@ -138,12 +145,14 @@ def test__consider_dimensions(
             phydim = item.x_data[data_name].dimension.to_physics_dimension()
             assert phydim == desired[data_name]
 
-        for data_name in  item.y_data.keys():
+        for data_name in item.y_data.keys():
             phydim = item.y_data[data_name].dimension.to_physics_dimension()
             assert phydim == desired[data_name]
 
         for data_name in item.sparse_supports.keys():
-            phydim = item.sparse_supports[data_name].dimension.to_physics_dimension()
+            phydim = item.sparse_supports[
+                data_name
+            ].dimension.to_physics_dimension()
             assert phydim == desired[data_name]
 
 
@@ -165,7 +174,9 @@ def test__consider_dimensions(
 def test__not_consider_dimensions(
     dimensions, disable_dimensions, create_tmp_dataset, output_base_directory
 ):
-    directories=[output_base_directory / v for v in ["data0", "data1", "data2"]]
+    directories = [
+        output_base_directory / v for v in ["data0", "data1", "data2"]
+    ]
     dataset = LazyPhlowerDataset(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
@@ -191,9 +202,8 @@ def test__not_consider_dimensions(
         for data_name in item.x_data.keys():
             assert not item.x_data[data_name].has_dimension
 
-        for data_name in  item.y_data.keys():
+        for data_name in item.y_data.keys():
             assert not item.y_data[data_name].has_dimension
 
         for data_name in item.sparse_supports.keys():
             assert not item.sparse_supports[data_name].has_dimension
-

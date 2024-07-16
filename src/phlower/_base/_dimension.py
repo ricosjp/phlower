@@ -8,7 +8,9 @@ class PhysicsDimensions:
     def __init__(self, dimensions: dict[str, float]) -> None:
         self._check(dimensions)
 
-        self._dimensions = {name: 0 for name in PhysicalDimensionType.__members__}
+        self._dimensions = {
+            name: 0 for name in PhysicalDimensionType.__members__
+        }
         self._dimensions |= dimensions
 
     def _check(self, dimensions: dict[str, float]):
@@ -23,9 +25,7 @@ class PhysicsDimensions:
 
     def __getitem__(self, name: str) -> float:
         if not PhysicalDimensionType.is_exist(name):
-            raise InvalidDimensionError(
-                f"{name} is not valid dimension name."
-            )
+            raise InvalidDimensionError(f"{name} is not valid dimension name.")
         return self._dimensions[name]
 
     def __eq__(self, other: PhysicsDimensions):
