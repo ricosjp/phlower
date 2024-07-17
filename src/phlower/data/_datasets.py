@@ -14,7 +14,7 @@ class IPhlowerDataset(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class LazyPhlowerDataset(Dataset):
+class LazyPhlowerDataset(Dataset, IPhlowerDataset):
     """This Dataset reads input file every time to get data"""
 
     def __init__(
@@ -24,19 +24,17 @@ class LazyPhlowerDataset(Dataset):
         directories: list[pathlib.Path],
         *,
         support_names: list[str] = None,
-        num_workers: int = 0,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         **kwargs,
     ):
         self._x_variable_names = x_variable_names
+        if y_variable_names is None:
+            y_variable_names = []
         self._y_varaible_names = y_variable_names
-        self._directories: list[PhlowerDirectory] = [
-            PhlowerDirectory(d) for d in directories
-        ]
+        self._directories = [PhlowerDirectory(d) for d in directories]
         self._support_names = support_names if support_names is not None else []
 
-        self._num_workers = num_workers
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
 
@@ -78,7 +76,9 @@ class LazyPhlowerDataset(Dataset):
             )
             for name in variable_names
         ]
+
         return {
             name: phlower_file.load(decrypt_key=self._decrypt_key)
             for name, phlower_file in variable_files
+            if phlower_file is not None
         }

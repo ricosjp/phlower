@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+from typing import Annotated, Any
+
+from pydantic import (
+    PlainSerializer,
+    PlainValidator,
+    SerializationInfo,
+    ValidationInfo,
+)
+
+from phlower.utils.enums import PhysicalDimensionType
+from phlower.utils.exceptions import InvalidDimensionError
+
+
+def _validate(v: Any, info: ValidationInfo):
+    if not isinstance(v, dict):
+        raise TypeError(f"Expected dictionary, but got {type(v)}")
+
+    try:
+        ans = PhysicalDimensions(v)
+        return ans
+    except Exception as ex:
+        raise TypeError("Validation for physical dimension is failed.") from ex
+
+
+def _serialize(
+    v: PhysicalDimensions, info: SerializationInfo
+) -> dict[str, float]:
+    return v.to_dict()
+
+
+class PhysicalDimensions:
+    def __init__(self, dimensions: dict[str, float]) -> None:
+        self._check(dimensions)
+
+        self._dimensions = {
+            name: 0 for name in PhysicalDimensionType.__members__
+        }
+        self._dimensions |= dimensions
+
+    def _check(self, dimensions: dict[str, float]):
+        for name in dimensions:
+            if not PhysicalDimensionType.is_exist(name):
+                raise InvalidDimensionError(
+                    f"dimension name: {name} is not implemented."
+                    f"Avaliable units are {list(PhysicalDimensionType)}"
+                )
+            if dimensions[name] is None:
+                raise InvalidDimensionError(
+                    f"None dimension is found in {name}"
+                )
+
+    def get(self, name: str) -> float | None:
+        return self._dimensions.get(name)
+
+    def __getitem__(self, name: str) -> float:
+        if not PhysicalDimensionType.is_exist(name):
+            raise InvalidDimensionError(f"{name} is not valid dimension name.")
+        return self._dimensions[name]
+
+    def __eq__(self, other: PhysicalDimensions):
+        for k in PhysicalDimensionType.__members__.keys():
+            if self._dimensions[k] != other[k]:
+                return False
+
+        return True
+
+    def to_list(self) -> list[float]:
+        _list: list[float] = [0 for _ in PhysicalDimensionType]
+        for k, v in self._dimensions.items():
+            if k not in PhysicalDimensionType.__members__:
+                raise InvalidDimensionError(
+                    f"dimension name: {k} is not implemented."
+                    f"Avaliable units are {list(PhysicalDimensionType)}"
+                )
+            _list[PhysicalDimensionType[k].value] = v
+
+        return _list
+
+    def to_dict(self):
+        return self._dimensions
+
+
+PhysicalDimensionsClass = Annotated[
+    PhysicalDimensions,
+    PlainValidator(_validate),
+    PlainSerializer(_serialize),
+]

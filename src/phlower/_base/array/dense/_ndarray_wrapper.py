@@ -3,6 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import torch
 
+from phlower._base._dimension import PhysicalDimensions
 from phlower._base.array._interface_wrapper import IPhlowerArray
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils.typing import DenseArrayType
@@ -62,7 +63,7 @@ class NdArrayWrapper(IPhlowerArray):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: dict[str, float] | None = None,
+        dimension: PhysicalDimensions | None = None,
     ) -> PhlowerTensor:
         _tensor = phlower_tensor(
             tensor=torch.from_numpy(self.data), dimension=dimension

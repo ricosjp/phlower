@@ -1,8 +1,7 @@
-import pathlib
-
 from phlower import IPhlowerArray
 from phlower._base import GraphBatchInfo
 from phlower.collections.tensors import IPhlowerTensorCollections
+from phlower.io import PhlowerDirectory
 
 
 class LumpedArrayData:
@@ -11,7 +10,7 @@ class LumpedArrayData:
         x_data: dict[str, IPhlowerArray],
         y_data: dict[str, IPhlowerArray],
         sparse_supports: dict[str, IPhlowerArray],
-        data_directory: pathlib.Path,
+        data_directory: PhlowerDirectory,
     ) -> None:
         self.x_data = x_data
         self.y_data = y_data
@@ -24,7 +23,7 @@ class LumpedTensorData:
         self,
         x_data: IPhlowerTensorCollections,
         sparse_supports: IPhlowerTensorCollections,
-        data_directories: list[pathlib.Path] | None = None,
+        data_directories: list[PhlowerDirectory] | None = None,
         y_data: IPhlowerTensorCollections | None = None,
         x_batch_info: dict[str, GraphBatchInfo] | None = None,
         y_batch_info: dict[str, GraphBatchInfo] | None = None,

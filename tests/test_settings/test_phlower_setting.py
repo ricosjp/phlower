@@ -9,7 +9,7 @@ from phlower.settings import PhlowerModelSetting, PhlowerPredictorSetting
     [({"vala": {"mass_": 1, "time": 4}}), ({"sample": {"kg": 2, "Am": -2}})],
 )
 def test__invalid_dimension_model_setting(variable_dimensions):
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(TypeError):
         _ = PhlowerModelSetting(
             variable_dimensions=variable_dimensions,
             network={

@@ -1,4 +1,4 @@
-from phlower._base.tensors._dimensions import (
+from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
 )
