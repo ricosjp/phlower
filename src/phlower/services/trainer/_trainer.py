@@ -206,10 +206,12 @@ class PhlowerTrainer:
             "model_state_dict": self._model.state_dict(),
             "optimizer_state_dict": self._optimizer.state_dict(),
         }
+        prefix = PhlowerCheckpointFile.get_fixed_prefix()
+        file_basename = f"{prefix}{epoch}"
         PhlowerCheckpointFile.save(
             output_directory=output_directory,
-            epoch_number=epoch,
-            dump_data=data,
+            file_basename=file_basename,
+            data=data,
             encrypt_key=encrypt_key,
         )
         return

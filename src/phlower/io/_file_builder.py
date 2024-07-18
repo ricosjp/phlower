@@ -3,11 +3,9 @@ import pathlib
 from phlower.io._files import (
     IPhlowerCheckpointFile,
     IPhlowerNumpyFile,
-    IPhlowerPickleFile,
     IPhlowerYamlFile,
     PhlowerCheckpointFile,
     PhlowerNumpyFile,
-    PhlowerPickleFile,
     PhlowerYamlFile,
 )
 
@@ -21,10 +19,6 @@ class PhlowerFileBuilder:
             return PhlowerNumpyFile(file_path.file_path)
 
         return PhlowerNumpyFile(file_path)
-
-    @staticmethod
-    def pickle_file(file_path: pathlib.Path | str) -> IPhlowerPickleFile:
-        return PhlowerPickleFile(file_path)
 
     @staticmethod
     def checkpoint_file(
