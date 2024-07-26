@@ -18,11 +18,9 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         if name == PhlowerScalerName.MAX_ABS_POWERED.value:
             return MaxAbsPoweredScaler(**kwards)
 
-        raise NotImplementedError()
-
-    @classmethod
-    def get_registered_names(self) -> list[str]:
-        return [PhlowerScalerName.MAX_ABS_POWERED.value]
+        raise NotImplementedError(
+            f"Instance for {name} is not implemented in {cls.__class__}"
+        )
 
     def __init__(self, power: float = 1.0, **kwargs):
         self.max_: NDArray | None = None

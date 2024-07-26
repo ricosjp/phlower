@@ -18,7 +18,8 @@ from phlower.utils.enums import PhlowerScalerName
 
 
 class IScalerParameter(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_parent_scaler(self) -> bool: ...
 
     @abc.abstractmethod
@@ -59,7 +60,7 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
         return v
 
     def get_scaler_name(self, variable_name: str):
-        return f"scaler_{variable_name}"
+        return f"SCALER_{variable_name}"
 
 
 class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
@@ -76,7 +77,7 @@ class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
         return False
 
     def get_scaler_name(self, variable_name: str):
-        return f"scaler_{self.same_as}"
+        return f"SCALER_{self.same_as}"
 
 
 InputParameterSetting = ScalerInputParameters | SameAsInputParameters
@@ -230,6 +231,7 @@ def _resolve(
     _scaler_name_to_setting: dict[str, ScalerInputParameters] = {}
     _scaler_to_fitting_items: dict[str, list[str]] = defaultdict(list)
     _scaler_to_transform_items: dict[str, list[str]] = defaultdict(list)
+
     for name, setting in variable_name_to_scalers.items():
         scaler_name = setting.get_scaler_name(name)
         _scaler_to_transform_items[scaler_name].append(name)

@@ -13,9 +13,11 @@ from phlower.utils.typing import ArrayDataType
 logger = get_logger(__name__)
 
 
-class ScalerWrapper:
+class PhlowerScalerWrapper:
     @classmethod
-    def from_setting(cls, setting: ScalerResolvedParameter) -> ScalerWrapper:
+    def from_setting(
+        cls, setting: ScalerResolvedParameter
+    ) -> PhlowerScalerWrapper:
         _cls = cls(
             method=setting.method,
             componentwise=setting.component_wise,

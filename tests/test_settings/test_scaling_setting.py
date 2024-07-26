@@ -29,8 +29,8 @@ def test__is_parent():
 @pytest.mark.parametrize(
     "method, variable_name, desired",
     [
-        ("identity", "val_a", "scaler_val_a"),
-        ("user_defined", "val_b", "scaler_val_b"),
+        ("identity", "val_a", "SCALER_val_a"),
+        ("user_defined", "val_b", "SCALER_val_b"),
     ],
 )
 def test_scaler_name(method, variable_name, desired):
@@ -60,7 +60,7 @@ def test__join_fitting(join_fitting):
 
 
 @pytest.mark.parametrize(
-    "same_as, desired", [("val_a", "scaler_val_a"), ("val_b", "scaler_val_b")]
+    "same_as, desired", [("val_a", "SCALER_val_a"), ("val_b", "SCALER_val_b")]
 )
 def test_sameas_scaler_name(same_as, desired):
     scaler = SameAsInputParameters(same_as=same_as)
@@ -163,14 +163,14 @@ def test__is_scaler_exist(scalers, existed, not_existed):
                 "nodal": {"method": "std_scale"},
                 "nodal_child": {"same_as": "nodal"},
             },
-            [("nodal", "scaler_nodal"), ("nodal_child", "scaler_nodal")],
+            [("nodal", "SCALER_nodal"), ("nodal_child", "SCALER_nodal")],
         ),
         (
             {
                 "nodal": {"method": "std_scale"},
                 "nodal2": {"method": "identity"},
             },
-            [("nodal", "scaler_nodal"), ("nodal2", "scaler_nodal2")],
+            [("nodal", "SCALER_nodal"), ("nodal2", "SCALER_nodal2")],
         ),
     ],
 )
@@ -212,9 +212,9 @@ def test__n_resolved_settings(create_sample_setting):
 @pytest.mark.parametrize(
     "scaler_name, desired",
     [
-        ("scaler_nodal", ["nodal", "nodal_child", "nodal_child2"]),
-        ("scaler_value_x", ["value_x"]),
-        ("scaler_value_z", ["value_z"]),
+        ("SCALER_nodal", ["nodal", "nodal_child", "nodal_child2"]),
+        ("SCALER_value_x", ["value_x"]),
+        ("SCALER_value_z", ["value_z"]),
     ],
 )
 def test__transform_items(scaler_name, desired, create_sample_setting):
@@ -229,9 +229,9 @@ def test__transform_items(scaler_name, desired, create_sample_setting):
 @pytest.mark.parametrize(
     "scaler_name, desired",
     [
-        ("scaler_nodal", ["nodal", "nodal_child2"]),
-        ("scaler_value_x", ["value_x"]),
-        ("scaler_value_z", ["value_z"]),
+        ("SCALER_nodal", ["nodal", "nodal_child2"]),
+        ("SCALER_value_x", ["value_x"]),
+        ("SCALER_value_z", ["value_z"]),
     ],
 )
 def test__fitting_items(scaler_name, desired, create_sample_setting):
@@ -246,9 +246,9 @@ def test__fitting_items(scaler_name, desired, create_sample_setting):
 @pytest.mark.parametrize(
     "scaler_name, desired",
     [
-        ("scaler_nodal", False),
-        ("scaler_value_x", False),
-        ("scaler_value_y", True),
+        ("SCALER_nodal", False),
+        ("SCALER_value_x", False),
+        ("SCALER_value_y", True),
     ],
 )
 def test__component_wise(scaler_name, desired, create_sample_setting):
@@ -263,8 +263,8 @@ def test__component_wise(scaler_name, desired, create_sample_setting):
 @pytest.mark.parametrize(
     "scaler_name, desired",
     [
-        ("scaler_nodal", {"std_": 0.001}),
-        ("scaler_value_z", {"user_std_": 10.0}),
+        ("SCALER_nodal", {"std_": 0.001}),
+        ("SCALER_value_z", {"user_std_": 10.0}),
     ],
 )
 def test__parameters(scaler_name, desired, create_sample_setting):
@@ -278,7 +278,7 @@ def test__parameters(scaler_name, desired, create_sample_setting):
 
 @pytest.mark.parametrize(
     "scaler_name, allow_missing",
-    [("scaler_nodal", True), ("scaler_value_z", False)],
+    [("SCALER_nodal", True), ("SCALER_value_z", False)],
 )
 def test__collect_fitting_files(
     scaler_name, allow_missing, create_sample_setting
@@ -306,7 +306,7 @@ def test__collect_fitting_files(
 
 @pytest.mark.parametrize(
     "scaler_name, allow_missing",
-    [("scaler_nodal", True), ("scaler_value_z", False)],
+    [("SCALER_nodal", True), ("SCALER_value_z", False)],
 )
 def test__collect_transform_files(
     scaler_name, allow_missing, create_sample_setting

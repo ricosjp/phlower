@@ -21,10 +21,6 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
         raise NotImplementedError()
 
-    @classmethod
-    def get_registered_names(cls) -> list[str]:
-        return [PhlowerScalerName.ISOAM_SCALE.value]
-
     def __init__(self, other_components: list[str], **kwargs):
         self.var_: float = 0.0
         self.std_: float = 0.0

@@ -29,13 +29,6 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
             f"Instance for {name} is not implemented in {cls.__class__}"
         )
 
-    @classmethod
-    def get_registered_names(self) -> list[str]:
-        return [
-            PhlowerScalerName.STANDARDIZE.value,
-            PhlowerScalerName.STD_SCALE.value,
-        ]
-
     def __init__(
         self,
         *,

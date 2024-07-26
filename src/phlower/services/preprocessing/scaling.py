@@ -12,7 +12,7 @@ from phlower.io._files import (
     PhlowerYamlFile,
 )
 from phlower.services.preprocessing import ScalersComposition
-from phlower.services.preprocessing._scalers import ScalerWrapper
+from phlower.services.preprocessing._scalers import PhlowerScalerWrapper
 from phlower.settings import (
     PhlowerScalingSetting,
     PhlowerSetting,
@@ -43,7 +43,9 @@ class PhlowerScalingService:
     ) -> None:
         self._scaling_setting = scaling_setting
         self._parameters = scaling_setting.resolve_scalers()
-        self._scalers = ScalersComposition.from_setting(self._parameters)
+        self._scalers = ScalersComposition.from_resolved_parameters(
+            self._parameters
+        )
 
     def fit_transform_all(
         self,
@@ -108,7 +110,7 @@ class PhlowerScalingService:
         parameter: ScalerResolvedParameter,
         data_directories: list[pathlib.Path],
         decrypt_key: bytes | None = bytes,
-    ) -> tuple[str, ScalerWrapper]:
+    ) -> tuple[str, PhlowerScalerWrapper]:
         fitting_files = list(
             data_directories
             | select(lambda x: parameter.collect_fitting_files(x))

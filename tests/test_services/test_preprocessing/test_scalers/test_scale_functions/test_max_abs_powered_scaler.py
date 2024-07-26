@@ -211,3 +211,50 @@ def test__inverse_transform_sparse_array(max_data, power, inputs):
 
     result = scaler.inverse_transform(scaler.transform(inputs))
     np.testing.assert_array_almost_equal(inputs.toarray(), result.toarray())
+
+
+@pytest.mark.parametrize(
+    "kwards, data",
+    [
+        ({}, np.random.rand(3, 5)),
+        ({"max_": [0.0, 0.0]}, np.random.rand(3, 5)),
+        ({"max_": [1.0, 3.0]}, sp.coo_matrix(np.array([[3.0], [7.0]]))),
+    ],
+)
+def test__raise_error_when_transform(kwards, data):
+    scaler = MaxAbsPoweredScaler.create("max_abs_powered")
+    for k, v in kwards.items():
+        setattr(scaler, k, np.array(v))
+
+    with pytest.raises(ValueError):
+        scaler.transform(data)
+
+
+@pytest.mark.parametrize(
+    "name, power, n_nodes, n_feature",
+    [
+        ("max_abs_powered", 1.0, 100000, 5),
+        ("max_abs_powered", 2.0, 100000, 3),
+    ],
+)
+def test__retrieve_from_dumped_data(name, power, n_nodes, n_feature):
+    interim_value = np.random.randn(n_nodes, n_feature) * 2
+
+    scaler = MaxAbsPoweredScaler.create(name, power=power)
+    scaler.partial_fit(interim_value)
+    state = vars(scaler)
+
+    dumped = scaler.get_dumped_data()
+    new_scaler = MaxAbsPoweredScaler.create(name, **dumped)
+    new_state = vars(new_scaler)
+
+    assert len(state) > 0
+    for k, v in state.items():
+        if isinstance(v, np.ndarray):
+            np.testing.assert_array_almost_equal(v, new_state[k])
+            continue
+        if isinstance(v, np.generic):
+            np.testing.assert_almost_equal(v, new_state[k])
+            continue
+
+        assert v == new_state[k]

@@ -5,9 +5,13 @@ import pathlib
 from phlower.io import PhlowerFileBuilder
 from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
-    ScalerWrapper,
+    PhlowerScalerWrapper,
 )
-from phlower.settings import ScalerInputParameters, ScalerResolvedParameter
+from phlower.settings import (
+    PhlowerSetting,
+    ScalerInputParameters,
+    ScalerResolvedParameter,
+)
 from phlower.utils import get_logger
 from phlower.utils.typing import ArrayDataType
 
@@ -16,18 +20,30 @@ logger = get_logger(__name__)
 
 class ScalersComposition:
     @classmethod
-    def from_setting(
+    def from_setting(cls, setting: PhlowerSetting) -> ScalersComposition:
+        if setting.scaling is None:
+            raise ValueError(
+                "scaling setting items are not found in setting file."
+            )
+
+        return cls.from_resolved_parameters(
+            parameters=setting.scaling.resolve_scalers()
+        )
+
+    @classmethod
+    def from_resolved_parameters(
         cls, parameters: list[ScalerResolvedParameter]
     ) -> ScalersComposition:
         scalers_dict = {
-            v.scaler_name: ScalerWrapper.from_setting(v) for v in parameters
+            v.scaler_name: PhlowerScalerWrapper.from_setting(v)
+            for v in parameters
         }
 
         return cls(scalers_dict=scalers_dict)
 
     def __init__(
         self,
-        scalers_dict: dict[str, ScalerWrapper],
+        scalers_dict: dict[str, PhlowerScalerWrapper],
     ) -> None:
         self._scalers_dict = scalers_dict
 
@@ -35,12 +51,14 @@ class ScalersComposition:
         scaler_names = list(self._scalers_dict.keys())
         return scaler_names
 
-    def force_update(self, scalers_dict: dict[str, ScalerWrapper]) -> None:
+    def force_update(
+        self, scalers_dict: dict[str, PhlowerScalerWrapper]
+    ) -> None:
         self._scalers_dict |= scalers_dict
 
     def get_scaler(
         self, scaler_name: str, allow_missing: bool = False
-    ) -> ScalerWrapper | None:
+    ) -> PhlowerScalerWrapper | None:
         scaler = self._scalers_dict.get(scaler_name)
         if allow_missing:
             return scaler
