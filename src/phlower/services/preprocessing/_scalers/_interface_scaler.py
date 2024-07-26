@@ -9,7 +9,8 @@ from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerScaler(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def create(cls, name: str, **kwards) -> IPhlowerScaler: ...
 
     @property

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import io
+import os
 import pathlib
 from typing import get_args
 
@@ -11,11 +12,10 @@ from typing_extensions import Self
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
+from phlower.io._files._interface import IPhlowerNumpyFile, to_pathlib_object
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
 from phlower.utils.typing import ArrayDataType, SparseArrayType
-
-from ._interface import IPhlowerNumpyFile
 
 _logger = get_logger(__name__)
 
@@ -26,11 +26,12 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         cls,
         output_directory: pathlib.Path,
         file_basename: str,
-        data: np.ndarray | sp.coo_matrix,
+        data: object,
         *,
-        dtype: type = np.float32,
         encrypt_key: bytes = None,
         allow_overwrite: bool = False,
+        dtype: np.dtype = np.float32,
+        **kwargs,
     ) -> Self:
         fileio = _get_fileio(data, encrypt_key=encrypt_key)
         save_path = fileio.get_save_path(output_directory, file_basename)
@@ -46,7 +47,8 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         _logger.info(f"{file_basename} is saved in: {save_path}")
         return cls(save_path)
 
-    def __init__(self, path: pathlib.Path) -> None:
+    def __init__(self, path: os.PathLike | IPhlowerNumpyFile) -> None:
+        path = to_pathlib_object(path)
         ext = self._check_extension_type(path)
         self._path = path
         self._ext_type = ext

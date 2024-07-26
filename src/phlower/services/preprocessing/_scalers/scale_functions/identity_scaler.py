@@ -15,10 +15,6 @@ class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
         raise NotImplementedError()
 
-    @classmethod
-    def get_registered_names(cls) -> list[str]:
-        return [PhlowerScalerName.IDENTITY.value]
-
     def __init__(self, **kwards) -> None:
         super().__init__()
 

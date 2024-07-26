@@ -14,14 +14,17 @@ class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
         if name == PhlowerScalerName.MIN_MAX.value:
             return MinMaxScaler(**kwards)
 
-        raise NotImplementedError()
-
-    @classmethod
-    def get_registered_names(self) -> list[str]:
-        return [PhlowerScalerName.MIN_MAX.value]
+        raise NotImplementedError(
+            f"Instance for {name} is not implemented in {cls.__class__}"
+        )
 
     def __init__(
-        self, feature_range=(0, 1), *, copy=True, clip=False, **kwargs
+        self,
+        feature_range: tuple[int, int] = (0, 1),
+        *,
+        copy=True,
+        clip=False,
+        **kwargs,
     ):
         super().__init__(feature_range, copy=copy, clip=clip)
         for k, v in kwargs.items():

@@ -1,0 +1,32 @@
+varaible_name_to_scalers:
+  node:
+    method: standardize
+  normal:
+    method: identity
+
+  nodal_adj:
+    method: identity
+  nodal_nadj:
+    method: identity
+
+  nodal_x_grad_hop1:
+    method: isoam_scale
+    parameters:
+      other_components:
+        - nodal_y_grad_hop1
+        - nodal_z_grad_hop1
+  nodal_y_grad_hop1:
+    same_as: nodal_x_grad_hop1
+    join_fitting: true
+  nodal_z_grad_hop1:
+    same_as: nodal_x_grad_hop1
+    join_fitting: true
+
+  nodal_u:
+    method: std_scale
+
+  nodal_p:
+    method: std_scale
+
+  nodal_distance:
+    method: std_scale

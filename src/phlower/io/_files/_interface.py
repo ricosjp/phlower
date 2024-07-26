@@ -3,13 +3,23 @@ from __future__ import annotations
 import abc
 import pathlib
 
-import numpy as np
-
 from phlower._base import IPhlowerArray
-from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerBaseFile(metaclass=abc.ABCMeta):
+    @classmethod
+    @abc.abstractmethod
+    def save(
+        cls,
+        output_directory: pathlib.Path,
+        file_basename: str,
+        data: object,
+        *,
+        encrypt_key: bytes = None,
+        allow_overwrite: bool = False,
+        **kwargs,
+    ) -> IPhlowerBaseFile: ...
+
     @abc.abstractmethod
     def __init__(self, path: pathlib.Path) -> None:
         raise NotImplementedError()
@@ -30,18 +40,6 @@ class IPhlowerBaseFile(metaclass=abc.ABCMeta):
 
 
 class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
-    def save(
-        cls,
-        output_directory: pathlib.Path,
-        file_basename: str,
-        data: ArrayDataType,
-        *,
-        dtype: type = np.float32,
-        encrypt_key: bytes = None,
-        allow_overwrite: bool = False,
-    ) -> IPhlowerNumpyFile: ...
-
     @property
     @abc.abstractmethod
     def file_extension(self) -> str:
@@ -58,50 +56,13 @@ class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class IPhlowerPickleFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def load(self, *, decrypt_key: bytes = None) -> dict:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def save(
-        self,
-        dump_data: object,
-        overwrite: bool = False,
-        encrypt_key: bytes = None,
-    ) -> None:
-        raise NotImplementedError()
-
-
 class IPhlowerYamlFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
-    def save(
-        cls,
-        output_directory: pathlib.Path,
-        file_basename: str,
-        data: object,
-        *,
-        encrypt_key: bytes = None,
-        allow_overwrite: bool = False,
-    ) -> IPhlowerYamlFile: ...
-
     @abc.abstractmethod
     def load(self, *, decrypt_key: bytes = None) -> dict:
         raise NotImplementedError()
 
 
 class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
-    @classmethod
-    @abc.abstractmethod
-    def save(
-        cls,
-        output_directory: pathlib.Path,
-        epoch_number: int,
-        dump_data: object,
-        overwrite: bool = False,
-        encrypt_key: bytes = None,
-    ) -> IPhlowerCheckpointFile: ...
-
     @classmethod
     @abc.abstractmethod
     def get_fixed_prefix(self) -> int: ...
@@ -116,3 +77,16 @@ class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
         self, device: str | None = None, *, decrypt_key: bytes = None
     ) -> dict:
         raise NotImplementedError()
+
+
+def to_pathlib_object(
+    path: pathlib.Path | str | IPhlowerBaseFile,
+) -> pathlib.Path:
+    if isinstance(path, pathlib.Path):
+        return path
+    if isinstance(path, IPhlowerYamlFile):
+        return path.file_path
+    if isinstance(path, str):
+        return pathlib.Path(path)
+
+    raise NotImplementedError(f"{path} cannot be converted to pathlib.Path")

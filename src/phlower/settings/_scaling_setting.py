@@ -18,7 +18,8 @@ from phlower.utils.enums import PhlowerScalerName
 
 
 class IScalerParameter(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_parent_scaler(self) -> bool: ...
 
     @abc.abstractmethod
@@ -59,7 +60,7 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
         return v
 
     def get_scaler_name(self, variable_name: str):
-        return f"scaler_{variable_name}"
+        return f"SCALER_{variable_name}"
 
 
 class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
@@ -75,12 +76,8 @@ class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
     def is_parent_scaler(self) -> bool:
         return False
 
-    @property
-    def join_fitting(self) -> bool:
-        return self.join_fitting
-
     def get_scaler_name(self, variable_name: str):
-        return f"scaler_{self.same_as}"
+        return f"SCALER_{self.same_as}"
 
 
 InputParameterSetting = ScalerInputParameters | SameAsInputParameters
@@ -199,7 +196,7 @@ class ScalerResolvedParameter:
 def _validate_scaler(
     method_name: str, setting: ScalerResolvedParameter
 ) -> None:
-    if method_name == PhlowerScalerName.ISOAM_SCALE.name:
+    if method_name == PhlowerScalerName.ISOAM_SCALE.value:
         _validate_isoam(setting)
         return
 
@@ -214,7 +211,7 @@ def _validate_isoam(setting: ScalerResolvedParameter):
             "To use IsoAMScaler, feed other_components: " f"{other_components}"
         )
 
-    if sorted(other_components) == sorted(setting.fitting_members):
+    if len(other_components) + 1 != len(setting.fitting_members):
         raise ValueError(
             "In IsoAMScaler, other components does not match fitting variables."
             "Please check join_fitting is correctly set in the varaibles "
@@ -234,6 +231,7 @@ def _resolve(
     _scaler_name_to_setting: dict[str, ScalerInputParameters] = {}
     _scaler_to_fitting_items: dict[str, list[str]] = defaultdict(list)
     _scaler_to_transform_items: dict[str, list[str]] = defaultdict(list)
+
     for name, setting in variable_name_to_scalers.items():
         scaler_name = setting.get_scaler_name(name)
         _scaler_to_transform_items[scaler_name].append(name)

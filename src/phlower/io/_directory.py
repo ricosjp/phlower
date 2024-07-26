@@ -9,7 +9,6 @@ from phlower.io._file_builder import PhlowerFileBuilder
 from phlower.io._files import (
     IPhlowerCheckpointFile,
     IPhlowerNumpyFile,
-    IPhlowerPickleFile,
     IPhlowerYamlFile,
 )
 from phlower.utils.enums import PhlowerFileExtType
@@ -51,18 +50,6 @@ class PhlowerDirectory:
                 yield from self._find_directory(
                     path, required_filename, recursive
                 )
-
-    def find_pickle_file(
-        self, file_base_name: str, *, allow_missing: bool = False
-    ) -> IPhlowerPickleFile | None:
-        extensions = [PhlowerFileExtType.PKL, PhlowerFileExtType.PKLENC]
-
-        return self._find_file(
-            file_base_name=file_base_name,
-            extensions=extensions,
-            builder=PhlowerFileBuilder.pickle_file,
-            allow_missing=allow_missing,
-        )
 
     def find_yaml_file(
         self, file_base_name: str, *, allow_missing: bool = False

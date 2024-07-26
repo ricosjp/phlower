@@ -1,4 +1,5 @@
 import io
+import os
 import pathlib
 import re
 from typing import Any
@@ -6,7 +7,10 @@ from typing import Any
 import torch
 
 from phlower import utils
-from phlower.io._files._interface import IPhlowerCheckpointFile
+from phlower.io._files._interface import (
+    IPhlowerCheckpointFile,
+    to_pathlib_object,
+)
 from phlower.utils.enums import PhlowerFileExtType
 
 
@@ -17,12 +21,13 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
     def save(
         cls,
         output_directory: pathlib.Path,
-        epoch_number: int,
-        dump_data: object,
-        overwrite: bool = False,
+        file_basename: str,
+        data: object,
+        *,
         encrypt_key: bytes = None,
+        allow_overwrite: bool = False,
+        **kwargs,
     ) -> IPhlowerCheckpointFile:
-        file_basename = f"{cls._FIXED_PREFIX}{epoch_number}"
         ext = (
             PhlowerFileExtType.PTH.value
             if encrypt_key is None
@@ -30,19 +35,20 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
         )
 
         file_path = output_directory / f"{file_basename}{ext}"
-        if not overwrite:
+        if not allow_overwrite:
             if file_path.exists():
                 raise FileExistsError(f"{file_path} already exists")
 
         file_path.parent.mkdir(exist_ok=True, parents=True)
-        _save(file_path, dump_data, encrypt_key=encrypt_key)
+        _save(file_path, data, encrypt_key=encrypt_key)
         return PhlowerCheckpointFile(file_path)
 
     @classmethod
     def get_fixed_prefix(self) -> int:
         return self._FIXED_PREFIX
 
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path: os.PathLike | IPhlowerCheckpointFile):
+        path = to_pathlib_object(path)
         self._ext_type = self._check_extension_type(path)
         self._path = path
 
@@ -92,7 +98,9 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
     def _load(self, device: str) -> Any:
         return torch.load(self._path, map_location=device)
 
-    def _load_encrypted(self, device: str, decrypt_key: bytes = None) -> dict:
+    def _load_encrypted(
+        self, device: str, decrypt_key: bytes | None = None
+    ) -> dict:
         if decrypt_key is None:
             raise ValueError("Feed key to load encrypted model")
 

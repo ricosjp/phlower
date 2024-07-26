@@ -14,7 +14,9 @@ _logger = get_logger(__name__)
 
 
 def select_snapshot_file(
-    directory: os.PathLike | PhlowerDirectory, selection_mode: str
+    directory: os.PathLike | PhlowerDirectory,
+    selection_mode: str,
+    **kwards,
 ) -> IPhlowerCheckpointFile:
     selector = ModelSelectorBuilder.create(selection_mode)
 
@@ -26,7 +28,7 @@ def select_snapshot_file(
 
     log_file_path = ph_dir.find_csv_file("log", allow_missing=True)
     file_path = selector.select_model(
-        snapshots=snapshots, log_file=log_file_path
+        snapshots=snapshots, log_file=log_file_path, **kwards
     )
 
     _logger.info(f"{file_path.file_path} is selected.")
@@ -53,7 +55,7 @@ class ModelSelectorBuilder:
             ModelSelectionType.SPECIFIED.value: SpecifiedModelSelector,
             ModelSelectionType.TRAIN_BEST.value: TrainBestModelSelector,
         }
-        if selection_name not in _selector_dict:
+        if selection_name not in _selector_dict.keys():
             raise NotImplementedError(
                 f"Selection Mode: {selection_name} is not implemented."
             )

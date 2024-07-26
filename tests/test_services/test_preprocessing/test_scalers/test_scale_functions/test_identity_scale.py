@@ -21,9 +21,11 @@ def test__cannot_create(name, kwards):
         IdentityScaler.create(name, **kwards)
 
 
-def test__use_diagonal():
+def test__fixed_property_and_method():
     scaler = IdentityScaler()
     assert not scaler.use_diagonal
+    assert not scaler.is_erroneous()
+    assert scaler.is_fitted()
 
 
 @pytest.mark.parametrize("shape", [(3, 4), (4, 5), (2, 9)])

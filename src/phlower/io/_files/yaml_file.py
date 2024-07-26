@@ -6,10 +6,9 @@ import yaml
 from typing_extensions import Self
 
 from phlower import utils
+from phlower.io._files._interface import IPhlowerYamlFile, to_pathlib_object
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
-
-from ._interface import IPhlowerYamlFile
 
 _logger = get_logger(__name__)
 
@@ -24,6 +23,7 @@ class PhlowerYamlFile(IPhlowerYamlFile):
         *,
         encrypt_key: bytes = None,
         allow_overwrite: bool = False,
+        **kwargs,
     ) -> Self:
         ext = (
             PhlowerFileExtType.YML.value
@@ -46,22 +46,10 @@ class PhlowerYamlFile(IPhlowerYamlFile):
         return cls(file_path)
 
     def __init__(self, path: pathlib.Path | str | IPhlowerYamlFile) -> None:
-        path = self._to_pathlib_object(path)
+        path = to_pathlib_object(path)
         ext = self._check_extension_type(path)
         self._path = path
         self._ext_type = ext
-
-    def _to_pathlib_object(
-        self, path: pathlib.Path | str | IPhlowerYamlFile
-    ) -> pathlib.Path:
-        if isinstance(path, pathlib.Path):
-            return path
-        if isinstance(path, IPhlowerYamlFile):
-            return path.file_path
-        if isinstance(path, str):
-            return pathlib.Path(path)
-
-        raise NotImplementedError(f"{path} cannot be converted to pathlib.Path")
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}: {self._path}"
