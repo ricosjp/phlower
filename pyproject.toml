@@ -27,9 +27,14 @@ pandas = "^2.2.2"
 pytest = "^8.0.2"
 mypy = "^1.8.0"
 pytest-cov = "^4.1.0"
-sphinx = "^7.2.6"
 ruff = "^0.4.10"
 hypothesis = "^6.108.2"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.2.6"
+sphinx-rtd-theme = "^2.0.0"
+sphinx-fontawesome = "^0.0.6"
 
 [tool.pytest.ini_options]
 addopts = [
@@ -37,7 +42,7 @@ addopts = [
 ]
 markers = [
     "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')",
-    "need_multicore: marks tests which need multiple core"
+    "need_multicore: marks tests which need multiple cores"
 ]
 
 [build-system]

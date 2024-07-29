@@ -10,6 +10,15 @@ from phlower.settings._module_settings import GCNSetting
 
 
 class GCN(IPhlowerCoreModule, torch.nn.Module):
+    """Graph Convolutional Neural Network
+
+    Args:
+        IPhlowerCoreModule (_type_): _description_
+        torch (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     @classmethod
     def from_setting(cls, setting: GCNSetting) -> GCN:
         return GCN(**setting.__dict__)

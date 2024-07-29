@@ -39,5 +39,6 @@ dev-install: init
 
 .PHONY: document
 document:
-	$(RM) public
-	$(RUN) sphinx-build -M html docs/source docs/build
+	rm -rf docs/build || true
+	rm -rf docs/source/reference/generated || true
+	poetry run sphinx-build -M html docs/source docs/build
