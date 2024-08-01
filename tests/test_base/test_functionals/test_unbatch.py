@@ -14,9 +14,9 @@ from phlower._base._functionals import to_batch, unbatch
         (
             [(5, 6), (4, 9), (10, 11)],
             [
-                {"length": 2, "time": -2},
-                {"length": 2, "time": -2},
-                {"length": 2, "time": -2},
+                {"L": 2, "T": -2},
+                {"L": 2, "T": -2},
+                {"L": 2, "T": -2},
             ],
             (19, 26),
         ),
@@ -53,9 +53,9 @@ def test__unbatch_for_sparse(
             [(6, 2), (5, 2), (11, 2)],
             0,
             [
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
+                {"T": 3, "I": -1, "J": 2},
+                {"T": 3, "I": -1, "J": 2},
+                {"T": 3, "I": -1, "J": 2},
             ],
             (22, 2),
         ),

@@ -20,7 +20,7 @@ def test__add():
 
 
 def test__add_with_unit():
-    units = phlower_dimension_tensor({"length": 2, "time": -2})
+    units = phlower_dimension_tensor({"L": 2, "T": -2})
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
     c = a + b
@@ -33,8 +33,8 @@ def test__add_with_unit():
 
 
 def test__add_with_unit_incompatible():
-    units_1 = phlower_dimension_tensor({"length": 2, "time": -2})
-    units_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
+    units_1 = phlower_dimension_tensor({"L": 2, "T": -2})
+    units_2 = phlower_dimension_tensor({"M": 1, "T": -2})
 
     a = torch.from_numpy(np.random.rand(3, 10))
     b = torch.from_numpy(np.random.rand(3, 10))
@@ -45,9 +45,9 @@ def test__add_with_unit_incompatible():
 
 
 def test__mul_with_unit():
-    dims_1 = phlower_dimension_tensor({"length": 2, "time": -2})
-    dims_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
-    dims_3 = phlower_dimension_tensor({"length": 2, "mass": 1, "time": -4})
+    dims_1 = phlower_dimension_tensor({"L": 2, "T": -2})
+    dims_2 = phlower_dimension_tensor({"M": 1, "T": -2})
+    dims_3 = phlower_dimension_tensor({"L": 2, "M": 1, "T": -4})
 
     a = torch.tensor(np.random.rand(3, 10))
     b = torch.tensor(np.random.rand(3, 10))

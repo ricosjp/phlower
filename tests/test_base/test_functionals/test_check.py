@@ -43,28 +43,28 @@ def test__is_same_layout(shapes, is_sparse, desired):
     [
         (
             [(2, 3)],
-            [{"mass": 3, "length": 2}],
+            [{"M": 3, "L": 2}],
             True,
         ),
         (
             [(3, 6), (4, 5)],
-            [{"mass": 3, "length": 2}, {"mass": 3, "length": 2}],
+            [{"M": 3, "L": 2}, {"M": 3, "L": 2}],
             True,
         ),
         (
             [(3, 6), (4, 5), (10, 5)],
             [
-                {"mass": 3, "length": 2},
-                {"mass": 3, "length": 2},
-                {"mass": 3, "length": 2, "time": -2},
+                {"M": 3, "L": 2},
+                {"M": 3, "L": 2},
+                {"M": 3, "L": 2, "T": -2},
             ],
             False,
         ),
         (
             [(3, 6), (11, 5)],
             [
-                {"mass": 3, "length": 2},
-                {"electric_current": 3, "amount_of_substance": 2},
+                {"M": 3, "L": 2},
+                {"I": 3, "N": 2},
             ],
             False,
         ),

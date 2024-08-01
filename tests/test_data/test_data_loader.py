@@ -92,19 +92,19 @@ def test__consider_batch_size(
     [
         (
             {
-                "x0": {"length": 2, "time": -2},
-                "x1": {"mass": 2},
-                "x2": {"electric_current": 1},
-                "y0": {"amount_of_substance": -2},
-                "s0": {"electric_current": 1},
+                "x0": {"L": 2, "T": -2},
+                "x1": {"M": 2},
+                "x2": {"I": 1},
+                "y0": {"N": -2},
+                "s0": {"I": 1},
             },
             False,
             {
-                "x0": PhysicalDimensions({"length": 2, "time": -2}),
-                "x1": PhysicalDimensions({"mass": 2}),
-                "x2": PhysicalDimensions({"electric_current": 1}),
-                "y0": PhysicalDimensions({"amount_of_substance": -2}),
-                "s0": PhysicalDimensions({"electric_current": 1}),
+                "x0": PhysicalDimensions({"L": 2, "T": -2}),
+                "x1": PhysicalDimensions({"M": 2}),
+                "x2": PhysicalDimensions({"I": 1}),
+                "y0": PhysicalDimensions({"N": -2}),
+                "s0": PhysicalDimensions({"I": 1}),
             },
         )
     ],
@@ -161,11 +161,11 @@ def test__consider_dimensions(
     [
         (
             {
-                "x0": {"length": 2, "time": -2},
-                "x1": {"mass": 2},
-                "x2": {"electric_current": 1},
-                "y0": {"amount_of_substance": -2},
-                "s0": {"electric_current": 1},
+                "x0": {"L": 2, "T": -2},
+                "x1": {"M": 2},
+                "x2": {"I": 1},
+                "y0": {"N": -2},
+                "s0": {"I": 1},
             },
             True,
         )

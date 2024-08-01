@@ -59,22 +59,27 @@ class PhysicalDimensionSymbolType(Enum):
     N = 5  # amount of substance
     J = 6  # luminous intensity
 
+
     @classmethod
     def is_exist(cls, name: str) -> bool:
-        registered_names = [item.name for item in PhysicalDimensionSymbolType]
-        return name in registered_names
+        return name in _symbol2quntityname.keys()
+
+    def to_index(self, name: str):
+        ...
 
     def to_quantity_name(self):
-        _symbol2quntityname = {
-            PhysicalDimensionSymbolType.T.name: "time",
-            PhysicalDimensionSymbolType.L.name: "length",
-            PhysicalDimensionSymbolType.M.name: "mass",
-            PhysicalDimensionSymbolType.I.name: "electric current",
-            PhysicalDimensionSymbolType.Theta.name: "thermodynamic temperature",
-            PhysicalDimensionSymbolType.N.name: "amount of substance",
-            PhysicalDimensionSymbolType.J.name: "luminous intensity",
-        }
         return _symbol2quntityname[self.name]
 
     def __str__(self):
         return f"{self.name} ({self.to_quantity_name()})"
+
+
+_symbol2quntityname = {
+    PhysicalDimensionSymbolType.T.name: "time",
+    PhysicalDimensionSymbolType.L.name: "length",
+    PhysicalDimensionSymbolType.M.name: "mass",
+    PhysicalDimensionSymbolType.I.name: "electric current",
+    PhysicalDimensionSymbolType.Theta.name: "thermodynamic temperature",
+    PhysicalDimensionSymbolType.N.name: "amount of substance",
+    PhysicalDimensionSymbolType.J.name: "luminous intensity",
+}
