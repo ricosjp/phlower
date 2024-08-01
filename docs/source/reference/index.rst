@@ -3,8 +3,9 @@ Module Reference
 ==================
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 2
 
     nn
     tensors
     services
+    settings

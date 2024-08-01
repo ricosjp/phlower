@@ -6,6 +6,7 @@
 import glob
 import os
 import shutil
+import pathlib
 
 import sphinx_rtd_theme
 from sphinx_gallery.scrapers import figure_rst
@@ -33,26 +34,16 @@ import phlower
 #     return figure_rst(image_names, gallery_conf['src_dir'])
 
 
-# # https://sphinx-gallery.github.io/stable/advanced.html#example-2-detecting-image-files-on-disk
-# def mmd_scraper(block, block_vars, gallery_conf):
-#     # Find all PNG files in the directory of this example.
-#     path_current_example = os.path.dirname(block_vars['src_file'])
-#     pngs = sorted(glob.glob(os.path.join(path_current_example, '*.mmd')))
+def mmd_scraper(block, block_vars, gallery_conf):
+    # Find all PNG files in the directory of this example.
+    path_current_example = os.path.dirname(block_vars['src_file'])
+    mmds = pathlib.Path(path_current_example).glob("images/*.mmd")
 
-#     # Iterate through PNGs, copy them to the Sphinx-Gallery output directory
-#     image_names = list()
-#     image_path_iterator = block_vars['image_path_iterator']
-#     seen = set()
-
-#     print(f"mmd scraper: {path_current_example}, {pngs}")
-#     for png in pngs:
-#         if png not in seen:
-#             seen |= set(png)
-#             this_image_path = image_path_iterator.next()
-#             image_names.append(this_image_path)
-#             shutil.move(png, this_image_path)
-#     # Use the `figure_rst` helper function to generate reST for image files
-#     return ""
+    to_path = pathlib.Path(path_current_example).parent.parent / "docs/source/tutorials/basic_usages/images"
+    
+    for mmd in mmds:
+        shutil.copy(mmd, to_path / mmd.name)
+    return ""
 
 
 # -- Project information -----------------------------------------------------
@@ -112,4 +103,5 @@ sphinx_gallery_conf = {
     ],
     "within_subsection_order": FileNameSortKey,
     "filename_pattern": r"/*\.py",
+    'image_scrapers': ('matplotlib', mmd_scraper),
 }

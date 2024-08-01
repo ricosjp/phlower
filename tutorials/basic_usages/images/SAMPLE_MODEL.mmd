@@ -7,12 +7,12 @@ n_nodes: [10, 20, 100]" as state_0
     state "ENCODER1
 nn_type: MLP
 n_nodes: [12, 20, 200]" as state_1
-    state "SUB_GROUP
-input_keys: ['mlp0', 'mlp1']
-output_keys: ['mlp2']" as state_2
+    state "Concat
+nn_type: Concatenator
+n_nodes: [300, 300]" as state_2
     state "GCN0
 nn_type: GCN
-n_nodes: [400, 5]" as state_3
+n_nodes: [300, 5]" as state_3
     state_0 --> state_2: Pipe
     state_1 --> state_2: Pipe
     state_2 --> state_3: Pipe

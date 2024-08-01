@@ -187,12 +187,6 @@ def _recursive_resolve(args: Iterable | Any, attr: str = None) -> list[str]:
         return [_recursive_resolve(v, attr) for v in args]
 
     _dim = getattr(args, attr, args)
-    if _dim is None:
-        raise DimensionIncompatibleError(
-            "Cannot calculate PhlowerTensor with physics dimension"
-            " and PhlowerTensor without physics dimension."
-        )
-
     return _dim
 
 

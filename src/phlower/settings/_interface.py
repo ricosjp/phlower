@@ -2,7 +2,8 @@ import abc
 
 
 class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def gather_input_dims(cls, *input_dims: int) -> int: ...
 
     @abc.abstractmethod

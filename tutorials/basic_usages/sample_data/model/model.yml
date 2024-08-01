@@ -1,7 +1,7 @@
 model:
   network:
     nn_type: GROUP
-    name: CYCLE_MODEL
+    name: SAMPLE_MODEL
     inputs:
       - name: feature0
         n_dim: 10
@@ -18,7 +18,7 @@ model:
           - feature0
         output_key: mlp0
         destinations:
-          - SUB_GROUP
+          - Concat
         nn_parameters:
           nodes: [-1, 20, 100]
           activations: ["relu", "relu"]
@@ -29,52 +29,19 @@ model:
           - feature1
         output_key: mlp1
         destinations:
-          - SUB_GROUP
+          - Concat
         nn_parameters:
           nodes: [-1, 20, 200]
           activations: ["relu", "relu"]
 
-      - nn_type: GROUP
-        name: SUB_GROUP
-        inputs:
-          - name: mlp0
-            n_dim: 100
-          - name: mlp1
-            n_dim: 200
-        outputs:
-          - name: mlp2
-            n_dim: 400
+      - nn_type: Concatenator
+        name: Concat
+        input_keys:
+          - mlp0
+          - mlp1
+        output_key: mlp2
         destinations:
           - GCN0
-        modules:
-          - nn_type: MLP
-            name: MLP0
-            input_keys:
-              - mlp0
-            output_key: mlp0
-            destinations:
-              - CONCAT
-            nn_parameters:
-              nodes: [-1, 20, 200]
-              activations: ["relu", "relu"]
-
-          - nn_type: MLP
-            name: MLP1
-            input_keys:
-              - mlp1
-            output_key: mlp1
-            destinations:
-              - CONCAT
-            nn_parameters:
-              nodes: [-1, 20, 200]
-              activations: ["relu", "relu"]
-
-          - nn_type: Concatenator
-            name: CONCAT
-            input_keys:
-              - mlp0
-              - mlp1
-            output_key: mlp2
 
       - nn_type: GCN
         name: GCN0

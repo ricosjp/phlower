@@ -8,6 +8,6 @@ service
     :toctree: generated
     :template: autosummary/class.rst
    
-    trainer
-    preprocessing
-    predictor
+    trainer.PhlowerTrainer
+    preprocessing.PhlowerScalingService
+    predictor.PhlowerPredictor
