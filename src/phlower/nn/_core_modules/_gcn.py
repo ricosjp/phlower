@@ -10,29 +10,35 @@ from phlower.settings._module_settings import GCNSetting
 
 
 class GCN(IPhlowerCoreModule, torch.nn.Module):
-    """Graph Convolutional Neural Network
+    """Graph Convolutional Neural Network"""
 
-    Args:
-        IPhlowerCoreModule (_type_): _description_
-        torch (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
     @classmethod
     def from_setting(cls, setting: GCNSetting) -> GCN:
+        """Create GCN from GCNSetting instance
+
+        Args:
+            setting (GCNSetting): setting object for GCN
+
+        Returns:
+            GCN: GCN object
+        """
         return GCN(**setting.__dict__)
 
     @classmethod
-    def get_nn_name(cls):
+    def get_nn_name(cls) -> str:
+        """Return neural network name
+
+        Returns:
+            str: name
+        """
         return "GCN"
 
     def __init__(
         self,
         nodes: list[int],
         support_name: str,
-        activations: list[str] = None,
-        dropouts: list[float] = None,
+        activations: list[str] | None = None,
+        dropouts: list[float] | None = None,
         repeat: int = 1,
         factor: float = 1.0,
         bias: bool = False,
@@ -59,6 +65,18 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         *,
         supports: dict[str, PhlowerTensor],
     ) -> PhlowerTensor:
+        """forward function which overload torch.nn.Module
+
+        Args:
+            data (IPhlowerTensorCollections):
+                data which receives from predecessors
+            supports (dict[str, PhlowerTensor]):
+                sparse tensor objects
+
+        Returns:
+            PhlowerTensor:
+                Tensor object
+        """
         support = supports[self._support_name]
         h = data.unique_item()
         for i in range(len(self._chains)):

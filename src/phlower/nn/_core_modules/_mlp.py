@@ -11,21 +11,34 @@ from phlower.settings._module_settings import MLPSetting
 
 
 class MLP(IPhlowerCoreModule, torch.nn.Module):
-    """Multi Layer Perceptron."""
+    """Multi Layer Perceptron"""
 
     @classmethod
     def from_setting(cls, setting: MLPSetting) -> Self:
+        """Generate MLP from setting object
+
+        Args:
+            setting (MLPSetting): setting object
+
+        Returns:
+            Self: MLP object
+        """
         return MLP(**setting.__dict__)
 
     @classmethod
-    def get_nn_name(cls):
+    def get_nn_name(cls) -> str:
+        """Return neural network name
+
+        Returns:
+            str: name
+        """
         return "MLP"
 
     def __init__(
         self,
         nodes: list[int],
-        activations: list[str] = None,
-        dropouts: list[float] = None,
+        activations: list[str] | None = None,
+        dropouts: list[float] | None = None,
         bias: bool = False,
     ) -> None:
         super().__init__()
@@ -45,8 +58,19 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] = None,
+        supports: dict[str, PhlowerTensor] | None = None,
     ) -> PhlowerTensor:
+        """forward function which overloads torch.nn.Module
+
+        Args:
+            data (IPhlowerTensorCollections):
+                data which receives from predecessors
+            supports (dict[str, PhlowerTensor], optional):
+                Graph object. Defaults to None.
+
+        Returns:
+            PhlowerTensor: Tensor object
+        """
         h = data.unique_item()
         for i in range(len(self._chains)):
             h = self._chains.forward(h, index=i)

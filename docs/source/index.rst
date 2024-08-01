@@ -6,25 +6,22 @@
 Phlower : A Deep Learning Framework for Physical Phenomenon
 =============================================================
 
-*Phlower* is a deep learning framework especially for physical phenomenon.
-
-* 物理現象とくに流体シミュレーションを便利に扱うためのツールを提供する
-* Pytorchをベース
+*Phlower* is a deep learning framework based on PyTorch Ignite especially for physical phenomenon such as fluid dynamics.
 
 
 Key Features
 
-* 時系列の有無や単位次元を考慮できるテンソルオブジェクトの拡張
-* Yamlファイルによるモデルの定義機能
-* 3Dオブジェクトに関連するプレ・ポスト処理機能
-
+* Extended Tensor object which enables you to handle physics dimention
+* Model definition by yaml file
+* High Level API for scaling, training and predicion.
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   reference/index.rst
+   reference/index
+   tutorials/index
 
 
 

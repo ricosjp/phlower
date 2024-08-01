@@ -41,4 +41,5 @@ dev-install: init
 document:
 	rm -rf docs/build || true
 	rm -rf docs/source/reference/generated || true
+	rm -rf docs/source/tutorials/basic_usages || true
 	poetry run sphinx-build -M html docs/source docs/build

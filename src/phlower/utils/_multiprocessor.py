@@ -26,7 +26,7 @@ def _process_chunk(
 def _get_chunks(
     *iterables: Iterable[Any], chunksize: int
 ) -> Iterable[list[Any]]:
-    """Iterates over zip()ed iterables in chunks."""
+    """Iterates over ziped iterables in chunks."""
     it = zip(*iterables, strict=False)
     while True:
         chunk = tuple(itertools.islice(it, chunksize))

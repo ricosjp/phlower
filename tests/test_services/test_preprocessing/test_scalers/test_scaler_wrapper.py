@@ -60,9 +60,7 @@ def test__transform_sparse_data(scaler_name, sample_sparse_data):
     assert isinstance(transformed_data, sp.coo_matrix)
 
 
-@pytest.mark.parametrize(
-    "scaler_name", ["std_scale", "standardize", "min_max"]
-)
+@pytest.mark.parametrize("scaler_name", ["std_scale", "standardize", "min_max"])
 def test__get_dumped_data(scaler_name, sample_data):
     scaler = PhlowerScalerWrapper(scaler_name)
     scaler.partial_fit(sample_data)

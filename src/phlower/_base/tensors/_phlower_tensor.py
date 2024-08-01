@@ -13,6 +13,7 @@ from phlower._base.tensors._dimension_tensor import (
 )
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower.utils import get_logger
+from phlower.utils.exceptions import DimensionIncompatibleError
 
 logger = get_logger(__name__)
 
@@ -66,6 +67,12 @@ def _resolve_dimension_arg(
 
 
 class PhlowerTensor(IPhlowerTensor):
+    """PhlowerTensor
+
+    Tensor object which can be with physics dimenstion tensor.
+
+    """
+
     def __init__(
         self,
         tensor: torch.Tensor,
@@ -179,7 +186,14 @@ def _recursive_resolve(args: Iterable | Any, attr: str = None) -> list[str]:
     if isinstance(args, tuple | list):
         return [_recursive_resolve(v, attr) for v in args]
 
-    return getattr(args, attr, args)
+    _dim = getattr(args, attr, args)
+    if _dim is None:
+        raise DimensionIncompatibleError(
+            "Cannot calculate PhlowerTensor with physics dimension"
+            " and PhlowerTensor without physics dimension."
+        )
+
+    return _dim
 
 
 def _has_dimension(args: Any) -> bool:
