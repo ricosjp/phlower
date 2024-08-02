@@ -3,7 +3,7 @@ stages:
   - deploy
 
 default:
-  image: python:3.11-slim
+  image: python:3.10-slim
   before_script:
     - apt update
     - apt install -y make
