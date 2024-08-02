@@ -4,7 +4,7 @@ import pydantic
 from pydantic import Field
 from typing_extensions import Self
 
-from phlower.settings._interface import IPhlowerLayerParameters
+from ._interface import IPhlowerLayerParameters
 
 
 class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):

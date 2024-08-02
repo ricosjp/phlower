@@ -6,7 +6,7 @@ from collections.abc import Callable
 import torch
 
 from phlower._base._dimension import PhysicalDimensions
-from phlower.utils.enums import PhysicalDimensionType
+from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 _HANDLED_FUNCTIONS: dict[str, Callable] = {}
@@ -28,13 +28,34 @@ def zero_dimension_tensor() -> PhlowerDimensionTensor:
 
 
 class PhlowerDimensionTensor:
+    """
+    PhlowerDimensionTensor
+
+    Tensor object which corresponds to physics dimension.
+    """
+
     @classmethod
     def from_list(
         cls, values: list[float] | tuple[float]
     ) -> PhlowerDimensionTensor:
-        assert len(values) == len(PhysicalDimensionType)
+        """
+        Parse from list object
+
+        Args:
+            values (list[float] | tuple[float]): list or tuple
+                if length of values is not equal to the number of registered dimension type,
+                raise ValueError.
+
+        Returns:
+            PhlowerDimensionTensor: tensor object
+        """
+        if len(values) != len(PhysicalDimensionSymbolType):
+            raise ValueError(
+                "length of values is not equal to the number of "
+                f"registered dimension types. input: {len(values)}"
+            )
         _tensor = torch.tensor(values, dtype=torch.int64).reshape(
-            len(PhysicalDimensionType), 1
+            len(PhysicalDimensionSymbolType), 1
         )
         return PhlowerDimensionTensor(_tensor)
 
@@ -45,12 +66,12 @@ class PhlowerDimensionTensor:
     ) -> None:
         if tensor is None:
             self._tensor = torch.zeros(
-                (len(PhysicalDimensionType), 1), dtype=dtype
+                (len(PhysicalDimensionSymbolType), 1), dtype=dtype
             )
             return
 
         self._tensor = tensor
-        assert self._tensor.shape[0] == len(PhysicalDimensionType)
+        assert self._tensor.shape[0] == len(PhysicalDimensionSymbolType)
 
     def __add__(self, __value: object):
         return torch.add(self, __value)
@@ -68,7 +89,7 @@ class PhlowerDimensionTensor:
         texts = ", ".join(
             [
                 f"{unit_type.name}: {self._tensor[unit_type.value, 0].item()}"
-                for unit_type in PhysicalDimensionType
+                for unit_type in PhysicalDimensionSymbolType
             ]
         )
         return f"{self.__class__.__name__}({texts})"
@@ -80,7 +101,7 @@ class PhlowerDimensionTensor:
     def to_dict(self) -> dict[str, float]:
         return {
             k: self._tensor[v.value].numpy().item()
-            for k, v in PhysicalDimensionType.__members__.items()
+            for k, v in PhysicalDimensionSymbolType.__members__.items()
         }
 
     def to(self, device: str | torch.device, non_blocking: bool = False):
@@ -117,14 +138,21 @@ def mean(inputs: PhlowerDimensionTensor):
 
 
 @dimension_wrap_implements(torch.add)
-def add(inputs, other):
+def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         if inputs != other:
-            raise DimensionIncompatibleError()
+            raise DimensionIncompatibleError(
+                "Add operation for different physical dimensions is not allowed."
+            )
 
         return PhlowerDimensionTensor(inputs._tensor)
 
     raise DimensionIncompatibleError()
+
+
+@dimension_wrap_implements(torch.pow)
+def pow(inputs: PhlowerDimensionTensor, other):
+    return PhlowerDimensionTensor(inputs._tensor * other)
 
 
 @dimension_wrap_implements(torch.mul)

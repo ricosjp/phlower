@@ -9,8 +9,8 @@ training:
 
 model:
   variable_dimensions:
-    nodal_initial_u: {"length": 1, "time": -1}
-    nodal_last_u: {"length": 1, "time": -1}
+    nodal_initial_u: {"L": 1, "T": -1}
+    nodal_last_u: {"L": 1, "T": -1}
     nodal_nadj: {}
 
   network:

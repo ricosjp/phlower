@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from phlower import PhlowerTensor, phlower_dimension_tensor
+from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 
@@ -20,7 +20,7 @@ def test__add():
 
 
 def test__add_with_unit():
-    units = phlower_dimension_tensor({"length": 2, "time": -2})
+    units = phlower_dimension_tensor({"L": 2, "T": -2})
     a = np.random.rand(3, 10)
     b = np.random.rand(3, 10)
     c = a + b
@@ -32,9 +32,20 @@ def test__add_with_unit():
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
 
 
+@pytest.mark.parametrize(
+    "unit1, unit2", [({"L": 2, "T": -2}, None), (None, {"M": 2, "T": -3})]
+)
+def test__add_with_and_without_dimensions(unit1, unit2):
+    tensor1 = phlower_tensor(torch.rand(3, 4), dimension=unit1)
+    tensor2 = phlower_tensor(torch.rand(3, 4), dimension=unit2)
+
+    with pytest.raises(DimensionIncompatibleError):
+        _ = tensor1 + tensor2
+
+
 def test__add_with_unit_incompatible():
-    units_1 = phlower_dimension_tensor({"length": 2, "time": -2})
-    units_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
+    units_1 = phlower_dimension_tensor({"L": 2, "T": -2})
+    units_2 = phlower_dimension_tensor({"M": 1, "T": -2})
 
     a = torch.from_numpy(np.random.rand(3, 10))
     b = torch.from_numpy(np.random.rand(3, 10))
@@ -45,9 +56,9 @@ def test__add_with_unit_incompatible():
 
 
 def test__mul_with_unit():
-    dims_1 = phlower_dimension_tensor({"length": 2, "time": -2})
-    dims_2 = phlower_dimension_tensor({"mass": 1, "time": -2})
-    dims_3 = phlower_dimension_tensor({"length": 2, "mass": 1, "time": -4})
+    dims_1 = phlower_dimension_tensor({"L": 2, "T": -2})
+    dims_2 = phlower_dimension_tensor({"M": 1, "T": -2})
+    dims_3 = phlower_dimension_tensor({"L": 2, "M": 1, "T": -4})
 
     a = torch.tensor(np.random.rand(3, 10))
     b = torch.tensor(np.random.rand(3, 10))

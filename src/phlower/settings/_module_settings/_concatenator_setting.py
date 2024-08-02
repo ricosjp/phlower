@@ -3,7 +3,7 @@ from __future__ import annotations
 import pydantic
 from pydantic import Field
 
-from phlower.settings._interface import IPhlowerLayerParameters
+from ._interface import IPhlowerLayerParameters
 
 
 class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):

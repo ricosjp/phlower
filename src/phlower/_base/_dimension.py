@@ -9,7 +9,7 @@ from pydantic import (
     ValidationInfo,
 )
 
-from phlower.utils.enums import PhysicalDimensionType
+from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import InvalidDimensionError
 
 
@@ -35,16 +35,16 @@ class PhysicalDimensions:
         self._check(dimensions)
 
         self._dimensions = {
-            name: 0 for name in PhysicalDimensionType.__members__
+            name: 0 for name in PhysicalDimensionSymbolType.__members__
         }
         self._dimensions |= dimensions
 
     def _check(self, dimensions: dict[str, float]):
         for name in dimensions:
-            if not PhysicalDimensionType.is_exist(name):
+            if not PhysicalDimensionSymbolType.is_exist(name):
                 raise InvalidDimensionError(
                     f"dimension name: {name} is not implemented."
-                    f"Avaliable units are {list(PhysicalDimensionType)}"
+                    f"Avaliable units are {list(PhysicalDimensionSymbolType)}"
                 )
             if dimensions[name] is None:
                 raise InvalidDimensionError(
@@ -55,26 +55,26 @@ class PhysicalDimensions:
         return self._dimensions.get(name)
 
     def __getitem__(self, name: str) -> float:
-        if not PhysicalDimensionType.is_exist(name):
+        if not PhysicalDimensionSymbolType.is_exist(name):
             raise InvalidDimensionError(f"{name} is not valid dimension name.")
         return self._dimensions[name]
 
     def __eq__(self, other: PhysicalDimensions):
-        for k in PhysicalDimensionType.__members__.keys():
+        for k in PhysicalDimensionSymbolType.__members__.keys():
             if self._dimensions[k] != other[k]:
                 return False
 
         return True
 
     def to_list(self) -> list[float]:
-        _list: list[float] = [0 for _ in PhysicalDimensionType]
+        _list: list[float] = [0 for _ in PhysicalDimensionSymbolType]
         for k, v in self._dimensions.items():
-            if k not in PhysicalDimensionType.__members__:
+            if k not in PhysicalDimensionSymbolType.__members__:
                 raise InvalidDimensionError(
                     f"dimension name: {k} is not implemented."
-                    f"Avaliable units are {list(PhysicalDimensionType)}"
+                    f"Avaliable units are {list(PhysicalDimensionSymbolType)}"
                 )
-            _list[PhysicalDimensionType[k].value] = v
+            _list[PhysicalDimensionSymbolType[k].value] = v
 
         return _list
 

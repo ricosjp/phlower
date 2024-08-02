@@ -11,9 +11,9 @@ from phlower._base.tensors import phlower_dimension_tensor
         (
             [(3, 5), (4, 7), (10, 1)],
             [
-                {"mass": 3, "length": 2},
-                {"mass": 3, "length": 2},
-                {"mass": 3, "length": 2},
+                {"M": 3, "L": 2},
+                {"M": 3, "L": 2},
+                {"M": 3, "L": 2},
             ],
             (17, 13),
         ),
@@ -45,9 +45,9 @@ def test__to_batch_for_sparse_tensors(
             [(6, 2), (5, 2), (11, 2)],
             0,
             [
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
-                {"time": 3, "electric_current": -1, "luminous_intensity": 2},
+                {"T": 3, "I": -1, "J": 2},
+                {"T": 3, "I": -1, "J": 2},
+                {"T": 3, "I": -1, "J": 2},
             ],
             (22, 2),
         ),

@@ -48,16 +48,32 @@ class PhlowerScalerName(Enum):
     STD_SCALE = "std_scale"
 
 
-class PhysicalDimensionType(Enum):
-    mass = 0  # Ex: kilogram
-    length = 1  # Ex: metre
-    time = 2  # Ex: second
-    thermodynamic_temperature = 3  # Ex: Kelvin
-    amount_of_substance = 4  # Ex: mole
-    electric_current = 5  # Ex. ampere
-    luminous_intensity = 6  # Ex. candela
+class PhysicalDimensionSymbolType(Enum):
+    T = 0  # time
+    L = 1  # length
+    M = 2  # mass
+    I = 3  # electric current
+    Theta = 4  # thermodynamic temperature
+    N = 5  # amount of substance
+    J = 6  # luminous intensity
 
     @classmethod
     def is_exist(cls, name: str) -> bool:
-        registered_names = [item.name for item in PhysicalDimensionType]
-        return name in registered_names
+        return name in _symbol2quntityname.keys()
+
+    def to_quantity_name(self) -> str:
+        return _symbol2quntityname[self.name]
+
+    def __str__(self):
+        return f"{self.name} ({self.to_quantity_name()})"
+
+
+_symbol2quntityname = {
+    PhysicalDimensionSymbolType.T.name: "time",
+    PhysicalDimensionSymbolType.L.name: "length",
+    PhysicalDimensionSymbolType.M.name: "mass",
+    PhysicalDimensionSymbolType.I.name: "electric current",
+    PhysicalDimensionSymbolType.Theta.name: "thermodynamic temperature",
+    PhysicalDimensionSymbolType.N.name: "amount of substance",
+    PhysicalDimensionSymbolType.J.name: "luminous intensity",
+}

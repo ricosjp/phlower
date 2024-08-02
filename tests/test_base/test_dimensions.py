@@ -3,13 +3,13 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from phlower._base import PhysicalDimensions
-from phlower.utils.enums import PhysicalDimensionType
+from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import InvalidDimensionError
 
 
 @given(
     st.dictionaries(
-        st.sampled_from(list(PhysicalDimensionType.__members__.keys())),
+        st.sampled_from(list(PhysicalDimensionSymbolType.__members__.keys())),
         st.floats(allow_nan=False),
     )
 )
@@ -32,11 +32,15 @@ def test__failed_when_not_exist_key(dict_data):
 @given(
     st.tuples(
         st.dictionaries(
-            st.sampled_from(list(PhysicalDimensionType.__members__.keys())),
+            st.sampled_from(
+                list(PhysicalDimensionSymbolType.__members__.keys())
+            ),
             st.floats(allow_nan=False, min_value=1),
         ),
         st.dictionaries(
-            st.sampled_from(list(PhysicalDimensionType.__members__.keys())),
+            st.sampled_from(
+                list(PhysicalDimensionSymbolType.__members__.keys())
+            ),
             st.floats(allow_nan=False, min_value=1),
         ),
     )
@@ -54,13 +58,13 @@ def test__not_equal_dimension(tuple_dict_data):
 def test__default_dimension():
     dimension = PhysicalDimensions({})
 
-    for ptype in PhysicalDimensionType:
+    for ptype in PhysicalDimensionSymbolType:
         assert dimension[ptype.name] == 0
 
 
 @given(
     st.dictionaries(
-        st.sampled_from(list(PhysicalDimensionType.__members__.keys())),
+        st.sampled_from(list(PhysicalDimensionSymbolType.__members__.keys())),
         st.floats(allow_nan=False),
     )
 )
@@ -68,5 +72,5 @@ def test__to_list(dict_data):
     dimension = PhysicalDimensions(dict_data)
     list_data = dimension.to_list()
 
-    for ptype in PhysicalDimensionType:
+    for ptype in PhysicalDimensionSymbolType:
         assert list_data[ptype.value] == dict_data.get(ptype.name, 0)
