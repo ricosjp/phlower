@@ -1,0 +1,55 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    container:
+        image: python:3.10-slim
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+      
+      - name: setup
+        shell: bash
+        run: |
+          apt update -y
+          apt install -y make git
+          pip install poetry
+          poetry config virtualenvs.in-project false
+          poetry install
+
+      - name: build_pages
+        shell: bash
+        run: |
+          make document
+          mkdir public
+          cp -r docs/build/html/* public/
+
+      - name: upload_artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: html_pages
+          path: public/ # or path/to/artifact
+
+  deploy_docs:
+    runs-on: ubuntu-latest
+    needs: build_docs
+    steps:
+
+      - name: download_artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: html_pages
+          path: public/
+
+      - name: deploy_pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: public
+          force_orphan: true

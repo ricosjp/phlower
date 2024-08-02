@@ -1,0 +1,49 @@
+
+model:
+  nn_type: GROUP
+  name: CYCLE_MODEL
+  inputs:
+    - name: feature0
+      n_dim: 10
+    - name: feature1
+      n_dim: 12
+  
+  outputs:
+    - name: feature0
+      n_dim: 5
+  
+  modules:
+    - nn_type: MLP
+      name: MLP0
+      input_keys:
+        - feature0
+      output_key: mlp0
+      destinations:
+        - GCN0
+      nn_parameters:
+        nodes: [-1, 20, 100]
+        activations: ["relu", "relu"]
+
+    - nn_type: GCN
+      name: GCN0
+      input_keys:
+        - mlp0
+      destinations:
+        - GCN1
+      output_key: out_feature0
+      nn_parameters:
+        nodes: [-1, 5]
+        activations: ["relu"]
+        support_name: support1
+
+    - nn_type: GCN
+      name: GCN1
+      input_keys:
+        - out_feature0
+      destinations:
+        - MLP0
+      output_key: feature0
+      nn_parameters:
+        nodes: [-1, 5]
+        activations: ["identity"]
+        support_name: support1

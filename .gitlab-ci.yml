@@ -3,13 +3,13 @@ stages:
   - deploy
 
 default:
-  image: python:3.11-slim
+  image: python:3.10-slim
   before_script:
     - apt update
     - apt install -y make
     - pip install poetry
     - poetry config virtualenvs.in-project false
-    - poetry install
+    - make dev-install
 
 lint:
   stage: test
@@ -21,7 +21,7 @@ lint:
 pytest:
   stage: test
   script:
-    - poetry run pytest tests --cov=src --cov-report term-missing
+    - make test
     - poetry run python3 -m coverage html -d coverage
     - poetry run python3 -m coverage xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -37,19 +37,27 @@ pytest:
     - no-gpu
     - GenuineIntel
 
+e2e_test:
+  stage: test
+  script:
+    - make e2e_test
+  tags:
+    - no-gpu
+    - GenuineIntel
 
-# pages:
-#   stage: deploy
-#   script:
-#     - make document
-#   artifacts:
-#     paths:
-#       - public
-#   only:
-#     - main
-#     - develop
-#     - fix_sphinx
-
+pages:
+  stage: deploy
+  script:
+    - make document
+    - mkdir public
+    - cp -r docs/build/html/* public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+    - develop
+    - fix_sphinx
 
 .deploy:wheel:
   stage: deploy

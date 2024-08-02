@@ -1,0 +1,39 @@
+
+training:
+  batch_size: 1
+  random_seed: 0
+  lr: 0.0001
+  loss_setting:
+    name2loss:
+      nodal_last_u: "mse"
+
+model:
+  variable_dimensions:
+    nodal_initial_u: {"L": 1, "T": -1}
+    nodal_last_u: {"L": 1, "T": -1}
+    nodal_nadj: {}
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: nodal_initial_u
+        n_dim: 1
+    
+    outputs:
+      - name: nodal_last_u
+        n_dim: 1
+
+    support_names: ["nodal_nadj"]
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - nodal_initial_u
+        output_key: nodal_last_u
+        nn_parameters:
+          nodes: [-1, 16, 1]
+          activations: ["identity", "identity"]
+          bias: False
+

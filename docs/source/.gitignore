@@ -1,0 +1,4 @@
+reference/generated
+tutorials/**
+!tutorials/index.rst
+sg_execution_times.rst
