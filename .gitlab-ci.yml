@@ -50,7 +50,7 @@ pages:
   script:
     - make document
     - mkdir public
-    - cp -r docs/build/* public/
+    - cp -r docs/build/html/* public/
   artifacts:
     paths:
       - public
