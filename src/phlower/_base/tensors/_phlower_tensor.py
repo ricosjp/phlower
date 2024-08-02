@@ -171,23 +171,45 @@ class PhlowerTensor(IPhlowerTensor):
             kwargs = {}
 
         _tensors = _recursive_resolve(args, "_tensor")
+
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
             return PhlowerTensor(ret)
 
-        _dimensions = _recursive_resolve(args, "_dimension_tensor")
+        _dimensions = _recursive_resolve(
+            args, "_dimension_tensor", allow_none=False
+        )
+
         result_units = func(*_dimensions, **kwargs)
         return PhlowerTensor(ret, result_units)
 
 
-def _recursive_resolve(args: Iterable | Any, attr: str = None) -> list[str]:
+def _recursive_resolve(
+    args: Iterable | Any, attr: str, allow_none: bool = True
+) -> list[str]:
     if isinstance(args, tuple | list):
-        return [_recursive_resolve(v, attr) for v in args]
+        return [
+            _recursive_resolve(v, attr, allow_none=allow_none) for v in args
+        ]
 
-    _dim = getattr(args, attr, args)
-    return _dim
+    _val = getattr(args, attr, args)
+
+    if allow_none:
+        return _val
+
+    if _val is None:
+        if args is None:
+            # If args does not have attribute, treat as it is.
+            # For example, bias may be None when calculating torch.nn.Linear
+            return None
+
+        raise DimensionIncompatibleError(
+            "Cannnot calcualte PhlowerTensor with physics dimension "
+            f"and PhlowerTensor without it. {args}"
+        )
+    return _val
 
 
 def _has_dimension(args: Any) -> bool:

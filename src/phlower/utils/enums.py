@@ -59,13 +59,11 @@ class PhysicalDimensionSymbolType(Enum):
     N = 5  # amount of substance
     J = 6  # luminous intensity
 
-
     @classmethod
     def is_exist(cls, name: str) -> bool:
         return name in _symbol2quntityname.keys()
 
-    def to_index(self, name: str):
-        ...
+    def to_index(self, name: str): ...
 
     def to_quantity_name(self):
         return _symbol2quntityname[self.name]

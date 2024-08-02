@@ -12,9 +12,14 @@ Phlower : A Deep Learning Framework for Physical Phenomenon
 Key Features
 -------------
 
+Tutorials are prepared for key features !
+
 1. `Extended Tensor object which enables you to handle physics dimention <https://github.com/ricosjp/phlower/tutorials/basic_usages/01_phlower_tensor_basic>`_
 2. `Model definition by yaml file <https://github.com/ricosjp/phlower/tutorials/basic_usages/02_model_definition_by_yaml_file>`_
-3. High Level API for scaling, training and predicion.
+3. `High Level API for scaling, training and predicion <https://github.com/ricosjp/phlower/tutorials/basic_usages/03_high_level_api_for_scaling_training_and_prediction>`_
+
+
+.. include:: usage.rst
 
 
 .. toctree::
@@ -24,7 +29,6 @@ Key Features
    usage
    reference/index
    tutorials/index
-
 
 
 Indices and tables

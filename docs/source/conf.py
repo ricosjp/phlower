@@ -5,8 +5,8 @@
 
 import glob
 import os
-import shutil
 import pathlib
+import shutil
 
 import sphinx_rtd_theme
 from sphinx_gallery.scrapers import figure_rst
@@ -36,11 +36,14 @@ import phlower
 
 def mmd_scraper(block, block_vars, gallery_conf):
     # Find all PNG files in the directory of this example.
-    path_current_example = os.path.dirname(block_vars['src_file'])
+    path_current_example = os.path.dirname(block_vars["src_file"])
     mmds = pathlib.Path(path_current_example).glob("images/*.mmd")
 
-    to_path = pathlib.Path(path_current_example).parent.parent / "docs/source/tutorials/basic_usages/images"
-    
+    to_path = (
+        pathlib.Path(path_current_example).parent.parent
+        / "docs/source/tutorials/basic_usages/images"
+    )
+
     for mmd in mmds:
         shutil.copy(mmd, to_path / mmd.name)
     return ""
@@ -103,5 +106,5 @@ sphinx_gallery_conf = {
     ],
     "within_subsection_order": FileNameSortKey,
     "filename_pattern": r"/*\.py",
-    'image_scrapers': ('matplotlib', mmd_scraper),
+    "image_scrapers": ("matplotlib", mmd_scraper),
 }

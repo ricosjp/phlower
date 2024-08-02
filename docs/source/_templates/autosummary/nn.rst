@@ -3,7 +3,8 @@
 {% extends "!autosummary/class.rst" %}
 
 {#
-Inherited methods from torch.nn.Module are not shown in this manual.
+Specific methods are only shown in this manual.
+showitems = ["from_setting", "get_nn_name", "forward"]
 original templates are located in `.venv/lib/python3.10/site-packages/sphinx/ext/autosummary/templates/autosummary`
 #}
 

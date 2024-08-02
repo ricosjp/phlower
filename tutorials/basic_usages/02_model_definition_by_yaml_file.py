@@ -15,7 +15,7 @@ Phlower offers a way to define models and its order by yaml file.
 # `data.yml
 # <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/model/model.yml>`_
 #
-# Please construct PhlowerSetting object from yaml file.
+# we construct PhlowerSetting object from yaml file.
 
 from phlower.settings import PhlowerSetting
 
@@ -24,7 +24,7 @@ setting = PhlowerSetting.read_yaml("sample_data/model/model.yml")
 
 ###################################################################################################
 # Order of models must be DAG (Directed Acyclic Graph).
-# To check such conditions, call `resolve` function.
+# To check such conditions, we call `resolve` function.
 
 setting.model.network.resolve(is_first=True)
 
@@ -42,13 +42,9 @@ model.draw("images")
 
 
 ###################################################################################################
-# The output file is shown below.
+# The output mermaid file is shown below.
 #
 # .. mermaid:: ../../tutorials/basic_usages/images/SAMPLE_MODEL.mmd
 #
-# According to this image, following items are easily found.
+# According to this image, we can understand details of each model and data flow.
 #
-# * Two encoders are constructed by MLP (Multi-Layered Perceptron).
-# * Outputs of two encoders are passed to Concatenator
-# * Output of Concatenator is passed to GCN
-# 

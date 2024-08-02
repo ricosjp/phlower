@@ -3,7 +3,7 @@
 {% extends "!autosummary/class.rst" %}
 
 {#
-Inherited methods from torch.nn.Module are not shown in this manual.
+Inherited methods from parent class are not shown in this manual.
 original templates are located in `.venv/lib/python3.10/site-packages/sphinx/ext/autosummary/templates/autosummary`
 #}
 {% block methods %}

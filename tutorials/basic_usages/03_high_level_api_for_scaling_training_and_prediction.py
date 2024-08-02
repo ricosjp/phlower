@@ -11,12 +11,16 @@ In this section, we will use high level API for performing machine learning proc
 
 ###################################################################################################
 # At First, we will prepare dummy data.
+# These dummy data corresponds to feature values extracted from simultion data.
+#
 
 import pathlib
-import shutil
-import numpy as np
 import random
+import shutil
+
+import numpy as np
 import scipy.sparse as sp
+
 
 def prepare_sample_interim_files():
     np.random.seed(0)
@@ -43,9 +47,7 @@ def prepare_sample_interim_files():
         )
 
         # nodal_last_u = np.random.rand(n_nodes, 3, 1)
-        np.save(
-            interim_dir / "nodal_last_u.npy", nodal_initial_u.astype(dtype)
-        )
+        np.save(interim_dir / "nodal_last_u.npy", nodal_initial_u.astype(dtype))
 
         sparse_array_names = [
             "nodal_nadj",
@@ -64,11 +66,14 @@ def prepare_sample_interim_files():
 prepare_sample_interim_files()
 
 ###################################################################################################
-# Here, we perform scaling process for interim data.
-#
+# Setting file for scaling and training can be downloaded from 
+# `data.yml
+# <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/setting.yml>`_
+# we perform scaling process for data above.
+# 
 
-from phlower.settings import PhlowerSetting
 from phlower.services.preprocessing import PhlowerScalingService
+from phlower.settings import PhlowerSetting
 
 setting = PhlowerSetting.read_yaml("sample_data/e2e/setting.yml")
 
@@ -79,9 +84,9 @@ scaler.fit_transform_all(
         pathlib.Path("out/interim/case_1"),
         pathlib.Path("out/interim/case_2"),
         pathlib.Path("out/interim/case_3"),
-        pathlib.Path("out/interim/case_4")
+        pathlib.Path("out/interim/case_4"),
     ],
-    output_base_directory=pathlib.Path("out/preprocessed")
+    output_base_directory=pathlib.Path("out/preprocessed"),
 )
 
 
@@ -118,6 +123,10 @@ print(loss)
 
 ###################################################################################################
 # Finally, we perform predicion by using pretrained model.
+# Setting file for prediction can be downloaded from 
+# `data.yml
+# <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/predict.yml>`_
+#
 # It is found that physical dimension is also considered properly.
 
 from phlower.services.predictor import PhlowerPredictor
@@ -126,7 +135,7 @@ setting = PhlowerSetting.read_yaml("sample_data/e2e/predict.yml")
 
 predictor = PhlowerPredictor(
     model_directory=pathlib.Path("out/model"),
-    predict_setting=setting.prediction
+    predict_setting=setting.prediction,
 )
 
 preprocessed_directories = [pathlib.Path("out/preprocessed/case_3")]

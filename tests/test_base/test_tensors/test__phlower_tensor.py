@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from phlower import PhlowerTensor, phlower_dimension_tensor
+from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 
@@ -30,6 +30,17 @@ def test__add_with_unit():
     cp = ap + bp
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
+
+
+@pytest.mark.parametrize(
+    "unit1, unit2", [({"L": 2, "T": -2}, None), (None, {"M": 2, "T": -3})]
+)
+def test__add_with_and_without_dimensions(unit1, unit2):
+    tensor1 = phlower_tensor(torch.rand(3, 4), dimension=unit1)
+    tensor2 = phlower_tensor(torch.rand(3, 4), dimension=unit2)
+
+    with pytest.raises(DimensionIncompatibleError):
+        _ = tensor1 + tensor2
 
 
 def test__add_with_unit_incompatible():
