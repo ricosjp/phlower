@@ -14,7 +14,7 @@ from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IPhlowerModuleAdapter,
 )
-from phlower.settings._model_settings import ModuleSetting
+from phlower.settings._group_settings import ModuleSetting
 
 
 class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):

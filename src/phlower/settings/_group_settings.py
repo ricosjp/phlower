@@ -6,14 +6,12 @@ from typing import Literal
 import dagstream
 import pydantic
 from dagstream.utils.errors import DagStreamCycleError
-from pydantic import Field, ValidationInfo
+from pydantic import Field
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
 from phlower.settings._module_parameter_setting import PhlowerModuleParameters
-from phlower.settings._module_settings import (
-    gather_input_dims
-)
+from phlower.settings._module_settings import gather_input_dims
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -45,12 +43,40 @@ class ModuleIOSetting:
 
 class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
     name: str
+    """
+    name of group
+    """
+
     inputs: list[ModuleIOSetting]
+    """
+    definition of input varaibles
+    """
+
     outputs: list[ModuleIOSetting]
+    """
+    definition of output varaibles
+    """
+
     modules: list[ModuleSetting | GroupModuleSetting]
+    """
+    modules which belongs to this group
+    """
+
     destinations: list[str] = Field(default_factory=lambda: [])
+    """
+    name of destination modules.
+    """
+
     nn_type: Literal["GROUP"] = "GROUP"
+    """
+    name of neural network type. Fixed to "GROUP"
+    """
+
     no_grad: bool = False
+    """
+    A Flag not to calculate gradient. Defauls to False.
+    """
+
     support_names: list[str] = pydantic.Field(default_factory=lambda: [])
 
     # special keyward to forbid extra fields in pydantic
@@ -194,16 +220,44 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
 
 class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     nn_type: str = Field(..., frozen=True)
+    """
+    name of neural network type. For example, GCN, MLP.
+    """
+
     name: str = Field(..., frozen=True)
+    """
+    name of group
+    """
+
     input_keys: list[str] = Field(..., frozen=True)
+    """
+    key names of input variables
+    """
+
     output_key: str = Field(..., frozen=True)
+    """
+    key names of output variables
+    """
+
     destinations: list[str] = Field(
         ..., default_factory=lambda: [], frozen=True
     )
+    """
+    name of destination modules.
+    """
+
     no_grad: bool = Field(False, frozen=True)
+    """
+    A Flag not to calculate gradient. Defauls to False.
+    """
+
     nn_parameters: PhlowerModuleParameters = Field(
         default_factory=lambda: {}, validate_default=True
     )
+    """
+    parameters for neural networks.
+    Allowed items depend on `nn_type`.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(

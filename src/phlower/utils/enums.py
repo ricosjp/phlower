@@ -1,7 +1,5 @@
 from enum import Enum
 
-from typing_extensions import Self
-
 
 class PhlowerFileExtType(Enum):
     NPY = ".npy"
@@ -63,9 +61,7 @@ class PhysicalDimensionSymbolType(Enum):
     def is_exist(cls, name: str) -> bool:
         return name in _symbol2quntityname.keys()
 
-    def to_index(self, name: str): ...
-
-    def to_quantity_name(self):
+    def to_quantity_name(self) -> str:
         return _symbol2quntityname[self.name]
 
     def __str__(self):

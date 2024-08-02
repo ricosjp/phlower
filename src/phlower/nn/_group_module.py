@@ -16,7 +16,7 @@ from phlower.io._files import IPhlowerCheckpointFile
 from phlower.nn._interface_module import IPhlowerModuleAdapter
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
-from phlower.settings._model_settings import GroupModuleSetting, ModuleSetting
+from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
 

@@ -11,4 +11,3 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def overwrite_nodes(self, nodes: list[int]) -> None: ...
-
