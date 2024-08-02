@@ -16,9 +16,24 @@ from phlower.utils.enums import ModelSelectionType
 
 class PhlowerSetting(pydantic.BaseModel):
     training: PhlowerTrainerSetting | None = None
+    """
+    training setting. Optional(Default: None)
+    """
+
     model: PhlowerModelSetting | None = None
+    """
+    model setting. Optional(Default: None)
+    """
+    
     scaling: PhlowerScalingSetting | None = None
+    """
+    scaling setting. Optional(Default: None)
+    """
+
     prediction: PhlowerPredictorSetting | None = None
+    """
+    prediction setting. Optional(Default: None)
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
@@ -31,6 +46,17 @@ class PhlowerSetting(pydantic.BaseModel):
         file_path: pathlib.Path | str | PhlowerYamlFile,
         decrypt_key: bytes | None = None,
     ) -> Self:
+        """Read yaml file and parse to PhlowerSetting object.
+
+        Args:
+            file_path (pathlib.Path | str | PhlowerYamlFile): 
+                path to yaml file
+            decrypt_key (bytes | None, optional):
+                key to decrypt file. Defaults to None.
+
+        Returns:
+            Self: PhlowerSetting object
+        """
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
         return PhlowerSetting(**data)
@@ -40,6 +66,10 @@ class PhlowerModelSetting(pydantic.BaseModel):
     variable_dimensions: dict[str, PhysicalDimensionsClass] = pydantic.Field(
         default_factory=lambda: {}, validate_default=True
     )
+    """
+    dictionary which maps variable name to value
+    """
+
     network: GroupModuleSetting
 
     # special keyward to forbid extra fields in pydantic

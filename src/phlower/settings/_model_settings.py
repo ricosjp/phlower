@@ -10,10 +10,9 @@ from pydantic import Field, ValidationInfo
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
-from phlower.settings._interface import IPhlowerLayerParameters
+from phlower.settings._module_parameter_setting import PhlowerModuleParameters
 from phlower.settings._module_settings import (
-    gather_input_dims,
-    parse_parameter_setting,
+    gather_input_dims
 )
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
@@ -202,7 +201,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         ..., default_factory=lambda: [], frozen=True
     )
     no_grad: bool = Field(False, frozen=True)
-    nn_parameters: IPhlowerLayerParameters = Field(
+    nn_parameters: PhlowerModuleParameters = Field(
         default_factory=lambda: {}, validate_default=True
     )
 
@@ -210,18 +209,6 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     model_config = pydantic.ConfigDict(
         extra="forbid", arbitrary_types_allowed=True
     )
-
-    @pydantic.field_validator("nn_parameters", mode="before")
-    @classmethod
-    def validate_nn_parameters(cls, vals, info: ValidationInfo):
-        # MAYBE pydantic union feature is useful
-        try:
-            return parse_parameter_setting(name=info.data["nn_type"], **vals)
-        except pydantic.ValidationError as ex:
-            name = info.data.get("name")
-            raise ValueError(
-                f"setting content in {name} is not correnct."
-            ) from ex
 
     def get_name(self) -> str:
         return self.name

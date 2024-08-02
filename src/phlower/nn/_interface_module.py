@@ -5,14 +5,16 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.settings._interface import IPhlowerLayerParameters
+from phlower.settings._module_settings import IPhlowerLayerParameters
 
 
 class IPhlowerCoreModule(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def from_setting(cls, setting: IPhlowerLayerParameters) -> Self: ...
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def get_nn_name(cls) -> str: ...
 
     @abc.abstractmethod
