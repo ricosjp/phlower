@@ -3,13 +3,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import glob
 import os
 import pathlib
 import shutil
 
 import sphinx_rtd_theme
-from sphinx_gallery.scrapers import figure_rst
 from sphinx_gallery.sorting import FileNameSortKey
 
 import phlower

@@ -1,7 +1,14 @@
+import pathlib
+
 import pydantic
 import pytest
 
-from phlower.settings import PhlowerModelSetting, PhlowerPredictorSetting
+from phlower.io import PhlowerYamlFile
+from phlower.settings import (
+    PhlowerModelSetting,
+    PhlowerPredictorSetting,
+    PhlowerSetting,
+)
 
 
 @pytest.mark.parametrize(
@@ -32,3 +39,19 @@ def test__valid_selection_mode(selection_mode):
 def test__invalid_selection_mode(selection_mode):
     with pytest.raises(pydantic.ValidationError):
         _ = PhlowerPredictorSetting(selection_mode=selection_mode)
+
+
+def test__model_dump():
+    setting = PhlowerSetting.read_yaml(
+        "tests/test_settings/data/e2e/setting1.yml"
+    )
+
+    _ = PhlowerYamlFile.save(
+        output_directory=pathlib.Path("tests/test_settings/tmp"),
+        file_basename="output",
+        data=setting.model_dump(),
+    )
+
+    setting2 = PhlowerSetting.read_yaml("tests/test_settings/tmp/output.yml")
+
+    assert setting.model_dump_json() == setting2.model_dump_json()

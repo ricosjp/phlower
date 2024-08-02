@@ -66,11 +66,11 @@ def prepare_sample_interim_files():
 prepare_sample_interim_files()
 
 ###################################################################################################
-# Setting file for scaling and training can be downloaded from 
+# Setting file for scaling and training can be downloaded from
 # `data.yml
 # <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/setting.yml>`_
 # we perform scaling process for data above.
-# 
+#
 
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.settings import PhlowerSetting
@@ -123,7 +123,7 @@ print(loss)
 
 ###################################################################################################
 # Finally, we perform predicion by using pretrained model.
-# Setting file for prediction can be downloaded from 
+# Setting file for prediction can be downloaded from
 # `data.yml
 # <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/predict.yml>`_
 #

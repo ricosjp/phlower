@@ -6,7 +6,6 @@ settings
 
 .. autosummary::
     :toctree: generated
-    :template: autosummary/class.rst
 
     PhlowerSetting
     PhlowerTrainerSetting
