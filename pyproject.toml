@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "phlower"
-version = "0.1.0"
+version = "0.0.1"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
 authors = ["sakamoto <sakamoto@ricos.co.jp>"]
 readme = "README.md"

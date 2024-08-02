@@ -3,7 +3,7 @@ stages:
   - deploy
 
 default:
-  image: python:3.11-slim
+  image: python:3.10-slim
   before_script:
     - apt update
     - apt install -y make
@@ -45,20 +45,19 @@ e2e_test:
     - no-gpu
     - GenuineIntel
 
-# pages:
-#   stage: deploy
-#   script:
-#     - make document
-#     - mkdir public
-#     - cp -r docs/build/* public/
-#   artifacts:
-#     paths:
-#       - public
-#   only:
-#     - main
-#     - develop
-#     - fix_sphinx
-
+pages:
+  stage: deploy
+  script:
+    - make document
+    - mkdir public
+    - cp -r docs/build/* public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+    - develop
+    - fix_sphinx
 
 .deploy:wheel:
   stage: deploy

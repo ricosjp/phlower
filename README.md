@@ -3,6 +3,10 @@
 
 __phlower__ is a deep learning framework based on PyTorch especially for physical phenomenon such as fluid dynamics.
 
+For more details, please refer to user manual below.
+
+- [User Manual](https://ricosjp.github.io/phlower/)
+
 
 ## Key Features
 
