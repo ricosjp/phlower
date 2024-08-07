@@ -45,5 +45,6 @@ class PhlowerProgressBar:
 
     def destroy(self) -> None:
         # Unlike tqdm.reset, this method does not show next progress bar.
-        self._pbar.close()
-        self._pbar = None
+        if self._pbar is not None:
+            self._pbar.close()
+            self._pbar = None
