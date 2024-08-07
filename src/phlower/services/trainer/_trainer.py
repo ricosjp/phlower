@@ -157,7 +157,7 @@ class PhlowerTrainer:
                     )
                 _val_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
-                    desc=f"batch val loss: {validation_losses[-1]}"
+                    desc=f"batch val loss: {validation_losses[-1]}",
                 )
 
             train_loss = np.average(train_losses)
