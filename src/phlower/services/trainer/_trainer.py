@@ -111,6 +111,9 @@ class PhlowerTrainer:
 
         tqdm.write(record_io.get_header())
         self._timer.start()
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_dataset))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_dataset))
+
         for epoch in range(self._trainer_setting.n_epoch):
             train_losses: list[float] = []
             validation_losses: list[float] = []
@@ -132,6 +135,11 @@ class PhlowerTrainer:
                 loss.backward()
                 self._optimizer.step()
 
+                _train_batch_pbar.update(
+                    trick=self._trainer_setting.batch_size,
+                    desc=f"batch train loss: {train_losses[-1]:.3f}",
+                )
+
             self._model.eval()
             for val_batch in validation_loader:
                 with torch.no_grad():
@@ -147,6 +155,10 @@ class PhlowerTrainer:
                     validation_losses.append(
                         val_loss.detach().to_tensor().float().item()
                     )
+                _val_batch_pbar.update(
+                    trick=self._trainer_setting.batch_size,
+                    desc=f"batch val loss: {validation_losses[-1]}"
+                )
 
             train_loss = np.average(train_losses)
             validation_loss = np.average(validation_losses)
