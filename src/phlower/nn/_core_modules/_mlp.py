@@ -6,7 +6,10 @@ from typing_extensions import Self
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
-from phlower.nn._interface_module import IPhlowerCoreModule
+from phlower.nn._interface_module import (
+    IPhlowerCoreModule,
+    IReadonlyReferenceGroup,
+)
 from phlower.settings._module_settings import MLPSetting
 
 
@@ -34,6 +37,10 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         """
         return "MLP"
 
+    @classmethod
+    def need_reference(cls) -> bool:
+        return False
+
     def __init__(
         self,
         nodes: list[int],
@@ -54,11 +61,19 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         self._nodes = nodes
         self._activations = activations
 
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> None: ...
+
+    def get_reference_name(self) -> str | None:
+        return None
+
     def forward(
         self,
         data: IPhlowerTensorCollections,
         *,
         supports: dict[str, PhlowerTensor] | None = None,
+        **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
 

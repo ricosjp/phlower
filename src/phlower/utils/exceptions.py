@@ -41,3 +41,6 @@ class PhlowerFeatureStoreOverwriteError(ValueError):
     """This error raises when to try to overwrite feature store item"""
 
     ...
+
+
+class NotFoundReferenceModuleError(ValueError): ...
