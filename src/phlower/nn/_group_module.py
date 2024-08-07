@@ -13,14 +13,19 @@ from phlower.collections.tensors import (
     reduce_collections,
 )
 from phlower.io._files import IPhlowerCheckpointFile
-from phlower.nn._interface_module import IPhlowerModuleAdapter
+from phlower.nn._interface_module import (
+    IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
+)
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
 
-class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
+class PhlowerGroupModule(
+    IPhlowerModuleAdapter, IReadonlyReferenceGroup, torch.nn.Module
+):
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> Self:
         _modules: list[IPhlowerModuleAdapter] = []
@@ -81,7 +86,7 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
     def resolve(self):
         for module in self._phlower_modules:
-            module.resolve()
+            module.resolve(parent=self)
 
         # topological-sort
         stream = dagstream.DagStream()
@@ -122,7 +127,8 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        supports: dict[str, PhlowerTensor] | None = None,
+        **kwards,
     ) -> IPhlowerTensorCollections:
         results = phlower_tensor_collection({})
 
@@ -140,7 +146,7 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
                 args = reduce_collections(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
-                _result = _module.forward(args, supports=supports)
+                _result = _module.forward(args, supports=supports, **kwards)
 
                 dag_modules.send(node.mut_name, _result)
                 dag_modules.done(node.mut_name)
@@ -152,6 +158,13 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
     def get_destinations(self) -> list[str]:
         return self._destinations
+
+    def search_module(self, name: str) -> IPhlowerModuleAdapter:
+        for _module in self._phlower_modules:
+            if _module.name == name:
+                return _module
+
+        raise KeyError(f"Module {name} is not found in group {self.name}.")
 
     def load_checkpoint_file(
         self,

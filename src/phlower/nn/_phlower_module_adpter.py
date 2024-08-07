@@ -13,6 +13,7 @@ from phlower.nn._core_modules import get_module
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
 )
 from phlower.settings._group_settings import ModuleSetting
 
@@ -57,7 +58,13 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
     def get_destinations(self) -> list[str]:
         return self._destinations
 
-    def resolve(self) -> None: ...
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None, **kwards
+    ) -> None:
+        if not self._layer.need_resolve():
+            return
+
+        self._layer.resolve(parent=parent, **kwards)
 
     def get_n_nodes(self) -> list[int]:
         return self._n_nodes

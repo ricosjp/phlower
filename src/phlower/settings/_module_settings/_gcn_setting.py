@@ -4,7 +4,10 @@ import pydantic
 from pydantic import Field
 from typing_extensions import Self
 
-from ._interface import IPhlowerLayerParameters
+from phlower.settings._interface import (
+    IPhlowerLayerParameters,
+    IReadOnlyReferenceGroupSetting,
+)
 
 
 class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
@@ -21,8 +24,7 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
-    @classmethod
-    def gather_input_dims(cls, *input_dims: int) -> int:
+    def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
             raise ValueError("only one input is allowed in GCN.")
         return input_dims[0]
@@ -65,3 +67,10 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
+
+    @property
+    def need_reference(self) -> bool:
+        return False
+
+    def get_reference(self, parent: IReadOnlyReferenceGroupSetting):
+        return
