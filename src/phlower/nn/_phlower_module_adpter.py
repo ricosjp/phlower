@@ -61,7 +61,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None, **kwards
     ) -> None:
-        if not self._layer.need_resolve():
+        if not self._layer.need_reference():
             return
 
         self._layer.resolve(parent=parent, **kwards)
@@ -70,9 +70,16 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         return self._n_nodes
 
     def get_display_info(self) -> str:
+        if not self._layer.need_reference():
+            return (
+                f"nn_type: {self._layer.get_nn_name()}\n"
+                f"n_nodes: {self.get_n_nodes()}"
+            )
+
         return (
             f"nn_type: {self._layer.get_nn_name()}\n"
-            f"n_nodes: {self.get_n_nodes()}"
+            f"n_nodes: {self.get_n_nodes()} \n"
+            f"reference: {self._layer.get_reference_name()}"
         )
 
     def draw(self, output_directory: Path, recursive: bool): ...
@@ -97,3 +104,6 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
             result = self._layer.forward(inputs, supports=supports)
 
         return phlower_tensor_collection({self._output_key: result})
+
+    def get_core_module(self) -> IPhlowerCoreModule:
+        return self._layer

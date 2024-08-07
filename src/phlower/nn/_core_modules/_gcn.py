@@ -37,7 +37,7 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         return "GCN"
 
     @classmethod
-    def need_resolve(cls) -> bool:
+    def need_reference(cls) -> bool:
         return False
 
     def __init__(
@@ -69,6 +69,9 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> None: ...
+
+    def get_reference_name(self) -> str | None:
+        return None
 
     def forward(
         self,

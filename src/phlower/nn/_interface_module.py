@@ -21,7 +21,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def need_resolve(cls) -> bool: ...
+    def need_reference(cls) -> bool: ...
 
     @abc.abstractmethod
     def resolve(
@@ -36,10 +36,13 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         supports: dict[str, PhlowerTensor] = None,
     ) -> PhlowerTensor: ...
 
+    @abc.abstractmethod
+    def get_reference_name(self) -> str | None: ...
+
 
 class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def search_module(self, name: str) -> IPhlowerModuleAdapter: ...
+    def search_module(self, name: str) -> IPhlowerCoreModule: ...
 
 
 class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
@@ -72,3 +75,6 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def draw(self, output_directory: pathlib.Path, recursive: bool): ...
+
+    @abc.abstractmethod
+    def get_core_module(self) -> IPhlowerCoreModule: ...

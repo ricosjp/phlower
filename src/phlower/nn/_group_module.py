@@ -14,6 +14,7 @@ from phlower.collections.tensors import (
 )
 from phlower.io._files import IPhlowerCheckpointFile
 from phlower.nn._interface_module import (
+    IPhlowerCoreModule,
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
@@ -159,10 +160,10 @@ class PhlowerGroupModule(
     def get_destinations(self) -> list[str]:
         return self._destinations
 
-    def search_module(self, name: str) -> IPhlowerModuleAdapter:
+    def search_module(self, name: str) -> IPhlowerCoreModule:
         for _module in self._phlower_modules:
             if _module.name == name:
-                return _module
+                return _module.get_core_module()
 
         raise KeyError(f"Module {name} is not found in group {self.name}.")
 
@@ -182,4 +183,9 @@ class PhlowerGroupModule(
             )
         self.load_state_dict(
             content[TrainerSavedKeyType.MODEL_STATE_DICT.value]
+        )
+
+    def get_core_module(self) -> IPhlowerCoreModule:
+        raise ValueError(
+            "`get_core_module` cannot be called in PhlowerGroupModule."
         )

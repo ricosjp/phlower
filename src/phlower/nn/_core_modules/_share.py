@@ -27,7 +27,7 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
         return "Share"
 
     @classmethod
-    def need_resolve(cls) -> bool:
+    def need_reference(cls) -> bool:
         return True
 
     def __init__(self, reference_name: str, **kwards) -> None:
@@ -35,6 +35,9 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
 
         self._reference_name = reference_name
         self._reference: IPhlowerCoreModule | None = None
+
+    def get_reference_name(self) -> str:
+        return self._reference_name
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
