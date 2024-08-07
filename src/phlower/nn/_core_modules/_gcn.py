@@ -41,7 +41,7 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         dropouts: list[float] | None = None,
         repeat: int = 1,
         factor: float = 1.0,
-        bias: bool = False,
+        bias: bool = True,
     ) -> None:
         super().__init__()
 
