@@ -43,5 +43,22 @@ class PhlowerFeatureStoreOverwriteError(ValueError):
     ...
 
 
-class PhlowerSparseRankUndefinedError(ValueError):
-    """This error raises when trying to access tensor rank for sparse tensor"""
+class PhlowerSparseUnsupportedError(ValueError):
+    """
+    This error raises when trying to call methods not supported for sparse
+    tensors
+    """
+
+
+class PhlowerUnsupportedTorchFunctionError(ValueError):
+    """
+    This error raises when trying to call a function not supported
+    by the phlower library although torch does
+    """
+
+
+class PhlowerReshapeError(ValueError):
+    """
+    This error raises when trying to reshape a tensor in an invalid
+    manner
+    """
