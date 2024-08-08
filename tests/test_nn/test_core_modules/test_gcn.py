@@ -24,7 +24,7 @@ def test__can_call_parameters():
         ((4, 10, 3, 16), True),
     ],
 )
-def test__concatenated_tensor_shape(size, is_time_series):
+def test__gcn(size, is_time_series):
     phlower_tensor = PhlowerTensor(
         torch.rand(*size), is_time_series=is_time_series)
     phlower_tensors = phlower_tensor_collection({'tensor': phlower_tensor})
@@ -32,10 +32,10 @@ def test__concatenated_tensor_shape(size, is_time_series):
     dict_supports = {'support': PhlowerTensor(torch.rand(n, n).to_sparse())}
 
     model = GCN(
-        nodes=[size[-1], size[-1]],
-        support_name='support', activations=['tanh'])
+        nodes=[size[-1], size[-1], size[-1]],
+        support_name='support', activations=['tanh', 'identity'])
 
     actual = model(phlower_tensors, supports=dict_supports)
 
     assert actual.shape == size
-    assert actual.is_time_series == phlower_tensor.is_time_series
+    assert actual.is_time_series == is_time_series

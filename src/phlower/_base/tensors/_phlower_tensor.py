@@ -300,6 +300,7 @@ class PhlowerTensor(IPhlowerTensor):
         return PhlowerTensor(
             self._tensor.detach(),
             dimension_tensor=self._dimension_tensor.detach(),
+            is_time_series=self.is_time_series, is_voxel=self.is_voxel,
         )
 
     def backward(self) -> None:
@@ -323,16 +324,23 @@ class PhlowerTensor(IPhlowerTensor):
 
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
+        # NOTE: Assume flags for the first tensor is preserved
+        is_time_series = args[0].is_time_series
+        is_voxel = args[0].is_voxel
+
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
-            return PhlowerTensor(ret)
+            return PhlowerTensor(
+                ret, is_time_series=is_time_series, is_voxel=is_voxel)
 
         _dimensions = _recursive_resolve(
             args, "_dimension_tensor", allow_none=False
         )
 
         result_units = func(*_dimensions, **kwargs)
-        return PhlowerTensor(ret, result_units)
+        return PhlowerTensor(
+            ret, result_units, is_time_series=is_time_series,
+            is_voxel=is_voxel)
 
 
 def _recursive_resolve(
