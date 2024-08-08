@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from typing import Any
 
 import torch
@@ -13,7 +13,10 @@ from phlower._base.tensors._dimension_tensor import (
 )
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower.utils import get_logger
-from phlower.utils.exceptions import DimensionIncompatibleError
+from phlower.utils.exceptions import (
+    DimensionIncompatibleError,
+    PhlowerSparseRankUndefinedError,
+)
 
 logger = get_logger(__name__)
 
@@ -150,7 +153,7 @@ class PhlowerTensor(IPhlowerTensor):
     def rank(self) -> int:
         """Returns the tensor rank."""
         if self.is_sparse:
-            raise NotImplementedError
+            raise PhlowerSparseRankUndefinedError
         size = self.size()
         start = 1
         if self.is_time_series:
@@ -164,14 +167,6 @@ class PhlowerTensor(IPhlowerTensor):
 
     def values(self) -> torch.Tensor:
         return self._tensor.values()
-
-    def reshape(self, shape: Sequence[int]) -> PhlowerTensor:
-        self._tensor = self._tensor.reshape(shape)
-        return self
-
-    def slice(self, slice_range: tuple[slice, ...]) -> PhlowerTensor:
-        tmp = self._tensor[slice_range]
-        return PhlowerTensor(tmp, dimension_tensor=self._dimension_tensor)
 
     def to(self, device: str, non_blocking: bool = False) -> None:
         self._tensor.to(device, non_blocking=non_blocking)

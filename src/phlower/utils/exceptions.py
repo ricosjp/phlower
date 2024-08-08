@@ -41,3 +41,7 @@ class PhlowerFeatureStoreOverwriteError(ValueError):
     """This error raises when to try to overwrite feature store item"""
 
     ...
+
+
+class PhlowerSparseRankUndefinedError(ValueError):
+    """This error raises when trying to access tensor rank for sparse tensor"""

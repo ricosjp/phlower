@@ -58,10 +58,13 @@ class _PhlowerSequenceArray:
         device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimensions: PhysicalDimensions | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ):
         tensors = [
             v.to_phlower_tensor(
-                device=device, non_blocking=non_blocking, dimension=dimensions
+                device=device, non_blocking=non_blocking, dimension=dimensions,
+                is_time_series=is_time_series, is_voxel=is_voxel,
             )
             for v in self._data
         ]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 import torch
 
@@ -20,6 +20,12 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
     def is_sparse(self) -> bool: ...
+
+    @abc.abstractproperty
+    def is_time_series(self) -> bool: ...
+
+    @abc.abstractproperty
+    def is_voxel(self) -> bool: ...
 
     @abc.abstractmethod
     def values(self) -> torch.Tensor: ...
@@ -46,16 +52,13 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     def size(self) -> torch.Size: ...
 
     @abc.abstractmethod
+    def rank(self) -> int: ...
+
+    @abc.abstractmethod
     def indices(self) -> torch.Tensor: ...
 
     @abc.abstractmethod
     def coalesce(self) -> IPhlowerTensor: ...
-
-    @abc.abstractmethod
-    def reshape(self, shape: Sequence[int]) -> IPhlowerTensor: ...
-
-    @abc.abstractmethod
-    def slice(self, slice_range: tuple[slice, ...]) -> IPhlowerTensor: ...
 
     @abc.abstractmethod
     def to(self, device: str, non_blocking: bool = False) -> None: ...

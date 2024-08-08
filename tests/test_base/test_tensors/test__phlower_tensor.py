@@ -3,7 +3,10 @@ import pytest
 import torch
 
 from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
-from phlower.utils.exceptions import DimensionIncompatibleError
+from phlower.utils.exceptions import (
+    DimensionIncompatibleError,
+    PhlowerSparseRankUndefinedError,
+)
 
 
 def test__add():
@@ -121,3 +124,10 @@ def test__rank(is_time_series, is_voxel, size, desired_rank):
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
     assert phlower_tensor.rank() == desired_rank
+
+
+def test__raises_phlower_sparse_rank_undefined_error():
+    torch_sparse_tensor = torch.eye(5).to_sparse()
+    phlower_sparse_tensor = PhlowerTensor(torch_sparse_tensor)
+    with pytest.raises(PhlowerSparseRankUndefinedError):
+        phlower_sparse_tensor.rank()

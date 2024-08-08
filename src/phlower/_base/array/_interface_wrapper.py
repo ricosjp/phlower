@@ -72,6 +72,8 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimension: PhysicalDimensions | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod
