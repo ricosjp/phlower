@@ -62,3 +62,5 @@ class PhlowerReshapeError(ValueError):
     This error raises when trying to reshape a tensor in an invalid
     manner
     """
+
+class NotFoundReferenceModuleError(ValueError): ...

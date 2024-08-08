@@ -4,7 +4,10 @@ import pydantic
 from pydantic import Field
 from typing_extensions import Self
 
-from ._interface import IPhlowerLayerParameters
+from phlower.settings._interface import (
+    IPhlowerLayerParameters,
+    IReadOnlyReferenceGroupSetting,
+)
 
 
 class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
@@ -15,8 +18,7 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
 
-    @classmethod
-    def gather_input_dims(cls, *input_dims: int) -> int:
+    def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
             raise ValueError("only one input is allowed in GCN.")
         return input_dims[0]
@@ -59,3 +61,10 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
+
+    @property
+    def need_reference(self) -> bool:
+        return False
+
+    def get_reference(self, parent: IReadOnlyReferenceGroupSetting):
+        return
