@@ -97,3 +97,27 @@ def test__getitem(key):
     np.testing.assert_array_almost_equal(
         phlower_tensor[key].to_tensor(), torch_tensor[key]
     )
+
+
+@pytest.mark.parametrize(
+    "is_time_series, is_voxel, size, desired_rank",
+    [
+        (False, False, [100, 16], 0),
+        (False, False, [100, 3, 16], 1),
+        (False, False, [100, 3, 3, 16], 2),
+        ( True, False, [4, 100, 16], 0),
+        ( True, False, [4, 100, 3, 16], 1),
+        ( True, False, [4, 100, 3, 3, 16], 2),
+        (False,  True, [10, 10, 10, 16], 0),
+        (False,  True, [10, 10, 10, 3, 16], 1),
+        (False,  True, [10, 10, 10, 3, 3, 16], 2),
+        ( True,  True, [4, 10, 10, 10, 16], 0),
+        ( True,  True, [4, 10, 10, 10, 3, 16], 1),
+        ( True,  True, [4, 10, 10, 10, 3, 3, 16], 2),
+    ],
+)
+def test__rank(is_time_series, is_voxel, size, desired_rank):
+    torch_tensor = torch.rand(*size)
+    phlower_tensor = PhlowerTensor(
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+    assert phlower_tensor.rank() == desired_rank

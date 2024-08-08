@@ -27,6 +27,8 @@ def phlower_tensor(
         | dict[str, float]
         | None
     ) = None,
+    is_time_series: bool = False,
+    is_voxel: bool = False,
 ):
     if isinstance(tensor, PhlowerTensor):
         if dimension is not None:
@@ -38,7 +40,9 @@ def phlower_tensor(
 
     dimension_tensor = _resolve_dimension_arg(dimension)
 
-    return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
+    return PhlowerTensor(
+        tensor=tensor, dimension_tensor=dimension_tensor,
+        is_time_series=is_time_series, is_voxel=is_voxel)
 
 
 def _resolve_dimension_arg(
@@ -77,10 +81,14 @@ class PhlowerTensor(IPhlowerTensor):
         self,
         tensor: torch.Tensor,
         dimension_tensor: PhlowerDimensionTensor | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ):
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
+        self._is_time_series = is_time_series
+        self._is_voxel = is_voxel
 
     @property
     def has_dimension(self) -> bool:
@@ -97,6 +105,14 @@ class PhlowerTensor(IPhlowerTensor):
     @property
     def is_sparse(self) -> bool:
         return self._tensor.layout == torch.sparse_coo
+
+    @property
+    def is_time_series(self) -> bool:
+        return self._is_time_series
+
+    @property
+    def is_voxel(self) -> bool:
+        return self._is_voxel
 
     def __str__(self) -> str:
         return (
@@ -130,6 +146,18 @@ class PhlowerTensor(IPhlowerTensor):
 
     def size(self) -> torch.Size:
         return self._tensor.size()
+
+    def rank(self) -> int:
+        """Returns the tensor rank."""
+        if self.is_sparse:
+            raise NotImplementedError
+        size = self.size()
+        start = 1
+        if self.is_time_series:
+            start += 1
+        if self.is_voxel:
+            start += 2
+        return len(size[start:-1])
 
     def indices(self) -> torch.Tensor:
         return self._tensor.indices()
