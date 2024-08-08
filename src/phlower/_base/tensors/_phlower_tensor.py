@@ -220,11 +220,14 @@ class PhlowerTensor(IPhlowerTensor):
             t_pattern = ""
         if self.is_voxel:
             space_pattern = "x y z "
-            dict_shape.update({
-                "x": shape[space_start],
-                "y": shape[space_start + 1],
-                "z": shape[space_start + 2],
-            })
+            try:
+                dict_shape.update({
+                    "x": shape[space_start],
+                    "y": shape[space_start + 1],
+                    "z": shape[space_start + 2],
+                })
+            except:
+                raise ValueError(self.shape, self.is_time_series, self.is_voxel)
             feat_start = space_start + 3
         else:
             space_pattern = "n "
@@ -325,8 +328,10 @@ class PhlowerTensor(IPhlowerTensor):
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
         # NOTE: Assume flags for the first tensor is preserved
-        is_time_series = args[0].is_time_series
-        is_voxel = args[0].is_voxel
+        is_time_series = _recursive_resolve(
+            args, "_is_time_series", return_first_only=True)
+        is_voxel = _recursive_resolve(
+            args, "_is_voxel", return_first_only=True)
 
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
@@ -344,12 +349,21 @@ class PhlowerTensor(IPhlowerTensor):
 
 
 def _recursive_resolve(
-    args: Iterable | Any, attr: str, allow_none: bool = True
+    args: Iterable | Any, attr: str, allow_none: bool = True,
+    return_first_only: bool = False,
 ) -> list[str]:
     if isinstance(args, tuple | list):
-        return [
-            _recursive_resolve(v, attr, allow_none=allow_none) for v in args
-        ]
+        if return_first_only:
+            return _recursive_resolve(
+                args[0], attr, allow_none=allow_none,
+                return_first_only=return_first_only)
+        else:
+            return [
+                _recursive_resolve(
+                    v, attr, allow_none=allow_none,
+                    return_first_only=return_first_only)
+                for v in args
+            ]
 
     _val = getattr(args, attr, args)
 
