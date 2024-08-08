@@ -43,9 +43,6 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     def __len__(self) -> int: ...
 
     @abc.abstractmethod
-    def __getitem__(self, key) -> IPhlowerTensor: ...
-
-    @abc.abstractmethod
     def to_tensor(self) -> torch.Tensor: ...
 
     @abc.abstractmethod
@@ -53,6 +50,9 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def rank(self) -> int: ...
+
+    @abc.abstractmethod
+    def n_vertices(self) -> int: ...
 
     @abc.abstractmethod
     def indices(self) -> torch.Tensor: ...
