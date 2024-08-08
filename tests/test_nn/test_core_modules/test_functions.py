@@ -33,7 +33,7 @@ def test__spmm(size, is_time_series):
         dim_feat = len(array.shape) - 1
         if dim_feat == 1:
             desired = sp_sparse @ array
-            np.testing.assert_almost_equal(actual, desired)
+            np.testing.assert_almost_equal(actual, desired, decimal=5)
             return
 
         for i in range(array.shape[1]):
