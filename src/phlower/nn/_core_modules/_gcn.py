@@ -87,8 +87,19 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
     def _propagate(
         self, x: PhlowerTensor, support: PhlowerTensor
     ) -> PhlowerTensor:
-        n_node = x.shape[0]
-        h = torch.reshape(x, (n_node, -1))
+        # NOTE: Could be simplified as follows,
+        #       but maybe slow due to reshape running every time
+        # from phlower.nn._core_modules import _utils
+        # h = x
+        # for _ in range(self._repeat):
+        #     h = _functions.spmm(support, h) * self._factor
+        # return h
+
+        h = x.to_2d()
+        pattern = f"{h.current_pattern} -> {h.original_pattern}"
+        dict_shape = h.dict_shape
         for _ in range(self._repeat):
             h = torch.sparse.mm(support, h) * self._factor
-        return torch.reshape(h, x.shape)
+        return h.rearrange(
+            pattern, is_time_series=x.is_time_series, is_voxel=x.is_voxel,
+            **dict_shape)
