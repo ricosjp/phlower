@@ -5,7 +5,7 @@ import torch
 from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
-    PhlowerSparseRankUndefinedError,
+    PhlowerSparseUnsupportedError,
 )
 
 
@@ -87,22 +87,6 @@ def test__tanh():
 
 
 @pytest.mark.parametrize(
-    "key",
-    [
-        3,
-        [1, 3, 4],
-        [True, False, False, True, True],
-    ],
-)
-def test__getitem(key):
-    torch_tensor = torch.rand(5)
-    phlower_tensor = PhlowerTensor(torch_tensor)
-    np.testing.assert_array_almost_equal(
-        phlower_tensor[key].to_tensor(), torch_tensor[key]
-    )
-
-
-@pytest.mark.parametrize(
     "is_time_series, is_voxel, size, desired_rank",
     [
         (False, False, [100, 16], 0),
@@ -126,8 +110,100 @@ def test__rank(is_time_series, is_voxel, size, desired_rank):
     assert phlower_tensor.rank() == desired_rank
 
 
+@pytest.mark.parametrize(
+    "is_time_series, is_voxel, size, desired_n_vertices",
+    [
+        (False, False, [100, 16], 100),
+        (False, False, [100, 3, 16], 100),
+        (False, False, [100, 3, 3, 16], 100),
+        ( True, False, [4, 100, 16], 100),
+        ( True, False, [4, 100, 3, 16], 100),
+        ( True, False, [4, 100, 3, 3, 16], 100),
+        (False,  True, [10, 10, 10, 16], 1000),
+        (False,  True, [10, 10, 10, 3, 16], 1000),
+        (False,  True, [10, 10, 10, 3, 3, 16], 1000),
+        ( True,  True, [4, 10, 10, 10, 16], 1000),
+        ( True,  True, [4, 10, 10, 10, 3, 16], 1000),
+        ( True,  True, [4, 10, 10, 10, 3, 3, 16], 1000),
+    ],
+)
+def test__n_vertices(is_time_series, is_voxel, size, desired_n_vertices):
+    torch_tensor = torch.rand(*size)
+    phlower_tensor = PhlowerTensor(
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+    assert phlower_tensor.n_vertices() == desired_n_vertices
+
+
 def test__raises_phlower_sparse_rank_undefined_error():
     torch_sparse_tensor = torch.eye(5).to_sparse()
     phlower_sparse_tensor = PhlowerTensor(torch_sparse_tensor)
-    with pytest.raises(PhlowerSparseRankUndefinedError):
+    with pytest.raises(PhlowerSparseUnsupportedError):
         phlower_sparse_tensor.rank()
+
+
+@pytest.mark.parametrize(
+    "is_time_series, is_voxel, size, desired_shape",
+    [
+        (False, False, [100, 16], (100, 16)),
+        (False, False, [100, 3, 16], (100, 3 * 16)),
+        (False, False, [100, 3, 3, 16], (100, 3 * 3 * 16)),
+        ( True, False, [4, 100, 16], (100, 4 * 16)),
+        ( True, False, [4, 100, 3, 16], (100, 4 * 3 * 16)),
+        ( True, False, [4, 100, 3, 3, 16], (100, 4 * 3 * 3 * 16)),
+        (False,  True, [10, 10, 10, 16], (1000, 16)),
+        (False,  True, [10, 10, 10, 3, 16], (1000, 3 * 16)),
+        (False,  True, [10, 10, 10, 3, 3, 16], (1000, 3 * 3 * 16)),
+        ( True,  True, [4, 10, 10, 10, 16], (1000, 4 * 16)),
+        ( True,  True, [4, 10, 10, 10, 3, 16], (1000, 4 * 3 * 16)),
+        ( True,  True, [4, 10, 10, 10, 3, 3, 16], (1000, 4 * 3 * 3 * 16)),
+    ],
+)
+def test__to_2d(is_time_series, is_voxel, size, desired_shape):
+    torch_tensor = torch.rand(*size)
+    phlower_tensor = PhlowerTensor(
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+    assert phlower_tensor.to_2d().shape == desired_shape
+
+
+@pytest.mark.parametrize(
+    "is_time_series, is_voxel, size",
+    [
+        (False, False, [100, 16]),
+        (False, False, [100, 3, 16]),
+        (False, False, [100, 3, 3, 16]),
+        ( True, False, [4, 100, 16]),
+        ( True, False, [4, 100, 3, 16]),
+        ( True, False, [4, 100, 3, 3, 16]),
+        (False,  True, [10, 10, 10, 16]),
+        (False,  True, [10, 10, 10, 3, 16]),
+        (False,  True, [10, 10, 10, 3, 3, 16]),
+        ( True,  True, [4, 10, 10, 10, 16]),
+        ( True,  True, [4, 10, 10, 10, 3, 16]),
+        ( True,  True, [4, 10, 10, 10, 3, 3, 16]),
+    ],
+)
+def test__to_from_2d(is_time_series, is_voxel, size):
+    torch_tensor = torch.rand(*size)
+    phlower_tensor = PhlowerTensor(
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+    actual = phlower_tensor.to_2d().from_2d()
+    np.testing.assert_almost_equal(
+        actual.to_tensor().numpy(),
+        phlower_tensor.to_tensor().numpy())
+
+
+@pytest.mark.parametrize(
+    "input_shape, pattern, dict_shape, desired_shape",
+    [
+        ((10, 3, 16), "n p a -> n (p a)", {"a": 16}, (10, 3 * 16)),
+        ((10, 3 * 16), "n (p a) -> n p a", {"p": 3}, (10, 3, 16)),
+    ],
+)
+def test__rearrange(input_shape, pattern, dict_shape, desired_shape):
+    phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
+    actual = phlower_tensor.rearrange(pattern, **dict_shape)
+    assert actual.shape == desired_shape
+    assert actual.dict_shape == dict_shape
+
+    actual_inversed = actual.inverse_rearrange()
+    assert actual_inversed.shape == phlower_tensor.shape
