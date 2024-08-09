@@ -1,0 +1,88 @@
+﻿:orphan:
+
+phlower.settings.PhlowerTrainerSetting
+======================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerTrainerSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerTrainerSetting.model_computed_fields
+      ~PhlowerTrainerSetting.model_config
+      ~PhlowerTrainerSetting.model_extra
+      ~PhlowerTrainerSetting.model_fields
+      ~PhlowerTrainerSetting.model_fields_set
+      ~PhlowerTrainerSetting.loss_setting
+      ~PhlowerTrainerSetting.n_epoch
+      ~PhlowerTrainerSetting.random_seed
+      ~PhlowerTrainerSetting.lr
+      ~PhlowerTrainerSetting.batch_size
+      ~PhlowerTrainerSetting.num_workers
+      ~PhlowerTrainerSetting.device
+      ~PhlowerTrainerSetting.non_blocking
+   
+   

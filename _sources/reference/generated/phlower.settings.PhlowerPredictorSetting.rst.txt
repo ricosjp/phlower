@@ -1,0 +1,41 @@
+﻿:orphan:
+
+phlower.settings.PhlowerPredictorSetting
+========================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerPredictorSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerPredictorSetting.__init__
+   
+   
+      ~PhlowerPredictorSetting.check_valid_selection_mode
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerPredictorSetting.batch_size
+      ~PhlowerPredictorSetting.device
+      ~PhlowerPredictorSetting.log_file_name
+      ~PhlowerPredictorSetting.non_blocking
+      ~PhlowerPredictorSetting.num_workers
+      ~PhlowerPredictorSetting.random_seed
+      ~PhlowerPredictorSetting.saved_setting_filename
+      ~PhlowerPredictorSetting.selection_mode
+   
+   

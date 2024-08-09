@@ -1,0 +1,28 @@
+﻿:orphan:
+
+phlower.services.predictor.PhlowerPredictor
+===========================================
+
+.. currentmodule:: phlower.services.predictor
+
+.. autoclass:: PhlowerPredictor
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerPredictor.__init__
+   
+   
+      ~PhlowerPredictor.predict
+   
+   
+
+
+
+   
+   
+   

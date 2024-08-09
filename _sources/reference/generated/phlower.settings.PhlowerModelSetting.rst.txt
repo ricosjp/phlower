@@ -1,0 +1,82 @@
+﻿:orphan:
+
+phlower.settings.PhlowerModelSetting
+====================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerModelSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerModelSetting.model_computed_fields
+      ~PhlowerModelSetting.model_config
+      ~PhlowerModelSetting.model_extra
+      ~PhlowerModelSetting.model_fields
+      ~PhlowerModelSetting.model_fields_set
+      ~PhlowerModelSetting.variable_dimensions
+      ~PhlowerModelSetting.network
+   
+   

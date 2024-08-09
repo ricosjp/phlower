@@ -1,0 +1,64 @@
+﻿:orphan:
+
+phlower.PhlowerTensor
+=====================
+
+.. currentmodule:: phlower
+
+.. autoclass:: PhlowerTensor
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerTensor.__init__
+   
+   
+      ~PhlowerTensor.backward
+   
+   
+      ~PhlowerTensor.coalesce
+   
+   
+      ~PhlowerTensor.detach
+   
+   
+      ~PhlowerTensor.indices
+   
+   
+      ~PhlowerTensor.reshape
+   
+   
+      ~PhlowerTensor.size
+   
+   
+      ~PhlowerTensor.slice
+   
+   
+      ~PhlowerTensor.to
+   
+   
+      ~PhlowerTensor.to_tensor
+   
+   
+      ~PhlowerTensor.values
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerTensor.dimension
+      ~PhlowerTensor.has_dimension
+      ~PhlowerTensor.is_sparse
+      ~PhlowerTensor.shape
+   
+   

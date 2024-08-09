@@ -1,0 +1,40 @@
+﻿:orphan:
+
+phlower.PhlowerDimensionTensor
+==============================
+
+.. currentmodule:: phlower
+
+.. autoclass:: PhlowerDimensionTensor
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerDimensionTensor.__init__
+   
+   
+      ~PhlowerDimensionTensor.detach
+   
+   
+      ~PhlowerDimensionTensor.from_list
+   
+   
+      ~PhlowerDimensionTensor.to
+   
+   
+      ~PhlowerDimensionTensor.to_dict
+   
+   
+      ~PhlowerDimensionTensor.to_physics_dimension
+   
+   
+
+
+
+   
+   
+   
