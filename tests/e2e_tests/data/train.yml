@@ -2,10 +2,14 @@
 training:
   batch_size: 1
   random_seed: 0
-  lr: 0.0001
   loss_setting:
     name2loss:
       nodal_last_u: "mse"
+  optimizer_setting:
+    optimizer: SGD
+    parameters:
+      lr: 0.0001
+
 
 model:
   variable_dimensions:

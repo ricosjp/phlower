@@ -11,6 +11,7 @@ from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
 from phlower.io import PhlowerCheckpointFile, PhlowerYamlFile
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
+from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.services.trainer._trainer_logger import LogRecord, LogRecordIO
 from phlower.settings import (
     PhlowerModelSetting,
@@ -58,8 +59,8 @@ class PhlowerTrainer:
             self._model_setting.network
         )
         self._model.to(self._trainer_setting.device)
-        self._optimizer = torch.optim.SGD(
-            self._model.parameters(), lr=self._trainer_setting.lr, momentum=0.9
+        self._scheduled_optimizer = PhlowerOptimizerWrapper.from_setting(
+            self._trainer_setting, model=self._model
         )
         self._timer = StopWatch()
 
@@ -121,7 +122,7 @@ class PhlowerTrainer:
             self._model.train()
             for tr_batch in train_loader:
                 tr_batch: LumpedTensorData
-                self._optimizer.zero_grad()
+                self._scheduled_optimizer.zero_grad()
 
                 h = self._model.forward(
                     tr_batch.x_data, supports=tr_batch.sparse_supports
@@ -133,12 +134,13 @@ class PhlowerTrainer:
                 loss = loss_function.aggregate(losses)
                 train_losses.append(loss.detach().to_tensor().float().item())
                 loss.backward()
-                self._optimizer.step()
+                self._scheduled_optimizer.step_optimizer()
 
                 _train_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
                     desc=f"batch train loss: {train_losses[-1]:.3f}",
                 )
+            self._scheduled_optimizer.step_scheduler()
 
             self._model.eval()
             for val_batch in validation_loader:
@@ -216,7 +218,7 @@ class PhlowerTrainer:
             "epoch": epoch,
             "validation_loss": validation_loss,
             "model_state_dict": self._model.state_dict(),
-            "optimizer_state_dict": self._optimizer.state_dict(),
+            "optimizer_state_dict": self._scheduled_optimizer.state_dict(),
         }
         prefix = PhlowerCheckpointFile.get_fixed_prefix()
         file_basename = f"{prefix}{epoch}"
