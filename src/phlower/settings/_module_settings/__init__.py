@@ -9,14 +9,20 @@ from phlower.settings._module_settings._en_equivariant_mlp_setting import (
     EnEquivariantMLPSetting,
 )
 from phlower.settings._module_settings._gcn_setting import GCNSetting
+from phlower.settings._module_settings._identity_setting import IdentitySetting
 from phlower.settings._module_settings._mlp_setting import MLPSetting
+from phlower.settings._module_settings._proportional_setting import (
+    ProportionalSetting,
+)
 from phlower.settings._module_settings._share_setting import ShareSetting
 
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
+    "Concatenator": ConcatenatorSetting,
     "EnEquivariantMLP": EnEquivariantMLPSetting,
     "GCN": GCNSetting,
+    "Identity": IdentitySetting,
     "MLP": MLPSetting,
-    "Concatenator": ConcatenatorSetting,
+    "Proportional": ProportionalSetting,
     "Share": ShareSetting,
 }
 

@@ -10,16 +10,11 @@ from phlower.settings._interface import (
 )
 
 
-class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
+class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     nodes: list[int] = Field(
         ...
     )  # This property only overwritten when resolving.
-    activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
-    bias: bool = Field(False, frozen=True)
-    create_linear_weight: bool = Field(False, frozen=True)
-    norm_function_name: str = Field(
-        default_factory=lambda: 'identity', frozen=True)
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
@@ -29,7 +24,7 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if len(vals) < 2:
+        if len(vals) == 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in "
                 "EnEquivariantMLPSetting. input: {vals}"
@@ -43,7 +38,7 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 continue
 
             raise ValueError(
-                "nodes in EnEquivariantMLPSetting is inconsistent. "
+                "nodes in ProportionalSetting is inconsistent. "
                 f"value {v} in {i}-th of nodes is not allowed."
             )
 
@@ -51,13 +46,7 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
-        if len(self.nodes) - 1 != len(self.activations):
-            raise ValueError(
-                "Size of nodes and activations is not compatible "
-                "in EnEquivariantMLPSetting."
-                " len(nodes) must be equal to 1 + len(activations)."
-            )
-        return self
+        pass
 
     def get_n_nodes(self) -> list[int] | None:
         return self.nodes

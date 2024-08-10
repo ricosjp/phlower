@@ -3,6 +3,7 @@ from collections.abc import Callable
 import torch
 
 from phlower._base.tensors import PhlowerTensor
+from phlower.nn._core_modules import _functions
 
 
 class ExtendedLinearList(torch.nn.Module):
@@ -10,13 +11,15 @@ class ExtendedLinearList(torch.nn.Module):
         self,
         nodes: list[int],
         activations: list[str],
-        dropouts: list[float],
         bias: bool,
+        dropouts: list[float] | None = None,
     ) -> None:
         super().__init__()
 
         self._nodes = nodes
         self._activations = activations
+        if dropouts is None:
+            dropouts = []
         self._dropouts = dropouts
         self._validate_args()
 
@@ -39,7 +42,7 @@ class ExtendedLinearList(torch.nn.Module):
     def __len__(self) -> int:
         return len(self._linears)
 
-    def forward(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
+    def forward_part(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
 
         h = self._linears[index](x)
@@ -47,6 +50,12 @@ class ExtendedLinearList(torch.nn.Module):
             h, p=self._dropouts[index], training=self.training
         )
         h = self._activators[index](h)
+        return h
+
+    def forward(self, x: PhlowerTensor) -> PhlowerTensor:
+        h = x
+        for i in range(self._n_chains - 1):
+            h = self.forward_part(h, index=i)
         return h
 
     def _validate_args(self) -> None:
@@ -65,19 +74,19 @@ class ExtendedLinearList(torch.nn.Module):
         assert len(self._nodes) == len(self._dropouts) + 1
 
 
-def identity(x):
-    return x
-
-
 class ActivationSelector:
     _REGISTERED_ACTIVATIONS = {
-        "identity": identity,
+        "identity": _functions.identity,
         "relu": torch.relu,
+        "sigmoid": torch.sigmoid,
+        "sqrt": torch.sqrt,
         "tanh": torch.tanh,
     }
 
     @staticmethod
-    def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
+    def select(name: str | None) -> Callable[[torch.Tensor], torch.Tensor]:
+        if name is None:
+            name = "identity"
         return ActivationSelector._REGISTERED_ACTIVATIONS[name]
 
     @staticmethod

@@ -71,3 +71,6 @@ class PhlowerIncompatibleTensorError(ValueError):
     This error raises when trying to perform an operation for incompatible
     tensor(s)
     """
+
+class PhlowerTypeError(TypeError):
+    """This error raises when type is not compatible with what is expected."""

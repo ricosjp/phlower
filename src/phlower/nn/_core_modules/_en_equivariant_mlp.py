@@ -5,7 +5,7 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _utils
+from phlower.nn._core_modules import Identity, Proportional, _functions, _utils
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -47,6 +47,8 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
         bias: bool = False,
+        create_linear_weight: bool = False,
+        norm_function_name: str = None,
     ) -> None:
         super().__init__()
 
@@ -56,10 +58,25 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             dropouts = []
 
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
-        )
+            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias)
         self._nodes = nodes
         self._activations = activations
+        self._create_linear_weight = create_linear_weight
+        self._norm_function_name = norm_function_name
+
+        self._linear_weight = self._init_linear_weight()
+        self._norm_function = _utils.ActivationSelector.select(
+            self._norm_function_name)
+
+    def _init_linear_weight(self):
+        if not self._create_linear_weight:
+            if self._nodes[0] != self._nodes[-1]:
+                raise ValueError(
+                    "First and last nodes are different. "
+                    "Set create_linear_weight True.")
+            return Identity()
+
+        return Proportional([self._nodes[0], self._nodes[-1]])
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -86,7 +103,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        h = data.unique_item()
-        for i in range(len(self._chains)):
-            h = self._chains.forward(h, index=i)
-        return h
+        x = data.unique_item()
+        linear_x = self._linear_weight(data)
+        h = self._chains(self._norm_function(_functions.contraction(x)))
+        return _functions.tensor_product(linear_x, h)

@@ -21,6 +21,7 @@ from phlower.utils import get_logger
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
     PhlowerSparseUnsupportedError,
+    PhlowerTypeError,
     PhlowerUnsupportedTorchFunctionError,
 )
 
@@ -100,7 +101,9 @@ class PhlowerTensor(IPhlowerTensor):
         is_time_series: bool = False,
         is_voxel: bool = False,
     ):
-        assert isinstance(tensor, torch.Tensor)
+        if not isinstance(tensor, torch.Tensor):
+            raise PhlowerTypeError(
+                f"Expect torch.Tensor but {tensor.__class__} was fed")
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
         self._is_time_series = is_time_series
@@ -153,6 +156,9 @@ class PhlowerTensor(IPhlowerTensor):
 
     def to_tensor(self) -> torch.Tensor:
         return self._tensor
+
+    def to_numpy(self) -> np.ndarray:
+        return self._tensor.cpu().detach().numpy()
 
     def coalesce(self) -> torch.Tensor:
         return PhlowerTensor(self._tensor.coalesce(), self._dimension_tensor)
