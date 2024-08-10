@@ -61,15 +61,21 @@ def test__spmm(size, is_time_series, repeat):
 
 
 def test_leaky_relu0p5_inverse_leaky_relu0p5():
-    x = PhlowerTensor(torch.rand(100))
+    x = PhlowerTensor(torch.rand(100)) * 4 - 2.
     y = _functions.inversed_leaky_relu0p5(_functions.leaky_relu0p5(x))
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
 
 
 def test_tanh_truncated_atanh():
-    x = PhlowerTensor(torch.rand(100))
+    x = PhlowerTensor(torch.rand(100)) * 4 - 2
     y = _functions.truncated_atanh(torch.tanh(x))
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
+
+
+def test_smooth_leaky_relu_inverse():
+    x = PhlowerTensor(torch.rand(100)) * 4 - 2
+    y = _functions.inversed_smooth_leaky_relu(_functions.smooth_leaky_relu(x))
+    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)
 
 
 @pytest.mark.parametrize(

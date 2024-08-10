@@ -73,6 +73,8 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
             return "identity"
         if activation_name == "leaky_relu0p5":
             return "inversed_leaky_relu0p5"
+        if activation_name == "smooth_leaky_relu":
+            return "inversed_smooth_leaky_relu"
         if activation_name == "tanh":
             return "truncated_atanh"
 

@@ -5,11 +5,11 @@ import torch
 
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
-from phlower.nn import MLP, PinvMLP
+from phlower.nn import MLP, PInvMLP
 
 
 def test__can_call_parameters():
-    model = PinvMLP(reference_name="MLP0")
+    model = PInvMLP(reference_name="MLP0")
     MLP0 = MLP(nodes=[10, 10])
     model._reference = MLP0
 
@@ -18,17 +18,18 @@ def test__can_call_parameters():
 
 
 @pytest.mark.parametrize(
-    "mlp_nodes, activations",
+    "mlp_nodes, activations, decimal",
     [
-        ([10, 10], ["identity"]),
-        ([10, 12], ["leaky_relu0p5"]),
-        ([20, 40, 100], ["tanh", "identity"])
+        ([10, 10], ["identity"], 5),
+        ([10, 12], ["leaky_relu0p5"], 5),
+        ([20, 40, 100], ["tanh", "identity"], 5),
+        ([20, 20, 40, 100], ["tanh", "smooth_leaky_relu", "leaky_relu0p5"], 3),
     ],
 )
-def test__pinv_mlp(mlp_nodes, activations):
+def test__pinv_mlp(mlp_nodes, activations, decimal):
     MLP0 = MLP(nodes=mlp_nodes, activations=activations)
 
-    model = PinvMLP(reference_name="MLP0")
+    model = PInvMLP(reference_name="MLP0")
     model._reference = MLP0
     model._initialize()
 
@@ -39,4 +40,4 @@ def test__pinv_mlp(mlp_nodes, activations):
     pinv_val = model(phlower_tensor_collection({"tensor": mlp_val}))
 
     np.testing.assert_array_almost_equal(
-        pinv_val.to_numpy(), t.to_numpy(), decimal=5)
+        pinv_val.to_numpy(), t.to_numpy(), decimal=decimal)

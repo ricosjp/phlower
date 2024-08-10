@@ -29,6 +29,22 @@ def truncated_atanh(x, epsilon=1e-8):
     return torch.atanh(x)
 
 
+def smooth_leaky_relu(x):
+    """Smooth leaky ReLU"""
+    # a x + (1 - a) x sqrt(x**2 + b)
+    # return 0.75 * x + 0.25 * (x**2 + 1 / 16)**.5  # b = 1 / 16
+    return 0.75 * x + 0.25 * (x**2 + 1 / 100)**.5  # b = 1 / 100
+
+
+def inversed_smooth_leaky_relu(x):
+    # return 1.5 * x - 1 / 16 * torch.sqrt((8 * x)**2 + 2)  # b = 1 / 16
+    return 1.5 * x - 1 / 40 * torch.sqrt(400 * x**2 + 2)  # b = 1 / 100
+
+
+def derivative_smooth_leaky_relu(x):
+    # return 0.75 + 0.25 * x / torch.sqrt(x**2 + 1 / 16)  # b = 1 / 16
+    return 0.75 + 0.25 * x / torch.sqrt(x**2 + 1 / 100)
+
 def spmm(
         sparse: IPhlowerTensor, x: IPhlowerTensor,
         repeat: int = 1) -> IPhlowerTensor:

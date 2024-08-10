@@ -169,6 +169,12 @@ class PhlowerTensor(IPhlowerTensor):
     def __mul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
 
+    def __rmul__(self, other) -> PhlowerTensor:
+        return torch.mul(self, other)
+
+    def __pow__(self, other) -> PhlowerTensor:
+        return torch.pow(self, other)
+
     def __setitem__(self, key, value):
         if isinstance(key, PhlowerTensor):
             self._tensor[key.to_tensor()] = value
