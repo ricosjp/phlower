@@ -64,3 +64,10 @@ class PhlowerReshapeError(ValueError):
     """
 
 class NotFoundReferenceModuleError(ValueError): ...
+
+
+class PhlowerIncompatibleTensorError(ValueError):
+    """
+    This error raises when trying to perform an operation for incompatible
+    tensor(s)
+    """

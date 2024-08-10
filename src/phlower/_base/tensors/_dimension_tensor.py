@@ -43,8 +43,8 @@ class PhlowerDimensionTensor:
 
         Args:
             values (list[float] | tuple[float]): list or tuple
-                if length of values is not equal to the number of registered dimension type,
-                raise ValueError.
+                if length of values is not equal to the number of registered
+                dimension type, raise ValueError.
 
         Returns:
             PhlowerDimensionTensor: tensor object
@@ -75,6 +75,9 @@ class PhlowerDimensionTensor:
 
     def __add__(self, __value: object):
         return torch.add(self, __value)
+
+    def __mul__(self, __value: object):
+        return torch.mul(self, __value)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PhlowerDimensionTensor):

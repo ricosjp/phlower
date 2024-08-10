@@ -34,6 +34,8 @@ def phlower_tensor(
         | PhlowerDimensionTensor
         | torch.Tensor
         | dict[str, float]
+        | list[float]
+        | tuple[float]
         | None
     ) = None,
     is_time_series: bool = False,
@@ -59,6 +61,8 @@ def _resolve_dimension_arg(
     | PhlowerDimensionTensor
     | torch.Tensor
     | dict[str, float]
+    | list[float]
+    | tuple[float]
     | None,
 ) -> PhlowerDimensionTensor | None:
     if inputs is None:
@@ -72,6 +76,9 @@ def _resolve_dimension_arg(
 
     if isinstance(inputs, dict | PhysicalDimensions):
         return phlower_dimension_tensor(inputs)
+
+    if isinstance(inputs, list | tuple):
+        return PhlowerDimensionTensor.from_list(inputs)
 
     raise NotImplementedError(
         f"{type(inputs)} is not implemented "
