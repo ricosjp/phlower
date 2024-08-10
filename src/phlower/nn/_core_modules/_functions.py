@@ -32,11 +32,13 @@ def truncated_atanh(x, epsilon=1e-8):
 def smooth_leaky_relu(x):
     """Smooth leaky ReLU"""
     # a x + (1 - a) x sqrt(x**2 + b)
+    # return 0.75 * x + 0.25 * (x**2 + 8)**.5  # b = 8
     # return 0.75 * x + 0.25 * (x**2 + 1 / 16)**.5  # b = 1 / 16
     return 0.75 * x + 0.25 * (x**2 + 1 / 100)**.5  # b = 1 / 100
 
 
 def inversed_smooth_leaky_relu(x):
+    # return 1.5 * x - ((0.5 * x)**2 + 1)**.5  # b = 8
     # return 1.5 * x - 1 / 16 * torch.sqrt((8 * x)**2 + 2)  # b = 1 / 16
     return 1.5 * x - 1 / 40 * torch.sqrt(400 * x**2 + 2)  # b = 1 / 100
 
