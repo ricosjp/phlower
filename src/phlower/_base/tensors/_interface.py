@@ -9,22 +9,28 @@ from phlower._base.tensors import PhlowerDimensionTensor
 
 
 class IPhlowerTensor(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def has_dimension(self) -> bool: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def dimension(self) -> PhlowerDimensionTensor | None: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def shape(self) -> torch.Size: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_sparse(self) -> bool: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_time_series(self) -> bool: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_voxel(self) -> bool: ...
 
     @abc.abstractmethod
