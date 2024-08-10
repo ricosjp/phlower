@@ -158,11 +158,11 @@ def test__raises_phlower_sparse_rank_undefined_error():
         ( True,  True, [4, 10, 10, 10, 3, 3, 16], (1000, 4 * 3 * 3 * 16)),
     ],
 )
-def test__to_2d(is_time_series, is_voxel, size, desired_shape):
+def test__to_vertexwise(is_time_series, is_voxel, size, desired_shape):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
-    assert phlower_tensor.to_2d().shape == desired_shape
+    assert phlower_tensor.to_vertexwise()[0].shape == desired_shape
 
 
 @pytest.mark.parametrize(
@@ -182,11 +182,17 @@ def test__to_2d(is_time_series, is_voxel, size, desired_shape):
         ( True,  True, [4, 10, 10, 10, 3, 3, 16]),
     ],
 )
-def test__to_from_2d(is_time_series, is_voxel, size):
+def test__to_vertexwise_inverse(is_time_series, is_voxel, size):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
-    actual = phlower_tensor.to_2d().from_2d()
+    vertexwise, original_pattern, resultant_pattern, dict_shape\
+        = phlower_tensor.to_vertexwise()
+    assert len(vertexwise.shape) == 2
+    pattern = f"{resultant_pattern} -> {original_pattern}"
+    actual = vertexwise.rearrange(
+        pattern, is_time_series=is_time_series, is_voxel=is_voxel,
+        **dict_shape)
     np.testing.assert_almost_equal(
         actual.to_tensor().numpy(),
         phlower_tensor.to_tensor().numpy())
@@ -203,7 +209,3 @@ def test__rearrange(input_shape, pattern, dict_shape, desired_shape):
     phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
     actual = phlower_tensor.rearrange(pattern, **dict_shape)
     assert actual.shape == desired_shape
-    assert actual.dict_shape == dict_shape
-
-    actual_inversed = actual.inverse_rearrange()
-    assert actual_inversed.shape == phlower_tensor.shape

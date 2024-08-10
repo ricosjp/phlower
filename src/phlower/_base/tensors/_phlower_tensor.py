@@ -20,7 +20,6 @@ from phlower._base.tensors._unsupported_function_names import (
 from phlower.utils import get_logger
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
-    PhlowerReshapeError,
     PhlowerSparseUnsupportedError,
     PhlowerUnsupportedTorchFunctionError,
 )
@@ -93,18 +92,12 @@ class PhlowerTensor(IPhlowerTensor):
         dimension_tensor: PhlowerDimensionTensor | None = None,
         is_time_series: bool = False,
         is_voxel: bool = False,
-        original_pattern: str | None = None,
-        current_pattern: str | None = None,
-        dict_shape: dict[str, int] | None = None,
     ):
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
         self._is_time_series = is_time_series
         self._is_voxel = is_voxel
-        self._original_pattern = original_pattern
-        self._current_pattern = current_pattern
-        self._dict_shape = dict_shape
 
     @property
     def has_dimension(self) -> bool:
@@ -129,18 +122,6 @@ class PhlowerTensor(IPhlowerTensor):
     @property
     def is_voxel(self) -> bool:
         return self._is_voxel
-
-    @property
-    def original_pattern(self) -> str | None:
-        return self._original_pattern
-
-    @property
-    def current_pattern(self) -> str | None:
-        return self._current_pattern
-
-    @property
-    def dict_shape(self) -> dict[str, int] | None:
-        return self._dict_shape
 
     def __str__(self) -> str:
         return (
@@ -206,8 +187,20 @@ class PhlowerTensor(IPhlowerTensor):
     def values(self) -> torch.Tensor:
         return self._tensor.values()
 
-    def to_2d(self) -> PhlowerTensor:
-        """Convert to 2D tensor which has (n_vertices, -1) shape"""
+    def to_vertexwise(self) -> PhlowerTensor:
+        """
+        Convert to vertexwise 2D tensor which has (n_vertices, -1) shape.
+
+        Returns:
+            vertexwise_tensor : PhlowerTensor
+                Vertexwise PhlowerTensor object.
+            original_pattern : str
+                Pattern of the original shape. Can be used for rearrange.
+            resultant_pattern : str
+                Pattern of the resultant shape. Can be used for rearrange.
+            dict_shape : dict[str, int]
+                Dict of original shape. Can be used for rearrange.
+        """
         shape = self.shape
         dict_shape = {}
 
@@ -220,14 +213,11 @@ class PhlowerTensor(IPhlowerTensor):
             t_pattern = ""
         if self.is_voxel:
             space_pattern = "x y z "
-            try:
-                dict_shape.update({
-                    "x": shape[space_start],
-                    "y": shape[space_start + 1],
-                    "z": shape[space_start + 2],
-                })
-            except:
-                raise ValueError(self.shape, self.is_time_series, self.is_voxel)
+            dict_shape.update({
+                "x": shape[space_start],
+                "y": shape[space_start + 1],
+                "z": shape[space_start + 2],
+            })
             feat_start = space_start + 3
         else:
             space_pattern = "n "
@@ -241,49 +231,23 @@ class PhlowerTensor(IPhlowerTensor):
             f"a{i}": s for i, s in enumerate(shape[feat_start:-1])})
 
         original_pattern = f"{t_pattern}{space_pattern}{feat_pattern}"
-        current_pattern = f"({space_pattern}) ({t_pattern}{feat_pattern})"
+        resultant_pattern = f"({space_pattern}) ({t_pattern}{feat_pattern})"
         tensor_2d = einops.rearrange(
-            self.to_tensor(), f"{original_pattern} -> {current_pattern}")
+            self.to_tensor(), f"{original_pattern} -> {resultant_pattern}")
         return PhlowerTensor(
             tensor_2d, dimension_tensor=self.dimension,
-            is_time_series=False, is_voxel=False,
-            original_pattern=original_pattern,
-            current_pattern=current_pattern,
-            dict_shape=dict_shape)
-
-    def from_2d(self) -> PhlowerTensor:
-        if self.original_pattern is None:
-            raise PhlowerReshapeError(
-                "No original_pattern found. Run to_2d first.")
-        is_time_series = "t" in self.original_pattern
-        is_voxel = "x" in self.original_pattern
-        return self.inverse_rearrange(
-            is_time_series=is_time_series, is_voxel=is_voxel)
+            is_time_series=False, is_voxel=False), \
+            original_pattern, resultant_pattern, dict_shape
 
     def rearrange(
             self, pattern: str,
             is_time_series: bool = False, is_voxel: bool = False,
             **kwargs) -> PhlowerTensor:
         tensor = self.to_tensor()
-        original_pattern, current_pattern = pattern.split("->")
         rearranged = einops.rearrange(tensor, pattern, **kwargs)
         return PhlowerTensor(
             rearranged, dimension_tensor=self.dimension,
-            is_time_series=is_time_series, is_voxel=is_voxel,
-            original_pattern=original_pattern, current_pattern=current_pattern,
-            dict_shape=kwargs)
-
-    def inverse_rearrange(
-            self, is_time_series: bool = False, is_voxel: bool = False,
-            **kwargs) -> PhlowerTensor:
-        if self.original_pattern is None:
-            raise PhlowerReshapeError(
-                "No original_pattern found. Run rearrange first.")
-        pattern = f"{self.current_pattern} -> {self.original_pattern}"
-        kwargs.update(self.dict_shape)
-        return self.rearrange(
-            pattern, is_time_series=is_time_series, is_voxel=is_voxel,
-            **kwargs)
+            is_time_series=is_time_series, is_voxel=is_voxel)
 
     def reshape(
         self, shape: Sequence[int],
