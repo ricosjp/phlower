@@ -64,9 +64,11 @@ class NdArrayWrapper(IPhlowerArray):
         device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimension: PhysicalDimensions | None = None,
-        is_time_series: bool = False,
+        is_time_series: bool | None = None,
         is_voxel: bool = False,
     ) -> PhlowerTensor:
+        if is_time_series is None:
+            is_time_series = self.is_time_series
         _tensor = phlower_tensor(
             tensor=torch.from_numpy(self.data), dimension=dimension,
             is_time_series=is_time_series, is_voxel=is_voxel,
