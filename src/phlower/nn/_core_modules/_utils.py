@@ -77,10 +77,13 @@ class ExtendedLinearList(torch.nn.Module):
 class ActivationSelector:
     _REGISTERED_ACTIVATIONS = {
         "identity": _functions.identity,
+        "inversed_leaky_relu0p5": _functions.inversed_leaky_relu0p5,
+        "leaky_relu0p5": _functions.leaky_relu0p5,
         "relu": torch.relu,
         "sigmoid": torch.sigmoid,
         "sqrt": torch.sqrt,
         "tanh": torch.tanh,
+        "truncated_atanh": _functions.truncated_atanh,
     }
 
     @staticmethod

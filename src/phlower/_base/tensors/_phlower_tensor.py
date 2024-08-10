@@ -139,17 +139,42 @@ class PhlowerTensor(IPhlowerTensor):
             f"Dimension: {self._dimension_tensor})"
         )
 
+    def __eq__(self, other):
+        return torch.eq(self, other)
+
+    def __lt__(self, other):
+        return torch.lt(self, other)
+
+    def __le__(self, other):
+        return torch.le(self, other)
+
+    def __gt__(self, other):
+        return torch.gt(self, other)
+
+    def __ge__(self, other):
+        return torch.ge(self, other)
+
     def __abs__(self) -> PhlowerTensor:
         return torch.abs(self)
 
     def __sub__(self, other: PhlowerTensor):
         return torch.subtract(self, other)
 
+    def __neg__(self):
+        return torch.neg(self)
+
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
 
     def __mul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
+
+    def __setitem__(self, key, value):
+        if isinstance(key, PhlowerTensor):
+            self._tensor[key.to_tensor()] = value
+        else:
+            self._tensor[key] = value
+        return self
 
     def __len__(self) -> int:
         return len(self._tensor)

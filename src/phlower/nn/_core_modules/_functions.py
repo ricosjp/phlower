@@ -12,6 +12,23 @@ def identity(x):
     return x
 
 
+def leaky_relu0p5(x):
+    """Leaky ReLU with the negative slope = 0.5."""
+    return torch.nn.functional.leaky_relu(x, negative_slope=0.5)
+
+
+def inversed_leaky_relu0p5(x):
+    """Inverse of leaky_relu0p5."""
+    return torch.nn.functional.leaky_relu(x, negative_slope=2)
+
+
+def truncated_atanh(x, epsilon=1e-8):
+    """Inverse tanh with truncating values >=1 or <=-1."""
+    x[x>=1. - epsilon] = 1. - epsilon
+    x[x<=-1. + epsilon] = -1. + epsilon
+    return torch.atanh(x)
+
+
 def spmm(
         sparse: IPhlowerTensor, x: IPhlowerTensor,
         repeat: int = 1) -> IPhlowerTensor:
