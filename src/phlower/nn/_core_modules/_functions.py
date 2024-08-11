@@ -29,7 +29,7 @@ def truncated_atanh(x, epsilon=1e-8):
     return torch.atanh(x)
 
 
-class SmoothLeakyReLU():
+class SmoothLeakyReLU:
     """Smooth leaky ReLU"""
 
     def __init__(self, a: float = 0.75, b: float = 1 / 100):
