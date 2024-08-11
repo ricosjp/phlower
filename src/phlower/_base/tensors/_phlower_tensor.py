@@ -166,11 +166,17 @@ class PhlowerTensor(IPhlowerTensor):
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
 
+    def __radd__(self, other) -> PhlowerTensor:
+        return torch.add(self, other)
+
     def __mul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
 
     def __rmul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
+
+    def __truediv__(self, other) -> PhlowerTensor:
+        return torch.div(self, other)
 
     def __pow__(self, other) -> PhlowerTensor:
         return torch.pow(self, other)

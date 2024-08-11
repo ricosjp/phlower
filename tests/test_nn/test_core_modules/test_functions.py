@@ -74,7 +74,8 @@ def test_tanh_truncated_atanh():
 
 def test_smooth_leaky_relu_inverse():
     x = PhlowerTensor(torch.rand(100)) * 4 - 2
-    y = _functions.inversed_smooth_leaky_relu(_functions.smooth_leaky_relu(x))
+    f = _functions.SmoothLeakyReLU()
+    y = f.inverse(f(x))
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)
 
 

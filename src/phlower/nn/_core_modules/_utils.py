@@ -75,14 +75,16 @@ class ExtendedLinearList(torch.nn.Module):
 
 
 class ActivationSelector:
+    _SMOOTH_LEAKY_RELU = _functions.SmoothLeakyReLU()
+
     _REGISTERED_ACTIVATIONS = {
         "identity": _functions.identity,
         "inversed_leaky_relu0p5": _functions.inversed_leaky_relu0p5,
-        "inversed_smooth_leaky_relu": _functions.inversed_smooth_leaky_relu,
+        "inversed_smooth_leaky_relu": _SMOOTH_LEAKY_RELU.inverse,
         "leaky_relu0p5": _functions.leaky_relu0p5,
         "relu": torch.relu,
         "sigmoid": torch.sigmoid,
-        "smooth_leaky_relu": _functions.smooth_leaky_relu,
+        "smooth_leaky_relu": _SMOOTH_LEAKY_RELU,
         "sqrt": torch.sqrt,
         "tanh": torch.tanh,
         "truncated_atanh": _functions.truncated_atanh,
