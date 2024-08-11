@@ -572,3 +572,57 @@ def test_apply_orthogonal_group(
         np.testing.assert_almost_equal(actual_dimension, desired_dimension)
     else:
         assert actual.dimension is None
+
+
+@pytest.mark.parametrize(
+    "size, is_time_series, is_voxel, mean_dims",
+    [
+        ((10, 1), False, False, [0]),
+        ((10, 16), False, False, [0]),
+        ((10, 3, 16), False, False, [0]),
+        ((10, 3, 3, 16), False, False, [0]),
+        ((4, 10, 1), True, False, [1]),
+        ((4, 10, 16), True, False, [1]),
+        ((4, 10, 3, 16), True, False, [1]),
+        ((4, 10, 3, 3, 16), True, False, [1]),
+        ((10, 10, 10, 1), False, True, [0, 1, 2]),
+        ((10, 10, 10, 16), False, True, [0, 1, 2]),
+        ((10, 10, 10, 3, 16), False, True, [0, 1, 2]),
+        ((10, 10, 10, 3, 3, 16), False, True, [0, 1, 2]),
+        ((4, 10, 10, 10, 1), True, True, [1, 2, 3]),
+        ((4, 10, 10, 10, 16), True, True, [1, 2, 3]),
+        ((4, 10, 10, 10, 3, 16), True, True, [1, 2, 3]),
+        ((4, 10, 10, 10, 3, 3, 16), True, True, [1, 2, 3]),
+    ],
+)
+@pytest.mark.parametrize(
+    "dimension",
+    [
+        None,
+        [[-1], [2], [0], [0], [0], [0], [0]],
+        [[1], [0], [1], [0], [0], [0], [0]],
+        [[-1], [-1], [2], [0], [1], [0], [0]],
+    ],
+)
+def test_spatial_mean(
+        size, is_time_series, is_voxel, mean_dims, dimension):
+    torch_tensor = torch.rand(*size)
+    x = phlower_tensor(
+        torch_tensor, dimension=dimension,
+        is_time_series=is_time_series, is_voxel=is_voxel)
+    actual = _functions.spatial_mean(x)
+
+    desired = torch_tensor
+    for dim in mean_dims:
+        desired = torch.mean(desired, dim=dim, keepdim=True)
+    np.testing.assert_almost_equal(
+        actual.to_numpy(), desired.numpy(), decimal=5)
+
+    assert actual.is_time_series == is_time_series
+    assert actual.is_voxel == is_voxel
+
+    if dimension is not None:
+        actual_dimension = actual.dimension._tensor.numpy()
+        np.testing.assert_almost_equal(actual_dimension, dimension)
+    else:
+        assert actual.dimension is None

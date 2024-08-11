@@ -158,7 +158,7 @@ class PhlowerTensor(IPhlowerTensor):
         return torch.abs(self)
 
     def __sub__(self, other: PhlowerTensor):
-        return torch.subtract(self, other)
+        return torch.sub(self, other)
 
     def __neg__(self):
         return torch.neg(self)
@@ -177,6 +177,9 @@ class PhlowerTensor(IPhlowerTensor):
 
     def __truediv__(self, other) -> PhlowerTensor:
         return torch.div(self, other)
+
+    def __rtruediv__(self, other) -> PhlowerTensor:
+        return torch.div(other, self)
 
     def __pow__(self, other) -> PhlowerTensor:
         return torch.pow(self, other)
@@ -202,6 +205,9 @@ class PhlowerTensor(IPhlowerTensor):
 
     def size(self) -> torch.Size:
         return self._tensor.size()
+
+    def numel(self) -> int:
+        return torch.numel(self._tensor)
 
     def rank(self) -> int:
         """Returns the tensor rank."""

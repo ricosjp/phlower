@@ -47,6 +47,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def values(self): ...
 
     @abc.abstractmethod
+    def pop(self): ...
+
+    @abc.abstractmethod
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor: ...
 
     @abc.abstractmethod
@@ -91,6 +94,12 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def keys(self) -> Iterable[str]:
         return self._x.keys()
+
+    def items(self) -> abc.ItemsView:
+        return self._x.items()
+
+    def pop(self, key: str, default: PhlowerTensor = None) -> PhlowerTensor:
+        return self._x.pop(key, default)
 
     def __getitem__(self, key: Any) -> PhlowerTensor:
         if isinstance(key, str):

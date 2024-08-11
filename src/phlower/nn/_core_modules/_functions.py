@@ -250,6 +250,29 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
         is_time_series=ret_is_time_series, is_voxel=is_voxel)
 
 
+def tensor_times_scalar(
+        tensor: IPhlowerTensor, scalar: int | float | IPhlowerTensor):
+    """
+    Compute multiplication between tensor and scalar (field).
+
+    Args:
+        tensor: IPhlowerTensor
+            Input tensor.
+        scalar: int | float | IPhlowerTensor
+            Input scalar or scalar field.
+
+    Returns:
+        IPhlowerTensor:
+            Resultant tensor.
+    """
+    if isinstance(scalar, int | float):
+        return tensor * scalar
+    if scalar.numel() == 1:
+        return tensor * scalar
+
+    return tensor_product(tensor, scalar)
+
+
 def apply_orthogonal_group(
         orthogonal_matrix: IPhlowerTensor, tensor: IPhlowerTensor
 ) -> IPhlowerTensor:
@@ -293,3 +316,35 @@ def apply_orthogonal_group(
         equation, *args,
         dimension=tensor.dimension,
         is_time_series=tensor.is_time_series, is_voxel=tensor.is_voxel)
+
+
+def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
+    """Compute sum over space."""
+
+    if tensor.is_time_series:
+        time = "t"
+        start_space = 1
+    else:
+        time = ""
+        start_space = 0
+    if tensor.is_voxel:
+        space = "xyz"
+        space_width = 3
+    else:
+        space = "x"
+        space_width = 1
+
+    squeezed = einsum(
+        f"{time}{space}...->{time}...", tensor,
+        dimension=tensor.dimension, is_time_series=tensor.is_time_series,
+        is_voxel=tensor.is_voxel)
+
+    # keepdim
+    for _ in range(space_width):
+        squeezed._tensor = torch.unsqueeze(squeezed._tensor, start_space)
+    return squeezed
+
+
+def spatial_mean(tensor: IPhlowerTensor) -> IPhlowerTensor:
+    """Compute mean over space."""
+    return spatial_sum(tensor) / tensor.n_vertices()

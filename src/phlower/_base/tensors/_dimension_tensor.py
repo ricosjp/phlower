@@ -113,6 +113,10 @@ class PhlowerDimensionTensor:
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
+    def is_dimensionless(self) -> bool:
+        """Return True if the tensor is dimensionless."""
+        return torch.sum(torch.abs(self._tensor)) < 1e-5
+
     @classmethod
     def __torch_function__(cls, func, types, args: tuple, kwargs=None):
         if kwargs is None:
@@ -145,8 +149,21 @@ def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         if inputs != other:
             raise DimensionIncompatibleError(
-                "Add operation for different physical dimensions is not allowed."
-            )
+                "Add operation for different physical dimensions is not "
+                "allowed.")
+
+        return PhlowerDimensionTensor(inputs._tensor)
+
+    raise DimensionIncompatibleError()
+
+
+@dimension_wrap_implements(torch.sub)
+def sub(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
+    if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
+        if inputs != other:
+            raise DimensionIncompatibleError(
+                "Sub operation for different physical dimensions is not "
+                "allowed.")
 
         return PhlowerDimensionTensor(inputs._tensor)
 
@@ -156,6 +173,11 @@ def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
 @dimension_wrap_implements(torch.pow)
 def pow(inputs: PhlowerDimensionTensor, other):
     return PhlowerDimensionTensor(inputs._tensor * other)
+
+
+@dimension_wrap_implements(torch.sqrt)
+def sqrt(inputs: PhlowerDimensionTensor):
+    return PhlowerDimensionTensor(inputs._tensor / 2)
 
 
 @dimension_wrap_implements(torch.mul)
@@ -171,6 +193,21 @@ def mul(inputs, other):
         else zero_dimension_tensor()
     )
     return PhlowerDimensionTensor(_input._tensor + _other._tensor)
+
+
+@dimension_wrap_implements(torch.div)
+def div(inputs, other):
+    _input = (
+        inputs
+        if isinstance(inputs, PhlowerDimensionTensor)
+        else zero_dimension_tensor()
+    )
+    _other = (
+        other
+        if isinstance(other, PhlowerDimensionTensor)
+        else zero_dimension_tensor()
+    )
+    return PhlowerDimensionTensor(_input._tensor - _other._tensor)
 
 
 @dimension_wrap_implements(torch.reshape)
@@ -251,3 +288,19 @@ def concatenate(inputs, *args, **kwards):
         return PhlowerDimensionTensor(inputs[0]._tensor)
 
     raise DimensionIncompatibleError()
+
+
+@dimension_wrap_implements(torch.tanh)
+def tanh(tensor: PhlowerDimensionTensor):
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply tanh but {tensor}")
+    return tensor
+
+
+@dimension_wrap_implements(torch.nn.functional.leaky_relu)
+def leaky_relu(tensor: PhlowerDimensionTensor, *args, **kwargs):
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply leaky_relu but {tensor}")
+    return tensor
