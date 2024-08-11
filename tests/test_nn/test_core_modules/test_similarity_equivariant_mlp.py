@@ -118,12 +118,11 @@ def test__similarity_equivariance(
     dict_transformed.update(dict_scaled_scales)
 
     transformed_phlower_tensors = phlower_tensor_collection(dict_transformed)
-    desired = model(transformed_phlower_tensors)
+    desired = model(transformed_phlower_tensors).to_numpy()
 
-    norm = torch.mean(_functions.contraction(desired)**.5).to_numpy()
+    scale = np.max(desired)
     # Test equivariance
-    np.testing.assert_almost_equal(
-        actual / norm, desired.to_numpy() / norm, decimal=2)
+    np.testing.assert_almost_equal(actual / scale, desired / scale, decimal=2)
 
     if invariant:
         # Test dimensionless in case of invariant
