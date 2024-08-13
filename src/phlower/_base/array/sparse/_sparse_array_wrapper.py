@@ -96,6 +96,8 @@ class SparseArrayWrapper(IPhlowerArray):
         device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimension: PhysicalDimensions | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ) -> PhlowerTensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(
@@ -107,7 +109,9 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
+        _tensor = phlower_tensor(
+            tensor=sparse_tensor, dimension=dimension,
+            is_time_series=is_time_series, is_voxel=is_voxel)
         _tensor = _tensor.coalesce()
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor

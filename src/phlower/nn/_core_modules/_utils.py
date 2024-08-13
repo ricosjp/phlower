@@ -42,7 +42,7 @@ class ExtendedLinearList(torch.nn.Module):
     def forward(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
 
-        h = self._linears[index].forward(x)
+        h = self._linears[index](x)
         h = torch.nn.functional.dropout(
             h, p=self._dropouts[index], training=self.training
         )

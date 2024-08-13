@@ -113,8 +113,6 @@ def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
 def test__simple_training(simple_training):
     loss: PhlowerTensor = simple_training
 
-    print(loss)
-    print(loss.shape)
     assert loss.has_dimension
     assert not torch.isinf(loss.to_tensor())
     assert not torch.isnan(loss.to_tensor())
