@@ -47,7 +47,8 @@ def test__spmm(size, is_time_series, repeat):
                 desired = sp_sparse @ desired
             norm = np.mean(np.linalg.norm(desired, axis=-1))
             np.testing.assert_almost_equal(
-                actual / norm, desired / norm, decimal=5)
+                actual / norm, desired / norm, decimal=5
+            )
             return
 
         for i in range(array.shape[1]):
