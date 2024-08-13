@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
+import einops
+import numpy as np
 import torch
 from pipe import select
 
@@ -12,8 +14,15 @@ from phlower._base.tensors._dimension_tensor import (
     phlower_dimension_tensor,
 )
 from phlower._base.tensors._interface import IPhlowerTensor
+from phlower._base.tensors._unsupported_function_names import (
+    UNSUPPORTED_FUNCTION_NAMES,
+)
 from phlower.utils import get_logger
-from phlower.utils.exceptions import DimensionIncompatibleError
+from phlower.utils.exceptions import (
+    DimensionIncompatibleError,
+    PhlowerSparseUnsupportedError,
+    PhlowerUnsupportedTorchFunctionError,
+)
 
 logger = get_logger(__name__)
 
@@ -27,6 +36,8 @@ def phlower_tensor(
         | dict[str, float]
         | None
     ) = None,
+    is_time_series: bool = False,
+    is_voxel: bool = False,
 ):
     if isinstance(tensor, PhlowerTensor):
         if dimension is not None:
@@ -38,7 +49,9 @@ def phlower_tensor(
 
     dimension_tensor = _resolve_dimension_arg(dimension)
 
-    return PhlowerTensor(tensor=tensor, dimension_tensor=dimension_tensor)
+    return PhlowerTensor(
+        tensor=tensor, dimension_tensor=dimension_tensor,
+        is_time_series=is_time_series, is_voxel=is_voxel)
 
 
 def _resolve_dimension_arg(
@@ -77,10 +90,14 @@ class PhlowerTensor(IPhlowerTensor):
         self,
         tensor: torch.Tensor,
         dimension_tensor: PhlowerDimensionTensor | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ):
         assert isinstance(tensor, torch.Tensor)
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
+        self._is_time_series = is_time_series
+        self._is_voxel = is_voxel
 
     @property
     def has_dimension(self) -> bool:
@@ -98,9 +115,17 @@ class PhlowerTensor(IPhlowerTensor):
     def is_sparse(self) -> bool:
         return self._tensor.layout == torch.sparse_coo
 
+    @property
+    def is_time_series(self) -> bool:
+        return self._is_time_series
+
+    @property
+    def is_voxel(self) -> bool:
+        return self._is_voxel
+
     def __str__(self) -> str:
         return (
-            f"PhysicsTensor({self._tensor}, "
+            f"PhlowerTensor({self._tensor}, "
             f"Dimension: {self._dimension_tensor})"
         )
 
@@ -119,9 +144,6 @@ class PhlowerTensor(IPhlowerTensor):
     def __len__(self) -> int:
         return len(self._tensor)
 
-    def __getitem__(self, key: Any) -> PhlowerTensor:
-        return PhlowerTensor(self._tensor[key], self._dimension_tensor)
-
     def to_tensor(self) -> torch.Tensor:
         return self._tensor
 
@@ -131,19 +153,110 @@ class PhlowerTensor(IPhlowerTensor):
     def size(self) -> torch.Size:
         return self._tensor.size()
 
+    def rank(self) -> int:
+        """Returns the tensor rank."""
+        if self.is_sparse:
+            raise PhlowerSparseUnsupportedError(
+                "Cannot call rank() for sparse PhlowerTensor")
+        size = self.size()
+        start = 1
+        if self.is_time_series:
+            start += 1
+        if self.is_voxel:
+            start += 2
+        return len(size[start:-1])
+
+    def n_vertices(self) -> int:
+        """Returns the number of vertices."""
+        if self.is_sparse:
+            raise PhlowerSparseUnsupportedError(
+                "Cannot call n_vertices() for sparse PhlowerTensor")
+        size = self.size()
+        start = 0
+        if self.is_time_series:
+            start += 1
+
+        if self.is_voxel:
+            return np.prod(size[start:start+3])
+
+        return size[start]
+
     def indices(self) -> torch.Tensor:
         return self._tensor.indices()
 
     def values(self) -> torch.Tensor:
         return self._tensor.values()
 
-    def reshape(self, shape: Sequence[int]) -> PhlowerTensor:
-        self._tensor = self._tensor.reshape(shape)
-        return self
+    def to_vertexwise(self) -> PhlowerTensor:
+        """
+        Convert to vertexwise 2D tensor which has (n_vertices, -1) shape.
 
-    def slice(self, slice_range: tuple[slice, ...]) -> PhlowerTensor:
-        tmp = self._tensor[slice_range]
-        return PhlowerTensor(tmp, dimension_tensor=self._dimension_tensor)
+        Returns:
+            vertexwise_tensor : PhlowerTensor
+                Vertexwise PhlowerTensor object.
+            original_pattern : str
+                Pattern of the original shape. Can be used for rearrange.
+            resultant_pattern : str
+                Pattern of the resultant shape. Can be used for rearrange.
+            dict_shape : dict[str, int]
+                Dict of original shape. Can be used for rearrange.
+        """
+        shape = self.shape
+        dict_shape = {}
+
+        space_start = 0
+        if self.is_time_series:
+            t_pattern = "t "
+            space_start += 1
+            dict_shape.update({"t": shape[0]})
+        else:
+            t_pattern = ""
+        if self.is_voxel:
+            space_pattern = "x y z "
+            dict_shape.update({
+                "x": shape[space_start],
+                "y": shape[space_start + 1],
+                "z": shape[space_start + 2],
+            })
+            feat_start = space_start + 3
+        else:
+            space_pattern = "n "
+            dict_shape.update({"n": shape[space_start]})
+            feat_start = space_start + 1
+
+        feat_pattern = " ".join([
+            f"a{i}" for i in range(len(shape[feat_start:]))])
+        # Do not include the last axis in case modified by NNs.
+        dict_shape.update({
+            f"a{i}": s for i, s in enumerate(shape[feat_start:-1])})
+
+        original_pattern = f"{t_pattern}{space_pattern}{feat_pattern}"
+        resultant_pattern = f"({space_pattern}) ({t_pattern}{feat_pattern})"
+        tensor_2d = einops.rearrange(
+            self.to_tensor(), f"{original_pattern} -> {resultant_pattern}")
+        return PhlowerTensor(
+            tensor_2d, dimension_tensor=self.dimension,
+            is_time_series=False, is_voxel=False), \
+            original_pattern, resultant_pattern, dict_shape
+
+    def rearrange(
+            self, pattern: str,
+            is_time_series: bool = False, is_voxel: bool = False,
+            **kwargs) -> PhlowerTensor:
+        tensor = self.to_tensor()
+        rearranged = einops.rearrange(tensor, pattern, **kwargs)
+        return PhlowerTensor(
+            rearranged, dimension_tensor=self.dimension,
+            is_time_series=is_time_series, is_voxel=is_voxel)
+
+    def reshape(
+        self, shape: Sequence[int],
+        is_time_series: bool = False, is_voxel: bool = False,
+    ) -> PhlowerTensor:
+        return PhlowerTensor(
+            torch.reshape(self.to_tensor(), shape),
+            dimension_tensor=self.dimension,
+            is_time_series=is_time_series, is_voxel=is_voxel)
 
     def to(self, device: str, non_blocking: bool = False) -> None:
         self._tensor.to(device, non_blocking=non_blocking)
@@ -154,6 +267,7 @@ class PhlowerTensor(IPhlowerTensor):
         return PhlowerTensor(
             self._tensor.detach(),
             dimension_tensor=self._dimension_tensor.detach(),
+            is_time_series=self.is_time_series, is_voxel=self.is_voxel,
         )
 
     def backward(self) -> None:
@@ -167,6 +281,9 @@ class PhlowerTensor(IPhlowerTensor):
         args: tuple,
         kwargs: dict | None = None,
     ):
+        if func.__name__ in UNSUPPORTED_FUNCTION_NAMES:
+            raise PhlowerUnsupportedTorchFunctionError(
+                f"Unsupported function: {func.__name__}")
         if kwargs is None:
             kwargs = {}
 
@@ -174,25 +291,43 @@ class PhlowerTensor(IPhlowerTensor):
 
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
+        # NOTE: Assume flags for the first tensor is preserved
+        is_time_series = _recursive_resolve(
+            args, "_is_time_series", return_first_only=True)
+        is_voxel = _recursive_resolve(
+            args, "_is_voxel", return_first_only=True)
+
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
-            return PhlowerTensor(ret)
+            return PhlowerTensor(
+                ret, is_time_series=is_time_series, is_voxel=is_voxel)
 
         _dimensions = _recursive_resolve(
             args, "_dimension_tensor", allow_none=False
         )
 
         result_units = func(*_dimensions, **kwargs)
-        return PhlowerTensor(ret, result_units)
+        return PhlowerTensor(
+            ret, result_units, is_time_series=is_time_series,
+            is_voxel=is_voxel)
 
 
 def _recursive_resolve(
-    args: Iterable | Any, attr: str, allow_none: bool = True
+    args: Iterable | Any, attr: str, allow_none: bool = True,
+    return_first_only: bool = False,
 ) -> list[str]:
     if isinstance(args, tuple | list):
-        return [
-            _recursive_resolve(v, attr, allow_none=allow_none) for v in args
-        ]
+        if return_first_only:
+            return _recursive_resolve(
+                args[0], attr, allow_none=allow_none,
+                return_first_only=return_first_only)
+        else:
+            return [
+                _recursive_resolve(
+                    v, attr, allow_none=allow_none,
+                    return_first_only=return_first_only)
+                for v in args
+            ]
 
     _val = getattr(args, attr, args)
 
