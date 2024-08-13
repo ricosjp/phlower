@@ -15,13 +15,15 @@ class SchedulerSelector:
         "ChainedScheduler": torch.optim.lr_scheduler.ChainedScheduler,
         "ReduceLROnPlateau": torch.optim.lr_scheduler.ReduceLROnPlateau,
         "CyclicLR": torch.optim.lr_scheduler.CyclicLR,
-        "CosineAnnealingWarmRestarts": torch.optim.lr_scheduler.CosineAnnealingWarmRestarts,
+        "CosineAnnealingWarmRestarts": torch.optim.lr_scheduler.CosineAnnealingWarmRestarts,  # NOQA
         "OneCycleLR": torch.optim.lr_scheduler.OneCycleLR,
         "PolynomialLR": torch.optim.lr_scheduler.PolynomialLR,
     }
 
     @staticmethod
-    def register(name: str, cls: type[torch.optim.Optimizer]) -> None:
+    def register(
+        name: str, cls: type[torch.optim.lr_scheduler.LRScheduler]
+    ) -> None:
         SchedulerSelector._REGISTERED.update({name: cls})
 
     @staticmethod
@@ -29,7 +31,7 @@ class SchedulerSelector:
         return name in SchedulerSelector._REGISTERED
 
     @staticmethod
-    def select(name: str) -> type[torch.optim.Optimizer]:
+    def select(name: str) -> type[torch.optim.lr_scheduler.LRScheduler]:
         _dict = SchedulerSelector._REGISTERED
         if name not in _dict:
             raise KeyError(

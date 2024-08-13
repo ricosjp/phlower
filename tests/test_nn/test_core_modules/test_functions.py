@@ -1,4 +1,3 @@
-
 import numpy as np
 import pytest
 import torch
@@ -27,12 +26,16 @@ from phlower.nn._core_modules import _functions
 )
 def test__spmm(size, is_time_series, repeat):
     phlower_tensor = PhlowerTensor(
-        torch.rand(*size), is_time_series=is_time_series)
+        torch.rand(*size), is_time_series=is_time_series
+    )
     n = phlower_tensor.n_vertices()
     sparse = PhlowerTensor(torch.rand(n, n).to_sparse())
 
-    actual_spmm = _functions.spmm(
-        sparse, phlower_tensor, repeat=repeat).to_tensor().numpy()
+    actual_spmm = (
+        _functions.spmm(sparse, phlower_tensor, repeat=repeat)
+        .to_tensor()
+        .numpy()
+    )
     sp_sparse = sp.coo_array(sparse.to_tensor().to_dense().numpy())
     np_dense = phlower_tensor.to_tensor().numpy()
 

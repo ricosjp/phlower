@@ -19,7 +19,8 @@ class LossSetting:
     name2weight: dict[str, str] | None = None
     """
     Dictionary which maps weight value to name of output variable.
-    Defaults to None. If None, total loss value is calculated as summation of all loss values. 
+    Defaults to None. If None, total loss value is calculated
+     as summation of all loss values.
     """
 
     def loss_names(self) -> Iterable[str]:
@@ -83,6 +84,9 @@ class SchedulerSetting(pydantic.BaseModel):
     Parameters to pass when scheduler class is initialized.
     Allowed parameters depend on the scheduler you choose.
     """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
     @pydantic.field_validator("scheduler")
     @classmethod

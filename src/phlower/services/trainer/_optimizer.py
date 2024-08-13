@@ -16,7 +16,7 @@ class PhlowerOptimizerWrapper:
         return PhlowerOptimizerWrapper(
             parameters=model.parameters(),
             optimizer=setting.optimizer_setting.optimizer,
-            optimizer_kwards=setting.optimizer_setting.parameters,
+            optimizer_kwargs=setting.optimizer_setting.parameters,
             schedulers={
                 v.scheduler: v.parameters for v in setting.scheduler_setting
             },
@@ -26,11 +26,16 @@ class PhlowerOptimizerWrapper:
         self,
         parameters: Iterator[torch.nn.Parameter],
         optimizer: str,
-        optimizer_kwards: dict,
-        schedulers: dict[str, dict],
+        optimizer_kwargs: dict | None = None,
+        schedulers: dict[str, dict] | None = None,
     ):
+        if optimizer_kwargs is None:
+            optimizer_kwargs = {}
+        if schedulers is None:
+            schedulers = {}
+
         self._optimizer = OptimizerSelector.select(optimizer)(
-            parameters, **optimizer_kwards
+            parameters, **optimizer_kwargs
         )
         self._schedulers = [
             SchedulerSelector.select(k)(self._optimizer, **v)
