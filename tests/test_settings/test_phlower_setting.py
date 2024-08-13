@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 
 import pydantic
 import pytest
@@ -46,8 +47,10 @@ def test__model_dump():
         "tests/test_settings/data/e2e/setting1.yml"
     )
 
+    output_directory = pathlib.Path("tests/test_settings/tmp")
+    shutil.rmtree(output_directory, ignore_errors=True)
     _ = PhlowerYamlFile.save(
-        output_directory=pathlib.Path("tests/test_settings/tmp"),
+        output_directory=output_directory,
         file_basename="output",
         data=setting.model_dump(),
     )

@@ -20,7 +20,7 @@ class _PhlowerSequenceArray:
         assert len(self._data) > 0
 
         self._is_sparse = self._reduce_is_sparse()
-        self._is_timeseries = self._reduce_is_timeseries()
+        self._is_time_series = self._reduce_is_time_series()
 
     def _reduce_is_sparse(self):
         _is_sparse = np.unique(np.array([v.is_sparse for v in self._data]))
@@ -31,7 +31,7 @@ class _PhlowerSequenceArray:
             )
         return _is_sparse.item()
 
-    def _reduce_is_timeseries(self):
+    def _reduce_is_time_series(self):
         _is_time_series = np.unique(
             np.array([v.is_time_series for v in self._data])
         )
@@ -46,8 +46,8 @@ class _PhlowerSequenceArray:
         return len(self._data)
 
     @property
-    def is_timeseries(self) -> bool:
-        return self._is_timeseries
+    def is_time_series(self) -> bool:
+        return self._is_time_series
 
     @property
     def is_sparse(self) -> bool:
@@ -58,10 +58,13 @@ class _PhlowerSequenceArray:
         device: str | torch.device | None = None,
         non_blocking: bool = False,
         dimensions: PhysicalDimensions | None = None,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ):
         tensors = [
             v.to_phlower_tensor(
-                device=device, non_blocking=non_blocking, dimension=dimensions
+                device=device, non_blocking=non_blocking, dimension=dimensions,
+                is_time_series=is_time_series, is_voxel=is_voxel,
             )
             for v in self._data
         ]
@@ -69,7 +72,7 @@ class _PhlowerSequenceArray:
         if self.is_sparse:
             return to_batch(tensors)
 
-        if self.is_timeseries:
+        if self.is_time_series:
             return to_batch(tensors, dense_concat_dim=1)
 
         return to_batch(tensors, dense_concat_dim=0)
