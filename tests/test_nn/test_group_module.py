@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from phlower._fields import SimulationField
 from phlower._base import phlower_array
+from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import PhlowerGroupModule
 from phlower.settings import PhlowerSetting

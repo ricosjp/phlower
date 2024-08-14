@@ -6,9 +6,7 @@ import pydantic
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
-from phlower._base import PhysicalDimensionsClass
 from phlower.io import PhlowerYamlFile
-from phlower.settings._group_settings import GroupModuleSetting
 from phlower.settings._model_setting import PhlowerModelSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.settings._trainer_setting import PhlowerTrainerSetting

@@ -25,7 +25,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         *,
         field_names: list[str] = None,
         allow_no_y_data: bool = False,
-        decrypt_key: bytes | None = None
+        decrypt_key: bytes | None = None,
     ):
         self._x_variable_names = x_variable_names
         if y_variable_names is None:

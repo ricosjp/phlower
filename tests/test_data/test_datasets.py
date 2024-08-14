@@ -39,7 +39,7 @@ def test__lazy_dataset_getitem(
         x_variable_names=x_variable_names,
         y_variable_names=y_variable_names,
         directories=directories,
-        field_names=field_names
+        field_names=field_names,
     )
 
     assert len(dataset) > 1

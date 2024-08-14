@@ -22,7 +22,7 @@ class SimulationField(ISimulationField):
         self._field_tensors = field_tensors
 
         if batch_info is None:
-            batch_info  = {}
+            batch_info = {}
         self._batch_info = batch_info
 
     def keys(self):

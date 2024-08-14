@@ -6,7 +6,7 @@ import dagstream
 import torch
 from typing_extensions import Self
 
-from phlower import ISimulationField, PhlowerTensor
+from phlower import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
