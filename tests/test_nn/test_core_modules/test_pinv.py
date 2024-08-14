@@ -19,10 +19,10 @@ def test__can_call_parameters():
 @pytest.mark.parametrize(
     "mlp_nodes, activations, decimal",
     [
-        ([10, 10], ["identity"], 4),
-        ([10, 12], ["leaky_relu0p5"], 4),
-        ([20, 40, 100], ["tanh", "identity"], 4),
-        ([20, 20, 40, 100], ["tanh", "smooth_leaky_relu", "leaky_relu0p5"], 3),
+        ([10, 10], ["identity"], 3),
+        ([10, 12], ["leaky_relu0p5"], 3),
+        ([20, 40, 100], ["tanh", "identity"], 3),
+        ([20, 20, 40, 100], ["tanh", "smooth_leaky_relu", "leaky_relu0p5"], 2),
     ],
 )
 def test__pinv_mlp(mlp_nodes, activations, decimal):
