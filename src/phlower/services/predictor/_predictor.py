@@ -40,7 +40,7 @@ class PhlowerPredictor:
         dataset = LazyPhlowerDataset(
             x_variable_names=self._model_setting.network.get_input_keys(),
             y_variable_names=self._model_setting.network.get_output_keys(),
-            support_names=self._model_setting.network.support_names,
+            field_names=self._model_setting.fields.field_names,
             directories=preprocessed_directories,
         )
 
@@ -55,7 +55,7 @@ class PhlowerPredictor:
         for batch in data_loader:
             batch: LumpedTensorData
 
-            h = self._model.forward(batch.x_data, supports=batch.field_data)
+            h = self._model.forward(batch.x_data, field_data=batch.field_data)
             yield h
 
         # HACK: Need to save h
