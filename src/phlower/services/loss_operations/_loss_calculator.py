@@ -12,7 +12,7 @@ from phlower.collections.tensors import (
     phlower_tensor_collection,
 )
 from phlower.services.loss_operations._loss_functions import get_loss_function
-from phlower.settings._phlower_setting import LossSetting, PhlowerTrainerSetting
+from phlower.settings._trainer_setting import LossSetting, PhlowerTrainerSetting
 from phlower.utils.typing import LossFunctionType
 
 

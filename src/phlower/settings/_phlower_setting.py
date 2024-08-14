@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-from collections.abc import Iterable
 
 import pydantic
 from pydantic import dataclasses as dc
@@ -11,6 +10,7 @@ from phlower._base import PhysicalDimensionsClass
 from phlower.io import PhlowerYamlFile
 from phlower.settings._group_settings import GroupModuleSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
+from phlower.settings._trainer_setting import PhlowerTrainerSetting
 from phlower.utils.enums import ModelSelectionType
 
 
@@ -79,78 +79,6 @@ class PhlowerModelSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(
         frozen=True, extra="forbid", arbitrary_types_allowed=True
     )
-
-
-class PhlowerTrainerSetting(pydantic.BaseModel):
-    loss_setting: LossSetting
-    """
-    setting for loss function
-    """
-
-    n_epoch: int = 10
-    """
-    the number of epochs. Defaults to 10.
-    """
-
-    random_seed: int = 0
-    """
-    random seed. Defaults to 0
-    """
-
-    lr: float = 0.001
-    """
-    learning rate. Defaults to 0.001
-    """
-
-    batch_size: int = 1
-    """
-    batch size. Defaults to 1
-    """
-
-    num_workers: int = 1
-    """
-    the number of cores. Defaults to 1.
-    """
-
-    device: str = "cpu"
-    """
-    device name. Defaults to cpu
-    """
-
-    non_blocking: bool = False
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
-
-
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class LossSetting:
-    name2loss: dict[str, str]
-    """
-    Dictionary which maps name of target variable to name of loss function.
-    """
-
-    name2weight: dict[str, str] | None = None
-    """
-    Dictionary which maps weight value to name of output variable.
-    Defaults to None. If None, total loss value is calculated as summation of all loss values. 
-    """
-
-    def loss_names(self) -> Iterable[str]:
-        """get registered loss names
-
-        Returns:
-            Iterable[str]: names of loss functions
-        """
-        return self.name2loss.values()
-
-    def loss_variable_names(self) -> list[str]:
-        """get variable names
-
-        Returns:
-            list[str]: variable names
-        """
-        return list(self.name2loss.keys())
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
