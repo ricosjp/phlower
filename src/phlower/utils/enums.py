@@ -52,7 +52,7 @@ class PhysicalDimensionSymbolType(Enum):
     T = 0  # time
     L = 1  # length
     M = 2  # mass
-    I = 3  # electric current  # NOQA
+    I = 3  # electric current  # noqa: E741
     Theta = 4  # thermodynamic temperature
     N = 5  # amount of substance
     J = 6  # luminous intensity

@@ -11,10 +11,7 @@ from phlower.nn._interface_module import (
     IReadonlyReferenceGroup,
 )
 from phlower.settings._module_settings import PInvMLPSetting
-from phlower.utils.exceptions import (
-    NotFoundReferenceModuleError,
-    PhlowerInvalidActivationError,
-)
+from phlower.utils.exceptions import NotFoundReferenceModuleError
 
 
 class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
@@ -60,26 +57,10 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
 
     def _initialize(self):
         """Initialize parameters and activations after resolve() is called."""
-        self._activation_names = [
-            self._inverse_activation_name(a)
-            for a in self._reference._activations[::-1]]
         self._activations = [
-            _utils.ActivationSelector.select(name)
-            for name in self._activation_names]
+            _utils.ActivationSelector.select_inverse(name)
+            for name in self._reference._activations[::-1]]
         self._chains = self._init_pinv_chains()
-
-    def _inverse_activation_name(self, activation_name):
-        if activation_name == "identity":
-            return "identity"
-        if activation_name == "leaky_relu0p5":
-            return "inversed_leaky_relu0p5"
-        if activation_name == "smooth_leaky_relu":
-            return "inversed_smooth_leaky_relu"
-        if activation_name == "tanh":
-            return "truncated_atanh"
-
-        raise PhlowerInvalidActivationError(
-            f"Cannot pinv for {activation_name}")
 
     def _init_pinv_chains(self):
         name = self._reference.__class__.__name__
@@ -89,8 +70,8 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
         raise ValueError(f"Unsupported reference class: {name}")
 
     def _init_pinv_mlp_chains(
-            self, chains: _utils.ExtendedLinearList, option=None):
-        return [PInvLinear(c, option=option) for c in chains._linears[::-1]]
+            self, chains: _utils.ExtendedLinearList):
+        return [PInvLinear(c) for c in chains._linears[::-1]]
 
     def forward(
         self,
@@ -128,10 +109,9 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
 
 class PInvLinear(torch.nn.Module):
 
-    def __init__(self, ref_linear: torch.nn.Linear, option: str | None = None):
+    def __init__(self, ref_linear: torch.nn.Linear):
         super().__init__()
         self.ref_linear = ref_linear
-        self.option = option
         return
 
     def forward(self, x):
@@ -141,10 +121,7 @@ class PInvLinear(torch.nn.Module):
     @property
     def weight(self):
         """Return pseudo inversed weight."""
-        if self.option is None:
-            w = self.ref_linear.weight
-        else:
-            raise ValueError(f"Unexpected option: {self.option}")
+        w = self.ref_linear.weight
         return torch.pinverse(w)
 
     @property
@@ -153,4 +130,4 @@ class PInvLinear(torch.nn.Module):
         if self.ref_linear.bias is None:
             return 0
         else:
-            return - self.ref.bias
+            return - self.ref_linear.bias

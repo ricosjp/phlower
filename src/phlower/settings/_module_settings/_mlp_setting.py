@@ -16,7 +16,7 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     )  # This property only overwritten when resolving.
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
-    bias: bool = Field(False, frozen=True)
+    bias: bool = Field(True, frozen=True)
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:

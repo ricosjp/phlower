@@ -154,21 +154,10 @@ def contraction(
         raise PhlowerIncompatibleTensorError(
             "Cannot compute contraction between non-voxel and voxel.")
 
-    ret_is_time_series = False
-    if x.is_time_series:
-        time_x = "t"
-        ret_is_time_series = True
-    else:
-        time_x = ""
-    if y.is_time_series:
-        time_y = "t"
-        ret_is_time_series = True
-    else:
-        time_y = ""
-    if ret_is_time_series:
-        time_ret = "t"
-    else:
-        time_ret = ""
+    ret_is_time_series = x.is_time_series or y.is_time_series
+    time_x = "t" if x.is_time_series else ""
+    time_y = "t" if y.is_time_series else ""
+    time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
     if x.is_voxel:
@@ -211,21 +200,10 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     x_rank = x.rank()
     y_rank = y.rank()
 
-    ret_is_time_series = False
-    if x.is_time_series:
-        x_time = "t"
-        ret_is_time_series = True
-    else:
-        x_time = ""
-    if y.is_time_series:
-        y_time = "t"
-        ret_is_time_series = True
-    else:
-        y_time = ""
-    if ret_is_time_series:
-        t_ret = "t"
-    else:
-        t_ret = ""
+    ret_is_time_series = x.is_time_series or y.is_time_series
+    time_x = "t" if x.is_time_series else ""
+    time_y = "t" if y.is_time_series else ""
+    time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
     if x.is_voxel:
@@ -237,8 +215,8 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
 
     x_vars = _availale_variables(x_rank)
     y_vars = _availale_variables(y_rank, start=x_rank)
-    equation = f"{x_time}{space}{x_vars}f,{y_time}{space}{y_vars}f->" \
-        + f"{t_ret}{space}{x_vars}{y_vars}f"
+    equation = f"{time_x}{space}{x_vars}f,{time_y}{space}{y_vars}f->" \
+        + f"{time_ret}{space}{x_vars}{y_vars}f"
 
     if x.dimension is None or y.dimension is None:
         dimension = None
@@ -293,17 +271,11 @@ def apply_orthogonal_group(
     if rank == 0:
         return tensor
 
+    time = "t" if tensor.is_time_series else ""
+    space = "xyz" if tensor.is_voxel else "x"
     start_dim = 1
-    if tensor.is_time_series:
-        time = "t"
-        start_dim += 1
-    else:
-        time = ""
-    if tensor.is_voxel:
-        space = "xyz"
-        start_dim += 3
-    else:
-        space = "x"
+    start_dim = start_dim + 1 if tensor.is_time_series else start_dim
+    start_dim = start_dim + 3 if tensor.is_voxel else start_dim
 
     s = _availale_variables(rank * 2)
     str_ortho = ','.join(a + b for a, b in zip(s[::2], s[1::2], strict=True))
@@ -321,18 +293,10 @@ def apply_orthogonal_group(
 def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     """Compute sum over space."""
 
-    if tensor.is_time_series:
-        time = "t"
-        start_space = 1
-    else:
-        time = ""
-        start_space = 0
-    if tensor.is_voxel:
-        space = "xyz"
-        space_width = 3
-    else:
-        space = "x"
-        space_width = 1
+    time = "t" if tensor.is_time_series else ""
+    space = "xyz" if tensor.is_voxel else "x"
+    start_space = 1 if tensor.is_time_series else 0
+    space_width = 3 if tensor.is_voxel else 1
 
     squeezed = einsum(
         f"{time}{space}...->{time}...", tensor,

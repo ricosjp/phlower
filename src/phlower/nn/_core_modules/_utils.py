@@ -4,6 +4,7 @@ import torch
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.nn._core_modules import _functions
+from phlower.utils.exceptions import PhlowerInvalidActivationError
 
 
 class ExtendedLinearList(torch.nn.Module):
@@ -95,6 +96,28 @@ class ActivationSelector:
         if name is None:
             name = "identity"
         return ActivationSelector._REGISTERED_ACTIVATIONS[name]
+
+    @staticmethod
+    def select_inverse(
+            name: str | None) -> Callable[[torch.Tensor], torch.Tensor]:
+        if name is None:
+            name = "identity"
+        return ActivationSelector._REGISTERED_ACTIVATIONS[
+            ActivationSelector._inverse_activation_name(name)]
+
+    @staticmethod
+    def _inverse_activation_name(activation_name: str) -> str:
+        if activation_name == "identity":
+            return "identity"
+        if activation_name == "leaky_relu0p5":
+            return "inversed_leaky_relu0p5"
+        if activation_name == "smooth_leaky_relu":
+            return "inversed_smooth_leaky_relu"
+        if activation_name == "tanh":
+            return "truncated_atanh"
+
+        raise PhlowerInvalidActivationError(
+            f"Cannot inverse for {activation_name}")
 
     @staticmethod
     def is_exists(name: str) -> bool:

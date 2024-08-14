@@ -46,7 +46,7 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = False,
+        bias: bool = True,
     ) -> None:
         super().__init__()
 

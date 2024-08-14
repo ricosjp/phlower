@@ -116,39 +116,36 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         data: IPhlowerTensorCollections,
         *,
         supports: dict[str, PhlowerTensor] | None = None,
+        dict_scales: dict[str, PhlowerTensor | float] | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
 
         Args:
             data (IPhlowerTensorCollections):
-                Data with the keys in tensor or PhysicalDimensionSymbolType,
-                with tensor is the input tensor to be computed.
-                PhysicalDimensionSymbolType keys denote physical scales.
-                No need to input all dimensions, but at least one scale
-                information should be input.
+                Data which receives from predecessors.
             supports (dict[str, PhlowerTensor], optional):
                 Graph object. Defaults to None.
 
         Returns:
             PhlowerTensor: Tensor object
         """
-        # TODO: Check if we can assume key convention
-        h = data.pop("tensor")
+        h = data.unique_item()
         if not h.has_dimension:
             raise PhlowerDimensionRequiredError("Dimension is required")
-
-        if len(data) < 1:
-            raise PhlowerInvalidArgumentsError("Scale inputs are required")
-        if not np.all([
-                PhysicalDimensionSymbolType.is_exist(k) for k in data.keys()]):
+        if dict_scales is None or len(data) < 1:
             raise PhlowerInvalidArgumentsError(
-                "keys should be in PhysicalDimensionSymbolType. "
-                f"Given: {data.keys()}")
+                f"Scale inputs are required. Given: {dict_scales}, {kwards}")
+        if not np.all([
+                PhysicalDimensionSymbolType.is_exist(k)
+                for k in dict_scales.keys()]):
+            raise PhlowerInvalidArgumentsError(
+                "keys in dict_scales should be in "
+                "PhysicalDimensionSymbolType. Given: {dict_scales.keys()}")
         dict_dimension = h.dimension.to_dict()
 
         dict_scales = {
-            k: v**dict_dimension[k] for k, v in data.items()}
+            k: v**dict_dimension[k] for k, v in dict_scales.items()}
 
         # Make h dimensionless
         for v in dict_scales.values():
