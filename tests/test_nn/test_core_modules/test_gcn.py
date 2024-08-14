@@ -38,7 +38,7 @@ def test__gcn(size, is_time_series):
         activations=["tanh", "identity"],
     )
 
-    actual = model(phlower_tensors, supports=dict_supports)
+    actual = model(phlower_tensors, field_data=dict_supports)
 
     assert actual.shape == size
     assert actual.is_time_series == is_time_series

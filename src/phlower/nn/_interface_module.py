@@ -5,6 +5,7 @@ import pathlib
 
 from typing_extensions import Self
 
+from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._module_settings import IPhlowerLayerParameters
@@ -33,7 +34,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] = None,
+        field_data: ISimulationField = None,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod

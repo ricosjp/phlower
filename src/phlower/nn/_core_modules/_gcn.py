@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 
+from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _functions, _utils
@@ -77,7 +78,7 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        field_data: ISimulationField,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overload torch.nn.Module
@@ -92,7 +93,7 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor:
                 Tensor object
         """
-        support = supports[self._support_name]
+        support = field_data[self._support_name]
         h = data.unique_item()
         for i in range(len(self._chains)):
             h = self._propagate(h, support)

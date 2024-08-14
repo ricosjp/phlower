@@ -9,6 +9,7 @@ from typing_extensions import Self
 from phlower._base import PhysicalDimensionsClass
 from phlower.io import PhlowerYamlFile
 from phlower.settings._group_settings import GroupModuleSetting
+from phlower.settings._model_setting import PhlowerModelSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
 from phlower.utils.enums import ModelSelectionType
@@ -60,25 +61,6 @@ class PhlowerSetting(pydantic.BaseModel):
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
         return PhlowerSetting(**data)
-
-
-class PhlowerModelSetting(pydantic.BaseModel):
-    variable_dimensions: dict[str, PhysicalDimensionsClass] = pydantic.Field(
-        default_factory=lambda: {}, validate_default=True
-    )
-    """
-    dictionary which maps variable name to value
-    """
-
-    network: GroupModuleSetting
-    """
-    define structure of neural network
-    """
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(
-        frozen=True, extra="forbid", arbitrary_types_allowed=True
-    )
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))

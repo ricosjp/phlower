@@ -125,7 +125,7 @@ class PhlowerTrainer:
                 self._scheduled_optimizer.zero_grad()
 
                 h = self._model.forward(
-                    tr_batch.x_data, supports=tr_batch.sparse_supports
+                    tr_batch.x_data, supports=tr_batch.field_data
                 )
 
                 losses = loss_function.calculate(

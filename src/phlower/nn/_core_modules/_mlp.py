@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from typing_extensions import Self
 
+from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
@@ -72,6 +73,7 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
+        field_data: ISimulationField | None = None,
         supports: dict[str, PhlowerTensor] | None = None,
         **kwards,
     ) -> PhlowerTensor:

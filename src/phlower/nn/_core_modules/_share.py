@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 
+from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._interface_module import (
@@ -56,7 +57,7 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] | None = None,
+        field_data: ISimulationField | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overload torch.nn.Module
@@ -77,4 +78,4 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
                 "Please check that `resolve` function is called."
             )
 
-        return self._reference.forward(data, supports=supports, **kwards)
+        return self._reference.forward(data, field_data=field_data, **kwards)

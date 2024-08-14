@@ -55,9 +55,7 @@ class PhlowerPredictor:
         for batch in data_loader:
             batch: LumpedTensorData
 
-            h = self._model.forward(
-                batch.x_data, supports=batch.sparse_supports
-            )
+            h = self._model.forward(batch.x_data, supports=batch.field_data)
             yield h
 
         # HACK: Need to save h
