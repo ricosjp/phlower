@@ -10,8 +10,9 @@ from phlower.nn._interface_module import IPhlowerCoreModule
 if True:
     # NOTE: Import advanced models after
     from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
-    from phlower.nn._core_modules \
-        ._similarity_equivariant_mlp import SimilarityEquivariantMLP
+    from phlower.nn._core_modules._similarity_equivariant_mlp import (
+        SimilarityEquivariantMLP,
+    )
 
 _all_models: list[IPhlowerCoreModule] = [
     Concatenator,

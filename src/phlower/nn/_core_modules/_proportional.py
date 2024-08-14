@@ -52,8 +52,8 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
             dropouts = []
 
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=['identity'],
-            dropouts=[], bias=False)
+            nodes=nodes, activations=["identity"], dropouts=[], bias=False
+        )
         self._nodes = nodes
 
     def resolve(

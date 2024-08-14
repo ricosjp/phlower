@@ -73,16 +73,20 @@ class PhlowerIncompatibleTensorError(ValueError):
     tensor(s)
     """
 
+
 class PhlowerTypeError(TypeError):
     """This error raises when type is not compatible with what is expected."""
 
+
 class PhlowerInvalidActivationError(ValueError):
     """This error raises when a set activation is invalid"""
+
 
 class PhlowerDimensionRequiredError(ValueError):
     """
     This error raises when the dimension does not exist despite required.
     """
+
 
 class PhlowerInvalidArgumentsError(ValueError):
     """This error raises when the arguments are invalid."""

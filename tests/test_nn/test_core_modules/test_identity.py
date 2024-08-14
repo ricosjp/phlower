@@ -24,11 +24,11 @@ def test__can_call_parameters():
 def test__identity(input_shape):
     phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
     phlower_tensors = phlower_tensor_collection(
-        {"phlower_tensor": phlower_tensor})
+        {"phlower_tensor": phlower_tensor}
+    )
 
     model = Identity()
 
     actual = model(phlower_tensors)
 
-    np.testing.assert_almost_equal(
-        actual.to_numpy(), phlower_tensor.to_numpy())
+    np.testing.assert_almost_equal(actual.to_numpy(), phlower_tensor.to_numpy())

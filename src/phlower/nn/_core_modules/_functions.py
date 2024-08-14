@@ -23,8 +23,8 @@ def inversed_leaky_relu0p5(x):
 
 def truncated_atanh(x, epsilon=1e-8):
     """Inverse tanh with truncating values >=1 or <=-1."""
-    x[x>=1. - epsilon] = 1. - epsilon
-    x[x<=-1. + epsilon] = -1. + epsilon
+    x[x >= 1.0 - epsilon] = 1.0 - epsilon
+    x[x <= -1.0 + epsilon] = -1.0 + epsilon
     return torch.atanh(x)
 
 
@@ -43,7 +43,8 @@ class SmoothLeakyReLU:
         return (
             self.a * x
             - torch.sqrt(
-                (self.a - 1)**2 * (2 * self.a * self.b - self.b + x**2))
+                (self.a - 1) ** 2 * (2 * self.a * self.b - self.b + x**2)
+            )
         ) / (2 * self.a - 1)
 
     def derivative(self, x):
@@ -72,22 +73,27 @@ def spmm(
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(
-        pattern, is_time_series=x.is_time_series, is_voxel=x.is_voxel,
-        **dict_shape)
+        pattern,
+        is_time_series=x.is_time_series,
+        is_voxel=x.is_voxel,
+        **dict_shape,
+    )
 
 
 def einsum(
-        equation, *args: list[IPhlowerTensor],
-        dimension: (
-            PhysicalDimensions
-            | PhlowerDimensionTensor
-            | torch.Tensor
-            | dict[str, float]
-            | list[float]
-            | tuple[float]
-            | None
-        ) = None,
-        is_time_series: bool = False, is_voxel: bool = False,
+    equation,
+    *args: list[IPhlowerTensor],
+    dimension: (
+        PhysicalDimensions
+        | PhlowerDimensionTensor
+        | torch.Tensor
+        | dict[str, float]
+        | list[float]
+        | tuple[float]
+        | None
+    ) = None,
+    is_time_series: bool = False,
+    is_voxel: bool = False,
 ) -> IPhlowerTensor:
     """
     Compute einsum for phlower tensors.
@@ -111,15 +117,17 @@ def einsum(
             Resultant tensor
     """
     try:
-        ret_tensor = torch.einsum(
-            equation, [a.to_tensor() for a in args])
+        ret_tensor = torch.einsum(equation, [a.to_tensor() for a in args])
     except RuntimeError as e:
         raise PhlowerIncompatibleTensorError(
-            f"{e}\n"
-            f"{equation}, {[a.shape for a in args]}") from e
+            f"{e}\n" f"{equation}, {[a.shape for a in args]}"
+        ) from e
     return phlower_tensor(
-        ret_tensor, dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        ret_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
 
 
 def _availale_variables(length: int, start: int = 0) -> str:
@@ -128,11 +136,12 @@ def _availale_variables(length: int, start: int = 0) -> str:
 
     if length > len(available_variables):
         raise ValueError(f"Required length too long: {length}")
-    return available_variables[start:start+length]
+    return available_variables[start : start + length]
 
 
 def contraction(
-        x: IPhlowerTensor, y: IPhlowerTensor | None = None) -> IPhlowerTensor:
+    x: IPhlowerTensor, y: IPhlowerTensor | None = None
+) -> IPhlowerTensor:
     """
     Compute the tensor contraction.
 
@@ -151,7 +160,8 @@ def contraction(
 
     if x.is_voxel != y.is_voxel:
         raise PhlowerIncompatibleTensorError(
-            "Cannot compute contraction between non-voxel and voxel.")
+            "Cannot compute contraction between non-voxel and voxel."
+        )
 
     ret_is_time_series = x.is_time_series or y.is_time_series
     time_x = "t" if x.is_time_series else ""
@@ -176,8 +186,12 @@ def contraction(
     return einsum(
         f"{time_x}{space}...{unresolved}f,{time_y}{space}...f->"
         f"{time_ret}{space}{unresolved}f",
-        x, y, dimension=dimension,
-        is_time_series=ret_is_time_series, is_voxel=is_voxel)
+        x,
+        y,
+        dimension=dimension,
+        is_time_series=ret_is_time_series,
+        is_voxel=is_voxel,
+    )
 
 
 def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
@@ -194,7 +208,8 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     """
     if x.is_voxel != y.is_voxel:
         raise PhlowerIncompatibleTensorError(
-            "Cannot compute contraction between non-voxel and voxel.")
+            "Cannot compute contraction between non-voxel and voxel."
+        )
 
     x_rank = x.rank()
     y_rank = y.rank()
@@ -214,8 +229,10 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
 
     x_vars = _availale_variables(x_rank)
     y_vars = _availale_variables(y_rank, start=x_rank)
-    equation = f"{time_x}{space}{x_vars}f,{time_y}{space}{y_vars}f->" \
+    equation = (
+        f"{time_x}{space}{x_vars}f,{time_y}{space}{y_vars}f->"
         + f"{time_ret}{space}{x_vars}{y_vars}f"
+    )
 
     if x.dimension is None or y.dimension is None:
         dimension = None
@@ -223,12 +240,18 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
         dimension = x.dimension * y.dimension
 
     return einsum(
-        equation, x, y, dimension=dimension,
-        is_time_series=ret_is_time_series, is_voxel=is_voxel)
+        equation,
+        x,
+        y,
+        dimension=dimension,
+        is_time_series=ret_is_time_series,
+        is_voxel=is_voxel,
+    )
 
 
 def tensor_times_scalar(
-        tensor: IPhlowerTensor, scalar: int | float | IPhlowerTensor):
+    tensor: IPhlowerTensor, scalar: int | float | IPhlowerTensor
+):
     """
     Compute multiplication between tensor and scalar (field).
 
@@ -251,7 +274,7 @@ def tensor_times_scalar(
 
 
 def apply_orthogonal_group(
-        orthogonal_matrix: IPhlowerTensor, tensor: IPhlowerTensor
+    orthogonal_matrix: IPhlowerTensor, tensor: IPhlowerTensor
 ) -> IPhlowerTensor:
     """
     Apply orthogonal group action to the input tensor.
@@ -277,16 +300,19 @@ def apply_orthogonal_group(
     start_dim = start_dim + 3 if tensor.is_voxel else start_dim
 
     s = _availale_variables(rank * 2)
-    str_ortho = ','.join(a + b for a, b in zip(s[::2], s[1::2], strict=True))
+    str_ortho = ",".join(a + b for a, b in zip(s[::2], s[1::2], strict=True))
     str_tensor = f"{time}{space}{s[1::2]}f"
     str_ret = f"{time}{space}{s[::2]}f"
     equation = f"{str_ortho},{str_tensor}->{str_ret}"
     args = [orthogonal_matrix] * rank + [tensor]
 
     return einsum(
-        equation, *args,
+        equation,
+        *args,
         dimension=tensor.dimension,
-        is_time_series=tensor.is_time_series, is_voxel=tensor.is_voxel)
+        is_time_series=tensor.is_time_series,
+        is_voxel=tensor.is_voxel,
+    )
 
 
 def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
@@ -298,9 +324,12 @@ def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     space_width = 3 if tensor.is_voxel else 1
 
     squeezed = einsum(
-        f"{time}{space}...->{time}...", tensor,
-        dimension=tensor.dimension, is_time_series=tensor.is_time_series,
-        is_voxel=tensor.is_voxel)
+        f"{time}{space}...->{time}...",
+        tensor,
+        dimension=tensor.dimension,
+        is_time_series=tensor.is_time_series,
+        is_voxel=tensor.is_voxel,
+    )
 
     # keepdim
     for _ in range(space_width):

@@ -99,11 +99,13 @@ class ActivationSelector:
 
     @staticmethod
     def select_inverse(
-            name: str | None) -> Callable[[torch.Tensor], torch.Tensor]:
+        name: str | None,
+    ) -> Callable[[torch.Tensor], torch.Tensor]:
         if name is None:
             name = "identity"
         return ActivationSelector._REGISTERED_ACTIVATIONS[
-            ActivationSelector._inverse_activation_name(name)]
+            ActivationSelector._inverse_activation_name(name)
+        ]
 
     @staticmethod
     def _inverse_activation_name(activation_name: str) -> str:
@@ -117,7 +119,8 @@ class ActivationSelector:
             return "truncated_atanh"
 
         raise PhlowerInvalidActivationError(
-            f"Cannot inverse for {activation_name}")
+            f"Cannot inverse for {activation_name}"
+        )
 
     @staticmethod
     def is_exists(name: str) -> bool:

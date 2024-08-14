@@ -19,7 +19,8 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     bias: bool = Field(False, frozen=True)
     create_linear_weight: bool = Field(False, frozen=True)
     norm_function_name: str = Field(
-        default_factory=lambda: 'identity', frozen=True)
+        default_factory=lambda: "identity", frozen=True
+    )
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:

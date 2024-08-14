@@ -59,7 +59,8 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
         """Initialize parameters and activations after resolve() is called."""
         self._activations = [
             _utils.ActivationSelector.select_inverse(name)
-            for name in self._reference._activations[::-1]]
+            for name in self._reference._activations[::-1]
+        ]
         self._chains = self._init_pinv_chains()
 
     def _init_pinv_chains(self):
@@ -69,8 +70,7 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
 
         raise ValueError(f"Unsupported reference class: {name}")
 
-    def _init_pinv_mlp_chains(
-            self, chains: _utils.ExtendedLinearList):
+    def _init_pinv_mlp_chains(self, chains: _utils.ExtendedLinearList):
         return [PInvLinear(c) for c in chains._linears[::-1]]
 
     def forward(
@@ -100,7 +100,8 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
 
         h = data.unique_item()
         for activation, chain in zip(
-                self._activations, self._chains, strict=True):
+            self._activations, self._chains, strict=True
+        ):
             # Activation comes first because it is pseudo inverse
             h = chain(activation(h))
 
@@ -108,7 +109,6 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
 
 
 class PInvLinear(torch.nn.Module):
-
     def __init__(self, ref_linear: torch.nn.Linear):
         super().__init__()
         self.ref_linear = ref_linear
@@ -130,4 +130,4 @@ class PInvLinear(torch.nn.Module):
         if self.ref_linear.bias is None:
             return 0
         else:
-            return - self.ref_linear.bias
+            return -self.ref_linear.bias

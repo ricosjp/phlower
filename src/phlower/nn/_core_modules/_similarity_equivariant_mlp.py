@@ -81,14 +81,18 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
 
         if self._disable_en_equivariance:
             self._mlp = MLP(
-                nodes=nodes, activations=activations,
-                dropouts=dropouts, bias=bias,
+                nodes=nodes,
+                activations=activations,
+                dropouts=dropouts,
+                bias=bias,
             )
             self._linear_weight = self._init_linear_weight()
         else:
             self._mlp = EnEquivariantMLP(
-                nodes=nodes, activations=activations,
-                dropouts=dropouts, bias=bias,
+                nodes=nodes,
+                activations=activations,
+                dropouts=dropouts,
+                bias=bias,
                 create_linear_weight=create_linear_weight,
                 norm_function_name=norm_function_name,
             )
@@ -99,7 +103,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             if self._nodes[0] != self._nodes[-1]:
                 raise ValueError(
                     "First and last nodes are different. "
-                    "Set create_linear_weight True.")
+                    "Set create_linear_weight True."
+                )
             return Identity()
 
         return Proportional([self._nodes[0], self._nodes[-1]])
@@ -135,26 +140,33 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             raise PhlowerDimensionRequiredError("Dimension is required")
         if dict_scales is None or len(data) < 1:
             raise PhlowerInvalidArgumentsError(
-                f"Scale inputs are required. Given: {dict_scales}, {kwards}")
-        if not np.all([
+                f"Scale inputs are required. Given: {dict_scales}, {kwards}"
+            )
+        if not np.all(
+            [
                 PhysicalDimensionSymbolType.is_exist(k)
-                for k in dict_scales.keys()]):
+                for k in dict_scales.keys()
+            ]
+        ):
             raise PhlowerInvalidArgumentsError(
                 "keys in dict_scales should be in "
-                "PhysicalDimensionSymbolType. Given: {dict_scales.keys()}")
+                "PhysicalDimensionSymbolType. Given: {dict_scales.keys()}"
+            )
         dict_dimension = h.dimension.to_dict()
 
         dict_scales = {
-            k: v**dict_dimension[k] for k, v in dict_scales.items()}
+            k: v ** dict_dimension[k] for k, v in dict_scales.items()
+        }
 
         # Make h dimensionless
         for v in dict_scales.values():
             h = _functions.tensor_times_scalar(h, 1 / v)
 
         if self._centering:
-            volume = dict_dimension["L"]**3
+            volume = dict_dimension["L"] ** 3
             mean = _functions.spatial_mean(
-                _functions.tensor_times_scalar(h, volume))
+                _functions.tensor_times_scalar(h, volume)
+            )
             h = h - mean
 
         h = self._mlp(phlower_tensor_collection({"h": h}))
@@ -162,7 +174,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
 
         if self._centering:
             linear_mean = self._linear_weight(
-                phlower_tensor_collection({"mean": mean}))
+                phlower_tensor_collection({"mean": mean})
+            )
             h = h + linear_mean
 
         if self._invariant:

@@ -26,20 +26,20 @@ def test__can_call_parameters():
     ],
 )
 @pytest.mark.parametrize("n_output_feature", [1, 16, 32])
-@pytest.mark.parametrize("scale", [0., 0.5, 2.])
-def test__proportional_linearity(
-        size, is_time_series, n_output_feature, scale):
-
+@pytest.mark.parametrize("scale", [0.0, 0.5, 2.0])
+def test__proportional_linearity(size, is_time_series, n_output_feature, scale):
     model = Proportional(nodes=[size[-1], n_output_feature])
 
     phlower_tensor = PhlowerTensor(
-        torch.rand(*size), is_time_series=is_time_series)
+        torch.rand(*size), is_time_series=is_time_series
+    )
 
-    phlower_tensors = phlower_tensor_collection({'tensor': phlower_tensor})
+    phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
     actual = model(phlower_tensors).to_numpy()
 
     scaled_phlower_tensors = phlower_tensor_collection(
-        {'tensor': phlower_tensor * scale})
+        {"tensor": phlower_tensor * scale}
+    )
     desired = model(scaled_phlower_tensors).to_numpy()
 
     np.testing.assert_almost_equal(actual * scale, desired)

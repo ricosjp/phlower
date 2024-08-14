@@ -34,25 +34,32 @@ def test__can_call_parameters():
     ],
 )
 @pytest.mark.parametrize("n_output_feature", [1, 16, 32])
-def test__en_equivariance(
-        size, is_time_series, is_voxel, n_output_feature):
+def test__en_equivariance(size, is_time_series, is_voxel, n_output_feature):
     orthogonal_tensor = PhlowerTensor(
-        torch.tensor(ortho_group.rvs(3).astype(np.float32)))
+        torch.tensor(ortho_group.rvs(3).astype(np.float32))
+    )
     create_linear_weight = size[-1] != n_output_feature
     model = EnEquivariantMLP(
         nodes=[size[-1], n_output_feature],
-        create_linear_weight=create_linear_weight)
+        create_linear_weight=create_linear_weight,
+    )
 
     phlower_tensor = PhlowerTensor(
-        torch.rand(*size), is_time_series=is_time_series, is_voxel=is_voxel)
+        torch.rand(*size), is_time_series=is_time_series, is_voxel=is_voxel
+    )
 
-    phlower_tensors = phlower_tensor_collection({'tensor': phlower_tensor})
+    phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
     actual = _functions.apply_orthogonal_group(
-        orthogonal_tensor, model(phlower_tensors)).to_numpy()
+        orthogonal_tensor, model(phlower_tensors)
+    ).to_numpy()
 
     rotated_phlower_tensors = phlower_tensor_collection(
-        {'tensor': _functions.apply_orthogonal_group(
-            orthogonal_tensor, phlower_tensor)})
+        {
+            "tensor": _functions.apply_orthogonal_group(
+                orthogonal_tensor, phlower_tensor
+            )
+        }
+    )
     desired = model(rotated_phlower_tensors).to_numpy()
 
     np.testing.assert_almost_equal(actual, desired, decimal=6)

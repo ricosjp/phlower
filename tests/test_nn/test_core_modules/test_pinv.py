@@ -1,4 +1,3 @@
-
 import numpy as np
 import pytest
 import torch
@@ -40,4 +39,5 @@ def test__pinv_mlp(mlp_nodes, activations, decimal):
     pinv_val = model(phlower_tensor_collection({"tensor": mlp_val}))
 
     np.testing.assert_array_almost_equal(
-        pinv_val.to_numpy(), t.to_numpy(), decimal=decimal)
+        pinv_val.to_numpy(), t.to_numpy(), decimal=decimal
+    )

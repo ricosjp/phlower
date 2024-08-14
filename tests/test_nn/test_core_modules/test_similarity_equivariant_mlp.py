@@ -48,26 +48,32 @@ def test__can_call_parameters():
         # Velocity
         {"T": -1, "L": 1, "M": 0, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Mass density
-        {"T": 0, "L": - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
+        {"T": 0, "L": -3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Momentum density
         {"T": -1, "L": 1 - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
     ],
 )
-@pytest.mark.parametrize(
-    "norm_function_name", ["identity", "sqrt"])
-@pytest.mark.parametrize(
-    "centering", [False, True])
+@pytest.mark.parametrize("norm_function_name", ["identity", "sqrt"])
+@pytest.mark.parametrize("centering", [False, True])
 def test__similarity_equivariance(
-        size, is_time_series, is_voxel, activation, n_output_feature,
-        dimension, norm_function_name, centering,
+    size,
+    is_time_series,
+    is_voxel,
+    activation,
+    n_output_feature,
+    dimension,
+    norm_function_name,
+    centering,
 ):
     orthogonal_tensor = PhlowerTensor(
-        torch.tensor(ortho_group.rvs(3).astype(np.float32)))
+        torch.tensor(ortho_group.rvs(3).astype(np.float32))
+    )
     dict_scaling_factor = {
-        k:
-        np.random.rand() * 10 for k, v in dimension.items()}
+        k: np.random.rand() * 10 for k, v in dimension.items()
+    }
     scaling_factor = np.prod(
-        [dict_scaling_factor[k]**v for k, v in dimension.items()])
+        [dict_scaling_factor[k] ** v for k, v in dimension.items()]
+    )
 
     create_linear_weight = size[-1] != n_output_feature
     model = SimilarityEquivariantMLP(
@@ -80,29 +86,40 @@ def test__similarity_equivariance(
     )
 
     t = phlower_tensor(
-        torch.rand(*size) * 2 - 1., dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch.rand(*size) * 2 - 1.0,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     dict_tensor = {"tensor": t}
     dict_scales = {
         k: phlower_tensor(
-            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1}))
+            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1})
+        )
         for k, v in dimension.items()
     }
 
     ts = phlower_tensor_collection(dict_tensor)
-    actual_tensor = _functions.apply_orthogonal_group(
-        orthogonal_tensor,
-        model(ts, dict_scales=dict_scales)) * scaling_factor
+    actual_tensor = (
+        _functions.apply_orthogonal_group(
+            orthogonal_tensor, model(ts, dict_scales=dict_scales)
+        )
+        * scaling_factor
+    )
     actual = actual_tensor.to_numpy()
 
-    dict_transformed = {'tensor': _functions.apply_orthogonal_group(
-            orthogonal_tensor, t) * scaling_factor}
+    dict_transformed = {
+        "tensor": _functions.apply_orthogonal_group(orthogonal_tensor, t)
+        * scaling_factor
+    }
     dict_scaled_scales = {
-        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()}
+        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()
+    }
 
     transformed_phlower_tensors = phlower_tensor_collection(dict_transformed)
     desired = model(
-        transformed_phlower_tensors, dict_scales=dict_scaled_scales).to_numpy()
+        transformed_phlower_tensors, dict_scales=dict_scaled_scales
+    ).to_numpy()
 
     scale = np.max(np.abs(desired))
     # Test equivariance
@@ -140,26 +157,32 @@ def test__similarity_equivariance(
         # Velocity
         {"T": -1, "L": 1, "M": 0, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Mass density
-        {"T": 0, "L": - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
+        {"T": 0, "L": -3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Momentum density
         {"T": -1, "L": 1 - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
     ],
 )
-@pytest.mark.parametrize(
-    "norm_function_name", ["identity", "sqrt"])
-@pytest.mark.parametrize(
-    "centering", [False, True])
+@pytest.mark.parametrize("norm_function_name", ["identity", "sqrt"])
+@pytest.mark.parametrize("centering", [False, True])
 def test__similarity_invariance(
-        size, is_time_series, is_voxel, activation, n_output_feature,
-        dimension, norm_function_name, centering,
+    size,
+    is_time_series,
+    is_voxel,
+    activation,
+    n_output_feature,
+    dimension,
+    norm_function_name,
+    centering,
 ):
     orthogonal_tensor = PhlowerTensor(
-        torch.tensor(ortho_group.rvs(3).astype(np.float32)))
+        torch.tensor(ortho_group.rvs(3).astype(np.float32))
+    )
     dict_scaling_factor = {
-        k:
-        np.random.rand() * 10 for k, v in dimension.items()}
+        k: np.random.rand() * 10 for k, v in dimension.items()
+    }
     scaling_factor = np.prod(
-        [dict_scaling_factor[k]**v for k, v in dimension.items()])
+        [dict_scaling_factor[k] ** v for k, v in dimension.items()]
+    )
 
     create_linear_weight = size[-1] != n_output_feature
     model = SimilarityEquivariantMLP(
@@ -168,32 +191,42 @@ def test__similarity_invariance(
         create_linear_weight=create_linear_weight,
         norm_function_name=norm_function_name,
         disable_en_equivariance=False,
-        centering=centering, invariant=True,
+        centering=centering,
+        invariant=True,
     )
 
     t = phlower_tensor(
-        torch.rand(*size) * 2 - 1., dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch.rand(*size) * 2 - 1.0,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     dict_tensor = {"tensor": t}
     dict_scales = {
         k: phlower_tensor(
-            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1}))
+            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1})
+        )
         for k, v in dimension.items()
     }
 
     ts = phlower_tensor_collection(dict_tensor)
     actual_tensor = _functions.apply_orthogonal_group(
-        orthogonal_tensor, model(ts, dict_scales=dict_scales))
+        orthogonal_tensor, model(ts, dict_scales=dict_scales)
+    )
     actual = actual_tensor.to_numpy()
 
-    dict_transformed = {'tensor': _functions.apply_orthogonal_group(
-            orthogonal_tensor, t) * scaling_factor}
+    dict_transformed = {
+        "tensor": _functions.apply_orthogonal_group(orthogonal_tensor, t)
+        * scaling_factor
+    }
     dict_scaled_scales = {
-        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()}
+        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()
+    }
 
     transformed_phlower_tensors = phlower_tensor_collection(dict_transformed)
     desired = model(
-        transformed_phlower_tensors, dict_scales=dict_scaled_scales).to_numpy()
+        transformed_phlower_tensors, dict_scales=dict_scaled_scales
+    ).to_numpy()
 
     scale = np.max(np.abs(desired))
     # Test equivariance
@@ -201,7 +234,7 @@ def test__similarity_invariance(
 
     # Test dimensionless in case of invariant
     for v in actual_tensor.dimension.to_dict().values():
-        np.testing.assert_almost_equal(v, 0.)
+        np.testing.assert_almost_equal(v, 0.0)
 
 
 @pytest.mark.parametrize(
@@ -231,28 +264,32 @@ def test__similarity_invariance(
         # Velocity
         {"T": -1, "L": 1, "M": 0, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Mass density
-        {"T": 0, "L": - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
+        {"T": 0, "L": -3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
         # Momentum density
         {"T": -1, "L": 1 - 3, "M": 1, "I": 0, "Theta": 0, "N": 0, "J": 0},
     ],
 )
-@pytest.mark.parametrize(
-    "norm_function_name", ["identity", "sqrt"])
-@pytest.mark.parametrize(
-    "centering", [False, True])
-@pytest.mark.parametrize(
-    "invariant", [False, True])
+@pytest.mark.parametrize("norm_function_name", ["identity", "sqrt"])
+@pytest.mark.parametrize("centering", [False, True])
+@pytest.mark.parametrize("invariant", [False, True])
 def test__scaling_equivariance(
-        size, is_time_series, is_voxel, activation, n_output_feature,
-        dimension, norm_function_name,
-        centering, invariant,
+    size,
+    is_time_series,
+    is_voxel,
+    activation,
+    n_output_feature,
+    dimension,
+    norm_function_name,
+    centering,
+    invariant,
 ):
     orthogonal_tensor = PhlowerTensor(torch.eye(3))
     dict_scaling_factor = {
-        k:
-        np.random.rand() * 10 for k, v in dimension.items()}
+        k: np.random.rand() * 10 for k, v in dimension.items()
+    }
     scaling_factor = np.prod(
-        [dict_scaling_factor[k]**v for k, v in dimension.items()])
+        [dict_scaling_factor[k] ** v for k, v in dimension.items()]
+    )
 
     create_linear_weight = size[-1] != n_output_feature
     model = SimilarityEquivariantMLP(
@@ -261,37 +298,53 @@ def test__scaling_equivariance(
         create_linear_weight=create_linear_weight,
         norm_function_name=norm_function_name,
         disable_en_equivariance=True,
-        centering=centering, invariant=invariant,
+        centering=centering,
+        invariant=invariant,
     )
 
     t = phlower_tensor(
-        torch.rand(*size) * 2 - 1., dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch.rand(*size) * 2 - 1.0,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     dict_tensor = {"tensor": t}
     dict_scales = {
         k: phlower_tensor(
-            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1}))
+            torch.rand(1) * 10, dimension=PhysicalDimensions({k: 1})
+        )
         for k, v in dimension.items()
     }
 
     ts = phlower_tensor_collection(dict_tensor)
     if invariant:
-        actual_tensor = _functions.apply_orthogonal_group(
-            orthogonal_tensor, model(ts, dict_scales=dict_scales)) * 1.
+        actual_tensor = (
+            _functions.apply_orthogonal_group(
+                orthogonal_tensor, model(ts, dict_scales=dict_scales)
+            )
+            * 1.0
+        )
     else:
-        actual_tensor = _functions.apply_orthogonal_group(
-            orthogonal_tensor,
-            model(ts, dict_scales=dict_scales)) * scaling_factor
+        actual_tensor = (
+            _functions.apply_orthogonal_group(
+                orthogonal_tensor, model(ts, dict_scales=dict_scales)
+            )
+            * scaling_factor
+        )
     actual = actual_tensor.to_numpy()
 
-    dict_transformed = {'tensor': _functions.apply_orthogonal_group(
-            orthogonal_tensor, t) * scaling_factor}
+    dict_transformed = {
+        "tensor": _functions.apply_orthogonal_group(orthogonal_tensor, t)
+        * scaling_factor
+    }
     dict_scaled_scales = {
-        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()}
+        k: v * dict_scaling_factor[k] for k, v in dict_scales.items()
+    }
 
     transformed_phlower_tensors = phlower_tensor_collection(dict_transformed)
     desired = model(
-        transformed_phlower_tensors, dict_scales=dict_scaled_scales).to_numpy()
+        transformed_phlower_tensors, dict_scales=dict_scaled_scales
+    ).to_numpy()
 
     scale = np.max(np.abs(desired))
     # Test equivariance
@@ -300,7 +353,7 @@ def test__scaling_equivariance(
     if invariant:
         # Test dimensionless in case of invariant
         for v in actual_tensor.dimension.to_dict().values():
-            np.testing.assert_almost_equal(v, 0.)
+            np.testing.assert_almost_equal(v, 0.0)
     else:
         # Test dimension is kept
         for k, v in actual_tensor.dimension.to_dict().items():
@@ -312,11 +365,13 @@ def test__similarity_equivariance_no_dimension():
 
     t = phlower_tensor(torch.rand(10, 3, 8), dimension=None)
     t_scale = phlower_tensor(
-        torch.tensor(0.1), dimension=PhysicalDimensions({"T": 1}))
+        torch.tensor(0.1), dimension=PhysicalDimensions({"T": 1})
+    )
     dict_scales = {"T": t_scale}
     ts = phlower_tensor_collection({"tensor": t})
     with pytest.raises(PhlowerDimensionRequiredError):
         model(ts, dict_scales=dict_scales)
+
 
 def test__similarity_equivariance_no_scale_input():
     model = SimilarityEquivariantMLP(nodes=[8, 8])

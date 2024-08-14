@@ -150,7 +150,8 @@ def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
         if inputs != other:
             raise DimensionIncompatibleError(
                 "Add operation for different physical dimensions is not "
-                "allowed.")
+                "allowed."
+            )
 
         return PhlowerDimensionTensor(inputs._tensor)
 
@@ -163,7 +164,8 @@ def sub(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
         if inputs != other:
             raise DimensionIncompatibleError(
                 "Sub operation for different physical dimensions is not "
-                "allowed.")
+                "allowed."
+            )
 
         return PhlowerDimensionTensor(inputs._tensor)
 
@@ -294,7 +296,8 @@ def concatenate(inputs, *args, **kwards):
 def tanh(tensor: PhlowerDimensionTensor):
     if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
-            f"Should be dimensionless to apply tanh but {tensor}")
+            f"Should be dimensionless to apply tanh but {tensor}"
+        )
     return tensor
 
 
@@ -302,5 +305,6 @@ def tanh(tensor: PhlowerDimensionTensor):
 def leaky_relu(tensor: PhlowerDimensionTensor, *args, **kwargs):
     if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
-            f"Should be dimensionless to apply leaky_relu but {tensor}")
+            f"Should be dimensionless to apply leaky_relu but {tensor}"
+        )
     return tensor

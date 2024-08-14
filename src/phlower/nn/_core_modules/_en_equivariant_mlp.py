@@ -58,7 +58,8 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             dropouts = []
 
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias)
+            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
+        )
         self._nodes = nodes
         self._activations = activations
         self._create_linear_weight = create_linear_weight
@@ -66,14 +67,16 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
 
         self._linear_weight = self._init_linear_weight()
         self._norm_function = _utils.ActivationSelector.select(
-            self._norm_function_name)
+            self._norm_function_name
+        )
 
     def _init_linear_weight(self):
         if not self._create_linear_weight:
             if self._nodes[0] != self._nodes[-1]:
                 raise ValueError(
                     "First and last nodes are different. "
-                    "Set create_linear_weight True.")
+                    "Set create_linear_weight True."
+                )
             return Identity()
 
         return Proportional([self._nodes[0], self._nodes[-1]])

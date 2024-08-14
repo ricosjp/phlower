@@ -111,10 +111,10 @@ def test__tensor_div_scalar():
     dims = phlower_dimension_tensor({"L": 2, "T": -2})
 
     a = torch.tensor(np.random.rand(3, 10))
-    c = a / 3.
+    c = a / 3.0
 
     ap = PhlowerTensor(a, dims)
-    cp = ap / 3.
+    cp = ap / 3.0
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 
@@ -126,10 +126,10 @@ def test__scalar_div_tensor():
     desired_dims = phlower_dimension_tensor({"L": -2, "T": 2})
 
     a = torch.tensor(np.random.rand(3, 10))
-    c = 3. / a
+    c = 3.0 / a
 
     ap = PhlowerTensor(a, dims)
-    cp = 3. / ap
+    cp = 3.0 / ap
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 

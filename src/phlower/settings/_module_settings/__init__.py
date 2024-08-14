@@ -16,8 +16,9 @@ from phlower.settings._module_settings._proportional_setting import (
     ProportionalSetting,
 )
 from phlower.settings._module_settings._share_setting import ShareSetting
-from phlower.settings._module_settings \
-    ._similarity_equivariant_mlp_setting import SimilarityEquivariantMLPSetting
+from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (
+    SimilarityEquivariantMLPSetting,
+)
 
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Concatenator": ConcatenatorSetting,

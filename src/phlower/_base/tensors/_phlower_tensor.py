@@ -106,7 +106,8 @@ class PhlowerTensor(IPhlowerTensor):
     ):
         if not isinstance(tensor, torch.Tensor):
             raise PhlowerTypeError(
-                f"Expect torch.Tensor but {tensor.__class__} was fed")
+                f"Expect torch.Tensor but {tensor.__class__} was fed"
+            )
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
         self._is_time_series = is_time_series

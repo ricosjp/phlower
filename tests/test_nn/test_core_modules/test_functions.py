@@ -49,7 +49,8 @@ def test__spmm(size, is_time_series, repeat):
                 desired = sp_sparse @ desired
             norm = np.mean(np.linalg.norm(desired, axis=-1))
             np.testing.assert_almost_equal(
-                actual / norm, desired / norm, decimal=5)
+                actual / norm, desired / norm, decimal=5
+            )
             return
 
         for i in range(array.shape[1]):
@@ -64,7 +65,7 @@ def test__spmm(size, is_time_series, repeat):
 
 
 def test_leaky_relu0p5_inverse_leaky_relu0p5():
-    x = PhlowerTensor(torch.rand(100)) * 4 - 2.
+    x = PhlowerTensor(torch.rand(100)) * 4 - 2.0
     y = _functions.inversed_leaky_relu0p5(_functions.leaky_relu0p5(x))
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
 
@@ -113,14 +114,17 @@ def test_smooth_leaky_relu_inverse():
     ],
 )
 def test_contraction_one_argument(
-        size, is_time_series, is_voxel, desired_pattern, dimension):
+    size, is_time_series, is_voxel, desired_pattern, dimension
+):
     torch_tensor = torch.rand(*size)
     x = phlower_tensor(
-        torch_tensor, dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     actual = _functions.contraction(x)
-    desired = torch.einsum(
-        desired_pattern, torch_tensor, torch_tensor).numpy()
+    desired = torch.einsum(desired_pattern, torch_tensor, torch_tensor).numpy()
     np.testing.assert_almost_equal(actual.to_tensor().numpy(), desired)
 
     assert actual.is_time_series == is_time_series
@@ -140,137 +144,237 @@ def test_contraction_one_argument(
     "desired_pattern, desired_rank",
     [
         # Base
+        ((10, 16), (10, 16), False, False, False, "nf,nf->nf", 0),
+        ((10, 3, 16), (10, 16), False, False, False, "npf,nf->npf", 1),
+        ((10, 16), (10, 3, 16), False, False, False, "nf,npf->npf", 1),
+        ((10, 3, 16), (10, 3, 16), False, False, False, "npf,npf->nf", 0),
+        ((10, 3, 3, 16), (10, 16), False, False, False, "npqf,nf->npqf", 2),
+        ((10, 3, 3, 16), (10, 3, 16), False, False, False, "npqf,npf->nqf", 1),
         (
-            (10, 16), (10, 16), False, False, False,
-            "nf,nf->nf", 0),
-        (
-            (10, 3, 16), (10, 16), False, False, False,
-            "npf,nf->npf", 1),
-        (
-            (10, 16), (10, 3, 16), False, False, False,
-            "nf,npf->npf", 1),
-        (
-            (10, 3, 16), (10, 3, 16), False, False, False,
-            "npf,npf->nf", 0),
-        (
-            (10, 3, 3, 16), (10, 16), False, False, False,
-            "npqf,nf->npqf", 2),
-        (
-            (10, 3, 3, 16), (10, 3, 16), False, False, False,
-            "npqf,npf->nqf", 1),
-        (
-            (10, 3, 3, 16), (10, 3, 3, 16), False, False, False,
-            "npqf,npqf->nf", 0),
+            (10, 3, 3, 16),
+            (10, 3, 3, 16),
+            False,
+            False,
+            False,
+            "npqf,npqf->nf",
+            0,
+        ),
         # X time series
+        ((4, 10, 16), (10, 16), True, False, False, "tnf,nf->tnf", 0),
+        ((4, 10, 3, 16), (10, 16), True, False, False, "tnpf,nf->tnpf", 1),
+        ((4, 10, 16), (10, 3, 16), True, False, False, "tnf,npf->tnpf", 1),
+        ((4, 10, 3, 16), (10, 3, 16), True, False, False, "tnpf,npf->tnf", 0),
+        ((4, 10, 3, 3, 16), (10, 16), True, False, False, "tnpqf,nf->tnpqf", 2),
         (
-            (4, 10, 16), (10, 16), True, False, False,
-            "tnf,nf->tnf", 0),
+            (4, 10, 3, 3, 16),
+            (10, 3, 16),
+            True,
+            False,
+            False,
+            "tnpqf,npf->tnqf",
+            1,
+        ),
         (
-            (4, 10, 3, 16), (10, 16), True, False, False,
-            "tnpf,nf->tnpf", 1),
-        (
-            (4, 10, 16), (10, 3, 16), True, False, False,
-            "tnf,npf->tnpf", 1),
-        (
-            (4, 10, 3, 16), (10, 3, 16), True, False, False,
-            "tnpf,npf->tnf", 0),
-        (
-            (4, 10, 3, 3, 16), (10, 16), True, False, False,
-            "tnpqf,nf->tnpqf", 2),
-        (
-            (4, 10, 3, 3, 16), (10, 3, 16), True, False, False,
-            "tnpqf,npf->tnqf", 1),
-        (
-            (4, 10, 3, 3, 16), (10, 3, 3, 16), True, False, False,
-            "tnpqf,npqf->tnf", 0),
+            (4, 10, 3, 3, 16),
+            (10, 3, 3, 16),
+            True,
+            False,
+            False,
+            "tnpqf,npqf->tnf",
+            0,
+        ),
         # Y time series
+        ((10, 16), (4, 10, 16), False, True, False, "nf,tnf->tnf", 0),
+        ((10, 3, 16), (4, 10, 16), False, True, False, "npf,tnf->tnpf", 1),
+        ((10, 16), (4, 10, 3, 16), False, True, False, "nf,tnpf->tnpf", 1),
+        ((10, 3, 16), (4, 10, 3, 16), False, True, False, "npf,tnpf->tnf", 0),
+        ((10, 3, 3, 16), (4, 10, 16), False, True, False, "npqf,tnf->tnpqf", 2),
         (
-            (10, 16), (4, 10, 16), False, True, False,
-            "nf,tnf->tnf", 0),
+            (10, 3, 3, 16),
+            (4, 10, 3, 16),
+            False,
+            True,
+            False,
+            "npqf,tnpf->tnqf",
+            1,
+        ),
         (
-            (10, 3, 16), (4, 10, 16), False, True, False,
-            "npf,tnf->tnpf", 1),
-        (
-            (10, 16), (4, 10, 3, 16), False, True, False,
-            "nf,tnpf->tnpf", 1),
-        (
-            (10, 3, 16), (4, 10, 3, 16), False, True, False,
-            "npf,tnpf->tnf", 0),
-        (
-            (10, 3, 3, 16), (4, 10, 16), False, True, False,
-            "npqf,tnf->tnpqf", 2),
-        (
-            (10, 3, 3, 16), (4, 10, 3, 16), False, True, False,
-            "npqf,tnpf->tnqf", 1),
-        (
-            (10, 3, 3, 16), (4, 10, 3, 3, 16), False, True, False,
-            "npqf,tnpqf->tnf", 0),
+            (10, 3, 3, 16),
+            (4, 10, 3, 3, 16),
+            False,
+            True,
+            False,
+            "npqf,tnpqf->tnf",
+            0,
+        ),
         # X Y time series
+        ((4, 10, 16), (4, 10, 16), True, True, False, "tnf,tnf->tnf", 0),
+        ((4, 10, 3, 16), (4, 10, 16), True, True, False, "tnpf,tnf->tnpf", 1),
+        ((4, 10, 16), (4, 10, 3, 16), True, True, False, "tnf,tnpf->tnpf", 1),
         (
-            (4, 10, 16), (4, 10, 16), True, True, False,
-            "tnf,tnf->tnf", 0),
+            (4, 10, 3, 16),
+            (4, 10, 3, 16),
+            True,
+            True,
+            False,
+            "tnpf,tnpf->tnf",
+            0,
+        ),
         (
-            (4, 10, 3, 16), (4, 10, 16), True, True, False,
-            "tnpf,tnf->tnpf", 1),
+            (4, 10, 3, 3, 16),
+            (4, 10, 16),
+            True,
+            True,
+            False,
+            "tnpqf,tnf->tnpqf",
+            2,
+        ),
         (
-            (4, 10, 16), (4, 10, 3, 16), True, True, False,
-            "tnf,tnpf->tnpf", 1),
+            (4, 10, 3, 3, 16),
+            (4, 10, 3, 16),
+            True,
+            True,
+            False,
+            "tnpqf,tnpf->tnqf",
+            1,
+        ),
         (
-            (4, 10, 3, 16), (4, 10, 3, 16), True, True, False,
-            "tnpf,tnpf->tnf", 0),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 16), True, True, False,
-            "tnpqf,tnf->tnpqf", 2),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 3, 16), True, True, False,
-            "tnpqf,tnpf->tnqf", 1),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 3, 3, 16), True, True, False,
-            "tnpqf,tnpqf->tnf", 0),
+            (4, 10, 3, 3, 16),
+            (4, 10, 3, 3, 16),
+            True,
+            True,
+            False,
+            "tnpqf,tnpqf->tnf",
+            0,
+        ),
         # X time series, X Y voxel
         (
-            (4, 10, 10, 10, 16), (10, 10, 10, 16),
-            True, False, True, "txyzf,xyzf->txyzf", 0),
+            (4, 10, 10, 10, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzf,xyzf->txyzf",
+            0,
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (10, 10, 10, 16),
-            True, False, True, "txyzpf,xyzf->txyzpf", 1),
+            (4, 10, 10, 10, 3, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzpf,xyzf->txyzpf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzf,xyzpf->txyzpf", 1),
+            (4, 10, 10, 10, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzf,xyzpf->txyzpf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzpf,xyzpf->txyzf", 0),
+            (4, 10, 10, 10, 3, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpf,xyzpf->txyzf",
+            0,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 16),
-            True, False, True, "txyzpqf,xyzf->txyzpqf", 2),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzf->txyzpqf",
+            2,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzpqf,xyzpf->txyzqf", 1),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzpf->txyzqf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 3, 3, 16),
-            True, False, True, "txyzpqf,xyzpqf->txyzf", 0),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 3, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzpqf->txyzf",
+            0,
+        ),
         # X Y time series, X Y voxel
         (
-            (4, 10, 10, 10, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzf,txyzf->txyzf", 0),
+            (4, 10, 10, 10, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzf,txyzf->txyzf",
+            0,
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzpf,txyzf->txyzpf", 1),
+            (4, 10, 10, 10, 3, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzpf,txyzf->txyzpf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzf,txyzpf->txyzpf", 1),
+            (4, 10, 10, 10, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzf,txyzpf->txyzpf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzpf,txyzpf->txyzf", 0),
+            (4, 10, 10, 10, 3, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpf,txyzpf->txyzf",
+            0,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzpqf,txyzf->txyzpqf", 2),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzf->txyzpqf",
+            2,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzpqf,txyzpf->txyzqf", 1),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzpf->txyzqf",
+            1,
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 3, 3, 16),
-            True, True, True, "txyzpqf,txyzpqf->txyzf", 0),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 3, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzpqf->txyzf",
+            0,
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -292,21 +396,34 @@ def test_contraction_one_argument(
     ],
 )
 def test_contraction_two_arguments(
-        size_x, size_y, x_is_time_series, y_is_time_series, is_voxel,
-        desired_pattern, desired_rank, dimension_x, dimension_y):
+    size_x,
+    size_y,
+    x_is_time_series,
+    y_is_time_series,
+    is_voxel,
+    desired_pattern,
+    desired_rank,
+    dimension_x,
+    dimension_y,
+):
     t_x = torch.rand(*size_x)
     x = phlower_tensor(
-        t_x, dimension=dimension_x,
-        is_time_series=x_is_time_series, is_voxel=is_voxel)
+        t_x,
+        dimension=dimension_x,
+        is_time_series=x_is_time_series,
+        is_voxel=is_voxel,
+    )
 
     t_y = torch.rand(*size_y)
     y = phlower_tensor(
-        t_y, dimension=dimension_y,
-        is_time_series=y_is_time_series, is_voxel=is_voxel)
+        t_y,
+        dimension=dimension_y,
+        is_time_series=y_is_time_series,
+        is_voxel=is_voxel,
+    )
 
     actual = _functions.contraction(x, y)
-    desired = torch.einsum(
-        desired_pattern, t_x, t_y).numpy()
+    desired = torch.einsum(desired_pattern, t_x, t_y).numpy()
     np.testing.assert_almost_equal(actual.to_tensor().numpy(), desired)
 
     assert actual.is_time_series == x_is_time_series or y_is_time_series
@@ -322,10 +439,8 @@ def test_contraction_two_arguments(
 
 
 def test_contraction_raises_phlower_incompatible_tensor_error():
-    x = phlower_tensor(
-        torch.rand(10, 10, 10, 3, 16), is_voxel=True)
-    y = phlower_tensor(
-        torch.rand(10 * 10 * 10, 3, 16), is_voxel=False)
+    x = phlower_tensor(torch.rand(10, 10, 10, 3, 16), is_voxel=True)
+    y = phlower_tensor(torch.rand(10 * 10 * 10, 3, 16), is_voxel=False)
     with pytest.raises(PhlowerIncompatibleTensorError):
         _functions.contraction(x, y)
 
@@ -335,137 +450,200 @@ def test_contraction_raises_phlower_incompatible_tensor_error():
     "desired_pattern",
     [
         # Base
+        ((10, 16), (10, 16), False, False, False, "nf,nf->nf"),
+        ((10, 3, 16), (10, 16), False, False, False, "npf,nf->npf"),
+        ((10, 16), (10, 3, 16), False, False, False, "nf,npf->npf"),
+        ((10, 3, 16), (10, 3, 16), False, False, False, "npf,nqf->npqf"),
+        ((10, 3, 3, 16), (10, 16), False, False, False, "npqf,nf->npqf"),
+        ((10, 3, 3, 16), (10, 3, 16), False, False, False, "npqf,nrf->npqrf"),
         (
-            (10, 16), (10, 16), False, False, False,
-            "nf,nf->nf"),
-        (
-            (10, 3, 16), (10, 16), False, False, False,
-            "npf,nf->npf"),
-        (
-            (10, 16), (10, 3, 16), False, False, False,
-            "nf,npf->npf"),
-        (
-            (10, 3, 16), (10, 3, 16), False, False, False,
-            "npf,nqf->npqf"),
-        (
-            (10, 3, 3, 16), (10, 16), False, False, False,
-            "npqf,nf->npqf"),
-        (
-            (10, 3, 3, 16), (10, 3, 16), False, False, False,
-            "npqf,nrf->npqrf"),
-        (
-            (10, 3, 3, 16), (10, 3, 3, 16), False, False, False,
-            "npqf,nrsf->npqrsf"),
+            (10, 3, 3, 16),
+            (10, 3, 3, 16),
+            False,
+            False,
+            False,
+            "npqf,nrsf->npqrsf",
+        ),
         # X time series
+        ((4, 10, 16), (10, 16), True, False, False, "tnf,nf->tnf"),
+        ((4, 10, 3, 16), (10, 16), True, False, False, "tnpf,nf->tnpf"),
+        ((4, 10, 16), (10, 3, 16), True, False, False, "tnf,npf->tnpf"),
+        ((4, 10, 3, 16), (10, 3, 16), True, False, False, "tnpf,nqf->tnpqf"),
+        ((4, 10, 3, 3, 16), (10, 16), True, False, False, "tnpqf,nf->tnpqf"),
         (
-            (4, 10, 16), (10, 16), True, False, False,
-            "tnf,nf->tnf"),
+            (4, 10, 3, 3, 16),
+            (10, 3, 16),
+            True,
+            False,
+            False,
+            "tnpqf,nrf->tnpqrf",
+        ),
         (
-            (4, 10, 3, 16), (10, 16), True, False, False,
-            "tnpf,nf->tnpf"),
-        (
-            (4, 10, 16), (10, 3, 16), True, False, False,
-            "tnf,npf->tnpf"),
-        (
-            (4, 10, 3, 16), (10, 3, 16), True, False, False,
-            "tnpf,nqf->tnpqf"),
-        (
-            (4, 10, 3, 3, 16), (10, 16), True, False, False,
-            "tnpqf,nf->tnpqf"),
-        (
-            (4, 10, 3, 3, 16), (10, 3, 16), True, False, False,
-            "tnpqf,nrf->tnpqrf"),
-        (
-            (4, 10, 3, 3, 16), (10, 3, 3, 16), True, False, False,
-            "tnpqf,nrsf->tnpqrsf"),
+            (4, 10, 3, 3, 16),
+            (10, 3, 3, 16),
+            True,
+            False,
+            False,
+            "tnpqf,nrsf->tnpqrsf",
+        ),
         # Y time series
+        ((10, 16), (4, 10, 16), False, True, False, "nf,tnf->tnf"),
+        ((10, 3, 16), (4, 10, 16), False, True, False, "npf,tnf->tnpf"),
+        ((10, 16), (4, 10, 3, 16), False, True, False, "nf,tnpf->tnpf"),
+        ((10, 3, 16), (4, 10, 3, 16), False, True, False, "npf,tnqf->tnpqf"),
+        ((10, 3, 3, 16), (4, 10, 16), False, True, False, "npqf,tnf->tnpqf"),
         (
-            (10, 16), (4, 10, 16), False, True, False,
-            "nf,tnf->tnf"),
+            (10, 3, 3, 16),
+            (4, 10, 3, 16),
+            False,
+            True,
+            False,
+            "npqf,tnrf->tnpqrf",
+        ),
         (
-            (10, 3, 16), (4, 10, 16), False, True, False,
-            "npf,tnf->tnpf"),
-        (
-            (10, 16), (4, 10, 3, 16), False, True, False,
-            "nf,tnpf->tnpf"),
-        (
-            (10, 3, 16), (4, 10, 3, 16), False, True, False,
-            "npf,tnqf->tnpqf"),
-        (
-            (10, 3, 3, 16), (4, 10, 16), False, True, False,
-            "npqf,tnf->tnpqf"),
-        (
-            (10, 3, 3, 16), (4, 10, 3, 16), False, True, False,
-            "npqf,tnrf->tnpqrf"),
-        (
-            (10, 3, 3, 16), (4, 10, 3, 3, 16), False, True, False,
-            "npqf,tnrsf->tnpqrsf"),
+            (10, 3, 3, 16),
+            (4, 10, 3, 3, 16),
+            False,
+            True,
+            False,
+            "npqf,tnrsf->tnpqrsf",
+        ),
         # X Y time series
+        ((4, 10, 16), (4, 10, 16), True, True, False, "tnf,tnf->tnf"),
+        ((4, 10, 3, 16), (4, 10, 16), True, True, False, "tnpf,tnf->tnpf"),
+        ((4, 10, 16), (4, 10, 3, 16), True, True, False, "tnf,tnpf->tnpf"),
+        ((4, 10, 3, 16), (4, 10, 3, 16), True, True, False, "tnpf,tnqf->tnpqf"),
+        ((4, 10, 3, 3, 16), (4, 10, 16), True, True, False, "tnpqf,tnf->tnpqf"),
         (
-            (4, 10, 16), (4, 10, 16), True, True, False,
-            "tnf,tnf->tnf"),
+            (4, 10, 3, 3, 16),
+            (4, 10, 3, 16),
+            True,
+            True,
+            False,
+            "tnpqf,tnrf->tnpqrf",
+        ),
         (
-            (4, 10, 3, 16), (4, 10, 16), True, True, False,
-            "tnpf,tnf->tnpf"),
-        (
-            (4, 10, 16), (4, 10, 3, 16), True, True, False,
-            "tnf,tnpf->tnpf"),
-        (
-            (4, 10, 3, 16), (4, 10, 3, 16), True, True, False,
-            "tnpf,tnqf->tnpqf"),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 16), True, True, False,
-            "tnpqf,tnf->tnpqf"),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 3, 16), True, True, False,
-            "tnpqf,tnrf->tnpqrf"),
-        (
-            (4, 10, 3, 3, 16), (4, 10, 3, 3, 16), True, True, False,
-            "tnpqf,tnrsf->tnpqrsf"),
+            (4, 10, 3, 3, 16),
+            (4, 10, 3, 3, 16),
+            True,
+            True,
+            False,
+            "tnpqf,tnrsf->tnpqrsf",
+        ),
         # X time series, X Y voxel
         (
-            (4, 10, 10, 10, 16), (10, 10, 10, 16),
-            True, False, True, "txyzf,xyzf->txyzf"),
+            (4, 10, 10, 10, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzf,xyzf->txyzf",
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (10, 10, 10, 16),
-            True, False, True, "txyzpf,xyzf->txyzpf"),
+            (4, 10, 10, 10, 3, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzpf,xyzf->txyzpf",
+        ),
         (
-            (4, 10, 10, 10, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzf,xyzpf->txyzpf"),
+            (4, 10, 10, 10, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzf,xyzpf->txyzpf",
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzpf,xyzqf->txyzpqf"),
+            (4, 10, 10, 10, 3, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpf,xyzqf->txyzpqf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 16),
-            True, False, True, "txyzpqf,xyzf->txyzpqf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzf->txyzpqf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 3, 16),
-            True, False, True, "txyzpqf,xyzrf->txyzpqrf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzrf->txyzpqrf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (10, 10, 10, 3, 3, 16),
-            True, False, True, "txyzpqf,xyzrsf->txyzpqrsf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (10, 10, 10, 3, 3, 16),
+            True,
+            False,
+            True,
+            "txyzpqf,xyzrsf->txyzpqrsf",
+        ),
         # X Y time series, X Y voxel
         (
-            (4, 10, 10, 10, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzf,txyzf->txyzf"),
+            (4, 10, 10, 10, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzf,txyzf->txyzf",
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzpf,txyzf->txyzpf"),
+            (4, 10, 10, 10, 3, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzpf,txyzf->txyzpf",
+        ),
         (
-            (4, 10, 10, 10, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzf,txyzpf->txyzpf"),
+            (4, 10, 10, 10, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzf,txyzpf->txyzpf",
+        ),
         (
-            (4, 10, 10, 10, 3, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzpf,txyzqf->txyzpqf"),
+            (4, 10, 10, 10, 3, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpf,txyzqf->txyzpqf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 16),
-            True, True, True, "txyzpqf,txyzf->txyzpqf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzf->txyzpqf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 3, 16),
-            True, True, True, "txyzpqf,txyzrf->txyzpqrf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzrf->txyzpqrf",
+        ),
         (
-            (4, 10, 10, 10, 3, 3, 16), (4, 10, 10, 10, 3, 3, 16),
-            True, True, True, "txyzpqf,txyzrsf->txyzpqrsf"),
+            (4, 10, 10, 10, 3, 3, 16),
+            (4, 10, 10, 10, 3, 3, 16),
+            True,
+            True,
+            True,
+            "txyzpqf,txyzrsf->txyzpqrsf",
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -487,21 +665,33 @@ def test_contraction_raises_phlower_incompatible_tensor_error():
     ],
 )
 def test_tensor_product(
-        size_x, size_y, x_is_time_series, y_is_time_series, is_voxel,
-        desired_pattern, dimension_x, dimension_y):
+    size_x,
+    size_y,
+    x_is_time_series,
+    y_is_time_series,
+    is_voxel,
+    desired_pattern,
+    dimension_x,
+    dimension_y,
+):
     t_x = torch.rand(*size_x)
     x = phlower_tensor(
-        t_x, dimension=dimension_x,
-        is_time_series=x_is_time_series, is_voxel=is_voxel)
+        t_x,
+        dimension=dimension_x,
+        is_time_series=x_is_time_series,
+        is_voxel=is_voxel,
+    )
 
     t_y = torch.rand(*size_y)
     y = phlower_tensor(
-        t_y, dimension=dimension_y,
-        is_time_series=y_is_time_series, is_voxel=is_voxel)
+        t_y,
+        dimension=dimension_y,
+        is_time_series=y_is_time_series,
+        is_voxel=is_voxel,
+    )
 
     actual = _functions.tensor_product(x, y)
-    desired = torch.einsum(
-        desired_pattern, t_x, t_y).numpy()
+    desired = torch.einsum(desired_pattern, t_x, t_y).numpy()
     np.testing.assert_almost_equal(actual.to_numpy(), desired)
 
     assert actual.is_time_series == x_is_time_series or y_is_time_series
@@ -547,22 +737,25 @@ def test_tensor_product(
     ],
 )
 def test_apply_orthogonal_group(
-        size, is_time_series, is_voxel, desired_pattern, dimension):
+    size, is_time_series, is_voxel, desired_pattern, dimension
+):
     orthogonal_matrix = torch.from_numpy(ortho_group.rvs(3).astype(np.float32))
     orthogonal_tensor = phlower_tensor(orthogonal_matrix)
 
     torch_tensor = torch.rand(*size)
     x = phlower_tensor(
-        torch_tensor, dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     actual = _functions.apply_orthogonal_group(orthogonal_tensor, x)
 
     if desired_pattern is None:
         desired = torch_tensor.numpy()
     else:
         inputs = [orthogonal_matrix] * x.rank() + [torch_tensor]
-        desired = torch.einsum(
-            desired_pattern, *inputs).numpy()
+        desired = torch.einsum(desired_pattern, *inputs).numpy()
     np.testing.assert_almost_equal(actual.to_numpy(), desired)
 
     assert actual.is_time_series == is_time_series
@@ -607,19 +800,22 @@ def test_apply_orthogonal_group(
         [[-1], [-1], [2], [0], [1], [0], [0]],
     ],
 )
-def test_spatial_mean(
-        size, is_time_series, is_voxel, mean_dims, dimension):
+def test_spatial_mean(size, is_time_series, is_voxel, mean_dims, dimension):
     torch_tensor = torch.rand(*size)
     x = phlower_tensor(
-        torch_tensor, dimension=dimension,
-        is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
     actual = _functions.spatial_mean(x)
 
     desired = torch_tensor
     for dim in mean_dims:
         desired = torch.mean(desired, dim=dim, keepdim=True)
     np.testing.assert_almost_equal(
-        actual.to_numpy(), desired.numpy(), decimal=5)
+        actual.to_numpy(), desired.numpy(), decimal=5
+    )
 
     assert actual.is_time_series == is_time_series
     assert actual.is_voxel == is_voxel

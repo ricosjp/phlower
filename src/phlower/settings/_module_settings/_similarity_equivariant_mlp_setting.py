@@ -11,7 +11,8 @@ from phlower.settings._interface import (
 
 
 class SimilarityEquivariantMLPSetting(
-        IPhlowerLayerParameters, pydantic.BaseModel):
+    IPhlowerLayerParameters, pydantic.BaseModel
+):
     nodes: list[int] = Field(
         ...
     )  # This property only overwritten when resolving.
@@ -20,7 +21,8 @@ class SimilarityEquivariantMLPSetting(
     bias: bool = Field(False, frozen=True)
     create_linear_weight: bool = Field(False, frozen=True)
     norm_function_name: str = Field(
-        default_factory=lambda: 'identity', frozen=True)
+        default_factory=lambda: "identity", frozen=True
+    )
     disable_en_equivariance: bool = Field(False, frozen=True)
     invariant: bool = Field(False, frozen=True)
     centering: bool = Field(False, frozen=True)
@@ -28,7 +30,8 @@ class SimilarityEquivariantMLPSetting(
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
             raise ValueError(
-                "Only one input is allowed in SimilarityEquivariantMLP.")
+                "Only one input is allowed in SimilarityEquivariantMLP."
+            )
         return input_dims[0]
 
     @pydantic.field_validator("nodes")
