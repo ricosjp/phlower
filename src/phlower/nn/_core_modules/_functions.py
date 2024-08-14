@@ -72,7 +72,6 @@ def spmm(
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(
-<<<<<<< HEAD
         pattern, is_time_series=x.is_time_series, is_voxel=x.is_voxel,
         **dict_shape)
 
