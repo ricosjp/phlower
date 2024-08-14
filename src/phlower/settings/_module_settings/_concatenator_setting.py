@@ -10,9 +10,8 @@ from phlower.settings._interface import (
 
 
 class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    nodes: list[int] | None = Field(
-        None
-    )  # This property only overwritten when resolving.
+    # This property only overwritten when resolving.
+    nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
 
     # special keyward to forbid extra fields in pydantic

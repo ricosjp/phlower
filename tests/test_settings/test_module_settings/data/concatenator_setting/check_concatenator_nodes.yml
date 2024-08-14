@@ -1,0 +1,63 @@
+misc:
+
+  tests:
+    MLP0: [10, 20, 15]
+    MLP1: [12, 20, 25]
+    Concat0: [40, 40]
+    MLP2:  [40, 20, 5]
+
+
+model:
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_dim: 10
+      - name: feature1
+        n_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - Concat0
+        nn_parameters:
+          nodes: [-1, 20, 15]
+          activations: ["Identity", "identity"]
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - feature1
+        output_key: mlp1
+        destinations:
+          - Concat0
+        nn_parameters:
+          nodes: [-1, 20, 25]
+          activations: ["Identity", "identity"]
+
+      - nn_type: Concatenator
+        name: Concat0
+        input_keys:
+          - mlp0
+          - mlp1
+        output_key: concat0
+        destinations:
+          - MLP2
+
+      - nn_type: MLP
+        name: MLP2
+        input_keys:
+          - concat0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 20, 5]
+          activations: ["Identity", "identity"]
