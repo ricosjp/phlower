@@ -1,4 +1,3 @@
-
 import torch
 
 from phlower._base._dimension import PhysicalDimensions
@@ -52,8 +51,8 @@ class SmoothLeakyReLU:
 
 
 def spmm(
-        sparse: IPhlowerTensor, x: IPhlowerTensor,
-        repeat: int = 1) -> IPhlowerTensor:
+    sparse: IPhlowerTensor, x: IPhlowerTensor, repeat: int = 1
+) -> IPhlowerTensor:
     """
     Computes sparse matrix times dense tensor along with the vertex axis.
 
@@ -73,6 +72,7 @@ def spmm(
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(
+<<<<<<< HEAD
         pattern, is_time_series=x.is_time_series, is_voxel=x.is_voxel,
         **dict_shape)
 

@@ -63,8 +63,11 @@ class _PhlowerSequenceArray:
     ):
         tensors = [
             v.to_phlower_tensor(
-                device=device, non_blocking=non_blocking, dimension=dimensions,
-                is_time_series=is_time_series, is_voxel=is_voxel,
+                device=device,
+                non_blocking=non_blocking,
+                dimension=dimensions,
+                is_time_series=is_time_series,
+                is_voxel=is_voxel,
             )
             for v in self._data
         ]

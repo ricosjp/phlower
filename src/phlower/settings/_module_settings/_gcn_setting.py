@@ -11,9 +11,8 @@ from phlower.settings._interface import (
 
 
 class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    nodes: list[int] = Field(
-        ...
-    )  # This property only overwritten when resolving.
+    # This property only overwritten when resolving.
+    nodes: list[int] = Field(...)
     support_name: str = Field(..., frozen=True)
     repeat: int = Field(1, frozen=True)
     factor: float = Field(1.0, frozen=True)
@@ -52,6 +51,21 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         return vals
 
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def fill_empty_activations_dropouts(cls, values: dict):
+        n_nodes = len(values.get("nodes"))
+        activations = values.get("activations", [])
+        dropouts = values.get("dropouts", [])
+
+        if len(activations) == 0:
+            values["activations"] = ["identity" for _ in range(n_nodes - 1)]
+
+        if len(dropouts) == 0:
+            values["dropouts"] = [0 for _ in range(n_nodes - 1)]
+
+        return values
+
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
         if len(self.nodes) - 1 != len(self.activations):
@@ -59,6 +73,13 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 "Size of nodes and activations is not compatible "
                 "in GCNSettings."
                 " len(nodes) must be equal to 1 + len(activations)."
+            )
+
+        if len(self.nodes) - 1 != len(self.dropouts):
+            raise ValueError(
+                "Size of nodes and dropouts is not compatible "
+                "in GCNSettings."
+                " len(nodes) must be equal to 1 + len(dropouts)."
             )
         return self
 

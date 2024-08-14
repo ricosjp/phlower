@@ -152,21 +152,22 @@ def test__tanh():
         (False, False, [100, 16], 0),
         (False, False, [100, 3, 16], 1),
         (False, False, [100, 3, 3, 16], 2),
-        ( True, False, [4, 100, 16], 0),
-        ( True, False, [4, 100, 3, 16], 1),
-        ( True, False, [4, 100, 3, 3, 16], 2),
-        (False,  True, [10, 10, 10, 16], 0),
-        (False,  True, [10, 10, 10, 3, 16], 1),
-        (False,  True, [10, 10, 10, 3, 3, 16], 2),
-        ( True,  True, [4, 10, 10, 10, 16], 0),
-        ( True,  True, [4, 10, 10, 10, 3, 16], 1),
-        ( True,  True, [4, 10, 10, 10, 3, 3, 16], 2),
+        (True, False, [4, 100, 16], 0),
+        (True, False, [4, 100, 3, 16], 1),
+        (True, False, [4, 100, 3, 3, 16], 2),
+        (False, True, [10, 10, 10, 16], 0),
+        (False, True, [10, 10, 10, 3, 16], 1),
+        (False, True, [10, 10, 10, 3, 3, 16], 2),
+        (True, True, [4, 10, 10, 10, 16], 0),
+        (True, True, [4, 10, 10, 10, 3, 16], 1),
+        (True, True, [4, 10, 10, 10, 3, 3, 16], 2),
     ],
 )
 def test__rank(is_time_series, is_voxel, size, desired_rank):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
-        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
+    )
     assert phlower_tensor.rank() == desired_rank
 
 
@@ -176,21 +177,22 @@ def test__rank(is_time_series, is_voxel, size, desired_rank):
         (False, False, [100, 16], 100),
         (False, False, [100, 3, 16], 100),
         (False, False, [100, 3, 3, 16], 100),
-        ( True, False, [4, 100, 16], 100),
-        ( True, False, [4, 100, 3, 16], 100),
-        ( True, False, [4, 100, 3, 3, 16], 100),
-        (False,  True, [10, 10, 10, 16], 1000),
-        (False,  True, [10, 10, 10, 3, 16], 1000),
-        (False,  True, [10, 10, 10, 3, 3, 16], 1000),
-        ( True,  True, [4, 10, 10, 10, 16], 1000),
-        ( True,  True, [4, 10, 10, 10, 3, 16], 1000),
-        ( True,  True, [4, 10, 10, 10, 3, 3, 16], 1000),
+        (True, False, [4, 100, 16], 100),
+        (True, False, [4, 100, 3, 16], 100),
+        (True, False, [4, 100, 3, 3, 16], 100),
+        (False, True, [10, 10, 10, 16], 1000),
+        (False, True, [10, 10, 10, 3, 16], 1000),
+        (False, True, [10, 10, 10, 3, 3, 16], 1000),
+        (True, True, [4, 10, 10, 10, 16], 1000),
+        (True, True, [4, 10, 10, 10, 3, 16], 1000),
+        (True, True, [4, 10, 10, 10, 3, 3, 16], 1000),
     ],
 )
 def test__n_vertices(is_time_series, is_voxel, size, desired_n_vertices):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
-        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
+    )
     assert phlower_tensor.n_vertices() == desired_n_vertices
 
 
@@ -207,21 +209,22 @@ def test__raises_phlower_sparse_rank_undefined_error():
         (False, False, [100, 16], (100, 16)),
         (False, False, [100, 3, 16], (100, 3 * 16)),
         (False, False, [100, 3, 3, 16], (100, 3 * 3 * 16)),
-        ( True, False, [4, 100, 16], (100, 4 * 16)),
-        ( True, False, [4, 100, 3, 16], (100, 4 * 3 * 16)),
-        ( True, False, [4, 100, 3, 3, 16], (100, 4 * 3 * 3 * 16)),
-        (False,  True, [10, 10, 10, 16], (1000, 16)),
-        (False,  True, [10, 10, 10, 3, 16], (1000, 3 * 16)),
-        (False,  True, [10, 10, 10, 3, 3, 16], (1000, 3 * 3 * 16)),
-        ( True,  True, [4, 10, 10, 10, 16], (1000, 4 * 16)),
-        ( True,  True, [4, 10, 10, 10, 3, 16], (1000, 4 * 3 * 16)),
-        ( True,  True, [4, 10, 10, 10, 3, 3, 16], (1000, 4 * 3 * 3 * 16)),
+        (True, False, [4, 100, 16], (100, 4 * 16)),
+        (True, False, [4, 100, 3, 16], (100, 4 * 3 * 16)),
+        (True, False, [4, 100, 3, 3, 16], (100, 4 * 3 * 3 * 16)),
+        (False, True, [10, 10, 10, 16], (1000, 16)),
+        (False, True, [10, 10, 10, 3, 16], (1000, 3 * 16)),
+        (False, True, [10, 10, 10, 3, 3, 16], (1000, 3 * 3 * 16)),
+        (True, True, [4, 10, 10, 10, 16], (1000, 4 * 16)),
+        (True, True, [4, 10, 10, 10, 3, 16], (1000, 4 * 3 * 16)),
+        (True, True, [4, 10, 10, 10, 3, 3, 16], (1000, 4 * 3 * 3 * 16)),
     ],
 )
 def test__to_vertexwise(is_time_series, is_voxel, size, desired_shape):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
-        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
+    )
     assert phlower_tensor.to_vertexwise()[0].shape == desired_shape
 
 
@@ -231,31 +234,33 @@ def test__to_vertexwise(is_time_series, is_voxel, size, desired_shape):
         (False, False, [100, 16]),
         (False, False, [100, 3, 16]),
         (False, False, [100, 3, 3, 16]),
-        ( True, False, [4, 100, 16]),
-        ( True, False, [4, 100, 3, 16]),
-        ( True, False, [4, 100, 3, 3, 16]),
-        (False,  True, [10, 10, 10, 16]),
-        (False,  True, [10, 10, 10, 3, 16]),
-        (False,  True, [10, 10, 10, 3, 3, 16]),
-        ( True,  True, [4, 10, 10, 10, 16]),
-        ( True,  True, [4, 10, 10, 10, 3, 16]),
-        ( True,  True, [4, 10, 10, 10, 3, 3, 16]),
+        (True, False, [4, 100, 16]),
+        (True, False, [4, 100, 3, 16]),
+        (True, False, [4, 100, 3, 3, 16]),
+        (False, True, [10, 10, 10, 16]),
+        (False, True, [10, 10, 10, 3, 16]),
+        (False, True, [10, 10, 10, 3, 3, 16]),
+        (True, True, [4, 10, 10, 10, 16]),
+        (True, True, [4, 10, 10, 10, 3, 16]),
+        (True, True, [4, 10, 10, 10, 3, 3, 16]),
     ],
 )
 def test__to_vertexwise_inverse(is_time_series, is_voxel, size):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
-        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel)
-    vertexwise, original_pattern, resultant_pattern, dict_shape\
-        = phlower_tensor.to_vertexwise()
+        torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
+    )
+    vertexwise, original_pattern, resultant_pattern, dict_shape = (
+        phlower_tensor.to_vertexwise()
+    )
     assert len(vertexwise.shape) == 2
     pattern = f"{resultant_pattern} -> {original_pattern}"
     actual = vertexwise.rearrange(
-        pattern, is_time_series=is_time_series, is_voxel=is_voxel,
-        **dict_shape)
+        pattern, is_time_series=is_time_series, is_voxel=is_voxel, **dict_shape
+    )
     np.testing.assert_almost_equal(
-        actual.to_tensor().numpy(),
-        phlower_tensor.to_tensor().numpy())
+        actual.to_tensor().numpy(), phlower_tensor.to_tensor().numpy()
+    )
 
 
 @pytest.mark.parametrize(

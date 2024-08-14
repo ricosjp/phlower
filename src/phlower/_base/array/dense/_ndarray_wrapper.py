@@ -70,8 +70,10 @@ class NdArrayWrapper(IPhlowerArray):
         if is_time_series is None:
             is_time_series = self.is_time_series
         _tensor = phlower_tensor(
-            tensor=torch.from_numpy(self.data), dimension=dimension,
-            is_time_series=is_time_series, is_voxel=is_voxel,
+            tensor=torch.from_numpy(self.data),
+            dimension=dimension,
+            is_time_series=is_time_series,
+            is_voxel=is_voxel,
         )
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
