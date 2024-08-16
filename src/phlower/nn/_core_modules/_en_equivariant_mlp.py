@@ -5,7 +5,9 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import Identity, Proportional, _functions, _utils
+from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules._identity import Identity
+from phlower.nn._core_modules._proportional import Proportional
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -48,7 +50,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         dropouts: list[float] | None = None,
         bias: bool = False,
         create_linear_weight: bool = False,
-        norm_function_name: str = None,
+        norm_function_name: str = "identity",
     ) -> None:
         super().__init__()
 

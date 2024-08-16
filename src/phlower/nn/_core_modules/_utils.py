@@ -99,10 +99,8 @@ class ActivationSelector:
 
     @staticmethod
     def select_inverse(
-        name: str | None,
+        name: str,
     ) -> Callable[[torch.Tensor], torch.Tensor]:
-        if name is None:
-            name = "identity"
         return ActivationSelector._REGISTERED_ACTIVATIONS[
             ActivationSelector._inverse_activation_name(name)
         ]

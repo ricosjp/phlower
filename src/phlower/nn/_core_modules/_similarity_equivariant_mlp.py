@@ -9,13 +9,11 @@ from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.nn._core_modules import (
-    MLP,
-    EnEquivariantMLP,
-    Identity,
-    Proportional,
-    _functions,
-)
+from phlower.nn._core_modules import _functions
+from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
+from phlower.nn._core_modules._identity import Identity
+from phlower.nn._core_modules._mlp import MLP
+from phlower.nn._core_modules._proportional import Proportional
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -66,7 +64,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         dropouts: list[float] | None = None,
         bias: bool = False,
         create_linear_weight: bool = False,
-        norm_function_name: str = None,
+        norm_function_name: str = "identity",
         disable_en_equivariance: bool = False,
         invariant: bool = False,
         centering: bool = False,
