@@ -29,7 +29,7 @@ e2e_test:
 
 .PHONY: lint
 lint:
-	poetry run python3 -m ruff check --diff
+	poetry run python3 -m ruff check --output-format=full
 	poetry run python3 -m ruff format --diff
 	# $(MAKE) mypy
 
