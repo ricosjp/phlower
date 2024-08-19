@@ -3,6 +3,8 @@ from collections.abc import Callable
 import torch
 
 from phlower._base.tensors import PhlowerTensor
+from phlower.nn._core_modules import _functions
+from phlower.utils.exceptions import PhlowerInvalidActivationError
 
 
 class ExtendedLinearList(torch.nn.Module):
@@ -10,13 +12,15 @@ class ExtendedLinearList(torch.nn.Module):
         self,
         nodes: list[int],
         activations: list[str],
-        dropouts: list[float],
         bias: bool,
+        dropouts: list[float] | None = None,
     ) -> None:
         super().__init__()
 
         self._nodes = nodes
         self._activations = activations
+        if dropouts is None:
+            dropouts = []
         self._dropouts = dropouts
         self._validate_args()
 
@@ -39,7 +43,7 @@ class ExtendedLinearList(torch.nn.Module):
     def __len__(self) -> int:
         return len(self._linears)
 
-    def forward(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
+    def forward_part(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
 
         h = self._linears[index](x)
@@ -47,6 +51,12 @@ class ExtendedLinearList(torch.nn.Module):
             h, p=self._dropouts[index], training=self.training
         )
         h = self._activators[index](h)
+        return h
+
+    def forward(self, x: PhlowerTensor) -> PhlowerTensor:
+        h = x
+        for i in range(self._n_chains - 1):
+            h = self.forward_part(h, index=i)
         return h
 
     def _validate_args(self) -> None:
@@ -65,20 +75,48 @@ class ExtendedLinearList(torch.nn.Module):
         assert len(self._nodes) == len(self._dropouts) + 1
 
 
-def identity(x):
-    return x
-
-
 class ActivationSelector:
+    _SMOOTH_LEAKY_RELU = _functions.SmoothLeakyReLU()
+
     _REGISTERED_ACTIVATIONS = {
-        "identity": identity,
+        "identity": _functions.identity,
+        "inversed_leaky_relu0p5": _functions.inversed_leaky_relu0p5,
+        "inversed_smooth_leaky_relu": _SMOOTH_LEAKY_RELU.inverse,
+        "leaky_relu0p5": _functions.leaky_relu0p5,
         "relu": torch.relu,
+        "sigmoid": torch.sigmoid,
+        "smooth_leaky_relu": _SMOOTH_LEAKY_RELU,
+        "sqrt": torch.sqrt,
         "tanh": torch.tanh,
+        "truncated_atanh": _functions.truncated_atanh,
     }
 
     @staticmethod
     def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
         return ActivationSelector._REGISTERED_ACTIVATIONS[name]
+
+    @staticmethod
+    def select_inverse(
+        name: str,
+    ) -> Callable[[torch.Tensor], torch.Tensor]:
+        return ActivationSelector._REGISTERED_ACTIVATIONS[
+            ActivationSelector._inverse_activation_name(name)
+        ]
+
+    @staticmethod
+    def _inverse_activation_name(activation_name: str) -> str:
+        if activation_name == "identity":
+            return "identity"
+        if activation_name == "leaky_relu0p5":
+            return "inversed_leaky_relu0p5"
+        if activation_name == "smooth_leaky_relu":
+            return "inversed_smooth_leaky_relu"
+        if activation_name == "tanh":
+            return "truncated_atanh"
+
+        raise PhlowerInvalidActivationError(
+            f"Cannot inverse for {activation_name}"
+        )
 
     @staticmethod
     def is_exists(name: str) -> bool:
