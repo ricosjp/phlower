@@ -5,28 +5,30 @@ from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _utils
+from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules._identity import Identity
+from phlower.nn._core_modules._proportional import Proportional
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
 )
-from phlower.settings._module_settings import MLPSetting
+from phlower.settings._module_settings import EnEquivariantMLPSetting
 
 
-class MLP(IPhlowerCoreModule, torch.nn.Module):
-    """Multi Layer Perceptron"""
+class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
+    """E(n)-equivariant Multi Layer Perceptron"""
 
     @classmethod
-    def from_setting(cls, setting: MLPSetting) -> Self:
-        """Generate MLP from setting object
+    def from_setting(cls, setting: EnEquivariantMLPSetting) -> Self:
+        """Generate model from setting object
 
         Args:
-            setting (MLPSetting): setting object
+            setting (EnEquivariantMLPSetting): setting object
 
         Returns:
-            Self: MLP object
+            Self: EnEquivariantMLP object
         """
-        return MLP(**setting.__dict__)
+        return cls(**setting.__dict__)
 
     @classmethod
     def get_nn_name(cls) -> str:
@@ -35,7 +37,7 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             str: name
         """
-        return "MLP"
+        return "EnEquivariantMLP"
 
     @classmethod
     def need_reference(cls) -> bool:
@@ -46,7 +48,9 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = True,
+        bias: bool = False,
+        create_linear_weight: bool = False,
+        norm_function_name: str = "identity",
     ) -> None:
         super().__init__()
 
@@ -60,6 +64,24 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         )
         self._nodes = nodes
         self._activations = activations
+        self._create_linear_weight = create_linear_weight
+        self._norm_function_name = norm_function_name
+
+        self._linear_weight = self._init_linear_weight()
+        self._norm_function = _utils.ActivationSelector.select(
+            self._norm_function_name
+        )
+
+    def _init_linear_weight(self):
+        if not self._create_linear_weight:
+            if self._nodes[0] != self._nodes[-1]:
+                raise ValueError(
+                    "First and last nodes are different. "
+                    "Set create_linear_weight True."
+                )
+            return Identity()
+
+        return Proportional([self._nodes[0], self._nodes[-1]])
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -86,6 +108,7 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        h = data.unique_item()
-        h = self._chains.forward(h)
-        return h
+        x = data.unique_item()
+        linear_x = self._linear_weight(data)
+        h = self._chains(self._norm_function(_functions.contraction(x)))
+        return _functions.tensor_product(linear_x, h)
