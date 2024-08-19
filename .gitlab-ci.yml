@@ -1,5 +1,6 @@
 stages:
   - test
+  - document_test
   - deploy
 
 default:
@@ -45,15 +46,27 @@ e2e_test:
     - no-gpu
     - GenuineIntel
 
+pages_test:
+  stage: document_test
+  script:
+    - make document
+  tags:
+    - no-gpu
+    - GenuineIntel
+  artifacts:
+    paths:
+      - docs/build/html/
+
 pages:
   stage: deploy
   script:
-    - make document
     - mkdir public
     - cp -r docs/build/html/* public/
   artifacts:
     paths:
       - public
+  dependencies:
+    - pages_test
   only:
     - main
     - develop
