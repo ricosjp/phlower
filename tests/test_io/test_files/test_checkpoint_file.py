@@ -4,7 +4,6 @@ import secrets
 import numpy as np
 import pytest
 import torch
-
 from phlower.io import PhlowerCheckpointFile
 
 TEST_ENCRYPT_KEY = secrets.token_bytes(32)
@@ -14,7 +13,7 @@ TEST_ENCRYPT_KEY = secrets.token_bytes(32)
     "path, ext",
     [("./sample/sample.pth", ".pth"), ("./sample/sample.pth.enc", ".pth.enc")],
 )
-def test__check_extension_type(path, ext):
+def test__check_extension_type(path: str, ext: str):
     path = pathlib.Path(path)
     siml_path = PhlowerCheckpointFile(path)
     assert siml_path._ext_type.value == ext
@@ -24,7 +23,7 @@ def test__check_extension_type(path, ext):
 @pytest.mark.parametrize(
     "path", [("./sample/sample.npy"), ("./sample/sample.npy.enc")]
 )
-def test__check_error_extension_type(path):
+def test__check_error_extension_type(path: str):
     path = pathlib.Path(path)
     with pytest.raises(NotImplementedError):
         _ = PhlowerCheckpointFile(path)
@@ -34,13 +33,13 @@ def test__check_error_extension_type(path):
     "path, enc",
     [("./sample/sample.pth", False), ("./sample/sample.pth.enc", True)],
 )
-def test__is_encrypted(path, enc):
+def test__is_encrypted(path: str, enc: bool):
     path = pathlib.Path(path)
     siml_path = PhlowerCheckpointFile(path)
     assert siml_path.is_encrypted == enc
 
 
-def test__save_and_load(setup_test_dir):
+def test__save_and_load(setup_test_dir: pathlib.Path):
     sample_tensor = torch.tensor(np.random.rand(3, 4))
 
     saved_path = PhlowerCheckpointFile.save(
@@ -57,7 +56,7 @@ def test__save_and_load(setup_test_dir):
     np.testing.assert_array_almost_equal(loaded_data, sample_tensor)
 
 
-def test__save_encrypted_and_load(setup_test_dir):
+def test__save_encrypted_and_load(setup_test_dir: pathlib.Path):
     sample_tensor = torch.tensor(np.random.rand(3, 4))
 
     output_directory = setup_test_dir
@@ -75,7 +74,7 @@ def test__save_encrypted_and_load(setup_test_dir):
     np.testing.assert_array_almost_equal(loaded_data, sample_tensor)
 
 
-def test__cannnot_load_without_key(setup_test_dir):
+def test__cannnot_load_without_key(setup_test_dir: pathlib.Path):
     sample_tensor = torch.tensor(np.random.rand(3, 4))
 
     output_directory = setup_test_dir
@@ -93,7 +92,7 @@ def test__cannnot_load_without_key(setup_test_dir):
         _ = saved_path.load(device="cpu")
 
 
-def test__save_not_allowed_overwrite(setup_test_dir):
+def test__save_not_allowed_overwrite(setup_test_dir: pathlib.Path):
     sample_array = np.random.rand(3, 4)
     sample_tensor = torch.tensor(sample_array)
 
@@ -117,7 +116,7 @@ def test__save_not_allowed_overwrite(setup_test_dir):
         ("./aaa/snapshot_epoch_30.pth.enc", 30),
     ],
 )
-def test__get_epoch(path, num_epoch):
+def test__get_epoch(path: str, num_epoch: int):
     phlower_path = PhlowerCheckpointFile(path)
     assert phlower_path.epoch == num_epoch
 
@@ -126,7 +125,7 @@ def test__get_epoch(path, num_epoch):
     "path",
     [("./aaa/deployed_1.pth"), ("./aaa/model.pth"), ("./aaa/epoch_2.pth")],
 )
-def test__get_epoch_not_handled(path):
+def test__get_epoch_not_handled(path: str):
     phlower_path = PhlowerCheckpointFile(path)
 
     with pytest.raises(ValueError):

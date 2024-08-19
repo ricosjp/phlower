@@ -75,7 +75,9 @@ class GroupModuleSetting(
 
     @pydantic.field_validator("modules", mode="before")
     @classmethod
-    def validate_annotate_modules(cls, vals):
+    def validate_annotate_modules(
+        cls, vals: list
+    ) -> list[ModuleSetting | GroupModuleSetting]:
         if not isinstance(vals, list):
             raise ValueError(f"'modules' expected to be List. actual: {vals}")
 

@@ -1,6 +1,5 @@
 import io
 import pathlib
-from typing import Any
 
 import yaml
 from typing_extensions import Self
@@ -113,7 +112,7 @@ def _save(file_path: pathlib.Path, dump_data: object) -> None:
         yaml.dump(dump_data, fw)
 
 
-def _load_yaml_file(file_path: str | pathlib.Path):
+def _load_yaml_file(file_path: str | pathlib.Path) -> dict:
     """Load YAML file.
 
     Parameters
@@ -131,7 +130,7 @@ def _load_yaml_file(file_path: str | pathlib.Path):
     return dict_data
 
 
-def _load_yaml(source: str | pathlib.Path | io.TextIOBase | Any):
+def _load_yaml(source: str | pathlib.Path | io.TextIOBase) -> dict:
     """Load YAML source.
 
     Parameters

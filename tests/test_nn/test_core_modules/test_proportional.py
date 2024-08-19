@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import Proportional
@@ -27,7 +26,9 @@ def test__can_call_parameters():
 )
 @pytest.mark.parametrize("n_output_feature", [1, 16, 32])
 @pytest.mark.parametrize("scale", [0.0, 0.5, 2.0])
-def test__proportional_linearity(size, is_time_series, n_output_feature, scale):
+def test__proportional_linearity(
+    size: tuple[int], is_time_series: bool, n_output_feature: int, scale: float
+):
     model = Proportional(nodes=[size[-1], n_output_feature])
 
     phlower_tensor = PhlowerTensor(

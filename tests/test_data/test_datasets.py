@@ -1,6 +1,7 @@
+import pathlib
+
 import numpy as np
 import pytest
-
 from phlower.data import LazyPhlowerDataset
 from phlower.utils.typing import ArrayDataType
 
@@ -10,7 +11,10 @@ from phlower.utils.typing import ArrayDataType
     [(["data0", "data1"], 2), (["data0", "data1", "data2"], 3)],
 )
 def test__lazy_dataset_length(
-    directories, desired, create_tmp_dataset, output_base_directory
+    directories: list[str],
+    desired: int,
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [output_base_directory / v for v in directories]
     dataset = LazyPhlowerDataset(
@@ -27,12 +31,12 @@ def test__lazy_dataset_length(
     [(["x0", "x1", "x2"], ["y0"], ["s0", "s1"], ["data0", "data1", "data2"])],
 )
 def test__lazy_dataset_getitem(
-    x_variable_names,
-    y_variable_names,
-    support_names,
-    directory_names,
-    create_tmp_dataset,
-    output_base_directory,
+    x_variable_names: list[str],
+    y_variable_names: list[str],
+    support_names: list[str],
+    directory_names: list[str],
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [output_base_directory / v for v in directory_names]
     dataset = LazyPhlowerDataset(
@@ -75,12 +79,12 @@ def test__lazy_dataset_getitem(
     ],
 )
 def test__lazy_dataset_getitem_when_no_ydata(
-    x_variable_names,
-    y_variable_names,
-    support_names,
-    directory_names,
-    create_tmp_dataset,
-    output_base_directory,
+    x_variable_names: list[str],
+    y_variable_names: list[str],
+    support_names: list[str],
+    directory_names: list[str],
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [output_base_directory / v for v in directory_names]
     dataset = LazyPhlowerDataset(

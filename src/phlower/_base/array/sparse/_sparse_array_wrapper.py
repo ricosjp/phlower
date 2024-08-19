@@ -25,19 +25,19 @@ class SparseArrayWrapper(IPhlowerArray):
         return True
 
     @property
-    def is_time_series(self):
+    def is_time_series(self) -> bool:
         return False
 
     @property
-    def row(self):
+    def row(self) -> np.ndarray:
         return self._sparse_data.row
 
     @property
-    def col(self):
+    def col(self) -> np.ndarray:
         return self._sparse_data.col
 
     @property
-    def data(self):
+    def data(self) -> np.ndarray:
         return self._sparse_data.data
 
     @property
@@ -138,12 +138,16 @@ def batch(
     return SparseArrayWrapper(concat_arr), info
 
 
-def unbatch(array: SparseArrayWrapper, batch_info: GraphBatchInfo):
+def unbatch(
+    array: SparseArrayWrapper, batch_info: GraphBatchInfo
+) -> list[SparseArrayWrapper]:
     results = _sparse_decompose(array.to_numpy(), batch_info)
     return [SparseArrayWrapper(arr) for arr in results]
 
 
-def _sparse_concatenate(arrays: Sequence[SparseArrayWrapper]):
+def _sparse_concatenate(
+    arrays: Sequence[SparseArrayWrapper],
+) -> SparseArrayWrapper:
     offsets = np.cumsum(
         np.array(
             [
@@ -170,7 +174,9 @@ def _sparse_concatenate(arrays: Sequence[SparseArrayWrapper]):
     return sparse_arr
 
 
-def _sparse_decompose(array: SparseArrayType, batch_info: GraphBatchInfo):
+def _sparse_decompose(
+    array: SparseArrayType, batch_info: GraphBatchInfo
+) -> list[sp.coo_matrix]:
     sizes = np.cumsum(batch_info.sizes)
     offsets = np.cumsum(
         np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32), axis=0

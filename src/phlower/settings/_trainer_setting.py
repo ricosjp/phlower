@@ -60,7 +60,7 @@ class OptimizerSetting(pydantic.BaseModel):
 
     @pydantic.field_validator("optimizer")
     @classmethod
-    def check_exist_scheduler(cls, name):
+    def check_exist_scheduler(cls, name: str) -> str:
         if not OptimizerSelector.exist(name):
             raise ValueError(
                 f"{name} is not defined in phlower. "
@@ -90,7 +90,7 @@ class SchedulerSetting(pydantic.BaseModel):
 
     @pydantic.field_validator("scheduler")
     @classmethod
-    def check_exist_scheduler(cls, name):
+    def check_exist_scheduler(cls, name: str) -> str:
         if not SchedulerSelector.exist(name):
             raise ValueError(
                 f"{name} is not defined in phlower. "

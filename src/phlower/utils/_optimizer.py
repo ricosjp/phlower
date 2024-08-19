@@ -22,7 +22,7 @@ class OptimizerSelector:
         OptimizerSelector._REGISTERED.update({name: cls})
 
     @staticmethod
-    def exist(name: str):
+    def exist(name: str) -> bool:
         return name in OptimizerSelector._REGISTERED
 
     @staticmethod

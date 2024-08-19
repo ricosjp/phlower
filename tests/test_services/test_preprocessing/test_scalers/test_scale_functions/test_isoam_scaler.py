@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from phlower.services.preprocessing._scalers.scale_functions import IsoAMScaler
 
 
@@ -11,7 +10,7 @@ from phlower.services.preprocessing._scalers.scale_functions import IsoAMScaler
         ("isoam_scale", {"other_components": ["a", "b"]}),
     ],
 )
-def test__create(name, kwards):
+def test__create(name: str, kwards: dict):
     scaler = IsoAMScaler.create(name, **kwards)
     assert scaler.other_components == kwards["other_components"]
 
@@ -23,7 +22,7 @@ def test__create(name, kwards):
         ("maxabs_scale", {"other_components": ["a", "b"]}),
     ],
 )
-def test__cannot_create(name, kwards):
+def test__cannot_create(name: str, kwards: dict):
     with pytest.raises(NotImplementedError):
         IsoAMScaler.create(name, **kwards)
 
@@ -36,7 +35,7 @@ def test__cannot_create(name, kwards):
         ([400, 40, 4], ["a", "b", "c"]),
     ],
 )
-def test__partial_fit(n_data_list, other_components):
+def test__partial_fit(n_data_list: list[int], other_components: list[str]):
     scaler = IsoAMScaler(other_components=other_components)
 
     data_list = [np.random.rand(n_data) for n_data in n_data_list]
@@ -51,7 +50,7 @@ def test__partial_fit(n_data_list, other_components):
 
 
 @pytest.mark.parametrize("n_data, std", [(100, 5.0), (300, 4.0)])
-def test__transform(n_data, std):
+def test__transform(n_data: int, std: float):
     scaler = IsoAMScaler(other_components=["dummy"])
     scaler.std_ = std
 
@@ -69,7 +68,9 @@ def test__transform(n_data, std):
         ([400, 40, 4], ["a", "b", "c"]),
     ],
 )
-def test__retrieve_from_dumped_data(n_data_list, other_components):
+def test__retrieve_from_dumped_data(
+    n_data_list: list[int], other_components: list[str]
+):
     scaler = IsoAMScaler(other_components=other_components)
 
     data_list = [np.random.rand(n_data) for n_data in n_data_list]

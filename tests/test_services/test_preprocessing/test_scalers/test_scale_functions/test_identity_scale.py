@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from phlower.services.preprocessing._scalers.scale_functions import (
     IdentityScaler,
 )
@@ -9,14 +8,14 @@ from phlower.services.preprocessing._scalers.scale_functions import (
 @pytest.mark.parametrize(
     "name, kwards", [("identity", {}), ("identity", {"some": 11})]
 )
-def test__create(name, kwards):
+def test__create(name: str, kwards: dict):
     IdentityScaler.create(name, **kwards)
 
 
 @pytest.mark.parametrize(
     "name, kwards", [("isoam", {}), ("identities", {"some": 11})]
 )
-def test__cannot_create(name, kwards):
+def test__cannot_create(name: str, kwards: dict):
     with pytest.raises(NotImplementedError):
         IdentityScaler.create(name, **kwards)
 
@@ -29,7 +28,7 @@ def test__fixed_property_and_method():
 
 
 @pytest.mark.parametrize("shape", [(3, 4), (4, 5), (2, 9)])
-def test__transform(shape):
+def test__transform(shape: tuple[int]):
     scaler = IdentityScaler()
 
     data = np.random.rand(*shape)
@@ -39,7 +38,7 @@ def test__transform(shape):
 
 
 @pytest.mark.parametrize("shape", [(3, 4), (4, 5), (2, 9)])
-def test__inverse_transform(shape):
+def test__inverse_transform(shape: tuple[int]):
     scaler = IdentityScaler()
 
     data = np.random.rand(*shape)

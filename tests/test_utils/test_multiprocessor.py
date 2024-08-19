@@ -1,10 +1,10 @@
 import os
 import sys
 import time
+from collections.abc import Callable
 
 import numpy as np
 import pytest
-
 from phlower.utils import PhlowerMultiprocessor
 from phlower.utils._multiprocessor import _get_chunks, _process_chunk
 from phlower.utils.exceptions import PhlowerMultiProcessError
@@ -17,7 +17,9 @@ from phlower.utils.exceptions import PhlowerMultiProcessError
         (lambda x, y: x * 10 + y, [(1, 1), (2, 2), (3, 5)], [11, 22, 35]),
     ],
 )
-def test__process_chunk(fn, chunk, expects):
+def test__process_chunk(
+    fn: Callable, chunk: list[tuple[int]], expects: list[int]
+):
     actual = _process_chunk(fn, chunk)
     assert actual == expects
 
@@ -41,7 +43,7 @@ def test__process_chunk(fn, chunk, expects):
         ),
     ],
 )
-def test__get_chunks(iterables, chunksize, expects):
+def test__get_chunks(iterables: list, chunksize: int, expects: list):
     for i, chunk in enumerate(_get_chunks(iterables, chunksize=chunksize)):
         assert chunk == expects[i]
 
@@ -56,12 +58,12 @@ def test__get_chunks(iterables, chunksize, expects):
         )
     ],
 )
-def test__get_chunks_multiples(iterables, chunksize, expects):
+def test__get_chunks_multiples(iterables: list, chunksize: int, expects: list):
     for i, chunk in enumerate(_get_chunks(*iterables, chunksize=chunksize)):
         assert chunk == expects[i]
 
 
-def freaky_job(num: int):
+def freaky_job(num: int) -> int:
     if num == 1:
         sys.exit(0)
     else:
@@ -69,7 +71,7 @@ def freaky_job(num: int):
 
 
 @pytest.mark.parametrize("inputs, expects", [([3, 5, 6], [3, 5, 6])])
-def test__can_execute_functions(inputs, expects):
+def test__can_execute_functions(inputs: list[int], expects: list[int]):
     processor = PhlowerMultiprocessor(max_process=2)
     results = processor.run(inputs, target_fn=freaky_job)
 
@@ -77,13 +79,13 @@ def test__can_execute_functions(inputs, expects):
 
 
 @pytest.mark.parametrize("inputs", [([3, 1, 6]), ([1, 1, 1])])
-def test__can_detect_child_process_error(inputs):
+def test__can_detect_child_process_error(inputs: list[int]):
     with pytest.raises(PhlowerMultiProcessError):
         processor = PhlowerMultiprocessor(max_process=2)
         _ = processor.run(inputs, target_fn=freaky_job)
 
 
-def sample_sleep_job(num: int):
+def sample_sleep_job(num: int) -> int:
     time.sleep(num)
     return num
 
@@ -95,7 +97,7 @@ def sample_sleep_job(num: int):
         (2, [2, 2, 2, 2], 4),
     ],
 )
-def test__can_use_multi_core(max_process, inputs, expects):
+def test__can_use_multi_core(max_process: int, inputs: list[int], expects: int):
     cpu_count = os.cpu_count()
     assert cpu_count >= max_process
 
@@ -115,7 +117,9 @@ def test__can_use_multi_core(max_process, inputs, expects):
     "max_process, inputs, chunksize, expects",
     [(2, [2, 2, 2, 2], 3, 6), (2, [1, 1, 1, 1], 2, 2)],
 )
-def test__can_consider_chunksize(max_process, inputs, chunksize, expects):
+def test__can_consider_chunksize(
+    max_process: int, inputs: list, chunksize: int, expects: int
+):
     cpu_count = os.cpu_count()
     assert cpu_count >= max_process
 
@@ -131,7 +135,7 @@ def test__can_consider_chunksize(max_process, inputs, chunksize, expects):
     np.testing.assert_approx_equal(elapsed_time, expects, significant=1)
 
 
-def sample_add(num1: int, num2: int):
+def sample_add(num1: int, num2: int) -> int:
     return num1 + num2
 
 
@@ -143,7 +147,12 @@ def sample_add(num1: int, num2: int):
         (2, [[1, 1, 1, 1], [2, 3, 5, 6]], 2, [3, 4, 6, 7]),
     ],
 )
-def test__can_flatten_return_objects(max_process, inputs, chunksize, expects):
+def test__can_flatten_return_objects(
+    max_process: int,
+    inputs: list[list[int]],
+    chunksize: int,
+    expects: list[int],
+):
     cpu_count = os.cpu_count()
     assert cpu_count >= max_process
 

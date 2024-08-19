@@ -53,7 +53,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-src = ["src", "tests"]
+include = ["pyproject.toml", "src/**/*.py", "tests/**/*.py"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -106,7 +106,7 @@ select = [
     "UP",  # pyupgrade
     "ANN", # flake8-annotations
 ]
-ignore = []
+ignore = ["ANN003", "ANN101", "ANN102", "ANN204"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -115,8 +115,12 @@ unfixable = []
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
+[tool.ruff.lint.flake8-annotations]
+suppress-none-returning = true
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"src/phlower/_base/**/*.py" = ["ANN401"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

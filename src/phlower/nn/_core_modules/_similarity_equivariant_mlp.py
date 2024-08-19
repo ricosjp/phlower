@@ -96,7 +96,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
             self._linear_weight = self._mlp._linear_weight
 
-    def _init_linear_weight(self):
+    def _init_linear_weight(self) -> Identity | Proportional:
         if not self._create_linear_weight:
             if self._nodes[0] != self._nodes[-1]:
                 raise ValueError(

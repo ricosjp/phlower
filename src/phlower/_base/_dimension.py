@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import (
     PlainSerializer,
@@ -13,13 +13,12 @@ from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import InvalidDimensionError
 
 
-def _validate(v: Any, info: ValidationInfo):
+def _validate(v: dict, info: ValidationInfo) -> PhysicalDimensions:
     if not isinstance(v, dict):
         raise TypeError(f"Expected dictionary, but got {type(v)}")
 
     try:
-        ans = PhysicalDimensions(v)
-        return ans
+        return PhysicalDimensions(v)
     except Exception as ex:
         raise TypeError("Validation for physical dimension is failed.") from ex
 
@@ -78,7 +77,7 @@ class PhysicalDimensions:
 
         return _list
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return self._dimensions
 
 

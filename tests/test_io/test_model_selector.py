@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-
 from phlower.io import select_snapshot_file
 from phlower.io._model_selector import ModelSelectorBuilder
 from phlower.utils.enums import ModelSelectionType
@@ -15,12 +14,12 @@ TEST_DATA_DIR = pathlib.Path(__file__).parent / "tmp"
 
 
 @given(st.sampled_from(ModelSelectionType))
-def test__selctor_builder(select_type):
+def test__selctor_builder(select_type: ModelSelectionType):
     _ = ModelSelectorBuilder.create(select_type.value)
 
 
 @pytest.mark.parametrize("selection_name", ["best_of_best", "none"])
-def test__not_implemented_selection_name(selection_name):
+def test__not_implemented_selection_name(selection_name: str):
     with pytest.raises(NotImplementedError):
         _ = ModelSelectorBuilder.create(selection_name)
 
@@ -51,7 +50,7 @@ def prepare_snapshots():
     df.to_csv(TEST_DATA_DIR / "log.csv")
 
 
-def test__best_select_model(prepare_snapshots):
+def test__best_select_model(prepare_snapshots: None):
     actual_path = select_snapshot_file(
         TEST_DATA_DIR, selection_mode=ModelSelectionType.BEST.value
     )
@@ -63,7 +62,7 @@ def test__best_select_model(prepare_snapshots):
     assert actual_path.epoch == epoch
 
 
-def test__latest_select_model(prepare_snapshots):
+def test__latest_select_model(prepare_snapshots: None):
     actual_path = select_snapshot_file(
         TEST_DATA_DIR, selection_mode=ModelSelectionType.LATEST.value
     )
@@ -73,7 +72,7 @@ def test__latest_select_model(prepare_snapshots):
     assert actual_path.epoch == max_epoch
 
 
-def test__train_best_select_model(prepare_snapshots):
+def test__train_best_select_model(prepare_snapshots: None):
     actual_path = select_snapshot_file(
         TEST_DATA_DIR, selection_mode=ModelSelectionType.TRAIN_BEST.value
     )
@@ -86,7 +85,7 @@ def test__train_best_select_model(prepare_snapshots):
 
 
 @pytest.mark.parametrize("epoch", [1, 5, 6, 8])
-def test__spcified_model_selector(epoch, prepare_snapshots):
+def test__spcified_model_selector(epoch: int, prepare_snapshots: None):
     actual_path = select_snapshot_file(
         TEST_DATA_DIR,
         selection_mode=ModelSelectionType.SPECIFIED.value,
@@ -97,7 +96,9 @@ def test__spcified_model_selector(epoch, prepare_snapshots):
 
 
 @pytest.mark.parametrize("epoch", [100, 200])
-def test__spcified_model_selector_not_existed(epoch, prepare_snapshots):
+def test__spcified_model_selector_not_existed(
+    epoch: int, prepare_snapshots: None
+):
     with pytest.raises(FileNotFoundError):
         _ = select_snapshot_file(
             TEST_DATA_DIR,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
@@ -15,7 +17,7 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     """
 
     @classmethod
-    def create(cls, name: str, **kwards):
+    def create(cls, name: str, **kwards) -> IsoAMScaler:
         if name == PhlowerScalerName.ISOAM_SCALE.value:
             return IsoAMScaler(**kwards)
 
@@ -69,13 +71,13 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         self.std_ = np.sqrt(self.var_)
         return
 
-    def transform(self, data: ArrayDataType):
+    def transform(self, data: ArrayDataType) -> ArrayDataType:
         if self.std_ == 0.0:
             raise ValueError("std value is 0.")
 
         return data * (1.0 / self.std_)
 
-    def inverse_transform(self, data: ArrayDataType):
+    def inverse_transform(self, data: ArrayDataType) -> ArrayDataType:
         return data * self.std_
 
     def get_dumped_data(self) -> dict[str, Any]:

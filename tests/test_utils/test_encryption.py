@@ -4,7 +4,6 @@ import secrets
 import shutil
 
 import pytest
-
 from phlower.utils import decrypt_file, encrypt_file
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp/_encryption"
@@ -19,7 +18,7 @@ def prepare_empty_direcotry():
     _OUTPUT_DIR.mkdir(parents=True)
 
 
-def test__encrypt_file(prepare_empty_direcotry):
+def test__encrypt_file(prepare_empty_direcotry: None):
     file_path = _OUTPUT_DIR / "sample.txt"
     encrypt_file(
         TEST_ENCRYPT_KEY,
@@ -32,7 +31,7 @@ def test__encrypt_file(prepare_empty_direcotry):
             _ = fr.read()
 
 
-def test__decrypt_file(prepare_empty_direcotry):
+def test__decrypt_file(prepare_empty_direcotry: None):
     file_path = _OUTPUT_DIR / "sample.txt"
     content = "sample_content"
     encrypt_file(

@@ -2,10 +2,9 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
-from scipy import sparse as sp
-
 from phlower._base.array import phlower_array
 from phlower._base.tensors._interface import IPhlowerTensor
+from scipy import sparse as sp
 
 
 @pytest.fixture

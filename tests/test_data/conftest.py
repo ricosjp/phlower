@@ -5,7 +5,6 @@ from collections import defaultdict
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower.io import PhlowerNumpyFile
 from phlower.utils.typing import ArrayDataType
 
@@ -13,12 +12,12 @@ _output_base_directory = pathlib.Path(__file__).parent / "tmp/datasets"
 
 
 @pytest.fixture
-def output_base_directory():
+def output_base_directory() -> pathlib.Path:
     return _output_base_directory
 
 
 @pytest.fixture(scope="module")
-def create_tmp_dataset():
+def create_tmp_dataset() -> dict[str, dict[str, ArrayDataType]]:
     if _output_base_directory.exists():
         shutil.rmtree(_output_base_directory)
     _output_base_directory.mkdir(parents=True)

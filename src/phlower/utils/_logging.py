@@ -5,11 +5,11 @@ class DefaultLoggerFactory:
     _is_propagate: bool = False
 
     @classmethod
-    def _get_phlower_root_logger(cls):
+    def _get_phlower_root_logger(cls) -> logging.Logger:
         return logging.getLogger("phlower")
 
     @classmethod
-    def _get_library_logger(cls):
+    def _get_library_logger(cls) -> logging.Logger:
         _phlower_root_logger = logging.getLogger("phlower")
         _phlower_root_logger.propagate = cls._is_propagate
         return _phlower_root_logger

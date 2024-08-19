@@ -3,8 +3,6 @@ from unittest import mock
 
 import pydantic
 import pytest
-from pipe import where
-
 from phlower.io import PhlowerDirectory
 from phlower.settings import PhlowerScalingSetting
 from phlower.settings._scaling_setting import (
@@ -12,6 +10,7 @@ from phlower.settings._scaling_setting import (
     ScalerInputParameters,
     ScalerResolvedParameter,
 )
+from pipe import where
 
 # region test for ScalerInputParameters
 
@@ -33,7 +32,7 @@ def test__is_parent():
         ("user_defined", "val_b", "SCALER_val_b"),
     ],
 )
-def test_scaler_name(method, variable_name, desired):
+def test_scaler_name(method: str, variable_name: str, desired: str):
     scaler = ScalerInputParameters(method=method)
     assert desired == scaler.get_scaler_name(variable_name)
 
@@ -49,7 +48,7 @@ def test__is_not_parent():
 
 
 @pytest.mark.parametrize("join_fitting", [True, False, None])
-def test__join_fitting(join_fitting):
+def test__join_fitting(join_fitting: bool):
     if join_fitting is None:
         scaler = SameAsInputParameters(same_as="val_a")
         assert not scaler.join_fitting
@@ -62,7 +61,7 @@ def test__join_fitting(join_fitting):
 @pytest.mark.parametrize(
     "same_as, desired", [("val_a", "SCALER_val_a"), ("val_b", "SCALER_val_b")]
 )
-def test_sameas_scaler_name(same_as, desired):
+def test_sameas_scaler_name(same_as: str, desired: str):
     scaler = SameAsInputParameters(same_as=same_as)
 
     # NOTE: scaler name is decided by parent variable name
@@ -118,7 +117,9 @@ def test__read_yml():
         ({}, []),
     ],
 )
-def test__get_variable_names(scalers, desired):
+def test__get_variable_names(
+    scalers: dict[str, dict[str, str]], desired: list[str]
+):
     scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
 
     actual = scaler.get_variable_names()
@@ -146,7 +147,11 @@ def test__get_variable_names(scalers, desired):
         ),
     ],
 )
-def test__is_scaler_exist(scalers, existed, not_existed):
+def test__is_scaler_exist(
+    scalers: dict[str, dict[str, str]],
+    existed: list[str],
+    not_existed: list[str],
+):
     scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
 
     for name in existed:
@@ -174,7 +179,9 @@ def test__is_scaler_exist(scalers, existed, not_existed):
         ),
     ],
 )
-def test__get_scaler_name(scalers, desired):
+def test__get_scaler_name(
+    scalers: dict[str, dict[str, str]], desired: list[tuple[str]]
+):
     scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
 
     for key, ans in desired:
@@ -187,7 +194,7 @@ def test__get_scaler_name(scalers, desired):
 
 
 @pytest.fixture
-def create_sample_setting():
+def create_sample_setting() -> PhlowerScalingSetting:
     scalers = {
         "nodal": {"method": "std_scale", "parameters": {"std_": 0.001}},
         "nodal_child": {"same_as": "nodal"},
@@ -202,7 +209,7 @@ def create_sample_setting():
     return PhlowerScalingSetting(varaible_name_to_scalers=scalers)
 
 
-def test__n_resolved_settings(create_sample_setting):
+def test__n_resolved_settings(create_sample_setting: PhlowerScalingSetting):
     scaler: PhlowerScalingSetting = create_sample_setting
 
     resolved = scaler.resolve_scalers()
@@ -217,8 +224,12 @@ def test__n_resolved_settings(create_sample_setting):
         ("SCALER_value_z", ["value_z"]),
     ],
 )
-def test__transform_items(scaler_name, desired, create_sample_setting):
-    scaler: PhlowerScalingSetting = create_sample_setting
+def test__transform_items(
+    scaler_name: str,
+    desired: list[str],
+    create_sample_setting: PhlowerScalingSetting,
+):
+    scaler = create_sample_setting
     resolved = scaler.resolve_scalers()
 
     target = list(resolved | where(lambda x: x.scaler_name == scaler_name))[0]
@@ -234,7 +245,9 @@ def test__transform_items(scaler_name, desired, create_sample_setting):
         ("SCALER_value_z", ["value_z"]),
     ],
 )
-def test__fitting_items(scaler_name, desired, create_sample_setting):
+def test__fitting_items(
+    scaler_name: str, desired: list[str], create_sample_setting: str
+):
     scaler: PhlowerScalingSetting = create_sample_setting
     resolved = scaler.resolve_scalers()
 
@@ -251,7 +264,9 @@ def test__fitting_items(scaler_name, desired, create_sample_setting):
         ("SCALER_value_y", True),
     ],
 )
-def test__component_wise(scaler_name, desired, create_sample_setting):
+def test__component_wise(
+    scaler_name: str, desired: str, create_sample_setting: PhlowerScalingSetting
+):
     scaler: PhlowerScalingSetting = create_sample_setting
     resolved = scaler.resolve_scalers()
 
@@ -267,7 +282,11 @@ def test__component_wise(scaler_name, desired, create_sample_setting):
         ("SCALER_value_z", {"user_std_": 10.0}),
     ],
 )
-def test__parameters(scaler_name, desired, create_sample_setting):
+def test__parameters(
+    scaler_name: str,
+    desired: dict[str, float],
+    create_sample_setting: PhlowerScalingSetting,
+):
     scaler: PhlowerScalingSetting = create_sample_setting
     resolved = scaler.resolve_scalers()
 
@@ -281,7 +300,9 @@ def test__parameters(scaler_name, desired, create_sample_setting):
     [("SCALER_nodal", True), ("SCALER_value_z", False)],
 )
 def test__collect_fitting_files(
-    scaler_name, allow_missing, create_sample_setting
+    scaler_name: str,
+    allow_missing: bool,
+    create_sample_setting: PhlowerScalingSetting,
 ):
     scaler: PhlowerScalingSetting = create_sample_setting
     resolved = scaler.resolve_scalers()
@@ -309,7 +330,9 @@ def test__collect_fitting_files(
     [("SCALER_nodal", True), ("SCALER_value_z", False)],
 )
 def test__collect_transform_files(
-    scaler_name, allow_missing, create_sample_setting
+    scaler_name: str,
+    allow_missing: bool,
+    create_sample_setting: PhlowerScalingSetting,
 ):
     scaler: PhlowerScalingSetting = create_sample_setting
     resolved = scaler.resolve_scalers()
@@ -360,7 +383,7 @@ def test__collect_transform_files(
         ),
     ],
 )
-def test__validate_isoam(scalers):
+def test__validate_isoam(scalers: dict):
     setting = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
     with pytest.raises(ValueError):
         _ = setting.resolve_scalers()[0]
