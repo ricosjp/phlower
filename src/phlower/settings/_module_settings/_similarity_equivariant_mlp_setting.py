@@ -10,25 +10,37 @@ from phlower.settings._interface import (
 )
 
 
-class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    # This property only overwritten when resolving.
-    nodes: list[int] = Field(...)
+class SimilarityEquivariantMLPSetting(
+    IPhlowerLayerParameters, pydantic.BaseModel
+):
+    nodes: list[int] = Field(
+        ...
+    )  # This property only overwritten when resolving.
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
-    bias: bool = Field(True, frozen=True)
+    bias: bool = Field(False, frozen=True)
+    create_linear_weight: bool = Field(False, frozen=True)
+    norm_function_name: str = Field(
+        default_factory=lambda: "identity", frozen=True
+    )
+    disable_en_equivariance: bool = Field(False, frozen=True)
+    invariant: bool = Field(False, frozen=True)
+    centering: bool = Field(False, frozen=True)
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
-            raise ValueError("only one input is allowed in MLP.")
+            raise ValueError(
+                "Only one input is allowed in SimilarityEquivariantMLP."
+            )
         return input_dims[0]
 
-    @pydantic.field_validator("nodes", mode="before")
+    @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
         if len(vals) < 2:
             raise ValueError(
-                "size of nodes must be larger than 1 in MLPSettings."
-                f" input: {vals}"
+                "size of nodes must be larger than 1 in "
+                "SimilarityEquivariantMLPSetting. input: {vals}"
             )
 
         for i, v in enumerate(vals):
@@ -39,43 +51,20 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 continue
 
             raise ValueError(
-                "nodes in MLP is inconsistent. "
+                "nodes in SimilarityEquivariantMLPSetting is inconsistent. "
                 f"value {v} in {i}-th of nodes is not allowed."
             )
 
         return vals
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def fill_empty_activations_dropouts(cls, values: dict):
-        n_nodes = len(values.get("nodes"))
-        activations = values.get("activations", [])
-        dropouts = values.get("dropouts", [])
-
-        if len(activations) == 0:
-            values["activations"] = ["identity" for _ in range(n_nodes - 1)]
-
-        if len(dropouts) == 0:
-            values["dropouts"] = [0 for _ in range(n_nodes - 1)]
-
-        return values
 
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
         if len(self.nodes) - 1 != len(self.activations):
             raise ValueError(
                 "Size of nodes and activations is not compatible "
-                "in MLPSettings."
+                "in SimilarityEquivariantMLPSetting."
                 " len(nodes) must be equal to 1 + len(activations)."
             )
-
-        if len(self.nodes) - 1 != len(self.dropouts):
-            raise ValueError(
-                "Size of nodes and dropouts is not compatible "
-                "in MLPSettings."
-                " len(nodes) must be equal to 1 + len(dropouts)."
-            )
-
         return self
 
     def get_n_nodes(self) -> list[int] | None:

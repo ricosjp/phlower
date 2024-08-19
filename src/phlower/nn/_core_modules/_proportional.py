@@ -10,23 +10,23 @@ from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
 )
-from phlower.settings._module_settings import MLPSetting
+from phlower.settings._module_settings import ProportionalSetting
 
 
-class MLP(IPhlowerCoreModule, torch.nn.Module):
-    """Multi Layer Perceptron"""
+class Proportional(IPhlowerCoreModule, torch.nn.Module):
+    """Proportional, i.e., strictly linear, layer"""
 
     @classmethod
-    def from_setting(cls, setting: MLPSetting) -> Self:
-        """Generate MLP from setting object
+    def from_setting(cls, setting: ProportionalSetting) -> Self:
+        """Generate model from setting object
 
         Args:
-            setting (MLPSetting): setting object
+            setting (ProportionalSetting): setting object
 
         Returns:
-            Self: MLP object
+            Self: Proportional object
         """
-        return MLP(**setting.__dict__)
+        return cls(**setting.__dict__)
 
     @classmethod
     def get_nn_name(cls) -> str:
@@ -35,7 +35,7 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             str: name
         """
-        return "MLP"
+        return "Proportional"
 
     @classmethod
     def need_reference(cls) -> bool:
@@ -44,22 +44,17 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
     def __init__(
         self,
         nodes: list[int],
-        activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = True,
     ) -> None:
         super().__init__()
 
-        if activations is None:
-            activations = []
         if dropouts is None:
             dropouts = []
 
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
+            nodes=nodes, activations=["identity"], dropouts=[], bias=False
         )
         self._nodes = nodes
-        self._activations = activations
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -87,5 +82,4 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor: Tensor object
         """
         h = data.unique_item()
-        h = self._chains.forward(h)
-        return h
+        return self._chains(h)

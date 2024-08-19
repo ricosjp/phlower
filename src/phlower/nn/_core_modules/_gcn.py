@@ -96,7 +96,7 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         h = data.unique_item()
         for i in range(len(self._chains)):
             h = self._propagate(h, support)
-            h = self._chains.forward(h, index=i)
+            h = self._chains.forward_part(h, index=i)
         return h
 
     def _propagate(

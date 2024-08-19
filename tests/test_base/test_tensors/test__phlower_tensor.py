@@ -35,6 +35,19 @@ def test__add_with_unit():
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
 
 
+def test__sub_with_unit():
+    units = phlower_dimension_tensor({"L": 2, "T": -2})
+    a = np.random.rand(3, 10)
+    b = np.random.rand(3, 10)
+    c = a - b
+
+    ap = PhlowerTensor(torch.tensor(a), units)
+    bp = PhlowerTensor(torch.tensor(b), units)
+    cp = ap - bp
+
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
+
+
 @pytest.mark.parametrize(
     "unit1, unit2", [({"L": 2, "T": -2}, None), (None, {"M": 2, "T": -3})]
 )
@@ -74,6 +87,53 @@ def test__mul_with_unit():
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 
     assert cp._dimension_tensor == dims_3
+
+
+def test__div_with_unit():
+    dims_1 = phlower_dimension_tensor({"L": 2, "T": -2})
+    dims_2 = phlower_dimension_tensor({"M": 1, "T": -2})
+    dims_3 = phlower_dimension_tensor({"L": 2, "M": -1, "T": 0})
+
+    a = torch.tensor(np.random.rand(3, 10))
+    b = torch.tensor(np.random.rand(3, 10))
+    c = a / b
+
+    ap = PhlowerTensor(a, dims_1)
+    bp = PhlowerTensor(b, dims_2)
+    cp = ap / bp
+
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+
+    assert cp._dimension_tensor == dims_3
+
+
+def test__tensor_div_scalar():
+    dims = phlower_dimension_tensor({"L": 2, "T": -2})
+
+    a = torch.tensor(np.random.rand(3, 10))
+    c = a / 3.0
+
+    ap = PhlowerTensor(a, dims)
+    cp = ap / 3.0
+
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+
+    assert cp._dimension_tensor == dims
+
+
+def test__scalar_div_tensor():
+    dims = phlower_dimension_tensor({"L": 2, "T": -2})
+    desired_dims = phlower_dimension_tensor({"L": -2, "T": 2})
+
+    a = torch.tensor(np.random.rand(3, 10))
+    c = 3.0 / a
+
+    ap = PhlowerTensor(a, dims)
+    cp = 3.0 / ap
+
+    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+
+    assert cp._dimension_tensor == desired_dims
 
 
 def test__tanh():

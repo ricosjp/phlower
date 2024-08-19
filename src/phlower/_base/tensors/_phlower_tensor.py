@@ -21,6 +21,7 @@ from phlower.utils import get_logger
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
     PhlowerSparseUnsupportedError,
+    PhlowerTypeError,
     PhlowerUnsupportedTorchFunctionError,
 )
 
@@ -34,6 +35,8 @@ def phlower_tensor(
         | PhlowerDimensionTensor
         | torch.Tensor
         | dict[str, float]
+        | list[float]
+        | tuple[float]
         | None
     ) = None,
     is_time_series: bool = False,
@@ -62,6 +65,8 @@ def _resolve_dimension_arg(
     | PhlowerDimensionTensor
     | torch.Tensor
     | dict[str, float]
+    | list[float]
+    | tuple[float]
     | None,
 ) -> PhlowerDimensionTensor | None:
     if inputs is None:
@@ -75,6 +80,9 @@ def _resolve_dimension_arg(
 
     if isinstance(inputs, dict | PhysicalDimensions):
         return phlower_dimension_tensor(inputs)
+
+    if isinstance(inputs, list | tuple):
+        return PhlowerDimensionTensor.from_list(inputs)
 
     raise NotImplementedError(
         f"{type(inputs)} is not implemented "
@@ -96,7 +104,10 @@ class PhlowerTensor(IPhlowerTensor):
         is_time_series: bool = False,
         is_voxel: bool = False,
     ):
-        assert isinstance(tensor, torch.Tensor)
+        if not isinstance(tensor, torch.Tensor):
+            raise PhlowerTypeError(
+                f"Expect torch.Tensor but {tensor.__class__} was fed"
+            )
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
         self._is_time_series = is_time_series
@@ -132,17 +143,57 @@ class PhlowerTensor(IPhlowerTensor):
             f"Dimension: {self._dimension_tensor})"
         )
 
+    def __eq__(self, other):
+        return torch.eq(self, other)
+
+    def __lt__(self, other):
+        return torch.lt(self, other)
+
+    def __le__(self, other):
+        return torch.le(self, other)
+
+    def __gt__(self, other):
+        return torch.gt(self, other)
+
+    def __ge__(self, other):
+        return torch.ge(self, other)
+
     def __abs__(self) -> PhlowerTensor:
         return torch.abs(self)
 
     def __sub__(self, other: PhlowerTensor):
-        return torch.subtract(self, other)
+        return torch.sub(self, other)
+
+    def __neg__(self):
+        return torch.neg(self)
 
     def __add__(self, other) -> PhlowerTensor:
         return torch.add(self, other)
 
+    def __radd__(self, other) -> PhlowerTensor:
+        return torch.add(self, other)
+
     def __mul__(self, other) -> PhlowerTensor:
         return torch.mul(self, other)
+
+    def __rmul__(self, other) -> PhlowerTensor:
+        return torch.mul(self, other)
+
+    def __truediv__(self, other) -> PhlowerTensor:
+        return torch.div(self, other)
+
+    def __rtruediv__(self, other) -> PhlowerTensor:
+        return torch.div(other, self)
+
+    def __pow__(self, other) -> PhlowerTensor:
+        return torch.pow(self, other)
+
+    def __setitem__(self, key, value):
+        if isinstance(key, PhlowerTensor):
+            self._tensor[key.to_tensor()] = value
+        else:
+            self._tensor[key] = value
+        return self
 
     def __len__(self) -> int:
         return len(self._tensor)
@@ -150,11 +201,17 @@ class PhlowerTensor(IPhlowerTensor):
     def to_tensor(self) -> torch.Tensor:
         return self._tensor
 
+    def to_numpy(self) -> np.ndarray:
+        return self._tensor.cpu().detach().numpy()
+
     def coalesce(self) -> torch.Tensor:
         return PhlowerTensor(self._tensor.coalesce(), self._dimension_tensor)
 
     def size(self) -> torch.Size:
         return self._tensor.size()
+
+    def numel(self) -> int:
+        return torch.numel(self._tensor)
 
     def rank(self) -> int:
         """Returns the tensor rank."""
