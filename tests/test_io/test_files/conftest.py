@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def setup_test_dir():
+def setup_test_dir() -> pathlib.Path:
     directory = pathlib.Path(__file__).parent
     test_dir = directory / "tmp"
     if test_dir.exists():

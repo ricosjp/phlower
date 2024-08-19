@@ -9,7 +9,9 @@ from phlower._base.tensors._interface import IPhlowerTensor
 from ._check import is_same_dimensions, is_same_layout
 
 
-def concatenate(tensors: Sequence[IPhlowerTensor], dense_dim: int = 0):
+def concatenate(
+    tensors: Sequence[IPhlowerTensor], dense_dim: int = 0
+) -> IPhlowerTensor:
     if not is_same_layout(tensors):
         raise ValueError("Cannot concatenate dense tensor and sparse tensor")
 
@@ -25,7 +27,9 @@ def concatenate(tensors: Sequence[IPhlowerTensor], dense_dim: int = 0):
     return _dense_concatenate(tensors, dim=dense_dim)
 
 
-def _dense_concatenate(tensors: Sequence[IPhlowerTensor], dim: int = 0):
+def _dense_concatenate(
+    tensors: Sequence[IPhlowerTensor], dim: int = 0
+) -> IPhlowerTensor:
     return torch.concatenate(tensors, dim=dim)
 
 

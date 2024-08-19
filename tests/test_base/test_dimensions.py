@@ -1,7 +1,6 @@
 import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
-
 from phlower._base import PhysicalDimensions
 from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import InvalidDimensionError
@@ -13,7 +12,7 @@ from phlower.utils.exceptions import InvalidDimensionError
         st.floats(allow_nan=False),
     )
 )
-def test__equal_when_same_dimension(dict_data):
+def test__equal_when_same_dimension(dict_data: dict[str, float]):
     dimension = PhysicalDimensions(dict_data)
     other = PhysicalDimensions(dict_data)
 
@@ -24,7 +23,7 @@ def test__equal_when_same_dimension(dict_data):
     "dict_data",
     [({"kg": 2, "mm": 3}), ({"m": 2, "hour": 3.2}), ({"mass": None})],
 )
-def test__failed_when_not_exist_key(dict_data):
+def test__failed_when_not_exist_key(dict_data: dict[str, float]):
     with pytest.raises(InvalidDimensionError):
         _ = PhysicalDimensions(dict_data)
 
@@ -45,7 +44,7 @@ def test__failed_when_not_exist_key(dict_data):
         ),
     )
 )
-def test__not_equal_dimension(tuple_dict_data):
+def test__not_equal_dimension(tuple_dict_data: tuple[dict, dict]):
     dict_data1, dict_data2 = tuple_dict_data
     assume(dict_data1 != dict_data2)
 
@@ -68,7 +67,7 @@ def test__default_dimension():
         st.floats(allow_nan=False),
     )
 )
-def test__to_list(dict_data):
+def test__to_list(dict_data: dict[str, float]):
     dimension = PhysicalDimensions(dict_data)
     list_data = dimension.to_list()
 

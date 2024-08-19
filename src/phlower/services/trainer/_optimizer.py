@@ -52,5 +52,5 @@ class PhlowerOptimizerWrapper:
         for scheduler in self._schedulers:
             scheduler.step()
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         return self._optimizer.state_dict()

@@ -98,9 +98,10 @@ class PhlowerScalingService:
         )
 
         # NOTE: When using multiprocessing, parameters of each scaler are
-        #  updated in each process. However, it is not reflected in parent process.
+        #  updated in each process.
+        #  However, it is not reflected in parent process.
         #  because we do not share memory.
-        # Thus, in this implementation, recreate scalers compositions
+        #  Thus, in this implementation, recreate scalers compositions
 
         self._scalers.force_update(dict(results))
         return
@@ -127,7 +128,7 @@ class PhlowerScalingService:
         variable_name: str,
         file_path: pathlib.Path | IPhlowerNumpyFile,
         decrypt_key: bytes | None = None,
-    ):
+    ) -> ArrayDataType:
         scaler_name = self._scaling_setting.get_scaler_name(variable_name)
         return self._scalers.transform_file(
             scaler_name, file_path, decrypt_key=decrypt_key

@@ -5,14 +5,13 @@ import hypothesis.strategies as st
 import pytest
 import yaml
 from hypothesis import given, settings
-
 from phlower.settings import PhlowerModelSetting, PhlowerSetting
 from phlower.settings._module_settings import ShareSetting
 
 
 @given(st.lists(st.integers(), max_size=100))
 @settings(max_examples=100)
-def test__gather_input_dims_of_reference_setting(input_dims):
+def test__gather_input_dims_of_reference_setting(input_dims: list[int]):
     setting = ShareSetting(reference_name="dummy")
     mocked = mock.MagicMock()
     setting.reference = mocked
@@ -33,7 +32,7 @@ def test__get_n_nodes_of_reference_setting():
 
 
 @pytest.mark.parametrize("reference_name", ["dummy", "mlp0", "gcn0"])
-def test__call_parent_function_when_get_reference(reference_name):
+def test__call_parent_function_when_get_reference(reference_name: str):
     setting = ShareSetting(reference_name=reference_name)
     mocked = mock.MagicMock()
 
@@ -55,7 +54,7 @@ def test__can_resolve():
 @pytest.mark.parametrize(
     "yaml_file", ["check_gcn_share_nodes.yml", "check_mlp_share_nodes.yml"]
 )
-def test__nodes_after_resolve(yaml_file):
+def test__nodes_after_resolve(yaml_file: str):
     with open(_TEST_DATA_DIR / yaml_file) as fr:
         content = yaml.load(fr, Loader=yaml.SafeLoader)
 

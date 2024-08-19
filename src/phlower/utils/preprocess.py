@@ -10,7 +10,7 @@ def get_registered_scaler_names() -> list[str]:
     return [v.value for v in PhlowerScalerName]
 
 
-def convert_to_dumped(v: Any):
+def convert_to_dumped(v: Any) -> Any:  # noqa: ANN401
     if isinstance(v, DenseArrayType):
         return v.tolist()
 

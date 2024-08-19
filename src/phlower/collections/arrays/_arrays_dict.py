@@ -22,7 +22,7 @@ class _PhlowerSequenceArray:
         self._is_sparse = self._reduce_is_sparse()
         self._is_time_series = self._reduce_is_time_series()
 
-    def _reduce_is_sparse(self):
+    def _reduce_is_sparse(self) -> bool:
         _is_sparse = np.unique(np.array([v.is_sparse for v in self._data]))
         if len(_is_sparse) != 1:
             raise ValueError(
@@ -31,7 +31,7 @@ class _PhlowerSequenceArray:
             )
         return _is_sparse.item()
 
-    def _reduce_is_time_series(self):
+    def _reduce_is_time_series(self) -> bool:
         _is_time_series = np.unique(
             np.array([v.is_time_series for v in self._data])
         )
@@ -60,7 +60,7 @@ class _PhlowerSequenceArray:
         dimensions: PhysicalDimensions | None = None,
         is_time_series: bool = False,
         is_voxel: bool = False,
-    ):
+    ) -> PhlowerTensor:
         tensors = [
             v.to_phlower_tensor(
                 device=device,

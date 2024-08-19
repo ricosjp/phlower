@@ -1,10 +1,10 @@
 import pathlib
+from collections.abc import Callable
 
 import hypothesis.strategies as st
 import pytest
 import yaml
 from hypothesis import assume, given, settings
-
 from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import GCNSetting
 
@@ -18,7 +18,9 @@ from phlower.settings._module_settings import GCNSetting
         ([-1, 20, 30], ["tanh", "tanh"], [0.2, 0.1]),
     ],
 )
-def test__can_accept_valid_n_nodes(nodes, activations, dropouts):
+def test__can_accept_valid_n_nodes(
+    nodes: list[int], activations: list[str], dropouts: list[float]
+):
     _ = GCNSetting(
         nodes=nodes,
         support_name="dummy",
@@ -38,7 +40,9 @@ def test__can_accept_valid_n_nodes(nodes, activations, dropouts):
         ([10], [], []),
     ],
 )
-def test__raise_error_when_invalid_n_nodes(nodes, activations, dropouts):
+def test__raise_error_when_invalid_n_nodes(
+    nodes: list[int], activations: list[str], dropouts: list[float]
+):
     with pytest.raises(ValueError):
         _ = GCNSetting(
             nodes=nodes,
@@ -49,7 +53,7 @@ def test__raise_error_when_invalid_n_nodes(nodes, activations, dropouts):
 
 
 @pytest.mark.parametrize("input_dims", [([30]), ([40]), ([100])])
-def test__gather_input_dims(input_dims):
+def test__gather_input_dims(input_dims: list[int]):
     setting = GCNSetting(
         nodes=[10, 20],
         support_name="dummy",
@@ -61,7 +65,7 @@ def test__gather_input_dims(input_dims):
 
 
 @pytest.mark.parametrize("input_dims", [([]), ([40, 400]), ([10, 0, 1])])
-def test__raise_error_invalid_input_dims(input_dims):
+def test__raise_error_invalid_input_dims(input_dims: list[int]):
     setting = GCNSetting(
         nodes=[10, 20],
         support_name="dummy",
@@ -77,7 +81,9 @@ def test__raise_error_invalid_input_dims(input_dims):
     "nodes, activations, dropouts",
     [([10, 20, 30], [], []), ([10, 20, 30, 40, 50], [], [])],
 )
-def test__fill_default_settings(nodes, activations, dropouts):
+def test__fill_default_settings(
+    nodes: list[int], activations: list[str], dropouts: list[float]
+):
     setting = GCNSetting(
         nodes=nodes,
         support_name="dummy",
@@ -92,7 +98,7 @@ def test__fill_default_settings(nodes, activations, dropouts):
 
 
 @st.composite
-def same_length_lists(draw):
+def same_length_lists(draw: Callable) -> tuple[list[int], list[int]]:
     n_elements = draw(st.integers(min_value=2, max_value=10))
     fixed_length_list = st.lists(
         st.integers(min_value=1, max_value=200),
@@ -105,7 +111,9 @@ def same_length_lists(draw):
 
 @given(same_length_lists())
 @settings(max_examples=100)
-def test__nodes_is_update_after_overwrite_nodes(lists):
+def test__nodes_is_update_after_overwrite_nodes(
+    lists: tuple[list[int], list[int]],
+):
     nodes, update_nodes = lists
     assume(nodes != update_nodes)
     setting = GCNSetting(
@@ -139,7 +147,7 @@ _TEST_DATA_DIR = pathlib.Path(__file__).parent / "data/gcn_setting"
 
 
 @pytest.mark.parametrize("yaml_file", ["check_gcn_nodes.yml"])
-def test__nodes_after_resolve(yaml_file):
+def test__nodes_after_resolve(yaml_file: str):
     with open(_TEST_DATA_DIR / yaml_file) as fr:
         content = yaml.load(fr, Loader=yaml.SafeLoader)
 

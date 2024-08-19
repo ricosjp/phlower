@@ -3,7 +3,6 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import MLP, Share
@@ -23,7 +22,7 @@ def test__can_call_parameters():
     "mlp_nodes",
     [([10, 10]), ([20, 10, 100])],
 )
-def test__reference_same_object(mlp_nodes):
+def test__reference_same_object(mlp_nodes: list[int]):
     model = Share(reference_name="MLP0")
     MLP0 = MLP(nodes=mlp_nodes)
     model._reference = MLP0
@@ -41,7 +40,7 @@ def test__reference_same_object(mlp_nodes):
 
 
 @pytest.mark.parametrize("reference_name", ["MLP0", "GCP0"])
-def test__search_reference_name(reference_name):
+def test__search_reference_name(reference_name: str):
     model = Share(reference_name=reference_name)
 
     mocked = mock.MagicMock(IReadonlyReferenceGroup)

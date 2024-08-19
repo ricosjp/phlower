@@ -1,13 +1,12 @@
 import numpy as np
 import pytest
-
 from phlower.services.preprocessing._scalers.scale_functions import MinMaxScaler
 
 
 @pytest.mark.parametrize(
     "name, kwards", [("min_max", {}), ("min_max", {"copy": True})]
 )
-def test__create(name, kwards):
+def test__create(name: str, kwards: dict):
     _ = MinMaxScaler.create(name, **kwards)
 
 
@@ -15,7 +14,7 @@ def test__create(name, kwards):
     "name, kwards",
     [("identity", {}), ("isoam_scale", {"other_components": ["a"]})],
 )
-def test__invalid_name_create(name, kwards):
+def test__invalid_name_create(name: str, kwards: dict):
     with pytest.raises(NotImplementedError):
         _ = MinMaxScaler.create(name, **kwards)
 
@@ -33,7 +32,7 @@ def test__fixed_property_and_method():
         ("min_max", 100000, 3),
     ],
 )
-def test__retrieve_from_dumped_data(name, n_nodes, n_feature):
+def test__retrieve_from_dumped_data(name: str, n_nodes: int, n_feature: int):
     interim_value = np.random.randn(n_nodes, n_feature) * 2
 
     scaler = MinMaxScaler.create(name)

@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 import torch
-
 from phlower.utils import OptimizerSelector
 
 
@@ -23,7 +22,7 @@ from phlower.utils import OptimizerSelector
         ("MyOptimizer", False),
     ],
 )
-def test__exist(name, desired):
+def test__exist(name: str, desired: bool):
     assert OptimizerSelector.exist(name) == desired
 
 
@@ -43,13 +42,13 @@ def test__exist(name, desired):
         ("SGD"),
     ],
 )
-def test__select(name):
+def test__select(name: str):
     optim = OptimizerSelector.select(name)
     assert optim.__name__ == name
 
 
 @pytest.mark.parametrize("name", ["MyOptimizer", "BestOptimizer"])
-def test__exist_after_register(name):
+def test__exist_after_register(name: str):
     assert not OptimizerSelector.exist(name)
     dummy = mock.MagicMock(torch.optim.Optimizer)
     OptimizerSelector.register(name, dummy)

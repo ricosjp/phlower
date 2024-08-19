@@ -123,7 +123,7 @@ class PhlowerPredictorSetting:
 
     @pydantic.field_validator("selection_mode")
     @classmethod
-    def check_valid_selection_mode(cls, name):
+    def check_valid_selection_mode(cls, name: str) -> str:
         names = [v.value for v in ModelSelectionType]
         if name not in names:
             raise ValueError(f"{name} selection mode does not exist.")

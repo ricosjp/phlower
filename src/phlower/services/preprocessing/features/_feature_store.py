@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Iterable
 from typing import get_args
 
 import pydantic.dataclasses as dc
@@ -47,10 +48,10 @@ class FeatureDataStore:
             )
         return
 
-    def keys(self):
+    def keys(self) -> Iterable[str]:
         return self._feature_table.keys()
 
-    def values(self):
+    def values(self) -> Iterable[ArrayDataType]:
         return self._feature_table.values()
 
     def save(

@@ -2,7 +2,6 @@ import pathlib
 import shutil
 
 import pytest
-
 from phlower.io import PhlowerDirectory
 
 TEST_DATA_DIR = pathlib.Path(__file__).parent / "tmp"
@@ -21,7 +20,7 @@ def create_test_cases():
 @pytest.mark.parametrize(
     "path", ["tests/data/deform", "tests/data/csv_prepost/raw"]
 )
-def test__initialize(path):
+def test__initialize(path: str):
     phlower_dir = PhlowerDirectory(pathlib.Path(path))
 
     assert phlower_dir.path == pathlib.Path(path)
@@ -30,7 +29,9 @@ def test__initialize(path):
 @pytest.mark.parametrize(
     "variable_name, ext", [("variable1", ".npy"), ("variable2", ".npz.enc")]
 )
-def test__find_variable_file(variable_name, ext, create_test_cases):
+def test__find_variable_file(
+    variable_name: str, ext: str, create_test_cases: None
+):
     phlower_dir = PhlowerDirectory(TEST_DATA_DIR)
 
     phlower_file = phlower_dir.find_variable_file(variable_name)
@@ -41,7 +42,9 @@ def test__find_variable_file(variable_name, ext, create_test_cases):
 @pytest.mark.parametrize(
     "variable_name, ext", [("variable3", ".npz"), ("variable4", ".npz.enc")]
 )
-def test__failed_find_variable_file(variable_name, ext, create_test_cases):
+def test__failed_find_variable_file(
+    variable_name: str, ext: str, create_test_cases: None
+):
     phlower_dir = PhlowerDirectory(TEST_DATA_DIR)
 
     assert phlower_dir.exist_variable_file(variable_name) is False
@@ -52,7 +55,9 @@ def test__failed_find_variable_file(variable_name, ext, create_test_cases):
 @pytest.mark.parametrize(
     "variable_name, ext", [("variable3", ".npz"), ("variable4", ".npz.enc")]
 )
-def test__find_variable_file_as_None(variable_name, ext, create_test_cases):
+def test__find_variable_file_as_None(
+    variable_name: str, ext: str, create_test_cases: None
+):
     phlower_dir = PhlowerDirectory(TEST_DATA_DIR)
 
     phlower_file = phlower_dir.find_variable_file(

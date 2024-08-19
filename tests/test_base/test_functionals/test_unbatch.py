@@ -1,8 +1,10 @@
+from collections.abc import Callable
+
 import numpy as np
 import pytest
 import torch
-
 from phlower._base._functionals import to_batch, unbatch
+from phlower._base.tensors._interface import IPhlowerTensor
 
 
 @pytest.mark.parametrize(
@@ -23,7 +25,12 @@ from phlower._base._functionals import to_batch, unbatch
     ],
 )
 def test__unbatch_for_sparse(
-    shapes, dimensions, expected_shape, create_sparse_tensors
+    shapes: list[tuple[int]],
+    dimensions: list[dict],
+    expected_shape: tuple,
+    create_sparse_tensors: Callable[
+        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+    ],
 ):
     sparse_tensors = create_sparse_tensors(shapes, dimensions)
 
@@ -62,7 +69,13 @@ def test__unbatch_for_sparse(
     ],
 )
 def test__unbatch_for_dense(
-    shapes, concat_dim, dimensions, expected_shape, create_dense_tensors
+    shapes: list[tuple[int]],
+    concat_dim: int,
+    dimensions: dict | None,
+    expected_shape: tuple[int],
+    create_dense_tensors: Callable[
+        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+    ],
 ):
     dense_tensors = create_dense_tensors(shapes, dimensions)
 
@@ -92,11 +105,15 @@ def test__unbatch_for_dense(
     ],
 )
 def test__batched_tensor_mm(
-    sparse_shapes,
-    dense_shapes,
-    expected_shape,
-    create_sparse_tensors,
-    create_dense_tensors,
+    sparse_shapes: list[tuple[int]],
+    dense_shapes: list[tuple[int]],
+    expected_shape: tuple[int],
+    create_sparse_tensors: Callable[
+        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+    ],
+    create_dense_tensors: Callable[
+        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+    ],
 ):
     sparse_tensors = create_sparse_tensors(sparse_shapes)
     dense_tensors = create_dense_tensors(dense_shapes)

@@ -43,14 +43,14 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
 
     @pydantic.field_validator("join_fitting")
     @classmethod
-    def must_be_true(cls, v):
+    def must_be_true(cls, v: bool) -> bool:
         if not v:
             raise ValueError("join_fitting must be True except same_as.")
         return v
 
     @pydantic.field_validator("method")
     @classmethod
-    def is_exist_method(cls, v):
+    def is_exist_method(cls, v: str) -> str:
         logger = utils.get_logger(__name__)
 
         names = utils.get_registered_scaler_names()
@@ -59,7 +59,7 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
             logger.warning(f"Scaler name: {v} is not implemented.")
         return v
 
-    def get_scaler_name(self, variable_name: str):
+    def get_scaler_name(self, variable_name: str) -> str:
         return f"SCALER_{variable_name}"
 
 
@@ -76,7 +76,7 @@ class SameAsInputParameters(IScalerParameter, pydantic.BaseModel):
     def is_parent_scaler(self) -> bool:
         return False
 
-    def get_scaler_name(self, variable_name: str):
+    def get_scaler_name(self, variable_name: str) -> str:
         return f"SCALER_{self.same_as}"
 
 
@@ -92,7 +92,7 @@ class PhlowerScalingSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     @pydantic.model_validator(mode="after")
-    def _check_same_as(self):
+    def _check_same_as(self) -> Self:
         for k, v in self.varaible_name_to_scalers.items():
             if v.is_parent_scaler:
                 continue
@@ -141,7 +141,7 @@ class ScalerResolvedParameter:
 
     @pydantic.field_validator("method")
     @classmethod
-    def is_exist_method(cls, v):
+    def is_exist_method(cls, v: str) -> str:
         logger = utils.get_logger(__name__)
 
         names = utils.get_registered_scaler_names()
@@ -151,7 +151,7 @@ class ScalerResolvedParameter:
         return v
 
     @pydantic.model_validator(mode="after")
-    def _validate_isoam_scaler(self):
+    def _validate_isoam_scaler(self) -> Self:
         _validate_scaler(self.method, self)
         return self
 
