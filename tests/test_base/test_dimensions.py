@@ -12,7 +12,7 @@ from phlower.utils.exceptions import InvalidDimensionError
         st.floats(allow_nan=False),
     )
 )
-def test__equal_when_same_dimension(dict_data: dict[str.float]):
+def test__equal_when_same_dimension(dict_data: dict[str, float]):
     dimension = PhysicalDimensions(dict_data)
     other = PhysicalDimensions(dict_data)
 
