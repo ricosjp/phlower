@@ -72,7 +72,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             self._norm_function_name
         )
 
-    def _init_linear_weight(self):
+    def _init_linear_weight(self) -> Identity | Proportional:
         if not self._create_linear_weight:
             if self._nodes[0] != self._nodes[-1]:
                 raise ValueError(

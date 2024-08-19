@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
 import torch
-from scipy import sparse as sp
-from scipy.stats import ortho_group
-
 from phlower import PhlowerTensor, phlower_tensor
 from phlower.nn._core_modules import _functions
 from phlower.utils.exceptions import PhlowerIncompatibleTensorError
+from scipy import sparse as sp
+from scipy.stats import ortho_group
 
 
 @pytest.mark.parametrize(
@@ -26,7 +25,7 @@ from phlower.utils.exceptions import PhlowerIncompatibleTensorError
         ((4, 10, 3, 16), True, 5),
     ],
 )
-def test__spmm(size, is_time_series, repeat):
+def test__spmm(size: tuple[int], is_time_series: bool, repeat: bool):
     phlower_tensor = PhlowerTensor(
         torch.rand(*size), is_time_series=is_time_series
     )
@@ -41,7 +40,7 @@ def test__spmm(size, is_time_series, repeat):
     sp_sparse = sp.coo_array(sparse.to_tensor().to_dense().numpy())
     np_dense = phlower_tensor.to_tensor().numpy()
 
-    def assert_correct(actual, array):
+    def assert_correct(actual: np.ndarray, array: np.ndarray):
         dim_feat = len(array.shape) - 1
         if dim_feat == 1:
             desired = array
@@ -114,7 +113,11 @@ def test_smooth_leaky_relu_inverse():
     ],
 )
 def test_contraction_one_argument(
-    size, is_time_series, is_voxel, desired_pattern, dimension
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    desired_pattern: str,
+    dimension: list[list[int]],
 ):
     torch_tensor = torch.rand(*size)
     x = phlower_tensor(
@@ -396,15 +399,15 @@ def test_contraction_one_argument(
     ],
 )
 def test_contraction_two_arguments(
-    size_x,
-    size_y,
-    x_is_time_series,
-    y_is_time_series,
-    is_voxel,
-    desired_pattern,
-    desired_rank,
-    dimension_x,
-    dimension_y,
+    size_x: tuple[int],
+    size_y: tuple[int],
+    x_is_time_series: bool,
+    y_is_time_series: bool,
+    is_voxel: bool,
+    desired_pattern: str,
+    desired_rank: int,
+    dimension_x: list[list[int]] | None,
+    dimension_y: list[list[int]] | None,
 ):
     t_x = torch.rand(*size_x)
     x = phlower_tensor(
@@ -665,14 +668,14 @@ def test_contraction_raises_phlower_incompatible_tensor_error():
     ],
 )
 def test_tensor_product(
-    size_x,
-    size_y,
-    x_is_time_series,
-    y_is_time_series,
-    is_voxel,
-    desired_pattern,
-    dimension_x,
-    dimension_y,
+    size_x: tuple[int],
+    size_y: tuple[int],
+    x_is_time_series: bool,
+    y_is_time_series: bool,
+    is_voxel: bool,
+    desired_pattern: str,
+    dimension_x: list[list[int]] | None,
+    dimension_y: list[list[int]] | None,
 ):
     t_x = torch.rand(*size_x)
     x = phlower_tensor(
@@ -737,7 +740,11 @@ def test_tensor_product(
     ],
 )
 def test_apply_orthogonal_group(
-    size, is_time_series, is_voxel, desired_pattern, dimension
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    desired_pattern: str,
+    dimension: list[list[int]] | None,
 ):
     orthogonal_matrix = torch.from_numpy(ortho_group.rvs(3).astype(np.float32))
     orthogonal_tensor = phlower_tensor(orthogonal_matrix)
@@ -800,7 +807,13 @@ def test_apply_orthogonal_group(
         [[-1], [-1], [2], [0], [1], [0], [0]],
     ],
 )
-def test_spatial_mean(size, is_time_series, is_voxel, mean_dims, dimension):
+def test_spatial_mean(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    mean_dims: int,
+    dimension: list[list[int]] | None,
+):
     torch_tensor = torch.rand(*size)
     x = phlower_tensor(
         torch_tensor,

@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import MLP, PInvMLP
@@ -25,7 +24,7 @@ def test__can_call_parameters():
         ([20, 20, 40, 100], ["tanh", "smooth_leaky_relu", "leaky_relu0p5"], 2),
     ],
 )
-def test__pinv_mlp(mlp_nodes, activations, decimal):
+def test__pinv_mlp(mlp_nodes: list[int], activations: list[str], decimal: int):
     MLP0 = MLP(nodes=mlp_nodes, activations=activations)
 
     model = PInvMLP(reference_name="MLP0")

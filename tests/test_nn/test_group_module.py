@@ -3,7 +3,6 @@ import pathlib
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower._base import phlower_array
 from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
@@ -14,7 +13,7 @@ _SAMPLE_SETTING_DIR = pathlib.Path("tests/samples/settings")
 
 
 @pytest.mark.parametrize("yaml_file", ["with_share_nn.yml"])
-def test__resolve_modules_from_setting(yaml_file):
+def test__resolve_modules_from_setting(yaml_file: str):
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
     setting = PhlowerSetting.read_yaml(setting_file)
 
@@ -23,7 +22,7 @@ def test__resolve_modules_from_setting(yaml_file):
 
 
 @pytest.mark.parametrize("yaml_file", ["with_share_nn.yml"])
-def test__draw(yaml_file):
+def test__draw(yaml_file: str):
     output_directory = pathlib.Path(__file__).parent / "out"
 
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
@@ -38,7 +37,9 @@ def test__draw(yaml_file):
 @pytest.mark.parametrize(
     "yaml_file, input_n_feature, n_nodes", [("with_share_nn.yml", 10, 20)]
 )
-def test__forward_and_backward(yaml_file, input_n_feature, n_nodes):
+def test__forward_and_backward(
+    yaml_file: str, input_n_feature: int, n_nodes: int
+):
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
     setting = PhlowerSetting.read_yaml(setting_file)
 

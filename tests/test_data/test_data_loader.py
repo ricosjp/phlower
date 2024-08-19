@@ -1,7 +1,9 @@
+import pathlib
+from collections.abc import Callable
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-
 from phlower._base import PhysicalDimensions
 from phlower.data import (
     DataLoaderBuilder,
@@ -13,7 +15,7 @@ from phlower.utils.enums import ModelSelectionType
 
 
 @st.composite
-def trainer_setting(draw):
+def trainer_setting(draw: Callable) -> PhlowerTrainerSetting:
     setting = PhlowerTrainerSetting(
         loss_setting={"name2loss": {"u": "mse"}},
         non_blocking=draw(st.booleans()),
@@ -26,7 +28,7 @@ def trainer_setting(draw):
 
 
 @st.composite
-def predictor_setting(draw):
+def predictor_setting(draw: Callable) -> PhlowerPredictorSetting:
     setting = PhlowerPredictorSetting(
         selection_mode=draw(st.sampled_from(ModelSelectionType)),
         non_blocking=draw(st.booleans()),
@@ -61,7 +63,9 @@ def test__create_from_predictor_setting(setting: PhlowerPredictorSetting):
 
 @pytest.mark.parametrize("batch_size", [1, 2, 3])
 def test__consider_batch_size(
-    batch_size, create_tmp_dataset, output_base_directory
+    batch_size: int,
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [
         output_base_directory / v for v in ["data0", "data1", "data2"]
@@ -110,11 +114,11 @@ def test__consider_batch_size(
     ],
 )
 def test__consider_dimensions(
-    dimensions,
-    disable_dimensions,
-    desired,
-    create_tmp_dataset,
-    output_base_directory,
+    dimensions: dict,
+    disable_dimensions: bool,
+    desired: dict,
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [
         output_base_directory / v for v in ["data0", "data1", "data2"]
@@ -170,7 +174,10 @@ def test__consider_dimensions(
     ],
 )
 def test__not_consider_dimensions(
-    dimensions, disable_dimensions, create_tmp_dataset, output_base_directory
+    dimensions: dict,
+    disable_dimensions: bool,
+    create_tmp_dataset: None,
+    output_base_directory: pathlib.Path,
 ):
     directories = [
         output_base_directory / v for v in ["data0", "data1", "data2"]

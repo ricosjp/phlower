@@ -47,7 +47,7 @@ class LogRecordIO:
         file_path: pathlib.Path,
         loss_keys: list[str] = None,
         display_margin: int = 4,
-    ):
+    ) -> None:
         self._file_path = file_path
         self._display_margin = display_margin
         self._loss_keys = loss_keys if loss_keys is not None else []

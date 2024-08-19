@@ -4,7 +4,7 @@ import abc
 import io
 import os
 import pathlib
-from typing import get_args
+from typing import Any, get_args
 
 import numpy as np
 import scipy.sparse as sp
@@ -95,7 +95,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         return False
 
     @property
-    def file_extension(self):
+    def file_extension(self) -> str:
         return self._ext_type.value
 
     @property
@@ -117,7 +117,9 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         return name
 
 
-def _get_fileio(data: ArrayDataType, encrypt_key: bytes | None = None):
+def _get_fileio(
+    data: ArrayDataType, encrypt_key: bytes | None = None
+) -> INumpyFileIOCore:
     if isinstance(data, np.ndarray):
         if encrypt_key is not None:
             return _NpyEncFileIO()
@@ -134,15 +136,18 @@ def _get_fileio(data: ArrayDataType, encrypt_key: bytes | None = None):
 
 
 class INumpyFileIOCore(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def load(cls, path: pathlib.Path, decrypt_key: bytes = None): ...
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def get_save_path(
         cls, output_directory: pathlib.Path, file_basename: str
     ) -> pathlib.Path: ...
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def save(
         cls,
         save_path: pathlib.Path,
@@ -179,7 +184,7 @@ class _NpyFileIO(INumpyFileIOCore):
 
 class _NpyEncFileIO(INumpyFileIOCore):
     @classmethod
-    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         if decrypt_key is None:
             raise ValueError(
                 "encrpt key is None. Cannot decrypt encrypted file."
@@ -216,7 +221,7 @@ class _NpyEncFileIO(INumpyFileIOCore):
 
 class _NpzFileIO(INumpyFileIOCore):
     @classmethod
-    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         return sp.load_npz(path)
 
     @classmethod
@@ -239,7 +244,7 @@ class _NpzFileIO(INumpyFileIOCore):
 
 class _NpzEncFileIO(INumpyFileIOCore):
     @classmethod
-    def load(cls, path: pathlib.Path, decrypt_key: bytes = None):
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401:
         if decrypt_key is None:
             raise ValueError("Key is None. Cannot decrypt encrypted file.")
 

@@ -1,6 +1,5 @@
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import GCN
@@ -24,7 +23,7 @@ def test__can_call_parameters():
         ((4, 10, 3, 16), True),
     ],
 )
-def test__gcn(size, is_time_series):
+def test__gcn(size: tuple[int], is_time_series: bool):
     phlower_tensor = PhlowerTensor(
         torch.rand(*size), is_time_series=is_time_series
     )

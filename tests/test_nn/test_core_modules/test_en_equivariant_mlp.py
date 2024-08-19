@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
 import torch
-from scipy.stats import ortho_group
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import EnEquivariantMLP
 from phlower.nn._core_modules import _functions
+from scipy.stats import ortho_group
 
 
 def test__can_call_parameters():
@@ -34,7 +33,12 @@ def test__can_call_parameters():
     ],
 )
 @pytest.mark.parametrize("n_output_feature", [1, 16, 32])
-def test__en_equivariance(size, is_time_series, is_voxel, n_output_feature):
+def test__en_equivariance(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    n_output_feature: int,
+):
     orthogonal_tensor = PhlowerTensor(
         torch.tensor(ortho_group.rvs(3).astype(np.float32))
     )

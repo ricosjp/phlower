@@ -2,7 +2,6 @@ import pathlib
 import secrets
 
 import pytest
-
 from phlower.io import PhlowerYamlFile
 
 TEST_ENCRYPT_KEY = secrets.token_bytes(32)
@@ -12,7 +11,7 @@ TEST_ENCRYPT_KEY = secrets.token_bytes(32)
     "path, ext",
     [("./sample/sample.yml", ".yml"), ("./sample/sample.yml.enc", ".yml.enc")],
 )
-def test__check_extension_type(path, ext):
+def test__check_extension_type(path: str, ext: str):
     path = pathlib.Path(path)
     phlower_path = PhlowerYamlFile(path)
     assert phlower_path._ext_type.value == ext
@@ -22,7 +21,7 @@ def test__check_extension_type(path, ext):
 @pytest.mark.parametrize(
     "path", [("./sample/sample.npy"), ("./sample/sample.npy.enc")]
 )
-def test__check_error_extension_type(path):
+def test__check_error_extension_type(path: str):
     path = pathlib.Path(path)
     with pytest.raises(NotImplementedError):
         _ = PhlowerYamlFile(path)
@@ -32,7 +31,7 @@ def test__check_error_extension_type(path):
     "path, enc",
     [("./sample/sample.yml", False), ("./sample/sample.yml.enc", True)],
 )
-def test__is_encrypted(path, enc):
+def test__is_encrypted(path: str, enc: bool):
     path = pathlib.Path(path)
     phlower_path = PhlowerYamlFile(path)
     assert phlower_path.is_encrypted == enc
@@ -46,7 +45,11 @@ def test__is_encrypted(path, enc):
         (TEST_ENCRYPT_KEY, TEST_ENCRYPT_KEY),
     ],
 )
-def test__save_and_load(encrypt_key, decrypt_key, setup_test_dir):
+def test__save_and_load(
+    encrypt_key: bytes | None,
+    decrypt_key: bytes | None,
+    setup_test_dir: pathlib.Path,
+):
     sample_data = {"a": 1, "b": 2}
 
     saved_path = PhlowerYamlFile.save(
@@ -63,7 +66,7 @@ def test__save_and_load(encrypt_key, decrypt_key, setup_test_dir):
     assert loaded_data == sample_data
 
 
-def test__cannnot_load_encrypt_data_without_key(setup_test_dir):
+def test__cannnot_load_encrypt_data_without_key(setup_test_dir: pathlib.Path):
     sample_data = {"a": 1, "b": 2}
 
     saved_path = PhlowerYamlFile.save(
@@ -78,7 +81,7 @@ def test__cannnot_load_encrypt_data_without_key(setup_test_dir):
         _ = saved_path.load()
 
 
-def test__save_not_allowed_overwrite(setup_test_dir):
+def test__save_not_allowed_overwrite(setup_test_dir: pathlib.Path):
     sample_data = {"a": 1, "b": 2}
 
     path = setup_test_dir / "sample.yml"

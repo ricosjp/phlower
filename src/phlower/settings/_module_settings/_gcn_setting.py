@@ -53,7 +53,7 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     @pydantic.model_validator(mode="before")
     @classmethod
-    def fill_empty_activations_dropouts(cls, values: dict):
+    def fill_empty_activations_dropouts(cls, values: dict) -> dict:
         n_nodes = len(values.get("nodes"))
         activations = values.get("activations", [])
         dropouts = values.get("dropouts", [])

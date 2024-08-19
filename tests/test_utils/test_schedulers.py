@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 import torch
-
 from phlower.utils import SchedulerSelector
 
 
@@ -27,7 +26,7 @@ from phlower.utils import SchedulerSelector
         ("MyScheduler", False),
     ],
 )
-def test__exist(name, desired):
+def test__exist(name: str, desired: bool):
     assert SchedulerSelector.exist(name) == desired
 
 
@@ -51,13 +50,13 @@ def test__exist(name, desired):
         ("PolynomialLR"),
     ],
 )
-def test__select(name):
+def test__select(name: str):
     scheduler = SchedulerSelector.select(name)
     assert scheduler.__name__ == name
 
 
 @pytest.mark.parametrize("name", ["MyScheduler", "BestScheduler"])
-def test__exist_after_register(name):
+def test__exist_after_register(name: str):
     assert not SchedulerSelector.exist(name)
     dummy = mock.MagicMock(torch.optim.Optimizer)
     SchedulerSelector.register(name, dummy)

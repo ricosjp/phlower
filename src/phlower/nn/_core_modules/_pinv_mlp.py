@@ -63,14 +63,16 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
         ]
         self._chains = self._init_pinv_chains()
 
-    def _init_pinv_chains(self):
+    def _init_pinv_chains(self) -> list[PInvLinear]:
         name = self._reference.__class__.__name__
         if name in ["MLP", "Proportional"]:
             return self._init_pinv_mlp_chains(self._reference._chains)
 
         raise ValueError(f"Unsupported reference class: {name}")
 
-    def _init_pinv_mlp_chains(self, chains: _utils.ExtendedLinearList):
+    def _init_pinv_mlp_chains(
+        self, chains: _utils.ExtendedLinearList
+    ) -> list[PInvLinear]:
         return [PInvLinear(c) for c in chains._linears[::-1]]
 
     def forward(
@@ -114,18 +116,18 @@ class PInvLinear(torch.nn.Module):
         self.ref_linear = ref_linear
         return
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = torch.nn.functional.linear(x + self.bias, self.weight)
         return h
 
     @property
-    def weight(self):
+    def weight(self) -> torch.Tensor:
         """Return pseudo inversed weight."""
         w = self.ref_linear.weight
         return torch.pinverse(w)
 
     @property
-    def bias(self):
+    def bias(self) -> torch.Tensor | float:
         """Return inverse bias."""
         if self.ref_linear.bias is None:
             return 0

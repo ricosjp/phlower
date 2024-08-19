@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
+from typing import Any
 
 import torch
 
@@ -97,7 +98,7 @@ class PhlowerDimensionTensor:
         )
         return f"{self.__class__.__name__}({texts})"
 
-    def to_physics_dimension(self):
+    def to_physics_dimension(self) -> PhysicalDimensions:
         _dict = self.to_dict()
         return PhysicalDimensions(_dict)
 
@@ -118,7 +119,13 @@ class PhlowerDimensionTensor:
         return torch.sum(torch.abs(self._tensor)) < 1e-5
 
     @classmethod
-    def __torch_function__(cls, func, types, args: tuple, kwargs=None):
+    def __torch_function__(
+        cls,
+        func: Callable,
+        types: list[type],
+        args: tuple,
+        kwargs: dict | None = None,
+    ) -> PhlowerDimensionTensor:
         if kwargs is None:
             kwargs = {}
 
@@ -128,10 +135,10 @@ class PhlowerDimensionTensor:
         return _HANDLED_FUNCTIONS[func](*args, **kwargs)
 
 
-def dimension_wrap_implements(torch_function):
+def dimension_wrap_implements(torch_function: Callable) -> Callable:
     """Register a torch function override for PhysicsUnitTensor"""
 
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         functools.update_wrapper(func, torch_function)
         _HANDLED_FUNCTIONS[torch_function] = func
         return func
@@ -140,12 +147,14 @@ def dimension_wrap_implements(torch_function):
 
 
 @dimension_wrap_implements(torch.mean)
-def mean(inputs: PhlowerDimensionTensor):
+def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
 @dimension_wrap_implements(torch.add)
-def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
+def add(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         if inputs != other:
             raise DimensionIncompatibleError(
@@ -159,7 +168,9 @@ def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
 
 
 @dimension_wrap_implements(torch.sub)
-def sub(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
+def sub(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         if inputs != other:
             raise DimensionIncompatibleError(
@@ -173,17 +184,22 @@ def sub(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
 
 
 @dimension_wrap_implements(torch.pow)
-def pow(inputs: PhlowerDimensionTensor, other):
+def pow(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor * other)
 
 
 @dimension_wrap_implements(torch.sqrt)
-def sqrt(inputs: PhlowerDimensionTensor):
+def sqrt(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor / 2)
 
 
 @dimension_wrap_implements(torch.mul)
-def mul(inputs, other):
+def mul(
+    inputs: PhlowerDimensionTensor | torch.Tensor,
+    other: PhlowerDimensionTensor | torch.Tensor,
+) -> PhlowerDimensionTensor:
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
@@ -198,7 +214,9 @@ def mul(inputs, other):
 
 
 @dimension_wrap_implements(torch.div)
-def div(inputs, other):
+def div(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
@@ -213,7 +231,9 @@ def div(inputs, other):
 
 
 @dimension_wrap_implements(torch.reshape)
-def reshape(inputs, shape):
+def reshape(
+    inputs: PhlowerDimensionTensor, shape: tuple[int]
+) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
@@ -233,7 +253,9 @@ def cat(
 
 
 @dimension_wrap_implements(torch.sparse.mm)
-def sparse_mm(inputs, other):
+def sparse_mm(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         return PhlowerDimensionTensor(inputs._tensor + other._tensor)
 
@@ -241,17 +263,21 @@ def sparse_mm(inputs, other):
 
 
 @dimension_wrap_implements(torch.nn.functional.linear)
-def nn_linear(inputs, *args):
+def nn_linear(
+    inputs: PhlowerDimensionTensor, *args: Any
+) -> PhlowerDimensionTensor:
     return inputs
 
 
 @dimension_wrap_implements(torch.nn.functional.dropout)
-def dropout(inputs, *args, **kwards):
+def dropout(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     return inputs
 
 
 @dimension_wrap_implements(torch.stack)
-def stack(inputs):
+def stack(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
         # HACK: is it possible to use unique method ?
         for v in inputs:
@@ -264,7 +290,12 @@ def stack(inputs):
 
 
 @dimension_wrap_implements(torch.nn.functional.mse_loss)
-def mse_loss(inputs, others, *args, **kwards):
+def mse_loss(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
     if inputs != others:
         raise DimensionIncompatibleError()
 
@@ -272,7 +303,9 @@ def mse_loss(inputs, others, *args, **kwards):
 
 
 @dimension_wrap_implements(torch.sum)
-def _sum(inputs, *args, **kwards):
+def _sum(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     if isinstance(inputs, PhlowerDimensionTensor):
         return inputs
 
@@ -280,7 +313,9 @@ def _sum(inputs, *args, **kwards):
 
 
 @dimension_wrap_implements(torch.concatenate)
-def concatenate(inputs, *args, **kwards):
+def concatenate(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
         # HACK: is it possible to use unique method ?
         for v in inputs:
@@ -293,7 +328,7 @@ def concatenate(inputs, *args, **kwards):
 
 
 @dimension_wrap_implements(torch.tanh)
-def tanh(tensor: PhlowerDimensionTensor):
+def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply tanh but {tensor}"
@@ -302,7 +337,9 @@ def tanh(tensor: PhlowerDimensionTensor):
 
 
 @dimension_wrap_implements(torch.nn.functional.leaky_relu)
-def leaky_relu(tensor: PhlowerDimensionTensor, *args, **kwargs):
+def leaky_relu(
+    tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
     if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply leaky_relu but {tensor}"

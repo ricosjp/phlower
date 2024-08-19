@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import Identity
@@ -21,7 +20,7 @@ def test__can_call_parameters():
         (1, 2, 48),
     ],
 )
-def test__identity(input_shape):
+def test__identity(input_shape: tuple[int]):
     phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
     phlower_tensors = phlower_tensor_collection(
         {"phlower_tensor": phlower_tensor}

@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower.services.preprocessing._scalers import (
     PhlowerScalerWrapper,
     scale_functions,
 )
+from phlower.utils.typing import DenseArrayType, SparseArrayType
 
 
 @pytest.fixture
@@ -42,7 +42,9 @@ def sample_sparse_data() -> sp.csc_matrix:
         ("max_abs_powered", scale_functions.MaxAbsPoweredScaler),
     ],
 )
-def test__initialized_class(scaler_name, cls):
+def test__initialized_class(
+    scaler_name: str, cls: scale_functions.IPhlowerScaler
+):
     kwards = {}
     if scaler_name == "isoam_scale":
         kwards = {"other_components": ["a", "b"]}
@@ -51,7 +53,9 @@ def test__initialized_class(scaler_name, cls):
 
 
 @pytest.mark.parametrize("scaler_name", ["std_scale", "max_abs_powered"])
-def test__transform_sparse_data(scaler_name, sample_sparse_data):
+def test__transform_sparse_data(
+    scaler_name: str, sample_sparse_data: SparseArrayType
+):
     scaler = PhlowerScalerWrapper(scaler_name)
     scaler.partial_fit(sample_sparse_data)
     transformed_data = scaler.transform(sample_sparse_data)
@@ -61,7 +65,7 @@ def test__transform_sparse_data(scaler_name, sample_sparse_data):
 
 
 @pytest.mark.parametrize("scaler_name", ["std_scale", "standardize", "min_max"])
-def test__get_dumped_data(scaler_name, sample_data):
+def test__get_dumped_data(scaler_name: str, sample_data: DenseArrayType):
     scaler = PhlowerScalerWrapper(scaler_name)
     scaler.partial_fit(sample_data)
 

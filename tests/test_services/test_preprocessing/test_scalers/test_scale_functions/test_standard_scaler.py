@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from phlower.services.preprocessing._scalers.scale_functions import (
     StandardScaler,
 )
@@ -9,7 +8,7 @@ from phlower.services.preprocessing._scalers.scale_functions import (
 @pytest.mark.parametrize(
     "name, kwards", [("std_scale", {}), ("standardize", {})]
 )
-def test__create(name, kwards):
+def test__create(name: str, kwards: dict):
     _ = StandardScaler.create(name, **kwards)
 
 
@@ -20,7 +19,7 @@ def test__create(name, kwards):
         ("standardize", {"with_mean": False}),
     ],
 )
-def test__invalid_args_create(name, kwards):
+def test__invalid_args_create(name: str, kwards: dict):
     with pytest.raises(ValueError):
         _ = StandardScaler.create(name, **kwards)
 
@@ -29,7 +28,7 @@ def test__invalid_args_create(name, kwards):
     "name, kwards",
     [("identity", {}), ("isoam_scale", {"other_components": ["a"]})],
 )
-def test__invalid_name_create(name, kwards):
+def test__invalid_name_create(name: str, kwards: dict):
     with pytest.raises(NotImplementedError):
         _ = StandardScaler.create(name, **kwards)
 
@@ -52,7 +51,7 @@ def test__fixed_property_and_method():
         (100000, 5, [1, 2, 3, 4, 5]),
     ],
 )
-def test__std_scale_values(n_nodes, n_feature, means):
+def test__std_scale_values(n_nodes: int, n_feature: int, means: list[int]):
     interim_value = np.random.randn(n_nodes, n_feature) * 2 + np.array([means])
 
     scaler = StandardScaler.create(name="std_scale")
@@ -76,7 +75,7 @@ def test__std_scale_values(n_nodes, n_feature, means):
     "n_nodes, n_feature, means",
     [(100000, 5, [1, 2, 3, 4, 5]), (100000, 3, [10, 21, 3])],
 )
-def test__standardize_values(n_nodes, n_feature, means):
+def test__standardize_values(n_nodes: int, n_feature: int, means: list[int]):
     interim_value = np.random.randn(n_nodes, n_feature) * 2 + np.array([means])
 
     scaler = StandardScaler()
@@ -103,7 +102,7 @@ def test__standardize_values(n_nodes, n_feature, means):
         ("standardize", 100000, 3),
     ],
 )
-def test__retrieve_from_dumped_data(name, n_nodes, n_feature):
+def test__retrieve_from_dumped_data(name: str, n_nodes: int, n_feature: int):
     interim_value = np.random.randn(n_nodes, n_feature) * 2
 
     scaler = StandardScaler.create(name)

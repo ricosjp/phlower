@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import pydantic
 from pydantic import (
@@ -20,7 +20,9 @@ def _validate(vals: dict, info: ValidationInfo) -> IPhlowerLayerParameters:
     return setting_cls(**vals)
 
 
-def _serialize(v: pydantic.BaseModel, info: SerializationInfo):
+def _serialize(
+    v: pydantic.BaseModel, info: SerializationInfo
+) -> dict[str, Any]:
     return v.model_dump()
 
 

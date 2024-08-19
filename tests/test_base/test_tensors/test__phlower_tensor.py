@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
@@ -51,7 +50,9 @@ def test__sub_with_unit():
 @pytest.mark.parametrize(
     "unit1, unit2", [({"L": 2, "T": -2}, None), (None, {"M": 2, "T": -3})]
 )
-def test__add_with_and_without_dimensions(unit1, unit2):
+def test__add_with_and_without_dimensions(
+    unit1: dict | None, unit2: dict | None
+):
     tensor1 = phlower_tensor(torch.rand(3, 4), dimension=unit1)
     tensor2 = phlower_tensor(torch.rand(3, 4), dimension=unit2)
 
@@ -163,7 +164,9 @@ def test__tanh():
         (True, True, [4, 10, 10, 10, 3, 3, 16], 2),
     ],
 )
-def test__rank(is_time_series, is_voxel, size, desired_rank):
+def test__rank(
+    is_time_series: bool, is_voxel: bool, size: list[int], desired_rank: int
+):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
@@ -188,7 +191,12 @@ def test__rank(is_time_series, is_voxel, size, desired_rank):
         (True, True, [4, 10, 10, 10, 3, 3, 16], 1000),
     ],
 )
-def test__n_vertices(is_time_series, is_voxel, size, desired_n_vertices):
+def test__n_vertices(
+    is_time_series: bool,
+    is_voxel: bool,
+    size: list[int],
+    desired_n_vertices: int,
+):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
@@ -220,7 +228,12 @@ def test__raises_phlower_sparse_rank_undefined_error():
         (True, True, [4, 10, 10, 10, 3, 3, 16], (1000, 4 * 3 * 3 * 16)),
     ],
 )
-def test__to_vertexwise(is_time_series, is_voxel, size, desired_shape):
+def test__to_vertexwise(
+    is_time_series: bool,
+    is_voxel: bool,
+    size: list[int],
+    desired_shape: tuple[int],
+):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
@@ -245,7 +258,9 @@ def test__to_vertexwise(is_time_series, is_voxel, size, desired_shape):
         (True, True, [4, 10, 10, 10, 3, 3, 16]),
     ],
 )
-def test__to_vertexwise_inverse(is_time_series, is_voxel, size):
+def test__to_vertexwise_inverse(
+    is_time_series: bool, is_voxel: bool, size: list[int]
+):
     torch_tensor = torch.rand(*size)
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
@@ -270,7 +285,12 @@ def test__to_vertexwise_inverse(is_time_series, is_voxel, size):
         ((10, 3 * 16), "n (p a) -> n p a", {"p": 3}, (10, 3, 16)),
     ],
 )
-def test__rearrange(input_shape, pattern, dict_shape, desired_shape):
+def test__rearrange(
+    input_shape: tuple[int],
+    pattern: str,
+    dict_shape: dict,
+    desired_shape: tuple[int],
+):
     phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
     actual = phlower_tensor.rearrange(pattern, **dict_shape)
     assert actual.shape == desired_shape

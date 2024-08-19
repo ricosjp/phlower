@@ -4,11 +4,10 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
-from pipe import select, where
-
 from phlower.io import PhlowerDirectory, PhlowerFileBuilder
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.settings import PhlowerScalingSetting, PhlowerSetting
+from pipe import select, where
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp_preprocess"
 
@@ -55,7 +54,7 @@ def prepare_sample_interim_files():
 
 
 @pytest.fixture(scope="module")
-def perform_scaling(prepare_sample_interim_files):
+def perform_scaling(prepare_sample_interim_files: None) -> PhlowerSetting:
     path = _OUTPUT_DIR
     phlower_path = PhlowerDirectory(path)
 
@@ -83,7 +82,9 @@ def perform_scaling(prepare_sample_interim_files):
     [(_OUTPUT_DIR / "interim", _OUTPUT_DIR / "preprocessed")],
 )
 def test__saved_array_is_same_as_saved_scalers_transformed(
-    interim_base_directory, scaling_base_directory, perform_scaling
+    interim_base_directory: pathlib.Path,
+    scaling_base_directory: pathlib.Path,
+    perform_scaling: None,
 ):
     phlower_path = PhlowerDirectory(interim_base_directory)
     interim_directories = list(

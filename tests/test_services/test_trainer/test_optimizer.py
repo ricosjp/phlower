@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 import torch
-
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.settings import PhlowerTrainerSetting
 
@@ -25,7 +24,7 @@ from phlower.settings import PhlowerTrainerSetting
     ],
 )
 def test__pass_kwargs_when_call_from_setting(
-    optimizer, optimizer_parameters, schedulers
+    optimizer: str, optimizer_parameters: dict, schedulers: list[dict]
 ):
     setting = PhlowerTrainerSetting(
         loss_setting={"name2loss": {}},
@@ -60,7 +59,12 @@ def test__pass_kwargs_when_call_from_setting(
         ("SGD", 0.0005, 0.01, torch.optim.SGD),
     ],
 )
-def test__optimizer_parameters(optimizer, lr, weight_decay, desired_optimizer):
+def test__optimizer_parameters(
+    optimizer: str,
+    lr: float,
+    weight_decay: float,
+    desired_optimizer: type[torch.optim.Optimizer],
+):
     model = torch.nn.Linear(in_features=10, out_features=10)
     optimizer = PhlowerOptimizerWrapper(
         parameters=model.parameters(),
@@ -102,7 +106,9 @@ def test__optimizer_parameters(optimizer, lr, weight_decay, desired_optimizer):
         ),
     ],
 )
-def test__scheduler_parameters(schedulers, desired):
+def test__scheduler_parameters(
+    schedulers: dict, desired: list[type[torch.optim.Optimizer]]
+):
     dummy = torch.nn.Linear(in_features=10, out_features=10)
     optimizer = PhlowerOptimizerWrapper(
         parameters=dummy.parameters(),

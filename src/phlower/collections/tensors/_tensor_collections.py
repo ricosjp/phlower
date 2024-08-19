@@ -89,7 +89,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def __len__(self) -> int:
         return len(self._x)
 
-    def values(self):
+    def values(self) -> Iterable[dict[str, Any]]:
         return self._x.values()
 
     def keys(self) -> Iterable[str]:
@@ -101,7 +101,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def pop(self, key: str, default: PhlowerTensor = None) -> PhlowerTensor:
         return self._x.pop(key, default)
 
-    def __getitem__(self, key: Any) -> PhlowerTensor:
+    def __getitem__(self, key: str) -> PhlowerTensor:
         if isinstance(key, str):
             return self._x[key]
 

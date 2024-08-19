@@ -41,7 +41,7 @@ def phlower_tensor(
     ) = None,
     is_time_series: bool = False,
     is_voxel: bool = False,
-):
+) -> PhlowerTensor:
     if isinstance(tensor, PhlowerTensor):
         if dimension is not None:
             logger.warning(
@@ -143,19 +143,19 @@ class PhlowerTensor(IPhlowerTensor):
             f"Dimension: {self._dimension_tensor})"
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: PhlowerTensor):
         return torch.eq(self, other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: PhlowerTensor):
         return torch.lt(self, other)
 
-    def __le__(self, other):
+    def __le__(self, other: PhlowerTensor):
         return torch.le(self, other)
 
-    def __gt__(self, other):
+    def __gt__(self, other: PhlowerTensor):
         return torch.gt(self, other)
 
-    def __ge__(self, other):
+    def __ge__(self, other: PhlowerTensor):
         return torch.ge(self, other)
 
     def __abs__(self) -> PhlowerTensor:
@@ -167,28 +167,28 @@ class PhlowerTensor(IPhlowerTensor):
     def __neg__(self):
         return torch.neg(self)
 
-    def __add__(self, other) -> PhlowerTensor:
+    def __add__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.add(self, other)
 
-    def __radd__(self, other) -> PhlowerTensor:
+    def __radd__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.add(self, other)
 
-    def __mul__(self, other) -> PhlowerTensor:
+    def __mul__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.mul(self, other)
 
-    def __rmul__(self, other) -> PhlowerTensor:
+    def __rmul__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.mul(self, other)
 
-    def __truediv__(self, other) -> PhlowerTensor:
+    def __truediv__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.div(self, other)
 
-    def __rtruediv__(self, other) -> PhlowerTensor:
+    def __rtruediv__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.div(other, self)
 
-    def __pow__(self, other) -> PhlowerTensor:
+    def __pow__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.pow(self, other)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: float):
         if isinstance(key, PhlowerTensor):
             self._tensor[key.to_tensor()] = value
         else:
@@ -365,7 +365,7 @@ class PhlowerTensor(IPhlowerTensor):
         types: list[type],
         args: tuple,
         kwargs: dict | None = None,
-    ):
+    ) -> PhlowerTensor:
         if func.__name__ in UNSUPPORTED_FUNCTION_NAMES:
             raise PhlowerUnsupportedTorchFunctionError(
                 f"Unsupported function: {func.__name__}"

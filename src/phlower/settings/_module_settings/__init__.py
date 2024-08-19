@@ -16,7 +16,7 @@ from phlower.settings._module_settings._proportional_setting import (
     ProportionalSetting,
 )
 from phlower.settings._module_settings._share_setting import ShareSetting
-from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (
+from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (  # noqa: E501
     SimilarityEquivariantMLPSetting,
 )
 

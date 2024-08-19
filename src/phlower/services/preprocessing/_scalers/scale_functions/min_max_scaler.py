@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
@@ -10,7 +12,7 @@ from phlower.utils.preprocess import convert_to_dumped
 
 class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
     @classmethod
-    def create(cls, name: str, **kwards):
+    def create(cls, name: str, **kwards) -> MinMaxScaler:
         if name == PhlowerScalerName.MIN_MAX.value:
             return MinMaxScaler(**kwards)
 
@@ -22,15 +24,17 @@ class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
         self,
         feature_range: tuple[int, int] = (0, 1),
         *,
-        copy=True,
-        clip=False,
+        copy: bool = True,
+        clip: bool = False,
         **kwargs,
     ):
         super().__init__(feature_range, copy=copy, clip=clip)
         for k, v in kwargs.items():
             setattr(self, k, self._convert(k, v))
 
-    def _convert(self, field_name: str, value: Any):
+    def _convert(
+        self, field_name: str, value: float | str | None
+    ) -> np.generic | float | int | str:
         if field_name in "feature_range":
             return tuple(value)
 

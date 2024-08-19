@@ -4,8 +4,8 @@ import secrets
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower.io import PhlowerNumpyFile
+from phlower.utils.typing import ArrayDataType
 
 TEST_ENCRYPT_KEY = secrets.token_bytes(32)
 
@@ -19,7 +19,7 @@ TEST_ENCRYPT_KEY = secrets.token_bytes(32)
         ("./sample/sample.npz.enc", ".npz.enc"),
     ],
 )
-def test__check_extension_type(path, ext):
+def test__check_extension_type(path: str, ext: str):
     path = pathlib.Path(path)
     phlower_path = PhlowerNumpyFile(path)
     assert phlower_path._ext_type.value == ext
@@ -29,7 +29,7 @@ def test__check_extension_type(path, ext):
 @pytest.mark.parametrize(
     "path", [("./sample/sample.pkl"), ("./sample/sample.pkl.enc")]
 )
-def test__check_error_extension_type(path):
+def test__check_error_extension_type(path: str):
     path = pathlib.Path(path)
     with pytest.raises(NotImplementedError):
         _ = PhlowerNumpyFile(path)
@@ -44,7 +44,7 @@ def test__check_error_extension_type(path):
         ("./sample/sample.npz.enc", True),
     ],
 )
-def test__is_encrypted(path, enc):
+def test__is_encrypted(path: str, enc: bool):
     path = pathlib.Path(path)
     phlower_path = PhlowerNumpyFile(path)
     assert phlower_path.is_encrypted == enc
@@ -58,7 +58,11 @@ def test__is_encrypted(path, enc):
         (TEST_ENCRYPT_KEY, TEST_ENCRYPT_KEY),
     ],
 )
-def test__save_npy_and_load(encrypt_key, decrypt_key, setup_test_dir):
+def test__save_npy_and_load(
+    encrypt_key: bytes | None,
+    decrypt_key: bytes | None,
+    setup_test_dir: pathlib.Path,
+):
     sample_array = np.random.rand(3, 4)
 
     saved_path = PhlowerNumpyFile.save(
@@ -83,7 +87,11 @@ def test__save_npy_and_load(encrypt_key, decrypt_key, setup_test_dir):
         (TEST_ENCRYPT_KEY, TEST_ENCRYPT_KEY),
     ],
 )
-def test__save_npz_and_load(encrypt_key, decrypt_key, setup_test_dir):
+def test__save_npz_and_load(
+    encrypt_key: bytes | None,
+    decrypt_key: bytes | None,
+    setup_test_dir: pathlib.Path,
+):
     rng = np.random.default_rng()
     sample_array = sp.random(5, 5, density=0.1, random_state=rng)
 
@@ -106,7 +114,9 @@ def test__save_npz_and_load(encrypt_key, decrypt_key, setup_test_dir):
 @pytest.mark.parametrize(
     "data", [np.random.rand(3, 5), sp.random(5, 5, density=0.1)]
 )
-def test__cannnot_load_encrypt_data_without_key(data, setup_test_dir):
+def test__cannnot_load_encrypt_data_without_key(
+    data: list[ArrayDataType], setup_test_dir: pathlib.Path
+):
     saved_path = PhlowerNumpyFile.save(
         output_directory=setup_test_dir,
         file_basename="sample",
@@ -119,7 +129,7 @@ def test__cannnot_load_encrypt_data_without_key(data, setup_test_dir):
         _ = saved_path.load()
 
 
-def test__save_not_allowed_overwrite(setup_test_dir):
+def test__save_not_allowed_overwrite(setup_test_dir: pathlib.Path):
     sample_array = np.random.rand(3, 4)
 
     path: pathlib.Path = setup_test_dir / "sample.npy"

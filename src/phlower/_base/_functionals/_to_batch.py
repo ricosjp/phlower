@@ -26,7 +26,7 @@ def to_batch(
 
 def _create_batch_info(
     tensors: Sequence[IPhlowerTensor], dense_concat_dim: int
-):
+) -> GraphBatchInfo:
     _shapes = list(tensors | select(lambda x: x.shape))
 
     if tensors[0].is_sparse:

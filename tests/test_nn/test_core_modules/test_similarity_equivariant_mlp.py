@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
 import torch
-from scipy.stats import ortho_group
-
 from phlower import PhlowerTensor, phlower_tensor
 from phlower._base._dimension import PhysicalDimensions
 from phlower.collections import phlower_tensor_collection
@@ -12,6 +10,7 @@ from phlower.utils.exceptions import (
     PhlowerDimensionRequiredError,
     PhlowerInvalidArgumentsError,
 )
+from scipy.stats import ortho_group
 
 
 def test__can_call_parameters():
@@ -56,14 +55,14 @@ def test__can_call_parameters():
 @pytest.mark.parametrize("norm_function_name", ["identity", "sqrt"])
 @pytest.mark.parametrize("centering", [False, True])
 def test__similarity_equivariance(
-    size,
-    is_time_series,
-    is_voxel,
-    activation,
-    n_output_feature,
-    dimension,
-    norm_function_name,
-    centering,
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    activation: str,
+    n_output_feature: int,
+    dimension: dict,
+    norm_function_name: str,
+    centering: bool,
 ):
     orthogonal_tensor = PhlowerTensor(
         torch.tensor(ortho_group.rvs(3).astype(np.float32))
@@ -165,14 +164,14 @@ def test__similarity_equivariance(
 @pytest.mark.parametrize("norm_function_name", ["identity", "sqrt"])
 @pytest.mark.parametrize("centering", [False, True])
 def test__similarity_invariance(
-    size,
-    is_time_series,
-    is_voxel,
-    activation,
-    n_output_feature,
-    dimension,
-    norm_function_name,
-    centering,
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    activation: str,
+    n_output_feature: int,
+    dimension: dict,
+    norm_function_name: str,
+    centering: bool,
 ):
     orthogonal_tensor = PhlowerTensor(
         torch.tensor(ortho_group.rvs(3).astype(np.float32))
@@ -273,15 +272,15 @@ def test__similarity_invariance(
 @pytest.mark.parametrize("centering", [False, True])
 @pytest.mark.parametrize("invariant", [False, True])
 def test__scaling_equivariance(
-    size,
-    is_time_series,
-    is_voxel,
-    activation,
-    n_output_feature,
-    dimension,
-    norm_function_name,
-    centering,
-    invariant,
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    activation: str,
+    n_output_feature: int,
+    dimension: dict,
+    norm_function_name: str,
+    centering: bool,
+    invariant: bool,
 ):
     orthogonal_tensor = PhlowerTensor(torch.eye(3))
     dict_scaling_factor = {
