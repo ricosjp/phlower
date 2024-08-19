@@ -92,9 +92,7 @@ class ActivationSelector:
     }
 
     @staticmethod
-    def select(name: str | None) -> Callable[[torch.Tensor], torch.Tensor]:
-        if name is None:
-            name = "identity"
+    def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
         return ActivationSelector._REGISTERED_ACTIVATIONS[name]
 
     @staticmethod
