@@ -1,6 +1,7 @@
 import abc
 import os
 import pathlib
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ _logger = get_logger(__name__)
 
 def select_snapshot_file(
     directory: os.PathLike | PhlowerDirectory,
-    selection_mode: str,
+    selection_mode: Literal["best", "latest", "train_best", "specified"],
     **kwards,
 ) -> IPhlowerCheckpointFile:
     selector = ModelSelectorBuilder.create(selection_mode)

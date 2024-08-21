@@ -53,4 +53,15 @@ class PhlowerOptimizerWrapper:
             scheduler.step()
 
     def state_dict(self) -> dict:
-        return self._optimizer.state_dict()
+        return {
+            "optimizer": self._optimizer.state_dict(),
+            "schedulers": [
+                scheduler.state_dict() for scheduler in self._schedulers
+            ],
+        }
+
+    def load_state_dict(self, content: dict) -> None:
+        self._optimizer.load_state_dict(content["optimizer"])
+
+        for i, state in enumerate(content["schedulers"]):
+            self._schedulers[i].load_state_dict(state)
