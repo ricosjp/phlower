@@ -6,7 +6,7 @@ import dagstream
 import torch
 from typing_extensions import Self
 
-from phlower import PhlowerTensor
+from phlower import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
@@ -128,7 +128,7 @@ class PhlowerGroupModule(
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] | None = None,
+        field_data: ISimulationField,
         **kwards,
     ) -> IPhlowerTensorCollections:
         results = phlower_tensor_collection({})
@@ -147,7 +147,7 @@ class PhlowerGroupModule(
 
                 args = reduce_collections(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
-                _result = _module.forward(args, supports=supports, **kwards)
+                _result = _module.forward(args, field_data=field_data, **kwards)
 
                 dag_modules.send(node.mut_name, _result)
                 dag_modules.done(node.mut_name)

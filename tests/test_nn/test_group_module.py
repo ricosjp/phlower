@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 from phlower._base import phlower_array
+from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import PhlowerGroupModule
 from phlower.settings import PhlowerSetting
@@ -63,5 +64,6 @@ def test__forward_and_backward(
         )
     )
     nodal_nadj = sparse_adj.to_phlower_tensor()
+    field_data = SimulationField(field_tensors={"support1": nodal_nadj})
 
-    _ = group.forward(data=phlower_tensors, supports={"support1": nodal_nadj})
+    _ = group.forward(data=phlower_tensors, field_data=field_data)

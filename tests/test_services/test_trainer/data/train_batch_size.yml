@@ -16,6 +16,10 @@ model:
     nodal_last_u: {"L": 1, "T": -1}
     nodal_nadj: {}
 
+  fields:
+    field_names:
+      - "nodal_nadj"
+
   network:
     nn_type: GROUP
     name: DEMO
@@ -26,8 +30,6 @@ model:
     outputs:
       - name: nodal_last_u
         n_dim: 1
-
-    support_names: ["nodal_nadj"]
 
     modules:
       - nn_type: MLP

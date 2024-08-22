@@ -21,19 +21,19 @@ def test__lazy_dataset_length(
         x_variable_names=["x0", "x1"],
         y_variable_names=["y0"],
         directories=directories,
-        support_names=["s0"],
+        field_names=["s0"],
     )
     assert len(dataset) == desired
 
 
 @pytest.mark.parametrize(
-    "x_variable_names, y_variable_names, support_names, directory_names",
+    "x_variable_names, y_variable_names, field_names, directory_names",
     [(["x0", "x1", "x2"], ["y0"], ["s0", "s1"], ["data0", "data1", "data2"])],
 )
 def test__lazy_dataset_getitem(
     x_variable_names: list[str],
     y_variable_names: list[str],
-    support_names: list[str],
+    field_names: list[str],
     directory_names: list[str],
     create_tmp_dataset: None,
     output_base_directory: pathlib.Path,
@@ -43,7 +43,7 @@ def test__lazy_dataset_getitem(
         x_variable_names=x_variable_names,
         y_variable_names=y_variable_names,
         directories=directories,
-        support_names=support_names,
+        field_names=field_names,
     )
 
     assert len(dataset) > 1
@@ -64,15 +64,15 @@ def test__lazy_dataset_getitem(
                 item.y_data[v_name].to_numpy(), desired[data_name][v_name]
             )
 
-        for v_name in support_names:
+        for v_name in field_names:
             np.testing.assert_array_almost_equal(
-                item.sparse_supports[v_name].to_numpy().todense(),
+                item.field_data[v_name].to_numpy().todense(),
                 desired[data_name][v_name].todense(),
             )
 
 
 @pytest.mark.parametrize(
-    "x_variable_names, y_variable_names, support_names, directory_names",
+    "x_variable_names, y_variable_names, field_names, directory_names",
     [
         (["x0", "x1", "x2"], None, ["s0", "s1"], ["data0", "data1", "data2"]),
         (["x0", "x1", "x2"], ["y3"], ["s0", "s1"], ["data0", "data1", "data2"]),
@@ -81,7 +81,7 @@ def test__lazy_dataset_getitem(
 def test__lazy_dataset_getitem_when_no_ydata(
     x_variable_names: list[str],
     y_variable_names: list[str],
-    support_names: list[str],
+    field_names: list[str],
     directory_names: list[str],
     create_tmp_dataset: None,
     output_base_directory: pathlib.Path,
@@ -91,7 +91,7 @@ def test__lazy_dataset_getitem_when_no_ydata(
         x_variable_names=x_variable_names,
         y_variable_names=y_variable_names,
         directories=directories,
-        support_names=support_names,
+        field_names=field_names,
         allow_no_y_data=True,
     )
     assert len(dataset) > 1

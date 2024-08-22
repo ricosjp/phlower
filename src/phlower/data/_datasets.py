@@ -23,17 +23,16 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         y_variable_names: list[str] | None,
         directories: list[pathlib.Path],
         *,
-        support_names: list[str] = None,
+        field_names: list[str] = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
-        **kwargs,
     ):
         self._x_variable_names = x_variable_names
         if y_variable_names is None:
             y_variable_names = []
         self._y_varaible_names = y_variable_names
         self._directories = [PhlowerDirectory(d) for d in directories]
-        self._support_names = support_names if support_names is not None else []
+        self._field_names = field_names if field_names is not None else []
 
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
@@ -51,13 +50,13 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             self._y_varaible_names,
             allow_missing=self._allow_no_y_data,
         )
-        support_data = self._load_data(
-            data_directory, self._support_names, allow_missing=False
+        field_data = self._load_data(
+            data_directory, self._field_names, allow_missing=False
         )
         return LumpedArrayData(
             x_data=x_data,
             y_data=y_data,
-            sparse_supports=support_data,
+            field_data=field_data,
             data_directory=data_directory,
         )
 

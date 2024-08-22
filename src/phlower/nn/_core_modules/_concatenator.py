@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from typing_extensions import Self
 
+from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
@@ -58,7 +59,7 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] | None = None,
+        field_data: ISimulationField | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from phlower import PhlowerTensor
+from phlower import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
@@ -92,16 +92,16 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        field_data: ISimulationField,
     ) -> IPhlowerTensorCollections:
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
         )
         if self._no_grad:
             with torch.no_grad():
-                result = self._layer.forward(inputs, supports=supports)
+                result = self._layer.forward(inputs, field_data=field_data)
         else:
-            result = self._layer.forward(inputs, supports=supports)
+            result = self._layer.forward(inputs, field_data=field_data)
 
         return phlower_tensor_collection({self._output_key: result})
 

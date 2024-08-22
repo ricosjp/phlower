@@ -74,7 +74,7 @@ def test__consider_batch_size(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
         directories=directories,
-        support_names=["s0", "s1"],
+        field_names=["s0", "s1"],
     )
 
     builder = DataLoaderBuilder(
@@ -127,7 +127,7 @@ def test__consider_dimensions(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
         directories=directories,
-        support_names=["s0"],
+        field_names=["s0"],
     )
 
     builder = DataLoaderBuilder(
@@ -153,10 +153,8 @@ def test__consider_dimensions(
             phydim = item.y_data[data_name].dimension.to_physics_dimension()
             assert phydim == desired[data_name]
 
-        for data_name in item.sparse_supports.keys():
-            phydim = item.sparse_supports[
-                data_name
-            ].dimension.to_physics_dimension()
+        for data_name in item.field_data.keys():
+            phydim = item.field_data[data_name].dimension.to_physics_dimension()
             assert phydim == desired[data_name]
 
 
@@ -188,7 +186,7 @@ def test__not_consider_dimensions(
         x_variable_names=["x0", "x1", "x2"],
         y_variable_names=["y0"],
         directories=directories,
-        support_names=["s0"],
+        field_names=["s0"],
     )
 
     builder = DataLoaderBuilder(
@@ -212,5 +210,5 @@ def test__not_consider_dimensions(
         for data_name in item.y_data.keys():
             assert not item.y_data[data_name].has_dimension
 
-        for data_name in item.sparse_supports.keys():
-            assert not item.sparse_supports[data_name].has_dimension
+        for data_name in item.field_data.keys():
+            assert not item.field_data[data_name].has_dimension

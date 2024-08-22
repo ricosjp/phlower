@@ -93,13 +93,13 @@ class PhlowerTrainer:
         train_dataset = LazyPhlowerDataset(
             x_variable_names=self._model_setting.network.get_input_keys(),
             y_variable_names=self._model_setting.network.get_output_keys(),
-            support_names=self._model_setting.network.support_names,
+            field_names=self._model_setting.fields.field_names,
             directories=train_directories,
         )
         validation_dataset = LazyPhlowerDataset(
             x_variable_names=self._model_setting.network.get_input_keys(),
             y_variable_names=self._model_setting.network.get_output_keys(),
-            support_names=self._model_setting.network.support_names,
+            field_names=self._model_setting.fields.field_names,
             directories=validation_directories,
         )
 
@@ -134,7 +134,7 @@ class PhlowerTrainer:
                 self._scheduled_optimizer.zero_grad()
 
                 h = self._model.forward(
-                    tr_batch.x_data, supports=tr_batch.sparse_supports
+                    tr_batch.x_data, field_data=tr_batch.field_data
                 )
 
                 losses = loss_function.calculate(
@@ -156,7 +156,7 @@ class PhlowerTrainer:
                 with torch.no_grad():
                     val_batch: LumpedTensorData
                     h = self._model.forward(
-                        val_batch.x_data, supports=val_batch.sparse_supports
+                        val_batch.x_data, field_data=val_batch.field_data
                     )
                     val_losses = loss_function.calculate(
                         h,
