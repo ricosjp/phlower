@@ -43,6 +43,14 @@ class PhlowerFeatureStoreOverwriteError(ValueError):
     ...
 
 
+class PhlowerRestartTrainingCompletedError(ValueError):
+    """This error raises when trying to restart train job
+    which has already completed.
+    """
+
+    ...
+
+
 class PhlowerSparseUnsupportedError(ValueError):
     """
     This error raises when trying to call methods not supported for sparse
