@@ -52,7 +52,7 @@ def test__pass_kwargs_when_call_from_setting(
 
 
 @pytest.mark.parametrize(
-    "optimizer, lr, weight_decay, desired_optimizer",
+    "optimizer_name, lr, weight_decay, desired_optimizer",
     [
         ("Adam", 0.001, 0, torch.optim.Adam),
         ("Adam", 0.0003, 0, torch.optim.Adam),
@@ -60,7 +60,7 @@ def test__pass_kwargs_when_call_from_setting(
     ],
 )
 def test__optimizer_parameters(
-    optimizer: str,
+    optimizer_name: str,
     lr: float,
     weight_decay: float,
     desired_optimizer: type[torch.optim.Optimizer],
@@ -68,7 +68,7 @@ def test__optimizer_parameters(
     model = torch.nn.Linear(in_features=10, out_features=10)
     optimizer = PhlowerOptimizerWrapper(
         parameters=model.parameters(),
-        optimizer=optimizer,
+        optimizer=optimizer_name,
         optimizer_kwargs={"lr": lr, "weight_decay": weight_decay},
         schedulers={},
     )
@@ -76,9 +76,10 @@ def test__optimizer_parameters(
     assert isinstance(optimizer._optimizer, desired_optimizer)
 
     state_dict = optimizer.state_dict()
-    assert len(state_dict["param_groups"]) == 1
-    assert state_dict["param_groups"][0]["lr"] == lr
-    assert state_dict["param_groups"][0]["weight_decay"] == weight_decay
+    params = state_dict["optimizer"]["param_groups"]
+    assert len(params) == 1
+    assert params[0]["lr"] == lr
+    assert params[0]["weight_decay"] == weight_decay
 
 
 @pytest.mark.parametrize(

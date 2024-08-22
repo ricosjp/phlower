@@ -82,7 +82,6 @@ def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
     return loss
 
 
-@pytest.mark.e2e_test
 def test__training_with_multiple_batch_size(
     prepare_sample_preprocessed_files: None,
 ):
@@ -111,7 +110,6 @@ def test__training_with_multiple_batch_size(
     assert not torch.isnan(loss.to_tensor())
 
 
-@pytest.mark.e2e_test
 def test__simple_training(simple_training: PhlowerTensor):
     loss: PhlowerTensor = simple_training
 
@@ -122,12 +120,13 @@ def test__simple_training(simple_training: PhlowerTensor):
 
 @pytest.fixture
 def perform_restart() -> Callable[[int | None], None]:
-    def restart_training(n_epoch: int | None):
+    def restart_training(n_epoch: int | None = None):
+        with open(_SETTINGS_DIR / "train.yml") as fr:
+            content = yaml.load(fr, Loader=yaml.SafeLoader)
+
         if n_epoch is not None:
             # NOTE: overwrite n_epoch to restart
-            with open(_SETTINGS_DIR / "train.yml") as fr:
-                content = yaml.load(fr, Loader=yaml.SafeLoader)
-                content["training"]["n_epoch"] = n_epoch
+            content["training"]["n_epoch"] = n_epoch
 
         setting = PhlowerSetting(**content)
         trainer = PhlowerTrainer.from_setting(setting)
