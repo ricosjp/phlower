@@ -68,15 +68,16 @@ def spmm(
         IPhlowerTensor:
             Resultant tensor.
     """
-    h, original_pattern, resultant_pattern, dict_shape = x.to_vertexwise()
-    pattern = f"{resultant_pattern} -> {original_pattern}"
+    h, resultant_pattern = x.to_vertexwise()
+    restore_pattern = f"{resultant_pattern} -> {x.shape_pattern.pattern}"
+    restore_ndim = x.shape_pattern.pattern_to_ndim(drop_last=True)
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(
-        pattern,
+        restore_pattern,
         is_time_series=x.is_time_series,
         is_voxel=x.is_voxel,
-        **dict_shape,
+        **restore_ndim,
     )
 
 

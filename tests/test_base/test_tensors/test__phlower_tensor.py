@@ -265,11 +265,10 @@ def test__to_vertexwise_inverse(
     phlower_tensor = PhlowerTensor(
         torch_tensor, is_time_series=is_time_series, is_voxel=is_voxel
     )
-    vertexwise, original_pattern, resultant_pattern, dict_shape = (
-        phlower_tensor.to_vertexwise()
-    )
+    vertexwise, resultant_pattern = phlower_tensor.to_vertexwise()
     assert len(vertexwise.shape) == 2
-    pattern = f"{resultant_pattern} -> {original_pattern}"
+    pattern = f"{resultant_pattern} -> {phlower_tensor.shape_pattern.pattern}"
+    dict_shape = phlower_tensor.shape_pattern.pattern_to_ndim(drop_last=True)
     actual = vertexwise.rearrange(
         pattern, is_time_series=is_time_series, is_voxel=is_voxel, **dict_shape
     )
