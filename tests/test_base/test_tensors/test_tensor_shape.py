@@ -1,6 +1,6 @@
 import pytest
 import torch
-from phlower._base.tensors._tensor_shape import PhlowerTensorShapePattern
+from phlower._base.tensors._tensor_shape import PhlowerShapePattern
 
 
 @pytest.mark.parametrize(
@@ -10,11 +10,11 @@ from phlower._base.tensors._tensor_shape import PhlowerTensorShapePattern
 def test__detect_not_time_series_vertexwise_pattern(
     shapes: tuple[int], desired: str
 ):
-    shape = PhlowerTensorShapePattern(
+    shape = PhlowerShapePattern(
         torch.Size(shapes), is_time_series=False, is_voxel=False
     )
 
-    assert shape.pattern == desired
+    assert shape.get_pattern() == desired
 
 
 @pytest.mark.parametrize(
@@ -28,11 +28,11 @@ def test__detect_not_time_series_vertexwise_pattern(
 def test__detect_time_series_vertexwise_pattern(
     shapes: tuple[int], desired: str
 ):
-    shape = PhlowerTensorShapePattern(
+    shape = PhlowerShapePattern(
         torch.Size(shapes), is_time_series=True, is_voxel=False
     )
 
-    assert shape.pattern == desired
+    assert shape.get_pattern() == desired
 
 
 @pytest.mark.parametrize(
@@ -46,11 +46,11 @@ def test__detect_time_series_vertexwise_pattern(
 def test__detect_not_time_series_voxel_pattern(
     shapes: tuple[int], desired: str
 ):
-    shape = PhlowerTensorShapePattern(
+    shape = PhlowerShapePattern(
         torch.Size(shapes), is_time_series=False, is_voxel=True
     )
 
-    assert shape.pattern == desired
+    assert shape.get_pattern() == desired
 
 
 @pytest.mark.parametrize(
@@ -62,8 +62,8 @@ def test__detect_not_time_series_voxel_pattern(
     ],
 )
 def test__detect_time_series_voxel_pattern(shapes: tuple[int], desired: str):
-    shape = PhlowerTensorShapePattern(
+    shape = PhlowerShapePattern(
         torch.Size(shapes), is_time_series=True, is_voxel=True
     )
 
-    assert shape.pattern == desired
+    assert shape.get_pattern() == desired

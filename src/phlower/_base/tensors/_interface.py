@@ -6,7 +6,7 @@ from collections.abc import Callable
 import torch
 
 from phlower._base.tensors import PhlowerDimensionTensor
-from phlower._base.tensors._tensor_shape import PhlowerTensorShapePattern
+from phlower._base.tensors._tensor_shape import PhlowerShapePattern
 
 
 class IPhlowerTensor(metaclass=abc.ABCMeta):
@@ -24,7 +24,7 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def shape_pattern(self) -> PhlowerTensorShapePattern: ...
+    def shape_pattern(self) -> PhlowerShapePattern: ...
 
     @property
     @abc.abstractmethod
@@ -84,10 +84,11 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     def rearrange(
         self,
         pattern: str,
-        is_time_series: bool = False,
-        is_voxel: bool = False,
         **kwargs: dict[str, int],
     ) -> IPhlowerTensor: ...
+
+    @abc.abstractmethod
+    def as_pattern(self, pattern: str) -> IPhlowerTensor: ...
 
     @abc.abstractmethod
     def __torch_function__(

@@ -329,7 +329,7 @@ def concatenate(
 
 @dimension_wrap_implements(torch.tanh)
 def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless:
+    if not tensor.is_dimensionless():
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply tanh but {tensor}"
         )
@@ -340,8 +340,15 @@ def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
 def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless:
+    if not tensor.is_dimensionless():
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply leaky_relu but {tensor}"
         )
     return tensor
+
+
+@dimension_wrap_implements(torch.unsqueeze)
+def unsqueeze(
+    input: PhlowerDimensionTensor, dim: int
+) -> PhlowerDimensionTensor:
+    return input

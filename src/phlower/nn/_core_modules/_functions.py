@@ -1,9 +1,8 @@
 import torch
 
-from phlower._base._dimension import PhysicalDimensions
 from phlower._base.tensors import phlower_tensor
-from phlower._base.tensors._dimension_tensor import PhlowerDimensionTensor
 from phlower._base.tensors._interface import IPhlowerTensor
+from phlower._base.tensors._phlower_tensor import PhysicDimensionLikeObject
 from phlower.utils.exceptions import PhlowerIncompatibleTensorError
 
 
@@ -69,32 +68,20 @@ def spmm(
             Resultant tensor.
     """
     h, resultant_pattern = x.to_vertexwise()
-    restore_pattern = f"{resultant_pattern} -> {x.shape_pattern.pattern}"
-    restore_ndim = x.shape_pattern.pattern_to_ndim(drop_last=True)
+    restore_pattern = f"{resultant_pattern} -> {x.shape_pattern.get_pattern()}"
+    restore_axes_length = x.shape_pattern.get_pattern_to_size(drop_last=True)
+
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
-    return h.rearrange(
-        restore_pattern,
-        is_time_series=x.is_time_series,
-        is_voxel=x.is_voxel,
-        **restore_ndim,
-    )
+    return h.rearrange(restore_pattern, **restore_axes_length)
 
 
 def einsum(
     equation: str,
-    *args: list[IPhlowerTensor],
-    dimension: (
-        PhysicalDimensions
-        | PhlowerDimensionTensor
-        | torch.Tensor
-        | dict[str, float]
-        | list[float]
-        | tuple[float]
-        | None
-    ) = None,
-    is_time_series: bool = False,
-    is_voxel: bool = False,
+    *args: IPhlowerTensor,
+    dimension: PhysicDimensionLikeObject | None = None,
+    is_time_series: bool | None = None,
+    is_voxel: bool | None = None,
 ) -> IPhlowerTensor:
     """
     Compute einsum for phlower tensors.
@@ -123,6 +110,14 @@ def einsum(
         raise PhlowerIncompatibleTensorError(
             f"{e}\n" f"{equation}, {[a.shape for a in args]}"
         ) from e
+
+    is_none_time = is_time_series is None
+    is_none_voxel = is_voxel is None
+
+    if is_none_time and is_none_voxel:
+        pattern = equation.split("->")[-1]
+        return phlower_tensor(ret_tensor, dimension=dimension, pattern=pattern)
+
     return phlower_tensor(
         ret_tensor,
         dimension=dimension,
@@ -132,8 +127,8 @@ def einsum(
 
 
 def _availale_variables(length: int, start: int = 0) -> str:
-    # No f, t, x, y, and z because they are "reserved"
-    available_variables = "abcdeghijklmnopqrsuvw"
+    # No f, t, x, y, n and z because they are "reserved"
+    available_variables = "abcdeghijklmopqrsuvw"
 
     if length > len(available_variables):
         raise ValueError(f"Required length too long: {length}")
@@ -165,17 +160,12 @@ def contraction(
         )
 
     ret_is_time_series = x.is_time_series or y.is_time_series
-    time_x = "t" if x.is_time_series else ""
-    time_y = "t" if y.is_time_series else ""
+    time_x = x.shape_pattern.time_series_pattern
+    time_y = y.shape_pattern.time_series_pattern
     time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
-    if x.is_voxel:
-        space = "xyz"
-        is_voxel = True
-    else:
-        space = "x"
-        is_voxel = False
+    space = x.shape_pattern.space_pattern
 
     diff_rank = x.rank() - y.rank()
     unresolved = _availale_variables(diff_rank)
@@ -190,8 +180,6 @@ def contraction(
         x,
         y,
         dimension=dimension,
-        is_time_series=ret_is_time_series,
-        is_voxel=is_voxel,
     )
 
 
@@ -216,17 +204,12 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     y_rank = y.rank()
 
     ret_is_time_series = x.is_time_series or y.is_time_series
-    time_x = "t" if x.is_time_series else ""
-    time_y = "t" if y.is_time_series else ""
+    time_x = x.shape_pattern.time_series_pattern
+    time_y = y.shape_pattern.time_series_pattern
     time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
-    if x.is_voxel:
-        space = "xyz"
-        is_voxel = True
-    else:
-        space = "x"
-        is_voxel = False
+    space = x.shape_pattern.space_pattern
 
     x_vars = _availale_variables(x_rank)
     y_vars = _availale_variables(y_rank, start=x_rank)
@@ -240,14 +223,7 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     else:
         dimension = x.dimension * y.dimension
 
-    return einsum(
-        equation,
-        x,
-        y,
-        dimension=dimension,
-        is_time_series=ret_is_time_series,
-        is_voxel=is_voxel,
-    )
+    return einsum(equation, x, y, dimension=dimension)
 
 
 def tensor_times_scalar(
@@ -294,11 +270,8 @@ def apply_orthogonal_group(
     if rank == 0:
         return tensor
 
-    time = "t" if tensor.is_time_series else ""
-    space = "xyz" if tensor.is_voxel else "x"
-    start_dim = 1
-    start_dim = start_dim + 1 if tensor.is_time_series else start_dim
-    start_dim = start_dim + 3 if tensor.is_voxel else start_dim
+    time = tensor.shape_pattern.time_series_pattern
+    space = tensor.shape_pattern.space_pattern
 
     s = _availale_variables(rank * 2)
     str_ortho = ",".join(a + b for a, b in zip(s[::2], s[1::2], strict=True))
@@ -307,35 +280,26 @@ def apply_orthogonal_group(
     equation = f"{str_ortho},{str_tensor}->{str_ret}"
     args = [orthogonal_matrix] * rank + [tensor]
 
-    return einsum(
-        equation,
-        *args,
-        dimension=tensor.dimension,
-        is_time_series=tensor.is_time_series,
-        is_voxel=tensor.is_voxel,
-    )
+    return einsum(equation, *args, dimension=tensor.dimension)
 
 
 def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     """Compute sum over space."""
 
-    time = "t" if tensor.is_time_series else ""
-    space = "xyz" if tensor.is_voxel else "x"
+    time = tensor.shape_pattern.time_series_pattern
+    space = tensor.shape_pattern.space_pattern
     start_space = 1 if tensor.is_time_series else 0
     space_width = 3 if tensor.is_voxel else 1
 
     squeezed = einsum(
-        f"{time}{space}...->{time}...",
-        tensor,
-        dimension=tensor.dimension,
-        is_time_series=tensor.is_time_series,
-        is_voxel=tensor.is_voxel,
+        f"{time}{space}...->{time}...", tensor, dimension=tensor.dimension
     )
 
     # keepdim
     for _ in range(space_width):
-        squeezed._tensor = torch.unsqueeze(squeezed._tensor, start_space)
-    return squeezed
+        squeezed = torch.unsqueeze(squeezed, start_space)
+
+    return squeezed.as_pattern(f"{time}{space}...")
 
 
 def spatial_mean(tensor: IPhlowerTensor) -> IPhlowerTensor:

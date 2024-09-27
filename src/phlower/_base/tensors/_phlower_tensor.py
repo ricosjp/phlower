@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any
+from typing import Any, TypeAlias, overload
 
 import einops
 import numpy as np
@@ -14,7 +14,7 @@ from phlower._base.tensors._dimension_tensor import (
     phlower_dimension_tensor,
 )
 from phlower._base.tensors._interface import IPhlowerTensor
-from phlower._base.tensors._tensor_shape import PhlowerTensorShapePattern
+from phlower._base.tensors._tensor_shape import PhlowerShapePattern
 from phlower._base.tensors._unsupported_function_names import (
     UNSUPPORTED_FUNCTION_NAMES,
 )
@@ -26,32 +26,59 @@ from phlower.utils.exceptions import (
     PhlowerUnsupportedTorchFunctionError,
 )
 
+PhysicDimensionLikeObject: TypeAlias = (
+    PhysicalDimensions
+    | PhlowerDimensionTensor
+    | torch.Tensor
+    | dict[str, float]
+    | list[float]
+    | tuple[float]
+)
+
+
 logger = get_logger(__name__)
+
+
+@overload
+def phlower_tensor(
+    tensor: torch.Tensor | PhlowerTensor,
+    dimension: PhysicDimensionLikeObject | None = None,
+    is_time_series: bool = False,
+    is_voxel: bool = False,
+) -> PhlowerTensor: ...
+
+
+@overload
+def phlower_tensor(
+    tensor: torch.Tensor | PhlowerTensor,
+    dimension: PhysicDimensionLikeObject | None = None,
+    pattern: str = "n...",
+) -> PhlowerTensor: ...
 
 
 def phlower_tensor(
     tensor: torch.Tensor | PhlowerTensor,
-    dimension: (
-        PhysicalDimensions
-        | PhlowerDimensionTensor
-        | torch.Tensor
-        | dict[str, float]
-        | list[float]
-        | tuple[float]
-        | None
-    ) = None,
-    is_time_series: bool = False,
-    is_voxel: bool = False,
-) -> PhlowerTensor:
+    dimension: PhysicDimensionLikeObject | None = None,
+    is_time_series: bool | None = None,
+    is_voxel: bool | None = None,
+    pattern: str | None = None,
+):
     if isinstance(tensor, PhlowerTensor):
         if dimension is not None:
-            logger.warning(
-                "Input dimension_tensor and sparse_batch_info are ignored."
-            )
-
+            logger.warning("Input dimension_tensor are ignored.")
         return tensor
 
     dimension_tensor = _resolve_dimension_arg(dimension)
+
+    if pattern is not None:
+        if (is_time_series is not None) or (is_voxel is not None):
+            raise ValueError(
+                "pattern is not allowed to be used "
+                "with is_time_series and is_voxel "
+            )
+        return PhlowerTensor.from_pattern(
+            tensor, dimension_tensor=dimension_tensor, pattern=pattern
+        )
 
     return PhlowerTensor(
         tensor=tensor,
@@ -98,6 +125,24 @@ class PhlowerTensor(IPhlowerTensor):
 
     """
 
+    @classmethod
+    def from_pattern(
+        cls,
+        tensor: torch.Tensor,
+        dimension_tensor: PhlowerDimensionTensor | None = None,
+        pattern: str | None = None,
+    ) -> PhlowerTensor:
+        phlower_shape: PhlowerShapePattern = PhlowerShapePattern.from_pattern(
+            tensor.shape, pattern
+        )
+
+        return PhlowerTensor(
+            tensor=tensor,
+            dimension_tensor=dimension_tensor,
+            is_time_series=phlower_shape.is_time_series,
+            is_voxel=phlower_shape.is_voxel,
+        )
+
     def __init__(
         self,
         tensor: torch.Tensor,
@@ -111,7 +156,7 @@ class PhlowerTensor(IPhlowerTensor):
             )
         self._tensor = tensor
         self._dimension_tensor = dimension_tensor
-        self._shape_pattern = PhlowerTensorShapePattern(
+        self._phlower_shape = PhlowerShapePattern(
             self._tensor.shape, is_time_series=is_time_series, is_voxel=is_voxel
         )
 
@@ -125,11 +170,11 @@ class PhlowerTensor(IPhlowerTensor):
 
     @property
     def shape(self) -> torch.Size:
-        return self._shape_pattern.shape
+        return self._phlower_shape.shape
 
     @property
-    def shape_pattern(self) -> PhlowerTensorShapePattern:
-        return self._shape_pattern
+    def shape_pattern(self) -> PhlowerShapePattern:
+        return self._phlower_shape
 
     @property
     def is_sparse(self) -> bool:
@@ -137,11 +182,11 @@ class PhlowerTensor(IPhlowerTensor):
 
     @property
     def is_time_series(self) -> bool:
-        return self._shape_pattern.is_time_series
+        return self._phlower_shape.is_time_series
 
     @property
     def is_voxel(self) -> bool:
-        return self._shape_pattern.is_voxel
+        return self._phlower_shape.is_voxel
 
     def __str__(self) -> str:
         return (
@@ -226,7 +271,7 @@ class PhlowerTensor(IPhlowerTensor):
                 "Cannot call rank() for sparse PhlowerTensor"
             )
 
-        return self._shape_pattern.rank_size
+        return self._phlower_shape.rank_size
 
     def n_vertices(self) -> int:
         """Returns the number of vertices."""
@@ -235,7 +280,7 @@ class PhlowerTensor(IPhlowerTensor):
                 "Cannot call n_vertices() for sparse PhlowerTensor"
             )
 
-        return self._shape_pattern.n_vertices()
+        return self._phlower_shape.get_n_vertices()
 
     def indices(self) -> torch.Tensor:
         return self._tensor.indices()
@@ -253,21 +298,20 @@ class PhlowerTensor(IPhlowerTensor):
             resultant_pattern : str
                 Pattern of the resultant shape. Can be used for rearrange.
         """
-        original_pattern = self._shape_pattern.pattern
+        original_pattern = self._phlower_shape.get_pattern()
         resultant_pattern = (
-            f"({self._shape_pattern.space_pattern}) "
-            f"({self._shape_pattern.time_series_pattern} "
-            f"{self._shape_pattern.feature_pattern})"
+            f"({self._phlower_shape.space_pattern}) "
+            f"({self._phlower_shape.time_series_pattern} "
+            f"{self._phlower_shape.get_feature_pattern()})"
         )
         tensor_2d = einops.rearrange(
             self.to_tensor(), f"{original_pattern} -> {resultant_pattern}"
         )
         return (
-            PhlowerTensor(
+            PhlowerTensor.from_pattern(
                 tensor_2d,
                 dimension_tensor=self.dimension,
-                is_time_series=False,
-                is_voxel=False,
+                pattern=resultant_pattern,
             ),
             resultant_pattern,
         )
@@ -275,17 +319,13 @@ class PhlowerTensor(IPhlowerTensor):
     def rearrange(
         self,
         pattern: str,
-        is_time_series: bool = False,
-        is_voxel: bool = False,
-        **kwargs: dict[str, int],
+        **axes_length: dict[str, int],
     ) -> PhlowerTensor:
-        tensor = self.to_tensor()
-        rearranged = einops.rearrange(tensor, pattern, **kwargs)
-        return PhlowerTensor(
-            rearranged,
-            dimension_tensor=self.dimension,
-            is_time_series=is_time_series,
-            is_voxel=is_voxel,
+        rearranged = einops.rearrange(self._tensor, pattern, **axes_length)
+
+        to_pattern = pattern.split("->")[-1]
+        return PhlowerTensor.from_pattern(
+            rearranged, dimension_tensor=self.dimension, pattern=to_pattern
         )
 
     def reshape(
@@ -316,6 +356,13 @@ class PhlowerTensor(IPhlowerTensor):
 
     def backward(self) -> None:
         self._tensor.backward()
+
+    def as_pattern(self, pattern: str) -> PhlowerTensor:
+        return PhlowerTensor.from_pattern(
+            tensor=self._tensor,
+            dimension_tensor=self._dimension_tensor,
+            pattern=pattern,
+        )
 
     @classmethod
     def __torch_function__(

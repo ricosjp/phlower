@@ -130,11 +130,11 @@ def test__scalar_div_tensor():
     c = 3.0 / a
 
     ap = PhlowerTensor(a, dims)
-    cp = 3.0 / ap
+    cp: PhlowerTensor = 3.0 / ap
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 
-    assert cp._dimension_tensor == desired_dims
+    assert cp.dimension == desired_dims
 
 
 def test__tanh():
@@ -267,11 +267,13 @@ def test__to_vertexwise_inverse(
     )
     vertexwise, resultant_pattern = phlower_tensor.to_vertexwise()
     assert len(vertexwise.shape) == 2
-    pattern = f"{resultant_pattern} -> {phlower_tensor.shape_pattern.pattern}"
-    dict_shape = phlower_tensor.shape_pattern.pattern_to_ndim(drop_last=True)
-    actual = vertexwise.rearrange(
-        pattern, is_time_series=is_time_series, is_voxel=is_voxel, **dict_shape
+    pattern = (
+        f"{resultant_pattern} -> {phlower_tensor.shape_pattern.get_pattern()}"
     )
+    dict_shape = phlower_tensor.shape_pattern.get_pattern_to_size(
+        drop_last=True
+    )
+    actual = vertexwise.rearrange(pattern, **dict_shape)
     np.testing.assert_almost_equal(
         actual.to_tensor().numpy(), phlower_tensor.to_tensor().numpy()
     )
