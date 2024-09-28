@@ -132,7 +132,6 @@ class PhlowerTensor(IPhlowerTensor):
         dimension_tensor: PhlowerDimensionTensor | None = None,
         pattern: str | None = None,
     ) -> PhlowerTensor:
-
         if pattern is None:
             raise ValueError("pattern must be set when calling from_pattern.")
 
