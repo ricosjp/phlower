@@ -165,7 +165,7 @@ def contraction(
     time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
-    space = x.shape_pattern.space_pattern
+    space = x.shape_pattern.get_space_pattern(omit_space=True)
 
     diff_rank = x.rank() - y.rank()
     unresolved = _availale_variables(diff_rank)
@@ -209,7 +209,7 @@ def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     time_ret = "t" if ret_is_time_series else ""
 
     # No need to consider y because they should be compatible
-    space = x.shape_pattern.space_pattern
+    space = x.shape_pattern.get_space_pattern(omit_space=True)
 
     x_vars = _availale_variables(x_rank)
     y_vars = _availale_variables(y_rank, start=x_rank)
@@ -271,7 +271,7 @@ def apply_orthogonal_group(
         return tensor
 
     time = tensor.shape_pattern.time_series_pattern
-    space = tensor.shape_pattern.space_pattern
+    space = tensor.shape_pattern.get_space_pattern(omit_space=True)
 
     s = _availale_variables(rank * 2)
     str_ortho = ",".join(a + b for a, b in zip(s[::2], s[1::2], strict=True))
@@ -287,9 +287,9 @@ def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     """Compute sum over space."""
 
     time = tensor.shape_pattern.time_series_pattern
-    space = tensor.shape_pattern.space_pattern
-    start_space = 1 if tensor.is_time_series else 0
-    space_width = 3 if tensor.is_voxel else 1
+    space = tensor.shape_pattern.get_space_pattern(omit_space=True)
+    start_space = tensor.shape_pattern.start_space_index
+    space_width = tensor.shape_pattern.space_width
 
     squeezed = einsum(
         f"{time}{space}...->{time}...", tensor, dimension=tensor.dimension

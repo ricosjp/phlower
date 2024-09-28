@@ -1,6 +1,46 @@
 import pytest
 import torch
 from phlower._base.tensors._tensor_shape import PhlowerShapePattern
+from phlower.utils.exceptions import PhlowerIncompatibleTensorError
+
+
+@pytest.mark.parametrize(
+    "shape, pattern, desired_time_series, desired_voxel",
+    [
+        ((3, 4, 5, 3), "t x y z", True, True),
+        ((3, 4, 5, 3), "n...", False, False),
+        ((3, 4, 5, 3), "t n ...", True, False),
+        ((3, 4, 5, 3), "x y z ...", False, True),
+        ((10, 2, 5, 3), "(n)...", False, False),
+        ((3, 4, 5, 3), "(t) (x) (  y) (z )", True, True),
+        ((3, 4, 5), "t (x y z) f", True, False),
+        ((3, 4, 5, 3), "n a100 a2 f", False, False),
+    ],
+)
+def test__detect_flag_when_using_from_pattern(
+    shape: tuple[int],
+    pattern: str,
+    desired_time_series: bool,
+    desired_voxel: bool,
+):
+    shape_pattern = PhlowerShapePattern.from_pattern(shape, pattern)
+
+    assert shape_pattern.is_time_series == desired_time_series
+    assert shape_pattern.is_voxel == desired_voxel
+
+
+@pytest.mark.parametrize(
+    "shape, pattern",
+    [
+        ((3, 4, 5), "(x y z)"),
+        ((3, 4, 5), "x y "),
+        ((10, 3, 4, 5, 9), "(x y z) d f"),
+        ((3, 4, 5), "t (x y z)"),
+    ],
+)
+def test__raise_error_for_invalid_pattern(shape: tuple[int], pattern: str):
+    with pytest.raises(PhlowerIncompatibleTensorError):
+        _ = PhlowerShapePattern.from_pattern(shape, pattern)
 
 
 @pytest.mark.parametrize(

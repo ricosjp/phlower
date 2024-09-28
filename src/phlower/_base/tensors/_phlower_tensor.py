@@ -132,6 +132,10 @@ class PhlowerTensor(IPhlowerTensor):
         dimension_tensor: PhlowerDimensionTensor | None = None,
         pattern: str | None = None,
     ) -> PhlowerTensor:
+
+        if pattern is None:
+            raise ValueError("pattern must be set when calling from_pattern.")
+
         phlower_shape: PhlowerShapePattern = PhlowerShapePattern.from_pattern(
             tensor.shape, pattern
         )
@@ -300,7 +304,7 @@ class PhlowerTensor(IPhlowerTensor):
         """
         original_pattern = self._phlower_shape.get_pattern()
         resultant_pattern = (
-            f"({self._phlower_shape.space_pattern}) "
+            f"({self._phlower_shape.get_space_pattern()}) "
             f"({self._phlower_shape.time_series_pattern} "
             f"{self._phlower_shape.get_feature_pattern()})"
         )

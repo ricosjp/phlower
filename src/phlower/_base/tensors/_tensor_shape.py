@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from phlower.utils.exceptions import PhlowerIncompatibleTensorError
+
 
 class PhlowerShapePattern:
     @classmethod
@@ -10,6 +12,12 @@ class PhlowerShapePattern:
         cls, shape: torch.Size, pattern: str
     ) -> PhlowerShapePattern:
         _splited = _split_pattern(pattern)
+        if not _check_shape_and_pattern(shape, _splited):
+            raise PhlowerIncompatibleTensorError(
+                "Invalid tensor shape and pattern. "
+                f"shape: {shape}, pattern: {pattern}"
+            )
+
         is_time_series = _check_is_time_series(_splited)
         is_voxel = _check_is_voxel(_splited, is_time_series)
         return PhlowerShapePattern(shape, is_time_series, is_voxel)
@@ -38,36 +46,39 @@ class PhlowerShapePattern:
             return np.prod(self._shape[start : start + 3])
         return self._shape[start]
 
-    def get_pattern(
-        self, for_einsum: bool = False, drop_last: bool = False
-    ) -> str:
+    def get_space_pattern(self, omit_space: bool = False) -> str:
+        if not self._is_voxel:
+            return "n"
+
+        if omit_space:
+            return "xyz"
+
+        return "x y z"
+
+    def get_pattern(self) -> str:
         patterns = [
             self.time_series_pattern,
-            self.space_pattern,
-            self.get_feature_pattern(
-                for_einsum=for_einsum, drop_last=drop_last
-            ),
+            self.get_space_pattern(),
+            self.get_feature_pattern(),
         ]
 
         new_pattern = " ".join([p for p in patterns if len(p) != 0])
+        return new_pattern
 
-        if not for_einsum:
-            return new_pattern
-
-        return "".join(new_pattern.split())
-
-    def get_feature_pattern(
-        self, for_einsum: bool = False, drop_last: bool = False
-    ) -> str:
+    def get_feature_pattern(self) -> str:
         start = self.feature_start_dim
-        if for_einsum:
-            offset = 1 if drop_last else 0
-            return _availale_variables(length=self.rank - offset)
-        else:
-            return " ".join([f"a{i}" for i in range(len(self._shape[start:]))])
+        return " ".join([f"a{i}" for i in range(len(self._shape[start:]))])
 
     def __str__(self):
         return f"ShapePattern: {self.get_pattern()}"
+
+    @property
+    def start_space_index(self) -> int:
+        return 1 if self._is_time_series else 0
+
+    @property
+    def space_width(self) -> int:
+        return 3 if self.is_voxel else 1
 
     @property
     def is_time_series(self) -> bool:
@@ -90,15 +101,25 @@ class PhlowerShapePattern:
         return "t" if self._is_time_series else ""
 
     @property
-    def space_pattern(self) -> str:
-        return "x y z" if self._is_voxel else "n"
-
-    @property
     def feature_start_dim(self) -> int:
         offset_time = 1 if self._is_time_series else 0
         offset_space = 3 if self._is_voxel else 1
 
         return offset_time + offset_space
+
+
+def _check_shape_and_pattern(shape: torch.Size, patterns: list[str]) -> bool:
+    if len(shape) == len(patterns):
+        return True
+
+    if len(shape) < len(patterns):
+        return False
+
+    contain_ellipse = np.any([("..." in p) for p in patterns])
+    if contain_ellipse:
+        return True
+    else:
+        return False
 
 
 def _check_is_time_series(patterns: list[str]) -> bool:
@@ -132,8 +153,9 @@ def _match_to_one_word(target: str, char: str) -> bool:
 def _split_pattern(pattern: str) -> list[str]:
     splited: list[str] = []
     index = 0
+    N_ = len(pattern)
 
-    while index < len(pattern):
+    while index < N_:
         if pattern[index] == "(":
             p, index = _collect_until_brace_end(pattern, index)
             splited.append(p)
@@ -150,9 +172,22 @@ def _split_pattern(pattern: str) -> list[str]:
                 continue
             raise ValueError(f"Invalid Ellipse found. {pattern}")
 
-        splited.append(pattern[index])
-        index += 1
+        if pattern[index].isalpha():
+            splited.append(pattern[index])
+            index += 1
+            continue
 
+        if pattern[index].isnumeric():
+            if index == 0:
+                raise ValueError(
+                    "pattern starting with numerics is invalid. "
+                    f"pattern: {pattern}"
+                )
+            splited[-1] += pattern[index]
+            index += 1
+            continue
+
+        raise ValueError(f"Unknown pattern: {pattern=}")
     return splited
 
 
@@ -174,12 +209,3 @@ def _collect_until_brace_end(pattern: str, start: int) -> tuple[str, int]:
         index += 1
 
     raise ValueError(f"brace is not closed correctly. {pattern}")
-
-
-def _availale_variables(length: int, start: int = 0) -> str:
-    # No f, t, x, y, n and z because they are "reserved"
-    available_variables = "abcdeghijklmopqrsuvw"
-
-    if length > len(available_variables):
-        raise ValueError(f"Required length too long: {length}")
-    return available_variables[start : start + length]
