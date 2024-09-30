@@ -168,7 +168,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             h = h - mean
 
         h = self._mlp(phlower_tensor_collection({"h": h}))
-        assert h.dimension.is_dimensionless()
+        assert h.dimension.is_dimensionless
 
         if self._centering:
             linear_mean = self._linear_weight(

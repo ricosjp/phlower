@@ -114,6 +114,7 @@ class PhlowerDimensionTensor:
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
+    @property
     def is_dimensionless(self) -> bool:
         """Return True if the tensor is dimensionless."""
         return torch.sum(torch.abs(self._tensor)) < 1e-5
@@ -345,3 +346,10 @@ def leaky_relu(
             f"Should be dimensionless to apply leaky_relu but {tensor}"
         )
     return tensor
+
+
+@dimension_wrap_implements(torch.unsqueeze)
+def unsqueeze(
+    input: PhlowerDimensionTensor, dim: int
+) -> PhlowerDimensionTensor:
+    return input

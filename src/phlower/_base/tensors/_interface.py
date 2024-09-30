@@ -6,6 +6,7 @@ from collections.abc import Callable
 import torch
 
 from phlower._base.tensors import PhlowerDimensionTensor
+from phlower._base.tensors._tensor_shape import PhlowerShapePattern
 
 
 class IPhlowerTensor(metaclass=abc.ABCMeta):
@@ -20,6 +21,10 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def shape(self) -> torch.Size: ...
+
+    @property
+    @abc.abstractmethod
+    def shape_pattern(self) -> PhlowerShapePattern: ...
 
     @property
     @abc.abstractmethod
@@ -72,7 +77,20 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def backward(self) -> None: ...
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
+    def to_vertexwise(self) -> tuple[IPhlowerTensor, str]: ...
+
+    @abc.abstractmethod
+    def rearrange(
+        self,
+        pattern: str,
+        **kwargs: dict[str, int],
+    ) -> IPhlowerTensor: ...
+
+    @abc.abstractmethod
+    def as_pattern(self, pattern: str) -> IPhlowerTensor: ...
+
+    @abc.abstractmethod
     def __torch_function__(
         cls,
         func: Callable,

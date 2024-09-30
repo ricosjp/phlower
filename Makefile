@@ -14,8 +14,8 @@ mypy:
 
 .PHONY: format
 format:
-	poetry run python3 -m ruff check --fix
 	poetry run python3 -m ruff format
+	poetry run python3 -m ruff check --fix
 
 .PHONY: test
 test:
