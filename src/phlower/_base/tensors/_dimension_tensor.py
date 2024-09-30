@@ -114,6 +114,7 @@ class PhlowerDimensionTensor:
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
+    @property
     def is_dimensionless(self) -> bool:
         """Return True if the tensor is dimensionless."""
         return torch.sum(torch.abs(self._tensor)) < 1e-5
@@ -329,7 +330,7 @@ def concatenate(
 
 @dimension_wrap_implements(torch.tanh)
 def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless():
+    if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply tanh but {tensor}"
         )
@@ -340,7 +341,7 @@ def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
 def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless():
+    if not tensor.is_dimensionless:
         raise DimensionIncompatibleError(
             f"Should be dimensionless to apply leaky_relu but {tensor}"
         )
