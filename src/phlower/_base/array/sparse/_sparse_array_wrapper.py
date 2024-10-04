@@ -17,8 +17,11 @@ logger = get_logger(__name__)
 
 
 class SparseArrayWrapper(IPhlowerArray):
-    def __init__(self, arr: SparseArrayType) -> None:
+    def __init__(
+        self, arr: SparseArrayType, dimensions: PhysicalDimensions | None = None
+    ) -> None:
         self._sparse_data = arr
+        self._dimensions = dimensions
 
     @property
     def is_sparse(self) -> bool:
@@ -26,6 +29,10 @@ class SparseArrayWrapper(IPhlowerArray):
 
     @property
     def is_time_series(self) -> bool:
+        return False
+
+    @property
+    def is_voxel(self) -> bool:
         return False
 
     @property
@@ -95,9 +102,7 @@ class SparseArrayWrapper(IPhlowerArray):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicalDimensions | None = None,
-        is_time_series: bool = False,
-        is_voxel: bool = False,
+        disable_dimensions: bool = False,
     ) -> PhlowerTensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(
@@ -111,9 +116,9 @@ class SparseArrayWrapper(IPhlowerArray):
         )
         _tensor = phlower_tensor(
             tensor=sparse_tensor,
-            dimension=dimension,
-            is_time_series=is_time_series,
-            is_voxel=is_voxel,
+            dimension=None if disable_dimensions else self._dimensions,
+            is_time_series=False,
+            is_voxel=False,
         )
         _tensor = _tensor.coalesce()
         _tensor.to(device=device, non_blocking=non_blocking)

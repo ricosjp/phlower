@@ -8,7 +8,6 @@ from phlower._base import (
     GraphBatchInfo,
     IPhlowerArray,
     PhlowerTensor,
-    PhysicalDimensions,
 )
 from phlower._base._functionals import to_batch
 
@@ -19,28 +18,15 @@ class _PhlowerSequenceArray:
         self._data = data
         assert len(self._data) > 0
 
-        self._is_sparse = self._reduce_is_sparse()
-        self._is_time_series = self._reduce_is_time_series()
+        self._is_sparse = self._reduce_flag("is_sparse")
+        self._is_time_series = self._reduce_flag("is_time_series")
+        self._is_voxel = self._reduce_flag("is_voxel")
 
-    def _reduce_is_sparse(self) -> bool:
-        _is_sparse = np.unique(np.array([v.is_sparse for v in self._data]))
-        if len(_is_sparse) != 1:
-            raise ValueError(
-                "Sparse array and dense array are mixed "
-                f"in the same variable name; {self._name}"
-            )
-        return _is_sparse.item()
-
-    def _reduce_is_time_series(self) -> bool:
-        _is_time_series = np.unique(
-            np.array([v.is_time_series for v in self._data])
-        )
-        if len(_is_time_series) != 1:
-            raise ValueError(
-                "time-series array and steady array are mixed "
-                f"in the same variable name; {self._name}"
-            )
-        return _is_time_series.item()
+    def _reduce_flag(self, attr_name: str) -> bool:
+        flags = np.unique(np.array([getattr(v, attr_name) for v in self._data]))
+        if len(flags) != 1:
+            raise ValueError(f"{attr_name} is not unique in the {self._name}")
+        return flags.item()
 
     def __len__(self) -> int:
         return len(self._data)
@@ -55,19 +41,15 @@ class _PhlowerSequenceArray:
 
     def to_batched_tensor(
         self,
-        device: str | torch.device | None = None,
-        non_blocking: bool = False,
-        dimensions: PhysicalDimensions | None = None,
-        is_time_series: bool = False,
-        is_voxel: bool = False,
+        device: str | torch.device,
+        non_blocking: bool,
+        disable_dimensions: bool,
     ) -> PhlowerTensor:
         tensors = [
             v.to_phlower_tensor(
                 device=device,
                 non_blocking=non_blocking,
-                dimension=dimensions,
-                is_time_series=is_time_series,
-                is_voxel=is_voxel,
+                disable_dimensions=disable_dimensions,
             )
             for v in self._data
         ]
@@ -105,21 +87,15 @@ class SequencedDictArray:
         return self._phlower_sequece_dict.keys()
 
     def to_batched_tensor(
-        self,
-        device: str,
-        non_blocking: bool,
-        dimensions: dict[str, PhysicalDimensions] | None = None,
+        self, device: str, non_blocking: bool, disable_dimensions: bool = False
     ) -> tuple[dict[str, PhlowerTensor], dict[str, GraphBatchInfo]]:
-        if dimensions is None:
-            dimensions = {}
-
         _batched = [
             (
                 name,
                 arr.to_batched_tensor(
                     device=device,
                     non_blocking=non_blocking,
-                    dimensions=dimensions.get(name),
+                    disable_dimensions=disable_dimensions,
                 ),
             )
             for name, arr in self._phlower_sequece_dict.items()

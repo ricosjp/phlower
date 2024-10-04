@@ -5,10 +5,9 @@ import torch
 from torch.utils.data import DataLoader
 from typing_extensions import Self
 
-from phlower._base import PhysicalDimensions
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
-from phlower.settings._phlower_setting import (
+from phlower.settings import (
     PhlowerPredictorSetting,
     PhlowerTrainerSetting,
 )
@@ -45,16 +44,14 @@ class DataLoaderBuilder:
         self,
         dataset: IPhlowerDataset,
         *,
-        variable_dimensions: dict[str, PhysicalDimensions] | None = None,
         shuffle: bool = True,
         disable_dimensions: bool = False,
         drop_last: bool = False,
     ) -> DataLoader:
-        dimensions = None if disable_dimensions else variable_dimensions
         _collate_fn = PhlowerCollateFn(
             device=self._device,
             non_blocking=self._non_blocking,
-            dimensions=dimensions,
+            disable_dimensions=disable_dimensions,
         )
 
         random_generator = torch.Generator(device=self._device)

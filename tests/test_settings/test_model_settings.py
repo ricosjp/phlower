@@ -2,7 +2,11 @@ import pathlib
 
 import pytest
 import yaml
-from phlower.settings import GroupModuleSetting, ModuleSetting
+from phlower.settings import (
+    GroupModuleSetting,
+    ModuleSetting,
+    PhlowerModelSetting,
+)
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -41,43 +45,43 @@ def _recursive_check(
 def test__can_resolve_phlower_networks(file_name: str):
     data = parse_file(file_name)
 
-    setting = GroupModuleSetting(**data["model"])
-    setting.resolve(is_first=True)
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
 
-    _recursive_check(setting, data["misc"]["tests"])
+    _recursive_check(setting.network, data["misc"]["tests"])
 
 
 @pytest.mark.parametrize("file_name", ["cycle_error.yml"])
 def test__detect_cycle_error(file_name: str):
     data = parse_file(file_name)
-    setting = GroupModuleSetting(**data["model"])
+    setting = PhlowerModelSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleCycleError):
-        setting.resolve(is_first=True)
+        setting.resolve()
 
 
 @pytest.mark.parametrize("file_name", ["not_matched_last_node_error.yml"])
 def test__detect_ndim_inconsistency(file_name: str):
     data = parse_file(file_name)
-    setting = GroupModuleSetting(**data["model"])
+    setting = PhlowerModelSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleNodeDimSizeError):
-        setting.resolve(is_first=True)
+        setting.resolve()
 
 
 @pytest.mark.parametrize("file_name", ["duplicate_keys_error.yml"])
 def test__detect_duplicate_errors(file_name: str):
     data = parse_file(file_name)
-    setting = GroupModuleSetting(**data["model"])
+    setting = PhlowerModelSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleDuplicateKeyError):
-        setting.resolve(is_first=True)
+        setting.resolve()
 
 
 @pytest.mark.parametrize("file_name", ["key_missing_error.yml"])
 def test__detect_key_missing(file_name: str):
     data = parse_file(file_name)
-    setting = GroupModuleSetting(**data["model"])
+    setting = PhlowerModelSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleKeyError):
-        setting.resolve(is_first=True)
+        setting.resolve()
