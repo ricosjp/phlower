@@ -38,16 +38,15 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
     ) -> Iterator[IPhlowerTensorCollections]:
         dataset = LazyPhlowerDataset(
-            x_variable_names=self._model_setting.network.get_input_keys(),
-            y_variable_names=self._model_setting.network.get_output_keys(),
-            field_names=self._model_setting.fields.field_names,
+            input_settings=self._model_setting.inputs,
+            label_settings=self._model_setting.labels,
+            field_settings=self._model_setting.fields,
             directories=preprocessed_directories,
         )
 
         builder = DataLoaderBuilder.from_setting(self._predict_setting)
         data_loader = builder.create(
             dataset,
-            variable_dimensions=self._model_setting.variable_dimensions,
             disable_dimensions=disable_dimensions,
             shuffle=False,
         )
