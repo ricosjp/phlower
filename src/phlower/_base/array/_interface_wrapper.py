@@ -10,7 +10,9 @@ from phlower.utils.typing import ArrayDataType
 
 class IPhlowerArray(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __init__(self, data: ArrayDataType) -> None: ...
+    def __init__(
+        self, data: ArrayDataType, dimensions: PhysicalDimensions
+    ) -> None: ...
 
     @property
     @abc.abstractmethod
@@ -19,6 +21,10 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def is_sparse(self) -> bool: ...
+
+    @property
+    @abc.abstractmethod
+    def is_voxel(self) -> bool: ...
 
     @property
     @abc.abstractmethod
@@ -71,9 +77,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicalDimensions | None = None,
-        is_time_series: bool = False,
-        is_voxel: bool = False,
+        disable_dimensions: bool = False,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod

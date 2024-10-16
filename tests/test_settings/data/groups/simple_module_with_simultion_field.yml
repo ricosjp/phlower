@@ -5,16 +5,20 @@ misc:
     GCN0: 100
 
 model:
-  variable_dimensions:
-    feature0: 
-  
-  fields:
-    supports:
-      - name: support1
-    boundaries:
-      - name: dirichlet_u
-      - name: neumann_p
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
 
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+      time_series: false
 
   network:
     nn_type: GROUP

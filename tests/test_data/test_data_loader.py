@@ -10,7 +10,11 @@ from phlower.data import (
     LazyPhlowerDataset,
     LumpedTensorData,
 )
-from phlower.settings import PhlowerPredictorSetting, PhlowerTrainerSetting
+from phlower.settings import (
+    ModelIOSetting,
+    PhlowerPredictorSetting,
+    PhlowerTrainerSetting,
+)
 from phlower.utils.enums import ModelSelectionType
 
 
@@ -61,6 +65,21 @@ def test__create_from_predictor_setting(setting: PhlowerPredictorSetting):
     assert dataloader._num_workers == setting.num_workers
 
 
+def _to_modelIO_settings(
+    names: list[tuple[str, int, dict]] | None,
+) -> list[ModelIOSetting] | None:
+    if names is None:
+        return None
+    return [
+        ModelIOSetting(
+            name=v,
+            physical_dimension=dims,
+            members=[{"name": v, "n_last_dim": n_dim}],
+        )
+        for v, n_dim, dims in names
+    ]
+
+
 @pytest.mark.parametrize("batch_size", [1, 2, 3])
 def test__consider_batch_size(
     batch_size: int,
@@ -71,10 +90,14 @@ def test__consider_batch_size(
         output_base_directory / v for v in ["data0", "data1", "data2"]
     ]
     dataset = LazyPhlowerDataset(
-        x_variable_names=["x0", "x1", "x2"],
-        y_variable_names=["y0"],
+        input_settings=_to_modelIO_settings(
+            [("x0", 1, {}), ("x1", 1, {}), ("x2", 1, {})]
+        ),
+        label_settings=_to_modelIO_settings([("y0", 1, {})]),
         directories=directories,
-        field_names=["s0", "s1"],
+        field_settings=_to_modelIO_settings(
+            [("s0", None, {}), ("s1", None, {})]
+        ),
     )
 
     builder = DataLoaderBuilder(
@@ -92,16 +115,18 @@ def test__consider_batch_size(
 
 
 @pytest.mark.parametrize(
-    "dimensions, disable_dimensions, desired",
+    "x_variables, y_variables, fields, disable_dimensions, desired",
     [
         (
-            {
-                "x0": {"L": 2, "T": -2},
-                "x1": {"M": 2},
-                "x2": {"I": 1},
-                "y0": {"N": -2},
-                "s0": {"I": 1},
-            },
+            [
+                ("x0", 1, {"L": 2, "T": -2}),
+                ("x1", 1, {"M": 2}),
+                ("x2", 1, {"I": 1}),
+            ],
+            [
+                ("y0", 1, {"N": -2}),
+            ],
+            [("s0", None, {"I": 1})],
             False,
             {
                 "x0": PhysicalDimensions({"L": 2, "T": -2}),
@@ -114,7 +139,9 @@ def test__consider_batch_size(
     ],
 )
 def test__consider_dimensions(
-    dimensions: dict,
+    x_variables: list,
+    y_variables: list,
+    fields: list,
     disable_dimensions: bool,
     desired: dict,
     create_tmp_dataset: None,
@@ -124,10 +151,10 @@ def test__consider_dimensions(
         output_base_directory / v for v in ["data0", "data1", "data2"]
     ]
     dataset = LazyPhlowerDataset(
-        x_variable_names=["x0", "x1", "x2"],
-        y_variable_names=["y0"],
+        input_settings=_to_modelIO_settings(x_variables),
+        label_settings=_to_modelIO_settings(y_variables),
         directories=directories,
-        field_names=["s0"],
+        field_settings=_to_modelIO_settings(fields),
     )
 
     builder = DataLoaderBuilder(
@@ -139,7 +166,6 @@ def test__consider_dimensions(
     )
     dataloader = builder.create(
         dataset,
-        variable_dimensions=dimensions,
         disable_dimensions=disable_dimensions,
     )
 
@@ -159,22 +185,24 @@ def test__consider_dimensions(
 
 
 @pytest.mark.parametrize(
-    "dimensions, disable_dimensions",
+    "inputs, labels, fields, disable_dimensions",
     [
         (
-            {
-                "x0": {"L": 2, "T": -2},
-                "x1": {"M": 2},
-                "x2": {"I": 1},
-                "y0": {"N": -2},
-                "s0": {"I": 1},
-            },
+            [
+                ("x0", 1, {"L": 2, "T": -2}),
+                ("x1", 1, {"M": 2}),
+                ("x2", 1, {"I": 1}),
+            ],
+            [("y0", 1, {"N": -2})],
+            [("s0", None, {"I": 1})],
             True,
         )
     ],
 )
 def test__not_consider_dimensions(
-    dimensions: dict,
+    inputs: list,
+    labels: list,
+    fields: list,
     disable_dimensions: bool,
     create_tmp_dataset: None,
     output_base_directory: pathlib.Path,
@@ -183,10 +211,10 @@ def test__not_consider_dimensions(
         output_base_directory / v for v in ["data0", "data1", "data2"]
     ]
     dataset = LazyPhlowerDataset(
-        x_variable_names=["x0", "x1", "x2"],
-        y_variable_names=["y0"],
+        input_settings=_to_modelIO_settings(inputs),
+        label_settings=_to_modelIO_settings(labels),
         directories=directories,
-        field_names=["s0"],
+        field_settings=_to_modelIO_settings(fields),
     )
 
     builder = DataLoaderBuilder(
@@ -198,7 +226,6 @@ def test__not_consider_dimensions(
     )
     dataloader = builder.create(
         dataset,
-        variable_dimensions=dimensions,
         disable_dimensions=disable_dimensions,
     )
 

@@ -25,9 +25,10 @@ from phlower.utils.exceptions import (
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class ModuleIOSetting:
+class GroupIOSetting:
     name: str
-    n_dim: int
+    n_last_dim: int
+    skip_converge: bool = False  # HACK need to fix
 
 
 class GroupModuleSetting(
@@ -38,12 +39,12 @@ class GroupModuleSetting(
     name of group
     """
 
-    inputs: list[ModuleIOSetting]
+    inputs: list[GroupIOSetting]
     """
     definition of input varaibles
     """
 
-    outputs: list[ModuleIOSetting]
+    outputs: list[GroupIOSetting]
     """
     definition of output varaibles
     """
@@ -120,7 +121,7 @@ class GroupModuleSetting(
         return [v.name for v in self.outputs]
 
     def get_output_info(self) -> dict[str, int]:
-        return {output.name: output.n_dim for output in self.outputs}
+        return {output.name: output.n_last_dim for output in self.outputs}
 
     def search_module_setting(self, name: str) -> IPhlowerLayerParameters:
         for module in self.modules:
@@ -141,7 +142,7 @@ class GroupModuleSetting(
             self._check_keys(*resolved_outputs)
             self._check_nodes(*resolved_outputs)
 
-        input_info = {v.name: v.n_dim for v in self.inputs}
+        input_info = {v.name: v.n_last_dim for v in self.inputs}
 
         try:
             results = _resolve_modules(input_info, self.modules, self)
@@ -190,10 +191,10 @@ class GroupModuleSetting(
             key2node.update(output)
 
         for input_item in self.inputs:
-            if key2node[input_item.name] != input_item.n_dim:
+            if key2node[input_item.name] != input_item.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {input_item.name} in {self.name} "
-                    f"is {input_item.n_dim}. "
+                    f"is {input_item.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
@@ -215,10 +216,10 @@ class GroupModuleSetting(
                     "Please check last module in this group."
                 )
 
-            if key2node[self_output.name] != self_output.n_dim:
+            if key2node[self_output.name] != self_output.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {self_output.name} in {self.name} "
-                    f"is {self_output.n_dim}. "
+                    f"is {self_output.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 

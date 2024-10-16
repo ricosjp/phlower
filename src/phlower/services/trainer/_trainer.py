@@ -91,27 +91,25 @@ class PhlowerTrainer:
             record_io.write_header()
 
         train_dataset = LazyPhlowerDataset(
-            x_variable_names=self._model_setting.network.get_input_keys(),
-            y_variable_names=self._model_setting.network.get_output_keys(),
-            field_names=self._model_setting.fields.field_names,
+            input_settings=self._model_setting.inputs,
+            label_settings=self._model_setting.labels,
+            field_settings=self._model_setting.fields,
             directories=train_directories,
         )
         validation_dataset = LazyPhlowerDataset(
-            x_variable_names=self._model_setting.network.get_input_keys(),
-            y_variable_names=self._model_setting.network.get_output_keys(),
-            field_names=self._model_setting.fields.field_names,
+            input_settings=self._model_setting.inputs,
+            label_settings=self._model_setting.labels,
+            field_settings=self._model_setting.fields,
             directories=validation_directories,
         )
 
         builder = DataLoaderBuilder.from_setting(self._trainer_setting)
         train_loader = builder.create(
             train_dataset,
-            variable_dimensions=self._model_setting.variable_dimensions,
             disable_dimensions=disable_dimensions,
         )
         validation_loader = builder.create(
             validation_dataset,
-            variable_dimensions=self._model_setting.variable_dimensions,
             disable_dimensions=disable_dimensions,
         )
 
