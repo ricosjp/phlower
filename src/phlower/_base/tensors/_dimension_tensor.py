@@ -124,6 +124,14 @@ class PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
     @property
+    def dtype(self) -> torch.dtype:
+        return self._tensor.dtype
+
+    @property
+    def device(self) -> torch.device:
+        return self._tensor.device
+
+    @property
     def is_dimensionless(self) -> bool:
         """Return True if the tensor is dimensionless."""
         return torch.sum(torch.abs(self._tensor)) < 1e-5
