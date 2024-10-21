@@ -108,8 +108,16 @@ class PhlowerDimensionTensor:
             for k, v in PhysicalDimensionSymbolType.__members__.items()
         }
 
-    def to(self, device: str | torch.device, non_blocking: bool = False):
-        self._tensor.to(device, non_blocking=non_blocking)
+    def to(
+            self,
+            device: str | torch.device = None,
+            non_blocking: bool = False,
+            dtype: torch.dtype = None,
+    ) -> PhlowerDimensionTensor:
+        new_dimension = self._tensor.to(
+            device, non_blocking=non_blocking, dtype=dtype)
+        new_dtype = dtype or self.dtype
+        return PhlowerDimensionTensor(new_dimension, dtype=new_dtype)
 
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())

@@ -57,7 +57,7 @@ def phlower_tensor(
 
 
 def phlower_tensor(
-    tensor: torch.Tensor | PhlowerTensor,
+    tensor: list | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
@@ -67,6 +67,9 @@ def phlower_tensor(
         if dimension is not None:
             logger.warning("Input dimension_tensor are ignored.")
         return tensor
+
+    if isinstance(tensor, list):
+        tensor = torch.tensor(tensor)
 
     dimension_tensor = _resolve_dimension_arg(dimension)
 
@@ -130,7 +133,7 @@ class PhlowerTensor(IPhlowerTensor):
         cls,
         tensor: torch.Tensor,
         dimension_tensor: PhlowerDimensionTensor | None = None,
-        pattern: str | None = None,
+        pattern: str | PhlowerShapePattern | None = None,
     ) -> PhlowerTensor:
         if pattern is None:
             raise ValueError("pattern must be set when calling from_pattern.")
@@ -191,11 +194,14 @@ class PhlowerTensor(IPhlowerTensor):
     def is_voxel(self) -> bool:
         return self._phlower_shape.is_voxel
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return (
             f"PhlowerTensor({self._tensor}, "
             f"Dimension: {self._dimension_tensor})"
         )
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
     def __eq__(self, other: PhlowerTensor):
         return torch.eq(self, other)
@@ -219,7 +225,7 @@ class PhlowerTensor(IPhlowerTensor):
         return torch.sub(self, other)
 
     def __neg__(self):
-        return torch.neg(self)
+        return -1 * self
 
     def __add__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.add(self, other)
@@ -258,11 +264,22 @@ class PhlowerTensor(IPhlowerTensor):
     def to_numpy(self) -> np.ndarray:
         return self._tensor.cpu().detach().numpy()
 
+    def numpy(self) -> np.ndarray:
+        return self.to_numpy()
+
     def coalesce(self) -> torch.Tensor:
         return PhlowerTensor(self._tensor.coalesce(), self._dimension_tensor)
 
     def size(self) -> torch.Size:
         return self._tensor.size()
+
+    @property
+    def dtype(self) -> torch.dtype:
+        return self._tensor.dtype
+
+    @property
+    def device(self) -> torch.device:
+        return self._tensor.device
 
     def numel(self) -> int:
         return torch.numel(self._tensor)
@@ -344,10 +361,21 @@ class PhlowerTensor(IPhlowerTensor):
             is_voxel=is_voxel,
         )
 
-    def to(self, device: str, non_blocking: bool = False) -> None:
-        self._tensor.to(device, non_blocking=non_blocking)
+    def to(
+            self,
+            device: str | torch.device = None,
+            non_blocking: bool = False,
+            dtype: torch.dtype = None,
+    ) -> PhlowerTensor:
+        new_tensor = self._tensor.to(
+            device=device, dtype=dtype, non_blocking=non_blocking)
         if self.has_dimension:
-            self._dimension_tensor.to(device, non_blocking=non_blocking)
+            new_dimension = self._dimension_tensor.to(
+                device=device, dtype=dtype, non_blocking=non_blocking)
+        else:
+            new_dimension = None
+        return PhlowerTensor.from_pattern(
+            new_tensor, new_dimension, pattern=self.shape_pattern)
 
     def detach(self) -> PhlowerTensor:
         return PhlowerTensor(
@@ -365,6 +393,15 @@ class PhlowerTensor(IPhlowerTensor):
             tensor=self._tensor,
             dimension_tensor=self._dimension_tensor,
             pattern=pattern,
+        )
+
+    def clone(self) -> PhlowerTensor:
+        tensor = self._tensor.clone()
+        return PhlowerTensor(
+            tensor,
+            dimension_tensor=self._dimension_tensor,
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
         )
 
     @classmethod

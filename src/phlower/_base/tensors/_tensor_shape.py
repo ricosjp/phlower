@@ -9,9 +9,13 @@ from phlower.utils.exceptions import PhlowerIncompatibleTensorError
 class PhlowerShapePattern:
     @classmethod
     def from_pattern(
-        cls, shape: torch.Size, pattern: str
+        cls, shape: torch.Size, pattern: str | PhlowerShapePattern
     ) -> PhlowerShapePattern:
-        _splited = _split_pattern(pattern)
+        if isinstance(pattern, PhlowerShapePattern):
+            str_pattern = pattern.get_pattern()
+        else:
+            str_pattern = pattern
+        _splited = _split_pattern(str_pattern)
         if not _check_shape_and_pattern(shape, _splited):
             raise PhlowerIncompatibleTensorError(
                 "Invalid tensor shape and pattern. "
