@@ -362,20 +362,23 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def to(
-            self,
-            device: str | torch.device = None,
-            non_blocking: bool = False,
-            dtype: torch.dtype = None,
+        self,
+        device: str | torch.device = None,
+        non_blocking: bool = False,
+        dtype: torch.dtype = None,
     ) -> PhlowerTensor:
         new_tensor = self._tensor.to(
-            device=device, dtype=dtype, non_blocking=non_blocking)
+            device=device, dtype=dtype, non_blocking=non_blocking
+        )
         if self.has_dimension:
             new_dimension = self._dimension_tensor.to(
-                device=device, dtype=dtype, non_blocking=non_blocking)
+                device=device, dtype=dtype, non_blocking=non_blocking
+            )
         else:
             new_dimension = None
         return PhlowerTensor.from_pattern(
-            new_tensor, new_dimension, pattern=self.shape_pattern)
+            new_tensor, new_dimension, pattern=self.shape_pattern
+        )
 
     def detach(self) -> PhlowerTensor:
         return PhlowerTensor(

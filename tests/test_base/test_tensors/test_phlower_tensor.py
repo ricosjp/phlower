@@ -9,34 +9,37 @@ from phlower.utils.exceptions import (
 
 
 def test__init():
-    list_data = [.1, .2, .3]
+    list_data = [0.1, 0.2, 0.3]
     pht_list = phlower_tensor(list_data)
     pht_torch = phlower_tensor(torch.tensor(list_data))
     np.testing.assert_array_almost_equal(
-        pht_list.to_numpy(), pht_torch.to_numpy())
+        pht_list.to_numpy(), pht_torch.to_numpy()
+    )
 
 
 def test__to():
-    pht = phlower_tensor([.1, .2, .3], dimension={'L': 2, 'T': -1})
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
     pht16 = pht.to(dtype=torch.float16)
     assert pht16._tensor.dtype == torch.float16
     assert pht16.dimension._tensor.dtype == torch.float16
 
 
 def test__to_numpy():
-    pht = phlower_tensor([.1, .2, .3])
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
     np.testing.assert_array_almost_equal(pht.numpy(), pht.to_numpy())
 
 
 def test__from_pattern():
-    pht = phlower_tensor([.1, .2, .3], dimension={'L': 2, 'T': -1})
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
     pht_from_pattern = PhlowerTensor.from_pattern(
-        pht.to_tensor(), pht.dimension, pht.shape_pattern)
+        pht.to_tensor(), pht.dimension, pht.shape_pattern
+    )
 
     np.testing.assert_array_almost_equal(pht_from_pattern.numpy(), pht.numpy())
     np.testing.assert_array_almost_equal(
         pht_from_pattern.dimension._tensor.numpy(),
-        pht.dimension._tensor.numpy())
+        pht.dimension._tensor.numpy(),
+    )
 
 
 def test__add():
@@ -81,10 +84,10 @@ def test__sub_with_unit():
 def test__neg_with_unit():
     units = phlower_dimension_tensor({"L": 2, "T": -2})
     a = np.random.rand(3, 10)
-    c = - a
+    c = -a
 
     ap = PhlowerTensor(torch.tensor(a), units)
-    cp = - ap
+    cp = -ap
 
     np.testing.assert_array_almost_equal(cp.numpy(), c)
 
@@ -340,9 +343,10 @@ def test__rearrange(
 
 
 def test__clone():
-    pht = phlower_tensor([.1, .2, .3], dimension={'L': 2, 'T': -1})
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
     cloned = pht.clone()
-    pht._tensor[1] = 10.
+    pht._tensor[1] = 10.0
     np.testing.assert_array_almost_equal(
-        pht.numpy()[[0, 2]], cloned.numpy()[[0, 2]])
+        pht.numpy()[[0, 2]], cloned.numpy()[[0, 2]]
+    )
     assert pht.numpy()[1] != cloned.numpy()[1]

@@ -109,13 +109,14 @@ class PhlowerDimensionTensor:
         }
 
     def to(
-            self,
-            device: str | torch.device = None,
-            non_blocking: bool = False,
-            dtype: torch.dtype = None,
+        self,
+        device: str | torch.device = None,
+        non_blocking: bool = False,
+        dtype: torch.dtype = None,
     ) -> PhlowerDimensionTensor:
         new_dimension = self._tensor.to(
-            device, non_blocking=non_blocking, dtype=dtype)
+            device, non_blocking=non_blocking, dtype=dtype
+        )
         new_dtype = dtype or self.dtype
         return PhlowerDimensionTensor(new_dimension, dtype=new_dtype)
 

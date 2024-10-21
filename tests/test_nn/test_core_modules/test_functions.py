@@ -66,7 +66,8 @@ def test__spmm(size: tuple[int], is_time_series: bool, repeat: bool):
 def test_leaky_relu0p5_inverse_leaky_relu0p5():
     x = PhlowerTensor(torch.rand(100)) * 4 - 2.0
     y = phlower.nn.functions.inversed_leaky_relu0p5(
-        phlower.nn.functions.leaky_relu0p5(x))
+        phlower.nn.functions.leaky_relu0p5(x)
+    )
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
 
 
