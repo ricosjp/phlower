@@ -22,7 +22,7 @@ def to_tensor_if_needed(x: PhlowerTensor | float) -> torch.Tensor | float:
 
 def to_cuda_if_needed(x: PhlowerTensor | float) -> PhlowerTensor | float:
     if isinstance(x, PhlowerTensor):
-        return x.to('cuda:0')
+        return x.to("cuda:0")
     return x
 
 
