@@ -43,12 +43,7 @@ def test__check_dtype_and_device_after_applying_to(
 
 @pytest.mark.parametrize(
     "device",
-    [
-        "cpu",
-        "meta",
-        "cuda:0",
-        "cuda:1"
-    ],
+    ["cpu", "meta", "cuda:0", "cuda:1"],
 )
 @pytest.mark.parametrize(
     "dtype",
@@ -57,9 +52,7 @@ def test__check_dtype_and_device_after_applying_to(
 def test__pass_arguments_to_torch_function_with_dimension(
     device: str, dtype: torch.dtype
 ):
-    pht: PhlowerTensor = phlower_tensor(
-        [0.1, 0.2, 0.3], dimension=None
-    )
+    pht: PhlowerTensor = phlower_tensor([0.1, 0.2, 0.3], dimension=None)
 
     with mock.patch.object(torch.Tensor, "to") as mocked:
         mocked.return_value = pht._tensor
