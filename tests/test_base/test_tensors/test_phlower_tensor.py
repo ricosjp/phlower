@@ -49,9 +49,7 @@ def test__check_dtype_and_device_after_applying_to(
     "dtype",
     [torch.float16, torch.float32, torch.float64],
 )
-def test__pass_arguments_to_torch_function_with_dimension(
-    device: str, dtype: torch.dtype
-):
+def test__pass_arguments_to_torch_function(device: str, dtype: torch.dtype):
     pht: PhlowerTensor = phlower_tensor([0.1, 0.2, 0.3], dimension=None)
 
     with mock.patch.object(torch.Tensor, "to") as mocked:
