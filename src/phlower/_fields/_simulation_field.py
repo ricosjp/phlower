@@ -1,8 +1,7 @@
 import abc
 from collections.abc import Iterable
 
-from phlower import PhlowerTensor
-from phlower._base import GraphBatchInfo
+from phlower._base import GraphBatchInfo, PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
 
 

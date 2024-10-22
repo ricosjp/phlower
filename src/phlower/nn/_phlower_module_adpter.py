@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from phlower import ISimulationField
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
