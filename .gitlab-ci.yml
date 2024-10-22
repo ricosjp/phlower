@@ -39,6 +39,7 @@ pytest:
     - GenuineIntel
 
 gpu_test:
+  image: nvidia/cuda:12.4.1-devel-ubuntu20.04
   stage: test
   script:
     - make gpu_test
