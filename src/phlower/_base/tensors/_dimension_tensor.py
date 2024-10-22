@@ -182,10 +182,7 @@ def add(
 
         return PhlowerDimensionTensor(inputs._tensor)
 
-    if all(
-            isinstance(v, float) or v.is_dimensionless
-            for v in (inputs, other)
-    ):
+    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
         for v in (inputs, other):
             if isinstance(v, PhlowerDimensionTensor):
                 device = v.device
@@ -208,10 +205,7 @@ def sub(
 
         return PhlowerDimensionTensor(inputs._tensor)
 
-    if all(
-            isinstance(v, float) or v.is_dimensionless
-            for v in (inputs, other)
-    ):
+    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
         for v in (inputs, other):
             if isinstance(v, PhlowerDimensionTensor):
                 device = v.device
