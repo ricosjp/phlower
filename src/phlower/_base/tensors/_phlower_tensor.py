@@ -400,9 +400,12 @@ class PhlowerTensor(IPhlowerTensor):
 
     def clone(self) -> PhlowerTensor:
         tensor = self._tensor.clone()
+        dimension = PhlowerDimensionTensor(
+            self._dimension_tensor._tensor.clone()
+        )
         return PhlowerTensor(
             tensor,
-            dimension_tensor=self._dimension_tensor,
+            dimension_tensor=dimension,
             is_time_series=self.is_time_series,
             is_voxel=self.is_voxel,
         )

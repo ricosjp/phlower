@@ -8,7 +8,7 @@ from phlower.utils.exceptions import (
 )
 
 
-def test__init():
+def test__create_same_initialized_object_from_list_and_tensor():
     list_data = [0.1, 0.2, 0.3]
     pht_list = phlower_tensor(list_data)
     pht_torch = phlower_tensor(torch.tensor(list_data))
@@ -17,14 +17,33 @@ def test__init():
     )
 
 
-def test__to():
+@pytest.mark.parametrize(
+    "device",
+    [
+        torch.device("cpu"),
+        torch.device("meta"),
+        # TODO: Add CUDA checking
+        # torch.device('cuda:0'),
+        # torch.device('cuda:1'),
+        # torch.device('cuda:2'),
+    ],
+)
+@pytest.mark.parametrize(
+    "dtype",
+    [torch.float16, torch.float32, torch.float64],
+)
+def test__to(device: torch.device, dtype: torch.dtype):
+    print(device, dtype)
     pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
-    pht16 = pht.to(dtype=torch.float16)
-    assert pht16._tensor.dtype == torch.float16
-    assert pht16.dimension._tensor.dtype == torch.float16
+
+    converted_pht = pht.to(device=device, dtype=dtype)
+    assert converted_pht.device == device
+    assert converted_pht.dimension.device == device
+    assert converted_pht.dtype == dtype
+    assert converted_pht.dimension.dtype == dtype
 
 
-def test__to_numpy():
+def test__to_numpy_same_as_numpy():
     pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
     np.testing.assert_array_almost_equal(pht.numpy(), pht.to_numpy())
 
@@ -343,10 +362,16 @@ def test__rearrange(
 
 
 def test__clone():
-    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
+    original_dimension_dict = {"L": 2, "T": -1}
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension=original_dimension_dict)
     cloned = pht.clone()
     pht._tensor[1] = 10.0
+    pht._dimension_tensor = pht.dimension * pht.dimension
     np.testing.assert_array_almost_equal(
         pht.numpy()[[0, 2]], cloned.numpy()[[0, 2]]
     )
     assert pht.numpy()[1] != cloned.numpy()[1]
+
+    for k, v in original_dimension_dict.items():
+        assert cloned.dimension.to_dict()[k] == v
+        assert pht.dimension.to_dict()[k] == 2 * v
