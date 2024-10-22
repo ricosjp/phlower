@@ -8,6 +8,59 @@ from phlower.utils.exceptions import (
 )
 
 
+def test__create_same_initialized_object_from_list_and_tensor():
+    list_data = [0.1, 0.2, 0.3]
+    pht_list = phlower_tensor(list_data)
+    pht_torch = phlower_tensor(torch.tensor(list_data))
+    np.testing.assert_array_almost_equal(
+        pht_list.to_numpy(), pht_torch.to_numpy()
+    )
+
+
+@pytest.mark.parametrize(
+    "device",
+    [
+        torch.device("cpu"),
+        torch.device("meta"),
+        # TODO: Add CUDA checking
+        # torch.device('cuda:0'),
+        # torch.device('cuda:1'),
+        # torch.device('cuda:2'),
+    ],
+)
+@pytest.mark.parametrize(
+    "dtype",
+    [torch.float16, torch.float32, torch.float64],
+)
+def test__to(device: torch.device, dtype: torch.dtype):
+    print(device, dtype)
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
+
+    converted_pht = pht.to(device=device, dtype=dtype)
+    assert converted_pht.device == device
+    assert converted_pht.dimension.device == device
+    assert converted_pht.dtype == dtype
+    assert converted_pht.dimension.dtype == dtype
+
+
+def test__to_numpy_same_as_numpy():
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
+    np.testing.assert_array_almost_equal(pht.numpy(), pht.to_numpy())
+
+
+def test__from_pattern():
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
+    pht_from_pattern = PhlowerTensor.from_pattern(
+        pht.to_tensor(), pht.dimension, pht.shape_pattern
+    )
+
+    np.testing.assert_array_almost_equal(pht_from_pattern.numpy(), pht.numpy())
+    np.testing.assert_array_almost_equal(
+        pht_from_pattern.dimension._tensor.numpy(),
+        pht.dimension._tensor.numpy(),
+    )
+
+
 def test__add():
     a = torch.eye(5)
     b = torch.eye(5)
@@ -45,6 +98,17 @@ def test__sub_with_unit():
     cp = ap - bp
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
+
+
+def test__neg_with_unit():
+    units = phlower_dimension_tensor({"L": 2, "T": -2})
+    a = np.random.rand(3, 10)
+    c = -a
+
+    ap = PhlowerTensor(torch.tensor(a), units)
+    cp = -ap
+
+    np.testing.assert_array_almost_equal(cp.numpy(), c)
 
 
 @pytest.mark.parametrize(
@@ -295,3 +359,19 @@ def test__rearrange(
     phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
     actual = phlower_tensor.rearrange(pattern, **dict_shape)
     assert actual.shape == desired_shape
+
+
+def test__clone():
+    original_dimension_dict = {"L": 2, "T": -1}
+    pht = phlower_tensor([0.1, 0.2, 0.3], dimension=original_dimension_dict)
+    cloned = pht.clone()
+    pht._tensor[1] = 10.0
+    pht._dimension_tensor = pht.dimension * pht.dimension
+    np.testing.assert_array_almost_equal(
+        pht.numpy()[[0, 2]], cloned.numpy()[[0, 2]]
+    )
+    assert pht.numpy()[1] != cloned.numpy()[1]
+
+    for k, v in original_dimension_dict.items():
+        assert cloned.dimension.to_dict()[k] == v
+        assert pht.dimension.to_dict()[k] == 2 * v
