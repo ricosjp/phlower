@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pytest
 import torch
@@ -19,28 +21,47 @@ def test__create_same_initialized_object_from_list_and_tensor():
 
 @pytest.mark.parametrize(
     "device",
-    [
-        torch.device("cpu"),
-        torch.device("meta"),
-        # TODO: Add CUDA checking
-        # torch.device('cuda:0'),
-        # torch.device('cuda:1'),
-        # torch.device('cuda:2'),
-    ],
+    [torch.device("cpu"), torch.device("meta"), "cpu", "meta"],
 )
 @pytest.mark.parametrize(
     "dtype",
     [torch.float16, torch.float32, torch.float64],
 )
-def test__to(device: torch.device, dtype: torch.dtype):
-    print(device, dtype)
-    pht = phlower_tensor([0.1, 0.2, 0.3], dimension={"L": 2, "T": -1})
+def test__check_dtype_and_device_after_applying_to(
+    device: torch.device | str, dtype: torch.dtype
+):
+    pht: PhlowerTensor = phlower_tensor(
+        [0.1, 0.2, 0.3], dimension={"L": 2, "T": -1}
+    )
 
     converted_pht = pht.to(device=device, dtype=dtype)
-    assert converted_pht.device == device
-    assert converted_pht.dimension.device == device
+    assert converted_pht.device.type == str(device)
+    assert converted_pht.dimension.device.type == str(device)
     assert converted_pht.dtype == dtype
     assert converted_pht.dimension.dtype == dtype
+
+
+@pytest.mark.parametrize(
+    "device",
+    ["cpu", "meta", "cuda:0", "cuda:1"],
+)
+@pytest.mark.parametrize(
+    "dtype",
+    [torch.float16, torch.float32, torch.float64],
+)
+def test__pass_arguments_to_torch_function(device: str, dtype: torch.dtype):
+    pht: PhlowerTensor = phlower_tensor([0.1, 0.2, 0.3], dimension=None)
+
+    with mock.patch.object(torch.Tensor, "to") as mocked:
+        mocked.return_value = pht._tensor
+
+        _ = pht.to(device=device, dtype=dtype)
+
+        assert mocked.call_count == 1
+
+        for args in mocked.call_args_list:
+            assert args.kwargs.get("device") == device
+            assert args.kwargs.get("dtype") == dtype
 
 
 def test__to_numpy_same_as_numpy():

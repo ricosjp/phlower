@@ -5,8 +5,8 @@ import pathlib
 
 from typing_extensions import Self
 
-from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._module_settings import IPhlowerLayerParameters
 
