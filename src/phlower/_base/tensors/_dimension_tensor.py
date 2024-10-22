@@ -182,6 +182,16 @@ def add(
 
         return PhlowerDimensionTensor(inputs._tensor)
 
+    if all(
+            isinstance(v, float) or v.is_dimensionless
+            for v in (inputs, other)
+    ):
+        for v in (inputs, other):
+            if isinstance(v, PhlowerDimensionTensor):
+                device = v.device
+                break
+        return zero_dimension_tensor().to(device)
+
     raise DimensionIncompatibleError()
 
 
@@ -197,6 +207,16 @@ def sub(
             )
 
         return PhlowerDimensionTensor(inputs._tensor)
+
+    if all(
+            isinstance(v, float) or v.is_dimensionless
+            for v in (inputs, other)
+    ):
+        for v in (inputs, other):
+            if isinstance(v, PhlowerDimensionTensor):
+                device = v.device
+                break
+        return zero_dimension_tensor().to(device)
 
     raise DimensionIncompatibleError()
 
@@ -221,12 +241,12 @@ def mul(
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(other.device)
     )
     _other = (
         other
         if isinstance(other, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(inputs.device)
     )
     return PhlowerDimensionTensor(_input._tensor + _other._tensor)
 
@@ -238,12 +258,12 @@ def div(
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(other.device)
     )
     _other = (
         other
         if isinstance(other, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(inputs.device)
     )
     return PhlowerDimensionTensor(_input._tensor - _other._tensor)
 

@@ -38,6 +38,13 @@ pytest:
     - no-gpu
     - GenuineIntel
 
+gpu_test:
+  stage: test
+  script:
+    - make gpu_test
+  tags:
+    - gpu
+
 e2e_test:
   stage: test
   script:

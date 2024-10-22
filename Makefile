@@ -19,12 +19,17 @@ format:
 
 .PHONY: test
 test:
-	poetry run pytest tests -m "not e2e_test" --cov=src --cov-report term-missing --durations 5
+	poetry run pytest tests -m "not e2e_test and not gpu_test" --cov=src --cov-report term-missing --durations 5
 
 
-.PHONY: test
+.PHONY: e2e_test
 e2e_test:
 	poetry run pytest tests -m "e2e_test"
+
+
+.PHONY: gpu_test
+gpu_test:
+	poetry run pytest tests -m "gpu_test"
 
 
 .PHONY: lint
