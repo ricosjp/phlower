@@ -38,6 +38,14 @@ pytest:
     - no-gpu
     - GenuineIntel
 
+gpu_test:
+  image: pytorch/pytorch:2.5.0-cuda12.4-cudnn9-runtime
+  stage: test
+  script:
+    - make gpu_test
+  tags:
+    - gpu
+
 e2e_test:
   stage: test
   script:

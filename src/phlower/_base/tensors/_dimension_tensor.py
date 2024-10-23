@@ -169,6 +169,23 @@ def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
+def _determine_float_or_dimensions(
+    inputs: PhlowerDimensionTensor | float,
+    other: PhlowerDimensionTensor | float,
+) -> tuple[float, PhlowerDimensionTensor]:
+    if isinstance(inputs, float):
+        assert isinstance(
+            other, PhlowerDimensionTensor
+        ), f"one is float, but the other is {other}"
+        return inputs, other
+
+    if isinstance(inputs, PhlowerDimensionTensor):
+        assert isinstance(
+            other, float
+        ), f"one is float, but the other is {inputs}"
+        return other, inputs
+
+
 @dimension_wrap_implements(torch.add)
 def add(
     inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
@@ -181,6 +198,10 @@ def add(
             )
 
         return PhlowerDimensionTensor(inputs._tensor)
+
+    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
+        _, dim = _determine_float_or_dimensions(inputs, other)
+        return zero_dimension_tensor().to(dim.device)
 
     raise DimensionIncompatibleError()
 
@@ -197,6 +218,10 @@ def sub(
             )
 
         return PhlowerDimensionTensor(inputs._tensor)
+
+    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
+        _, dim = _determine_float_or_dimensions(inputs, other)
+        return zero_dimension_tensor().to(dim.device)
 
     raise DimensionIncompatibleError()
 
@@ -221,12 +246,12 @@ def mul(
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(other.device)
     )
     _other = (
         other
         if isinstance(other, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(inputs.device)
     )
     return PhlowerDimensionTensor(_input._tensor + _other._tensor)
 
@@ -238,12 +263,12 @@ def div(
     _input = (
         inputs
         if isinstance(inputs, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(other.device)
     )
     _other = (
         other
         if isinstance(other, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+        else zero_dimension_tensor().to(inputs.device)
     )
     return PhlowerDimensionTensor(_input._tensor - _other._tensor)
 
