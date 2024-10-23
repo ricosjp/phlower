@@ -169,6 +169,23 @@ def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
+def _determine_float_or_dimensions(
+    inputs: PhlowerDimensionTensor | float,
+    other: PhlowerDimensionTensor | float,
+) -> tuple[float, PhlowerDimensionTensor]:
+    if isinstance(inputs, float):
+        assert isinstance(
+            other, PhlowerDimensionTensor
+        ), f"one is float, but the other is {other}"
+        return inputs, other
+
+    if isinstance(inputs, PhlowerDimensionTensor):
+        assert isinstance(
+            other, float
+        ), f"one is float, but the other is {inputs}"
+        return other, inputs
+
+
 @dimension_wrap_implements(torch.add)
 def add(
     inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
@@ -183,11 +200,8 @@ def add(
         return PhlowerDimensionTensor(inputs._tensor)
 
     if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
-        for v in (inputs, other):
-            if isinstance(v, PhlowerDimensionTensor):
-                device = v.device
-                break
-        return zero_dimension_tensor().to(device)
+        _, dim = _determine_float_or_dimensions(inputs, other)
+        return zero_dimension_tensor().to(dim.device)
 
     raise DimensionIncompatibleError()
 
@@ -206,11 +220,8 @@ def sub(
         return PhlowerDimensionTensor(inputs._tensor)
 
     if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
-        for v in (inputs, other):
-            if isinstance(v, PhlowerDimensionTensor):
-                device = v.device
-                break
-        return zero_dimension_tensor().to(device)
+        _, dim = _determine_float_or_dimensions(inputs, other)
+        return zero_dimension_tensor().to(dim.device)
 
     raise DimensionIncompatibleError()
 

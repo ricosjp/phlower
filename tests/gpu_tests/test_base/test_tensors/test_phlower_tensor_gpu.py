@@ -48,7 +48,7 @@ def test__op_tensor_tensor_with_unit_on_gpu(
     tc = op(to_tensor_if_needed(a), to_tensor_if_needed(b))
     np.testing.assert_almost_equal(c.numpy(), tc.cpu().numpy())
     assert c.device == torch.device("cuda:0")
-    assert c.device == torch.device("cuda:0")
+    assert c.dimension.device == torch.device("cuda:0")
 
 
 @pytest.mark.gpu_test
@@ -77,7 +77,7 @@ def test__op_tensor_scalar_with_unit_on_gpu(
     tc = op(to_tensor_if_needed(a), to_tensor_if_needed(b))
     np.testing.assert_almost_equal(c.numpy(), tc.cpu().numpy())
     assert c.device == torch.device("cuda:0")
-    assert c.device == torch.device("cuda:0")
+    assert c.dimension.device == torch.device("cuda:0")
 
 
 @pytest.mark.gpu_test
