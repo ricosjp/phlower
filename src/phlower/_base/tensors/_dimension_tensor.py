@@ -55,7 +55,7 @@ class PhlowerDimensionTensor:
                 "length of values is not equal to the number of "
                 f"registered dimension types. input: {len(values)}"
             )
-        _tensor = torch.tensor(values, dtype=torch.int64).reshape(
+        _tensor = torch.tensor(values, dtype=torch.float32).reshape(
             len(PhysicalDimensionSymbolType), 1
         )
         return PhlowerDimensionTensor(_tensor)
@@ -77,7 +77,13 @@ class PhlowerDimensionTensor:
     def __add__(self, __value: object):
         return torch.add(self, __value)
 
+    def __radd__(self, __value: object):
+        return torch.add(self, __value)
+
     def __mul__(self, __value: object):
+        return torch.mul(self, __value)
+
+    def __rmul__(self, __value: object):
         return torch.mul(self, __value)
 
     def __eq__(self, other: object) -> bool:
@@ -185,6 +191,8 @@ def _determine_float_or_dimensions(
         ), f"one is float, but the other is {inputs}"
         return other, inputs
 
+    raise ValueError(f"Unexpected situation. inputs: {inputs}, other: {other}")
+
 
 @dimension_wrap_implements(torch.add)
 def add(
@@ -199,7 +207,10 @@ def add(
 
         return PhlowerDimensionTensor(inputs._tensor)
 
-    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
+    if all(
+        isinstance(v, (int | float)) or v.is_dimensionless
+        for v in (inputs, other)
+    ):
         _, dim = _determine_float_or_dimensions(inputs, other)
         return zero_dimension_tensor().to(dim.device)
 
@@ -219,7 +230,10 @@ def sub(
 
         return PhlowerDimensionTensor(inputs._tensor)
 
-    if all(isinstance(v, float) or v.is_dimensionless for v in (inputs, other)):
+    if all(
+        isinstance(v, (int | float)) or v.is_dimensionless
+        for v in (inputs, other)
+    ):
         _, dim = _determine_float_or_dimensions(inputs, other)
         return zero_dimension_tensor().to(dim.device)
 
