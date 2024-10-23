@@ -1,11 +1,11 @@
-import numpy as np
 import pytest
 import torch
 from phlower._base import PhlowerDimensionTensor, phlower_dimension_tensor
 
 
 def generate_phlower_dimension_tensor(
-    has_dimension: bool = True, inverse: bool = False,
+    has_dimension: bool = True,
+    inverse: bool = False,
 ) -> PhlowerDimensionTensor:
     if has_dimension:
         dimension = {"L": 2, "T": -1}
@@ -17,7 +17,7 @@ def generate_phlower_dimension_tensor(
 
 
 def to_tensor_if_needed(
-    x: PhlowerDimensionTensor | float
+    x: PhlowerDimensionTensor | float,
 ) -> torch.Tensor | float:
     if isinstance(x, PhlowerDimensionTensor):
         return x.to_tensor()
@@ -25,7 +25,7 @@ def to_tensor_if_needed(
 
 
 def to_cuda_if_needed(
-    x: PhlowerDimensionTensor | float
+    x: PhlowerDimensionTensor | float,
 ) -> PhlowerDimensionTensor | float:
     if isinstance(x, PhlowerDimensionTensor):
         return x.to("cuda:0")
