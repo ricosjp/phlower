@@ -1,35 +1,26 @@
+from collections.abc import Callable
+
 import pytest
 import torch
-from phlower._base import PhlowerDimensionTensor, phlower_dimension_tensor
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from phlower._base import PhlowerDimensionTensor
+from phlower.utils.enums import PhysicalDimensionSymbolType
 
 
-def generate_phlower_dimension_tensor(
-    has_dimension: bool = True,
-    inverse: bool = False,
+@st.composite
+def random_phlower_dimension_tensor(
+    draw: Callable,
 ) -> PhlowerDimensionTensor:
-    if has_dimension:
-        dimension = {"L": 2, "T": -1}
-    else:
-        dimension = {}
-    if inverse:
-        dimension = {k: -v for k, v in dimension.items()}
-    return phlower_dimension_tensor(dimension)
+    dimensions = draw(
+        st.lists(
+            elements=st.floats(allow_nan=False, allow_infinity=False),
+            min_size=len(PhysicalDimensionSymbolType),
+            max_size=len(PhysicalDimensionSymbolType),
+        )
+    )
 
-
-def to_tensor_if_needed(
-    x: PhlowerDimensionTensor | float,
-) -> torch.Tensor | float:
-    if isinstance(x, PhlowerDimensionTensor):
-        return x.to_tensor()
-    return x
-
-
-def to_cuda_if_needed(
-    x: PhlowerDimensionTensor | float,
-) -> PhlowerDimensionTensor | float:
-    if isinstance(x, PhlowerDimensionTensor):
-        return x.to("cuda:0")
-    return x
+    return PhlowerDimensionTensor.from_list(dimensions).to(device="cuda:0")
 
 
 @pytest.mark.gpu_test
@@ -37,68 +28,46 @@ def to_cuda_if_needed(
     "op",
     [torch.add, torch.sub, torch.mul, torch.div],
 )
-@pytest.mark.parametrize(
-    "a, b",
-    [
-        (
-            generate_phlower_dimension_tensor(),
-            generate_phlower_dimension_tensor(),
-        ),
-    ],
+@given(
+    st.lists(
+        elements=st.floats(width=32, allow_nan=False, allow_infinity=False),
+        min_size=len(PhysicalDimensionSymbolType),
+        max_size=len(PhysicalDimensionSymbolType),
+    )
 )
-def test__op_tensor_tensor_with_unit_on_gpu(
-    op: callable,
-    a: PhlowerDimensionTensor | float,
-    b: PhlowerDimensionTensor | float,
+@settings(deadline=None)
+def test__op_dimension_tensor_with_same_values_on_gpu(
+    op: Callable[
+        [PhlowerDimensionTensor, PhlowerDimensionTensor], PhlowerDimensionTensor
+    ],
+    dimensions: list[float],
 ):
-    c = op(to_cuda_if_needed(a), to_cuda_if_needed(b))
+    a = PhlowerDimensionTensor.from_list(dimensions).to("cuda:0")
+    b = PhlowerDimensionTensor.from_list(dimensions).to("cuda:0")
+    c = op(a, b)
 
-    cpu_c = op(a, b)
+    cpu_c = op(a.to("cpu"), b.to("cpu"))
     assert c == cpu_c.to("cuda:0")
     assert c.device == torch.device("cuda:0")
 
 
 @pytest.mark.gpu_test
 @pytest.mark.parametrize(
-    "a, b",
-    [
-        (
-            2.3,
-            generate_phlower_dimension_tensor(),
-        ),
-        (
-            generate_phlower_dimension_tensor(),
-            2.3,
-        ),
-    ],
+    "op",
+    [torch.mul, torch.div],
 )
-def test__mul_tensor_scalar_with_unit_on_gpu(
-    a: PhlowerDimensionTensor | float,
-    b: PhlowerDimensionTensor | float,
+@given(random_phlower_dimension_tensor(), st.floats())
+def test__op_dimension_tensor_and_float_on_gpu(
+    op: Callable[
+        [PhlowerDimensionTensor, PhlowerDimensionTensor], PhlowerDimensionTensor
+    ],
+    a: PhlowerDimensionTensor,
+    b: float,
 ):
-    c = torch.mul(to_cuda_if_needed(a), to_cuda_if_needed(b))
+    c = op(a, b)
 
-    assert c == generate_phlower_dimension_tensor().to("cuda:0")
-    assert c.device == torch.device("cuda:0")
-
-
-@pytest.mark.gpu_test
-def test__div_tensor_scalar_with_unit_on_gpu():
-    a = generate_phlower_dimension_tensor()
-    b = 2.3
-    c = torch.div(to_cuda_if_needed(a), to_cuda_if_needed(b))
-
-    assert c == generate_phlower_dimension_tensor().to("cuda:0")
-    assert c.device == torch.device("cuda:0")
-
-
-@pytest.mark.gpu_test
-def test__div_scalar_tensor_with_unit_on_gpu():
-    a = 2.3
-    b = generate_phlower_dimension_tensor()
-    c = torch.div(to_cuda_if_needed(a), to_cuda_if_needed(b))
-
-    assert c == generate_phlower_dimension_tensor(inverse=True).to("cuda:0")
+    cpu_c = op(a.to("cpu"), b)
+    assert c == cpu_c.to("cuda:0")
     assert c.device == torch.device("cuda:0")
 
 
@@ -107,29 +76,14 @@ def test__div_scalar_tensor_with_unit_on_gpu():
     "op",
     [torch.add, torch.sub, torch.mul, torch.div],
 )
-@pytest.mark.parametrize(
-    "a, b",
-    [
-        (
-            generate_phlower_dimension_tensor(has_dimension=False),
-            generate_phlower_dimension_tensor(has_dimension=False),
-        ),
-        (
-            2.3,
-            generate_phlower_dimension_tensor(has_dimension=False),
-        ),
-        (
-            generate_phlower_dimension_tensor(has_dimension=False),
-            2.3,
-        ),
+@given(st.floats())
+def test__op_zero_dimension_tensor_on_gpu(
+    op: Callable[
+        [PhlowerDimensionTensor, PhlowerDimensionTensor], PhlowerDimensionTensor
     ],
-)
-def test__op_tensor_tensor_without_unit_on_gpu(
-    op: callable,
-    a: PhlowerDimensionTensor | float,
-    b: PhlowerDimensionTensor | float,
+    x: float,
 ):
-    c = op(to_cuda_if_needed(a), to_cuda_if_needed(b))
-
+    a = PhlowerDimensionTensor().to("cuda:0")
+    c = op(a, x)
     assert c.device == torch.device("cuda:0")
     assert c.is_dimensionless

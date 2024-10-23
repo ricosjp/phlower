@@ -29,7 +29,7 @@ pytest = "^8.0.2"
 mypy = "^1.8.0"
 pytest-cov = "^4.1.0"
 ruff = "^0.4.10"
-hypothesis = "^6.108.2"
+hypothesis = {extras = ["numpy"], version = "^6.115.3"}
 
 
 [tool.poetry.group.docs.dependencies]
