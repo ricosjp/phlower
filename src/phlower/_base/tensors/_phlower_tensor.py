@@ -429,11 +429,20 @@ class PhlowerTensor(IPhlowerTensor):
 
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
-        # NOTE: Assume flags for the first tensor is preserved
-        is_time_series = _recursive_resolve(
-            args, "is_time_series", return_first_only=True
+        tensor_args = [
+            a for a in args if isinstance(a, PhlowerTensor | list | tuple)]
+        if len(tensor_args) == 0:
+            classes = [a.__class__ for a in args]
+            raise ValueError(f"Invalid input classes: {classes}")
+
+        list_is_time_series = _recursive_resolve(
+            tensor_args, "is_time_series"
         )
-        is_voxel = _recursive_resolve(args, "is_voxel", return_first_only=True)
+        list_is_voxel = _recursive_resolve(
+            tensor_args, "is_voxel"
+        )
+        is_time_series = np.any(list_is_time_series)
+        is_voxel = np.any(list_is_voxel)
 
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
