@@ -7,6 +7,7 @@ import einops
 import numpy as np
 import torch
 from pipe import select
+from typing_extensions import Self
 
 from phlower._base._dimension import PhysicalDimensions
 from phlower._base.tensors._dimension_tensor import (
@@ -248,7 +249,7 @@ class PhlowerTensor(IPhlowerTensor):
     def __pow__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.pow(self, other)
 
-    def __setitem__(self, key: str, value: float):
+    def __setitem__(self, key: str, value: float) -> Self:
         if isinstance(key, PhlowerTensor):
             self._tensor[key.to_tensor()] = value
         else:
