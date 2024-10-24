@@ -68,6 +68,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         disable_en_equivariance: bool = False,
         invariant: bool = False,
         centering: bool = False,
+        coeff_amplify: float = 1.0,
     ) -> None:
         super().__init__()
 
@@ -76,6 +77,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self._invariant = invariant
         self._centering = centering
         self._create_linear_weight = create_linear_weight
+        self._coeff_amplify = coeff_amplify
 
         if self._disable_en_equivariance:
             self._mlp = MLP(
@@ -167,7 +169,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
             h = h - mean
 
-        h = self._mlp(phlower_tensor_collection({"h": h}))
+        h = self._mlp(
+            phlower_tensor_collection({"h": h * self._coeff_amplify}))
         assert h.dimension.is_dimensionless
 
         if self._centering:
