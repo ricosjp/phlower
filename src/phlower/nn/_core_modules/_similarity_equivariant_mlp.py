@@ -62,7 +62,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = False,
+        bias: bool = True,
         create_linear_weight: bool = False,
         norm_function_name: str = "identity",
         disable_en_equivariance: bool = False,
@@ -152,12 +152,12 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
         dict_dimension = h.dimension.to_dict()
 
-        dict_scales = {
+        dict_scales_for_convert = {
             k: v ** dict_dimension[k] for k, v in dict_scales.items()
         }
 
         # Make h dimensionless
-        for v in dict_scales.values():
+        for v in dict_scales_for_convert.values():
             h = _functions.tensor_times_scalar(h, 1 / v)
 
         if self._centering:
@@ -180,7 +180,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             return h
 
         # Come back to the original dimension
-        for v in dict_scales.values():
+        for v in dict_scales_for_convert.values():
             h = _functions.tensor_times_scalar(h, v)
 
         return h

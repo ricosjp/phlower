@@ -48,7 +48,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = False,
+        bias: bool = True,
         create_linear_weight: bool = False,
         norm_function_name: str = "identity",
     ) -> None:
