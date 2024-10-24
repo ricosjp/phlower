@@ -81,8 +81,16 @@ class PhlowerDimensionTensor:
             )
             return
 
+        assert isinstance(tensor, torch.Tensor), f"Unexpected type: {tensor}"
+
         self._tensor = tensor
         assert self._tensor.shape[0] == len(PhysicalDimensionSymbolType)
+
+    def __sub__(self, __value: object):
+        return torch.sub(self, __value)
+
+    def __rsub__(self, __value: object):
+        return torch.sub(self, __value)
 
     def __add__(self, __value: object):
         return torch.add(self, __value)
@@ -95,6 +103,12 @@ class PhlowerDimensionTensor:
 
     def __rmul__(self, __value: object):
         return torch.mul(self, __value)
+
+    def __truediv__(self, __value: object):
+        return torch.div(self, __value)
+
+    def __rtruediv__(self, __value: object):
+        return torch.div(__value, self)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PhlowerDimensionTensor):
@@ -188,11 +202,15 @@ def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
 def _determine_device(
     *args: PhlowerDimensionTensor | torch.Tensor | float | int,
 ) -> torch.device:
-    devices = {v.device for v in args if isinstance(v, PhlowerDimensionTensor)}
+    devices = {
+        v.device
+        for v in args
+        if isinstance(v, PhlowerDimensionTensor | torch.Tensor)
+    }
 
     if len(devices) != 1:
         raise PhlowerDimensionTensor(
-            f"Cannot determine unique device. {devices}]"
+            f"Cannot determine unique device. {devices}. args: {args}"
         )
 
     return devices.pop()
@@ -215,7 +233,7 @@ def _convert_phlower_dimension_tensors(
 def add(
     inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
 ) -> PhlowerDimensionTensor:
-    device = _determine_device(inputs)
+    device = _determine_device(inputs, other)
     inputs, other = _convert_phlower_dimension_tensors(
         inputs, other, device=device
     )
@@ -231,7 +249,7 @@ def add(
 def sub(
     inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
 ) -> PhlowerDimensionTensor:
-    device = _determine_device(inputs)
+    device = _determine_device(inputs, other)
     inputs, other = _convert_phlower_dimension_tensors(
         inputs, other, device=device
     )
@@ -260,7 +278,7 @@ def mul(
     inputs: PhlowerDimensionTensor | torch.Tensor,
     other: PhlowerDimensionTensor | torch.Tensor,
 ) -> PhlowerDimensionTensor:
-    device = _determine_device(inputs)
+    device = _determine_device(inputs, other)
     _inputs, _other = _convert_phlower_dimension_tensors(
         inputs, other, device=device
     )
@@ -271,7 +289,7 @@ def mul(
 def div(
     inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
 ) -> PhlowerDimensionTensor:
-    device = _determine_device(inputs)
+    device = _determine_device(inputs, other)
     _inputs, _other = _convert_phlower_dimension_tensors(
         inputs, other, device=device
     )

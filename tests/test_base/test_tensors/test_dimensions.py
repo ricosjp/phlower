@@ -69,7 +69,7 @@ def test__cat_raise_dimension_incompatible(unit1: list[int], unit2: list[int]):
         torch.cat([unit1, unit2], dim=0)
 
 
-@given(st.floats())
+@given(st.floats(width=32))
 def test__add_with_float_and_non_dimensions(x: float):
     dimension = PhlowerDimensionTensor()
 
@@ -80,7 +80,18 @@ def test__add_with_float_and_non_dimensions(x: float):
     assert calculated == dimension
 
 
-@given(st.floats())
+@given(st.floats(width=32))
+def test__sub_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+
+    calculated = dimension - x
+    assert calculated == dimension
+
+    calculated = x - dimension
+    assert calculated == dimension
+
+
+@given(st.floats(width=32))
 def test__mul_with_float_and_non_dimensions(x: float):
     dimension = PhlowerDimensionTensor()
 
@@ -88,4 +99,16 @@ def test__mul_with_float_and_non_dimensions(x: float):
     assert calculated == dimension
 
     calculated = x * dimension
+    assert calculated == dimension
+
+
+@given(st.floats(width=32))
+def test__div_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+    eps = 1e-5
+
+    calculated = dimension / (x + eps)
+    assert calculated == dimension
+
+    calculated = x / dimension
     assert calculated == dimension
