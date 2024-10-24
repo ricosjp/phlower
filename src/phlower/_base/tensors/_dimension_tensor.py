@@ -104,7 +104,7 @@ class PhlowerDimensionTensor:
 
     def to_dict(self) -> dict[str, float]:
         return {
-            k: self._tensor[v.value].numpy().item()
+            k: self._tensor[v.value].cpu().numpy().item()
             for k, v in PhysicalDimensionSymbolType.__members__.items()
         }
 
