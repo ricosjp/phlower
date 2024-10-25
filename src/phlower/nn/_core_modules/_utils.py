@@ -43,6 +43,9 @@ class ExtendedLinearList(torch.nn.Module):
     def __len__(self) -> int:
         return len(self._linears)
 
+    def __getitem__(self, idx: int) -> torch.nn.Linear:
+        return self._linears[idx]
+
     def forward_part(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
 
