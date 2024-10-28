@@ -165,9 +165,19 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
     ) -> PhlowerTensor:
         if self._mul_order == "ah_w":
             h = self._propagate(x, supports)
+            _validate_rank0_before_applying_nonlinear(
+                h,
+                is_bias=self._weight.has_bias(),
+                activations=self._weight.has_nonlinear_activations(),
+            )
             return self._weight.forward(h)
 
         if self._mul_order == "a_hw":
+            _validate_rank0_before_applying_nonlinear(
+                x,
+                is_bias=self._weight.has_bias(),
+                activations=self._weight.has_nonlinear_activations(),
+            )
             h = self._weight.forward(x)
             return self._propagate(h)
 
@@ -179,6 +189,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         if x.rank() == 0:
             coeff = self._coefficient_network.forward(x)
         else:
+            # HACK Need to FIX ??
             coeff = self._coefficient_network.forward(self._contraction(x))
 
         return _functions.einsum(
@@ -332,4 +343,23 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
                 h[:, 0, 1] - h[:, 1, 0],
             ],
             dim=1,
+        )
+
+
+def _has_nonlinear_activations(activations: list[str]) -> bool:
+    return len(v != _functions.identity.__name__ for v in activations) > 0
+
+
+def _validate_rank0_before_applying_nonlinear(
+    x: PhlowerTensor, is_bias: bool, activations: list[str]
+) -> None:
+    is_nonlinear_activations = _has_nonlinear_activations(activations)
+    if x.rank() == 0:
+        return
+
+    if is_nonlinear_activations or is_bias:
+        raise ValueError(
+            "Cannot apply nonlinear operator for rank > 0 tensor."
+            "Set bias and actications to "
+            "apply linear operation for rank > 0 tensor"
         )

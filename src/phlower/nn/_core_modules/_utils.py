@@ -25,6 +25,7 @@ class ExtendedLinearList(torch.nn.Module):
         self._validate_args()
 
         self._n_chains = len(self._nodes)
+        self._is_bias = bias
         self._linears = torch.nn.ModuleList(
             [
                 torch.nn.Linear(n1, n2, bias=bias)
@@ -45,6 +46,15 @@ class ExtendedLinearList(torch.nn.Module):
 
     def __getitem__(self, idx: int) -> torch.nn.Linear:
         return self._linears[idx]
+
+    def has_bias(self) -> bool:
+        return self._is_bias
+
+    def has_nonlinear_activations(self) -> bool:
+        return (
+            len(v != _functions.identity.__name__ for v in self._activations)
+            > 0
+        )
 
     def forward_part(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains

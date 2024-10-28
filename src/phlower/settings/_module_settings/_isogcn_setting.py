@@ -13,7 +13,7 @@ from phlower.settings._interface import (
 )
 
 
-class IsoGCNPropagationType(Enum, str):
+class IsoGCNPropagationType(str, Enum):
     convolution = "convolution"  # gradient
     contraction = "conttraction"  # divergent
     rotation = "rotation"
@@ -29,7 +29,7 @@ class _SubNetworkSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
 
-class IsoGCNNeumannLinearType(Enum, str):
+class IsoGCNNeumannLinearType(str, Enum):
     identity = "identity"
     reuse_graph_weight = "reuse_graph_weight"
     create_new = "create_new"
@@ -104,21 +104,6 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
 
         return vals
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def fill_empty_activations_dropouts(cls, values: dict) -> dict:
-        n_nodes = len(values.get("nodes"))
-        activations = values.get("activations", [])
-        dropouts = values.get("dropouts", [])
-
-        if len(activations) == 0:
-            values["activations"] = ["identity" for _ in range(n_nodes - 1)]
-
-        if len(dropouts) == 0:
-            values["dropouts"] = [0 for _ in range(n_nodes - 1)]
-
-        return values
 
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
