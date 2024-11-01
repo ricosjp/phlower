@@ -3,11 +3,20 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
 from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
     PhlowerSparseUnsupportedError,
 )
+
+
+@given(st.lists(st.floats(width=32), min_size=1, max_size=100))
+def test__create_default_phlower_tensor(values: list[float]):
+    pht = phlower_tensor(values)
+    assert pht.is_time_series is False
+    assert pht.is_voxel is False
 
 
 def test__create_same_initialized_object_from_list_and_tensor():
@@ -200,11 +209,11 @@ def test__tensor_div_scalar():
     c = a / 3.0
 
     ap = PhlowerTensor(a, dims)
-    cp = ap / 3.0
+    cp: PhlowerTensor = ap / 3.0
 
     np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
 
-    assert cp._dimension_tensor == dims
+    assert cp.dimension == dims
 
 
 def test__scalar_div_tensor():
@@ -396,3 +405,20 @@ def test__clone():
     for k, v in original_dimension_dict.items():
         assert cloned.dimension.to_dict()[k] == v
         assert pht.dimension.to_dict()[k] == 2 * v
+
+
+@pytest.mark.parametrize(
+    "inputs, nan",
+    [
+        ([0.1, 0.2, float("nan")], 0.0),
+        ([float("nan"), 0.2, float("nan")], 10.0),
+    ],
+)
+def test__nan_to_num(inputs: list[float], nan: float):
+    tensor = phlower_tensor(inputs)
+    new_tensor: PhlowerTensor = torch.nan_to_num(tensor, nan=nan)
+    tensor[torch.isnan(tensor)] = nan
+
+    assert not torch.any(torch.isnan(new_tensor.to_tensor()))
+
+    np.testing.assert_array_almost_equal(new_tensor.numpy(), tensor.numpy())

@@ -4,6 +4,7 @@ import torch
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.nn._core_modules import _functions
+from phlower.utils.enums import ActivationType
 from phlower.utils.exceptions import PhlowerInvalidActivationError
 
 
@@ -47,14 +48,32 @@ class ExtendedLinearList(torch.nn.Module):
     def __getitem__(self, idx: int) -> torch.nn.Linear:
         return self._linears[idx]
 
+    def has_nonlinearity(self) -> bool:
+        if self._is_bias:
+            return True
+
+        if self.has_nonlinear_activations():
+            return True
+
+        if self.has_dropout():
+            return True
+
+        return False
+
     def has_bias(self) -> bool:
         return self._is_bias
 
     def has_nonlinear_activations(self) -> bool:
-        return (
-            len(v != _functions.identity.__name__ for v in self._activations)
-            > 0
+        n_nonlinear = sum(
+            1 for v in self._activations if v != ActivationType.identity
         )
+        return n_nonlinear > 0
+
+    def has_dropout(self) -> bool:
+        if len(self._dropouts) == 0:
+            return False
+
+        return sum(self._dropouts) > 0
 
     def forward_part(self, x: PhlowerTensor, *, index: int) -> PhlowerTensor:
         assert index < self._n_chains
@@ -106,30 +125,38 @@ class ActivationSelector:
 
     @staticmethod
     def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
-        return ActivationSelector._REGISTERED_ACTIVATIONS[name]
+        type_name = ActivationType[name]
+        return ActivationSelector._REGISTERED_ACTIVATIONS[type_name.value]
 
     @staticmethod
     def select_inverse(
         name: str,
     ) -> Callable[[torch.Tensor], torch.Tensor]:
+        type_name = ActivationType[name]
         return ActivationSelector._REGISTERED_ACTIVATIONS[
-            ActivationSelector._inverse_activation_name(name)
+            ActivationSelector._inverse_activation_name(type_name).value
         ]
 
     @staticmethod
-    def _inverse_activation_name(activation_name: str) -> str:
-        if activation_name == "identity":
-            return "identity"
-        if activation_name == "leaky_relu0p5":
-            return "inversed_leaky_relu0p5"
-        if activation_name == "smooth_leaky_relu":
-            return "inversed_smooth_leaky_relu"
-        if activation_name == "tanh":
-            return "truncated_atanh"
+    def _inverse_activation_name(
+        activation_name: ActivationType,
+    ) -> ActivationType:
+        _to_inverse: dict[ActivationType, ActivationType] = {
+            ActivationType.identity: ActivationType.identity,
+            ActivationType.leaky_relu0p5: ActivationType.inversed_leaky_relu0p5,
+            ActivationType.smooth_leaky_relu: (
+                ActivationType.inversed_smooth_leaky_relu
+            ),
+            ActivationType.tanh: ActivationType.truncated_atanh,
+        }
 
-        raise PhlowerInvalidActivationError(
-            f"Cannot inverse for {activation_name}"
-        )
+        inverse_type = _to_inverse.get(activation_name)
+
+        if inverse_type is None:
+            raise PhlowerInvalidActivationError(
+                f"Cannot inverse for {activation_name}"
+            )
+        return inverse_type
 
     @staticmethod
     def is_exists(name: str) -> bool:

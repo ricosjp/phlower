@@ -8,6 +8,7 @@ from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -85,6 +86,33 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
+
+    def confirm(self, self_module: IModuleSetting) -> None:
+        input_keys = self_module.get_input_keys()
+        if not self.neumann_setting.use_neumann:
+            if len(input_keys) != 1:
+                raise ValueError(
+                    "Only one input is allowed "
+                    "when neumann boundary is not considered. "
+                    f"{input_keys=}"
+                )
+            return
+
+        if len(input_keys) != 2:
+            raise ValueError(
+                "Two inputs are necessary "
+                "when neumann boundary is considered. "
+                f"{input_keys=}"
+            )
+
+        if self.neumann_setting.neumann_input_name not in input_keys:
+            raise ValueError(
+                f"neumann_input_name is not found in input_keys."
+                f"neumann_input_name={self.neumann_setting.neumann_input_name}"
+                f"{input_keys=}"
+            )
+
+        return
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if (len(input_dims) == 0) or (len(input_dims) >= 3):

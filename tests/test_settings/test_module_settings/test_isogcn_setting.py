@@ -227,7 +227,9 @@ def test__reference_is_not_necessary():
 _TEST_DATA_DIR = pathlib.Path(__file__).parent / "data/isogcn_setting"
 
 
-@pytest.mark.parametrize("yaml_file", ["check_isogcn_nodes.yml"])
+@pytest.mark.parametrize(
+    "yaml_file", ["check_isogcn_nodes.yml", "check_isogcn_neumann.yml"]
+)
 def test__nodes_after_resolve(yaml_file: str):
     with open(_TEST_DATA_DIR / yaml_file) as fr:
         content = yaml.load(fr, Loader=yaml.SafeLoader)
@@ -240,6 +242,27 @@ def test__nodes_after_resolve(yaml_file: str):
     for key, value in content["misc"]["tests"].items():
         target = setting.network.search_module_setting(key)
         assert target.get_n_nodes() == value
+
+
+@pytest.mark.parametrize(
+    "yaml_file, msg",
+    [
+        ("error_missing_neumann.yml", "Two inputs are necessary"),
+        ("error_unnecessary_neumann.yml", "Only one input is allowed"),
+        (
+            "error_not_matched_neumann.yml",
+            "neumann_input_name is not found in input_keys",
+        ),
+    ],
+)
+def test__raise_error_for_invalid_setting(yaml_file: str, msg: str):
+    with open(_TEST_DATA_DIR / yaml_file) as fr:
+        content = yaml.load(fr, Loader=yaml.SafeLoader)
+
+    with pytest.raises(ValueError) as ex:
+        setting = PhlowerModelSetting(**content["model"])
+        setting.network.resolve(is_first=True)
+        assert msg in str(ex)
 
 
 # endregion
