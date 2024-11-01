@@ -1,0 +1,71 @@
+misc:
+
+  tests:
+    IsoGCN0: [12, 20, 5]
+    GCN1: [5, 20, 5]
+    GCN2: [5, 5]
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: IsoGCN
+        name: IsoGCN0
+        input_keys:
+          - feature1
+        output_key: isogcn0
+        destinations:
+          - GCN1
+        nn_parameters:
+          nodes: [-1, 20, 5]
+          isoam_names: ["support1"]
+          self_network:
+            activations: ["Identity"]
+          coefficient_network:
+            activations: ["tanh", "tanh"]
+
+      - nn_type: GCN
+        name: GCN1
+        input_keys:
+          - isogcn0
+        output_key: gcn1
+        destinations:
+          - GCN2
+        nn_parameters:
+          nodes: [-1, 20, 5]
+          support_name: support1
+
+      - nn_type: GCN
+        name: GCN2
+        input_keys:
+          - gcn1
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          support_name: support1
+

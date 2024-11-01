@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from functools import reduce
 from typing import Literal
 
 import torch
 
-import phlower
-from phlower import ISimulationField
 from phlower._base.tensors import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _functions, _utils
 from phlower.nn._interface_module import (
@@ -16,7 +14,6 @@ from phlower.nn._interface_module import (
     IReadonlyReferenceGroup,
 )
 from phlower.settings._module_settings._isogcn_setting import (
-    IsoGCNNeumannLinearType,
     IsoGCNPropagationType,
     IsoGCNSetting,
 )
@@ -35,7 +32,25 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             IsoGCN: IsoGCN object
         """
-        return IsoGCN(**setting.__dict__)
+        return IsoGCN(
+            nodes=setting.nodes,
+            isoam_names=setting.isoam_names,
+            propagations=setting.propagations,
+            use_self_network=setting.self_network.use_network,
+            self_network_activations=setting.self_network.activations,
+            self_network_dropouts=setting.self_network.dropouts,
+            self_network_bias=setting.self_network.bias,
+            use_coefficient=setting.coefficient_network.use_network,
+            coefficient_activations=setting.coefficient_network.activations,
+            coefficient_dropouts=setting.coefficient_network.dropouts,
+            coefficient_bias=setting.coefficient_network.bias,
+            mul_order=setting.mul_order,
+            to_symmetric=setting.to_symmetric,
+            neumann_active=setting.neumann_setting.use_neumann,
+            neumann_factor=setting.neumann_setting.factor,
+            neumann_input_name=setting.neumann_setting.neumann_input_name,
+            inversed_moment_name=setting.neumann_setting.inversed_moment_name,
+        )
 
     @classmethod
     def get_nn_name(cls) -> str:
@@ -52,67 +67,87 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
 
     def __init__(
         self,
-        nodes: list[int],
-        support_names: list[str],
+        nodes: list[int] | None,
+        isoam_names: list[str],
         propagations: list[IsoGCNPropagationType],
-        subchain_activations: list[str],
-        subchain_dropouts: list[str],
-        subchain_bias: bool,
-        coefficient_activations: list[str],
-        coefficient_dropouts: list[str],
-        coefficient_bias: bool,
+        use_self_network: bool,
+        self_network_activations: list[str] | None = None,
+        self_network_dropouts: list[str] | None = None,
+        self_network_bias: bool | False = False,
+        use_coefficient: bool = False,
+        coefficient_activations: list[str] | None = None,
+        coefficient_dropouts: list[str] | None = None,
+        coefficient_bias: bool | None = False,
         mul_order: Literal["ah_w", "a_hw"] = "ah_w",
+        to_symmetric: bool = False,
         neumann_active: bool = False,
-        neumann_linear_model_type: IsoGCNNeumannLinearType = (
-            IsoGCNNeumannLinearType.reuse_graph_weight
-        ),
         neumann_factor: float = 1.0,
-        neumann_apply_sigmoid_ratio: bool = False,
+        neumann_input_name: str | None = None,
         inversed_moment_name: str = "",
     ) -> None:
         super().__init__()
 
-        self._weight = _utils.ExtendedLinearList(
-            nodes=[nodes[0], nodes[-1]],
-            activations=subchain_activations,
-            dropouts=subchain_dropouts,
-            bias=subchain_bias,
-        )
-        self._use_coefficient = True
-        self._coefficient_network = _utils.ExtendedLinearList(
+        self._use_self_network = use_self_network
+        if self._use_self_network:
+            self._self_network = self._create_layer(
+                active=use_self_network,
+                nodes=[nodes[0], nodes[-1]],
+                activations=self_network_activations,
+                dropouts=self_network_dropouts,
+                bias=self_network_bias,
+            )
+
+        self._use_coefficient = use_coefficient
+        self._coefficient_network = self._create_layer(
+            active=use_coefficient,
             nodes=nodes,
             activations=coefficient_activations,
             dropouts=coefficient_dropouts,
             bias=coefficient_bias,
         )
+
         self._propagations = propagations
         self._nodes = nodes
-        self._support_names = support_names
+        self._isoam_names = isoam_names
         self._mul_order = mul_order
+        self._to_symmetric = to_symmetric
 
         self._inversed_moment_name = inversed_moment_name
         self._neumann_active = neumann_active
-        self._neumann_linear_type = neumann_linear_model_type
         self._neumann_factor = neumann_factor
-        self._neumann_apply_sigmoid_ratio = neumann_apply_sigmoid_ratio
+        self._neumann_input_name = neumann_input_name
         self._neumann_layer = self._create_neumann_layer()
 
-    def _create_neumann_layer(self) -> Callable[[PhlowerTensor], PhlowerTensor]:
-        if self._neumann_linear_type == IsoGCNNeumannLinearType.identity:
-            return phlower.nn.functions.identity
+    def _create_layer(
+        self,
+        active: bool,
+        nodes: list[int],
+        activations: list[str],
+        dropouts: list[float],
+        bias: bool,
+    ) -> _utils.ExtendedLinearList | None:
+        if not active:
+            return None
 
-        if self._neumann_linear_type == IsoGCNNeumannLinearType.create_new:
-            return torch.nn.Linear(*self._weight[0].weight.shape, bias=False)
-
-        if (
-            self._neumann_linear_type
-            == IsoGCNNeumannLinearType.reuse_graph_weight
-        ):
-            return self._weight[0]
-
-        raise NotImplementedError(
-            f"{self._neumann_linear_type} is not implemented."
+        return _utils.ExtendedLinearList(
+            nodes=nodes,
+            activations=activations,
+            dropouts=dropouts,
+            bias=bias,
         )
+
+    def _create_neumann_layer(
+        self,
+    ) -> Callable[[PhlowerTensor], PhlowerTensor] | None:
+        if not self._neumann_active:
+            return None
+
+        if self._self_network is None:
+            raise ValueError(
+                "Use self_network when neumannn layer is necessary. "
+                "It is because neumann layer refers to weight of self_network."
+            )
+        return self._self_network[0]
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -144,41 +179,61 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             len(data) <= 2
         ), f"At most two inputs are allowed. input: {len(data)}"
 
-        supports = [field_data[name] for name in self._support_names]
-        h = self._forward(data[0], supports=supports)
+        supports = [field_data[name] for name in self._isoam_names]
+        neumann_value = data.pop(self._neumann_input_name, None)
+        x = data.unique_item()
+
+        h = self._forward_self_network(x, supports=supports)
 
         if self._neumann_active:
             h = self._add_neumann(
                 h,
-                neumann_condition=data[1],
+                neumann_value=neumann_value,
                 inversed_moment=field_data[self._inversed_moment_name],
             )
+
+        if self._to_symmetric:
+            # it may be used for velocity
+            h = (h + h.rearrange("n x1 x2 f -> n x2 x1 f")) / 2.0
 
         if not self._use_coefficient:
             return h
 
-        h = self._forward_coefficient_network(h)
+        coeff = self._forward_coefficient_network(x)
+        _functions.einsum(
+            "i...f,if->i...f",
+            h,
+            coeff,
+            dimension=h.dimension,
+            is_time_series=h.is_time_series,
+            is_voxel=h.is_voxel,
+        )
         return h
 
-    def _forward(
+    def _forward_self_network(
         self, x: PhlowerTensor, supports: list[PhlowerTensor]
     ) -> PhlowerTensor:
+        if not self._use_self_network:
+            return self._propagate(x, supports)
+
+        assert self._self_network is not None
+
         if self._mul_order == "ah_w":
             h = self._propagate(x, supports)
             _validate_rank0_before_applying_nonlinear(
                 h,
-                is_bias=self._weight.has_bias(),
-                activations=self._weight.has_nonlinear_activations(),
+                is_bias=self._self_network.has_bias(),
+                activations=self._self_network.has_nonlinear_activations(),
             )
-            return self._weight.forward(h)
+            return self._self_network.forward(h)
 
         if self._mul_order == "a_hw":
             _validate_rank0_before_applying_nonlinear(
                 x,
-                is_bias=self._weight.has_bias(),
-                activations=self._weight.has_nonlinear_activations(),
+                is_bias=self._self_network.has_bias(),
+                activations=self._self_network.has_nonlinear_activations(),
             )
-            h = self._weight.forward(x)
+            h = self._self_network.forward(x)
             return self._propagate(h)
 
         raise NotImplementedError(
@@ -189,54 +244,38 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         if x.rank() == 0:
             coeff = self._coefficient_network.forward(x)
         else:
-            # HACK Need to FIX ??
-            coeff = self._coefficient_network.forward(self._contraction(x))
+            coeff = self._coefficient_network.forward(_functions.contraction(x))
 
-        return _functions.einsum(
-            "i...f,if->i...f",
-            x,
-            coeff,
-            dimension=x.dimension,
-            is_time_series=x.is_time_series,
-            is_voxel=x.is_voxel,
-        )
+        return coeff
 
     def _propagate(
         self, x: PhlowerTensor, supports: list[PhlowerTensor]
     ) -> PhlowerTensor:
-        h = reduce(
-            lambda y, f: f(y, supports),
-            [self._select_propagations(name) for name in self._propagations],
-            initial=x,
-        )
+        h = x
+        for name in self._propagations:
+            h = self._select_propagations(name)(h, supports)
         return h
 
     def _add_neumann(
         self,
         gradient: PhlowerTensor,
-        neumann_condition: PhlowerTensor,
+        neumann_value: PhlowerTensor,
         inversed_moment: PhlowerTensor,
     ) -> PhlowerTensor:
-        neumann_condition = torch.nan_to_num(neumann_condition, nan=0.0)
+        neumann_value = torch.nan_to_num(neumann_value, nan=0.0)
         # NOTE: Shape of inversed_moment is Shape(N, 3, 3, 1)
         neumann = (
             _functions.einsum(
                 "ikl,il...f->ik...f",
                 inversed_moment[..., 0],
-                self._neumann_layer(neumann_condition),
-                dimension=neumann_condition.dimension,
-                is_time_series=neumann_condition.is_time_series,
-                is_voxel=neumann_condition.is_voxel,
+                self._neumann_layer(neumann_value),
+                dimension=neumann_value.dimension,
+                is_time_series=neumann_value.is_time_series,
+                is_voxel=neumann_value.is_voxel,
             )
             * self._neumann_factor
         )
-        if self._neumann_apply_sigmoid_ratio:
-            sigmoid_coeff = torch.sigmoid(self._coefficient_network[0].weight)
-            return (
-                sigmoid_coeff * gradient + (1.0 - sigmoid_coeff) * neumann
-            ) * 2
-        else:
-            return gradient + neumann
+        return gradient + neumann
 
     def _select_propagations(
         self, name: str | IsoGCNPropagationType
@@ -249,6 +288,9 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
 
         if name == IsoGCNPropagationType.rotation:
             return self._rotation
+
+        if name == IsoGCNPropagationType.tensor_product:
+            return self._tensor_product
 
         raise NotImplementedError(f"{name} is not implemented.")
 
@@ -363,3 +405,5 @@ def _validate_rank0_before_applying_nonlinear(
             "Set bias and actications to "
             "apply linear operation for rank > 0 tensor"
         )
+
+    return

@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 @overload
 def phlower_tensor(
-    tensor: torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool = False,
     is_voxel: bool = False,
@@ -51,14 +51,14 @@ def phlower_tensor(
 
 @overload
 def phlower_tensor(
-    tensor: torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     pattern: str = "n...",
 ) -> PhlowerTensor: ...
 
 
 def phlower_tensor(
-    tensor: list | torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
@@ -69,7 +69,7 @@ def phlower_tensor(
             logger.warning("Input dimension_tensor are ignored.")
         return tensor
 
-    if isinstance(tensor, list):
+    if isinstance(tensor, list | np.ndarray):
         tensor = torch.tensor(tensor)
 
     dimension_tensor = _resolve_dimension_arg(dimension)
@@ -281,6 +281,15 @@ class PhlowerTensor(IPhlowerTensor):
     @property
     def device(self) -> torch.device:
         return self._tensor.device
+
+    def transpose(self, dim0: int, dim1: int) -> PhlowerTensor:
+        _tensor = self._tensor.transpose(dim0, dim1)
+        return PhlowerTensor(
+            tensor=_tensor,
+            dimension_tensor=self._dimension_tensor,
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
+        )
 
     def numel(self) -> int:
         return torch.numel(self._tensor)

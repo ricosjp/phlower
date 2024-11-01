@@ -15,12 +15,13 @@ from phlower.settings._interface import (
 
 class IsoGCNPropagationType(str, Enum):
     convolution = "convolution"  # gradient
-    contraction = "conttraction"  # divergent
+    contraction = "contraction"  # divergent
+    tensor_product = "tensor_product"
     rotation = "rotation"
 
 
 class _SubNetworkSetting(pydantic.BaseModel):
-    is_active: bool = True
+    use_network: bool = True
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
@@ -29,62 +30,73 @@ class _SubNetworkSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
 
-class IsoGCNNeumannLinearType(str, Enum):
-    identity = "identity"
-    reuse_graph_weight = "reuse_graph_weight"
-    create_new = "create_new"
-
-
 class _NeumannSetting(pydantic.BaseModel):
-    is_active: bool = True
-    linear_model_type: IsoGCNNeumannLinearType = (
-        IsoGCNNeumannLinearType.identity
-    )
+    use_neumann: bool = True
     factor: float = 1.0
-    apply_sigmoid_ratio: bool = False
     inversed_moment_name: str | None = None
+    neumann_input_name: str | None = None
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     @pydantic.model_validator(mode="after")
     def check_inversed_moment_name_is_not_none(self) -> Self:
-        if not self.is_active:
+        if not self.use_neumann:
             return self
 
-        assert (
-            self.inversed_moment_name is not None
-        ), "inversed_moment_name must be determined when using neumann IsoGCN."
+        if self.inversed_moment_name is None:
+            raise ValueError(
+                "inversed_moment_name must be determined "
+                "when using neumann IsoGCN."
+            )
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def check_valid_neumann_input_name(self) -> Self:
+        if not self.use_neumann:
+            return self
+
+        if self.neumann_input_name is None:
+            raise ValueError("Set neumann input name.")
+
+        return self
 
 
 class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int] = Field(...)
-    support_names: list[str] = Field(..., frozen=True)
+    nodes: list[int] | None = Field(None)
+    isoam_names: list[str] = Field(default_factory=lambda: [], frozen=True)
     propagations: list[str] = Field(default_factory=lambda: [], frozen=True)
     mul_order: Literal["ah_w", "a_hw"] = "ah_w"
-    graph_weight: _SubNetworkSetting = Field(
-        default_factory=lambda: _SubNetworkSetting(), frozen=True
+    to_symmetric: bool = False
+    self_network: _SubNetworkSetting = Field(
+        default_factory=lambda: _SubNetworkSetting(use_network=False),
+        frozen=True,
     )
     coefficient_network: _SubNetworkSetting = Field(
-        default_factory=lambda: _SubNetworkSetting(), frozen=True
+        default_factory=lambda: _SubNetworkSetting(use_network=False),
+        frozen=True,
     )
     # neumann_options
     neumann_setting: _NeumannSetting = Field(
-        default_factory=lambda: _NeumannSetting(is_active=False), frozen=True
+        default_factory=lambda: _NeumannSetting(use_neumann=False), frozen=True
     )
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
     def gather_input_dims(self, *input_dims: int) -> int:
-        if len(input_dims) != 1:
-            raise ValueError("only one input is allowed in GCN.")
+        if (len(input_dims) == 0) or (len(input_dims) >= 3):
+            raise ValueError("one or two inputs are allowed in IsoGCN.")
         return input_dims[0]
 
     @pydantic.field_validator("nodes")
     @classmethod
-    def check_n_nodes(cls, vals: list[int]) -> list[int]:
+    def check_n_nodes(cls, vals: list[int] | None) -> list[int]:
+        if vals is None:
+            return vals
+
         if len(vals) < 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in IsoGCNSettings."
@@ -105,20 +117,74 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         return vals
 
+    @pydantic.field_validator("isoam_names")
+    @classmethod
+    def check_isoam_names(cls, vals: list[int]) -> list[int]:
+        if len(vals) == 0:
+            raise ValueError("isoam_names is empty.")
+
+        if len(vals) > 3:
+            raise ValueError("Too many isoam_names is set.")
+
+        return vals
+
     @pydantic.model_validator(mode="after")
-    def check_nodes_size(self) -> Self:
-        if len(self.nodes) - 1 != len(self.activations):
+    def check_valid_self_network(self) -> Self:
+        if not self.self_network.use_network:
+            return self
+
+        if len(self.self_network.activations) > 1:
             raise ValueError(
                 "Size of nodes and activations is not compatible "
-                "in GCNSettings."
-                " len(nodes) must be equal to 1 + len(activations)."
+                "in IsoGCNSettings."
+                "In self_network, len(activations) <= 1"
+                f" {self.self_network.activations=}"
             )
 
-        if len(self.nodes) - 1 != len(self.dropouts):
+        if len(self.self_network.dropouts) > 1:
             raise ValueError(
                 "Size of nodes and dropouts is not compatible "
-                "in GCNSettings."
-                " len(nodes) must be equal to 1 + len(dropouts)."
+                "in IsoGCNSettings."
+                "In self_network, len(activations) <= 1"
+                f" {self.self_network.dropouts=}"
+            )
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def check_valid_coefficient_network(self) -> Self:
+        if not self.coefficient_network.use_network:
+            return self
+
+        if len(self.coefficient_network.activations) != 0:
+            if len(self.coefficient_network.activations) != len(self.nodes) - 1:
+                raise ValueError(
+                    "Size of nodes and activations is not compatible "
+                    "in IsoGCNSettings."
+                    "In coefficient_network, len(activations) == len(nodes) - 1"
+                    f" {self.coefficient_network.activations=}"
+                )
+
+        if len(self.coefficient_network.dropouts) != 0:
+            if len(self.coefficient_network.dropouts) != len(self.nodes) - 1:
+                raise ValueError(
+                    "Size of nodes and dropouts is not compatible "
+                    "in IsoGCNSettings."
+                    "In coefficient_network, len(activations) == len(nodes) - 1"
+                    f" {self.coefficient_network.dropouts=}"
+                )
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def check_self_weight_when_use_neumann(self) -> Self:
+        if not self.neumann_setting.use_neumann:
+            return self
+
+        if not self.self_network.use_network:
+            raise ValueError(
+                "Use self_network when neumannn layer is necessary. "
+                "It is because neumann layer refers to weight of self_network."
             )
         return self
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from _collections_abc import dict_items
 from collections.abc import Iterable, Sequence
 from typing import Any
 
@@ -47,7 +48,7 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def values(self): ...
 
     @abc.abstractmethod
-    def pop(self): ...
+    def pop(self, key: str, default: PhlowerTensor | None = None): ...
 
     @abc.abstractmethod
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor: ...
@@ -95,10 +96,12 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def keys(self) -> Iterable[str]:
         return self._x.keys()
 
-    def items(self) -> abc.ItemsView:
+    def items(self) -> dict_items[str, PhlowerTensor]:
         return self._x.items()
 
-    def pop(self, key: str, default: PhlowerTensor = None) -> PhlowerTensor:
+    def pop(
+        self, key: str, default: PhlowerTensor | None = None
+    ) -> PhlowerTensor | None:
         return self._x.pop(key, default)
 
     def __getitem__(self, key: str) -> PhlowerTensor:
@@ -126,7 +129,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def to_numpy(self) -> dict[str, ArrayDataType]:
         return {
-            k: v.tensor().detach().cpu().numpy() for k, v in self._x.items()
+            k: v.to_tensor().detach().cpu().numpy() for k, v in self.items()
         }
 
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
