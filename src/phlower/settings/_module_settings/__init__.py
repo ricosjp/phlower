@@ -10,6 +10,7 @@ from phlower.settings._module_settings._en_equivariant_mlp_setting import (
 )
 from phlower.settings._module_settings._gcn_setting import GCNSetting
 from phlower.settings._module_settings._identity_setting import IdentitySetting
+from phlower.settings._module_settings._isogcn_setting import IsoGCNSetting
 from phlower.settings._module_settings._mlp_setting import MLPSetting
 from phlower.settings._module_settings._pinv_mlp_setting import PInvMLPSetting
 from phlower.settings._module_settings._proportional_setting import (
@@ -30,6 +31,7 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Proportional": ProportionalSetting,
     "Share": ShareSetting,
     "SimilarityEquivariantMLP": SimilarityEquivariantMLPSetting,
+    "IsoGCN": IsoGCNSetting,
 }
 
 

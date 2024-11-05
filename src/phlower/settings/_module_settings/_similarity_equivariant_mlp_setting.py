@@ -5,6 +5,7 @@ from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -26,6 +27,9 @@ class SimilarityEquivariantMLPSetting(
     disable_en_equivariance: bool = Field(False, frozen=True)
     invariant: bool = Field(False, frozen=True)
     centering: bool = Field(False, frozen=True)
+
+    def confirm(self, self_module: IModuleSetting) -> None:
+        return
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:

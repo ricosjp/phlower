@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any, TypeAlias, overload
 
@@ -16,9 +17,6 @@ from phlower._base.tensors._dimension_tensor import (
 )
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower._base.tensors._tensor_shape import PhlowerShapePattern
-from phlower._base.tensors._unsupported_function_names import (
-    UNSUPPORTED_FUNCTION_NAMES,
-)
 from phlower.utils import get_logger
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
@@ -36,13 +34,18 @@ PhysicDimensionLikeObject: TypeAlias = (
     | tuple[float]
 )
 
+_UNSUPPORTED_FUNCTION_NAMES = [
+    "einsum",
+    "reshape",
+]
+
 
 logger = get_logger(__name__)
 
 
 @overload
 def phlower_tensor(
-    tensor: torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool = False,
     is_voxel: bool = False,
@@ -51,14 +54,14 @@ def phlower_tensor(
 
 @overload
 def phlower_tensor(
-    tensor: torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     pattern: str = "n...",
 ) -> PhlowerTensor: ...
 
 
 def phlower_tensor(
-    tensor: list | torch.Tensor | PhlowerTensor,
+    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
@@ -69,8 +72,8 @@ def phlower_tensor(
             logger.warning("Input dimension_tensor are ignored.")
         return tensor
 
-    if isinstance(tensor, list):
-        tensor = torch.tensor(tensor)
+    if isinstance(tensor, list | np.ndarray):
+        tensor = torch.tensor(tensor, dtype=torch.float32)
 
     dimension_tensor = _resolve_dimension_arg(dimension)
 
@@ -87,8 +90,8 @@ def phlower_tensor(
     return PhlowerTensor(
         tensor=tensor,
         dimension_tensor=dimension_tensor,
-        is_time_series=is_time_series,
-        is_voxel=is_voxel,
+        is_time_series=bool(is_time_series),
+        is_voxel=bool(is_voxel),
     )
 
 
@@ -198,7 +201,9 @@ class PhlowerTensor(IPhlowerTensor):
     def __repr__(self) -> str:
         return (
             f"PhlowerTensor({self._tensor}, "
-            f"Dimension: {self._dimension_tensor})"
+            f"Dimension: {self._dimension_tensor}), "
+            f"is_time_series: {self.is_time_series}, "
+            f"is_voxel: {self.is_voxel}"
         )
 
     def __str__(self) -> str:
@@ -249,7 +254,14 @@ class PhlowerTensor(IPhlowerTensor):
     def __pow__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.pow(self, other)
 
-    def __setitem__(self, key: str, value: float) -> Self:
+    @functools.wraps(torch.Tensor.__getitem__)
+    def __getitem__(self, key: Any) -> torch.Tensor:
+        # NOTE: When accessed by index, PhlowerTensor cannot ensure
+        # its shape pattern. Thus, return only Tensor object
+        return self._tensor[key]
+
+    @functools.wraps(torch.Tensor.__setitem__)
+    def __setitem__(self, key: Any, value: Any) -> Self:
         if isinstance(key, PhlowerTensor):
             self._tensor[key.to_tensor()] = value
         else:
@@ -281,6 +293,15 @@ class PhlowerTensor(IPhlowerTensor):
     @property
     def device(self) -> torch.device:
         return self._tensor.device
+
+    def transpose(self, dim0: int, dim1: int) -> PhlowerTensor:
+        _tensor = self._tensor.transpose(dim0, dim1)
+        return PhlowerTensor(
+            tensor=_tensor,
+            dimension_tensor=self._dimension_tensor,
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
+        )
 
     def numel(self) -> int:
         return torch.numel(self._tensor)
@@ -419,7 +440,7 @@ class PhlowerTensor(IPhlowerTensor):
         args: tuple,
         kwargs: dict | None = None,
     ) -> PhlowerTensor:
-        if func.__name__ in UNSUPPORTED_FUNCTION_NAMES:
+        if func.__name__ in _UNSUPPORTED_FUNCTION_NAMES:
             raise PhlowerUnsupportedTorchFunctionError(
                 f"Unsupported function: {func.__name__}"
             )

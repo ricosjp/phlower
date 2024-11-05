@@ -273,6 +273,9 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     def get_name(self) -> str:
         return self.name
 
+    def get_input_keys(self) -> list[str]:
+        return self.input_keys
+
     def get_destinations(self) -> list[str]:
         return self.destinations
 
@@ -292,6 +295,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         _resolved_nodes = self._resolve_nodes(*resolved_outputs)
         # NOTE: overwrite nodes
         self.nn_parameters.overwrite_nodes(_resolved_nodes)
+        self.nn_parameters.confirm(self)
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _to_input_keys: set[str] = set()

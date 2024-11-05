@@ -5,6 +5,7 @@ from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -22,6 +23,8 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
+
+    def confirm(self, self_module: IModuleSetting) -> None: ...
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:

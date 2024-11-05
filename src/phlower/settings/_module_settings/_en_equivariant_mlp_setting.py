@@ -5,6 +5,7 @@ from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -21,6 +22,8 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     norm_function_name: str = Field(
         default_factory=lambda: "identity", frozen=True
     )
+
+    def confirm(self, self_module: IModuleSetting) -> None: ...
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:

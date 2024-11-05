@@ -4,6 +4,7 @@ import pydantic
 from pydantic import Field
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -21,6 +22,8 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         assert len(input_dims) > 0
         sum_dim = sum(v for v in input_dims)
         return sum_dim
+
+    def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.field_validator("nodes")
     @classmethod

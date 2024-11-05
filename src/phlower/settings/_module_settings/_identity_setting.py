@@ -4,6 +4,7 @@ import pydantic
 from pydantic import Field
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -17,6 +18,8 @@ class IdentitySetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
+
+    def confirm(self, self_module: IModuleSetting) -> None: ...
 
     def gather_input_dims(self, *input_dims: int) -> int:
         assert len(input_dims) > 0
