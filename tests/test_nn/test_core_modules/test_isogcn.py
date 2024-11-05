@@ -577,6 +577,57 @@ def test__can_forward_with_neumann_condition(n_nodes: int, n_feature: int):
     assert h_res.rank() == 1
 
 
+def test__forbid_forward_neumann_wihthout_self_network():
+    with pytest.raises(ValueError) as ex:
+        _ = IsoGCN(
+            nodes=[10, 10],
+            isoam_names=["isoam_x"],
+            propagations=["convolution"],
+            use_self_network=False,
+            use_neumann=True,
+            neumann_input_name="neumann",
+            inversed_moment_name="inv",
+        )
+        assert "Use self_network when neumannn layer" in str(ex)
+
+
 # NOTE: After integrating graphlow, write neumann boudary
+
+# endregion
+
+# region Test for coefficient network
+
+
+@pytest.mark.parametrize("n_nodes, n_feature", [(10, 3), (5, 1), (7, 3)])
+def test__can_forward_with_coefficient_network(n_nodes: int, n_feature: int):
+    # common
+    propagations = ["contraction", "contraction"]
+
+    # base coordination
+    location = np.random.rand(n_nodes, 3)
+    h = np.random.rand(n_nodes, 3, 3, n_feature)
+
+    support_names = ["isoam_x", "isoam_y", "isoam_z"]
+    field = SimulationField(
+        field_tensors=phlower_tensor_collection(
+            generate_isoam_like_matrix(location, support_names)
+        )
+    )
+    isogcn = IsoGCN(
+        nodes=[n_feature, 5, 5],
+        isoam_names=support_names,
+        propagations=propagations,
+        use_self_network=True,
+        self_network_activations=["identity"],
+        use_coefficient=True,
+        coefficient_activations=["tanh", "tanh"],
+    )
+    h_res = isogcn.forward(
+        phlower_tensor_collection({"h": phlower_tensor(h)}),
+        field_data=field,
+    )
+
+    assert h_res.rank() == 0
+
 
 # endregion

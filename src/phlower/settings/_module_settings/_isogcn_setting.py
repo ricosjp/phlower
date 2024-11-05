@@ -122,9 +122,6 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int] | None) -> list[int]:
-        if vals is None:
-            return vals
-
         if len(vals) < 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in IsoGCNSettings."

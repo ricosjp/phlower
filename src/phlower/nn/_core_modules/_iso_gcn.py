@@ -95,6 +95,8 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
                 dropouts=self_network_dropouts,
                 bias=self_network_bias,
             )
+        else:
+            self._self_network = None
 
         self._use_coefficient = use_coefficient
         if self._use_coefficient:
@@ -104,6 +106,8 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
                 dropouts=coefficient_dropouts,
                 bias=coefficient_bias,
             )
+        else:
+            self._coefficient_network = None
 
         self._propagations = propagations
         self._nodes = nodes
@@ -115,14 +119,14 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         self._use_neumann = use_neumann
         self._neumann_factor = neumann_factor
         self._neumann_input_name = neumann_input_name
-        self._neumann_layer = self._create_neumann_layer()
+        if self._use_neumann:
+            self._neumann_layer = self._create_neumann_layer()
+        else:
+            self._neumann_layer = None
 
     def _create_neumann_layer(
         self,
     ) -> Callable[[PhlowerTensor], PhlowerTensor] | None:
-        if not self._use_neumann:
-            return None
-
         if self._self_network is None:
             raise ValueError(
                 "Use self_network when neumannn layer is necessary. "
