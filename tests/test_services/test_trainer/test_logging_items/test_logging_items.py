@@ -1,6 +1,6 @@
 import pytest
-
 from phlower.services.trainer.logging_items import (
+    ILoggingItem,
     LoggingDictItem,
     LoggingFloatItem,
     LoggingIntItem,
@@ -12,7 +12,7 @@ from phlower.services.trainer.logging_items import (
 @pytest.mark.parametrize(
     "val, title, expected", [(3, "sample", "3"), (100, "sample", "100")]
 )
-def test__logging_int_item_to_str(val, title, expected):
+def test__logging_int_item_to_str(val: int, title: str, expected: str):
     item = LoggingIntItem(val=val, title=title)
     assert item.format() == expected
 
@@ -28,7 +28,7 @@ def test__logging_int_item_to_str(val, title, expected):
     ],
 )
 def test__logging_int_item_to_format_str(
-    val, title, margin, force_title, expected
+    val: int, title: str, margin: int, force_title: str | None, expected: str
 ):
     item = LoggingIntItem(val=val, title=title)
     actual = item.format(padding_margin=margin, title=force_title)
@@ -43,7 +43,7 @@ def test__logging_int_item_to_format_str(
         (0.0000123456, "sample", ".5e"),
     ],
 )
-def test__logging_float_item_to_str(val, title, formatter):
+def test__logging_float_item_to_str(val: float, title: str, formatter: str):
     item = LoggingFloatItem(val=val, title=title)
     actual = item.format(formatter=formatter)
     expected = f"{val:{formatter}}"
@@ -61,7 +61,7 @@ def test__logging_float_item_to_str(val, title, formatter):
     ],
 )
 def test__logging_float_item_to_format_str(
-    val, title, formatter, force_title, margin
+    val: float, title: str, formatter: str, force_title: str | None, margin: int
 ):
     item = LoggingFloatItem(val=val, title=title)
     actual = item.format(
@@ -83,7 +83,7 @@ def test__logging_float_item_to_format_str(
         ("sample_test", "sample_test"),
     ],
 )
-def test__logging_str_item_to_str(val, expected):
+def test__logging_str_item_to_str(val: str, expected: str):
     item = LoggingStrItem(val=val)
     actual = item.format()
     assert actual == expected
@@ -97,7 +97,7 @@ def test__logging_str_item_to_str(val, expected):
         ("sample_test", 4),
     ],
 )
-def test__logging_str_item_to_format_str(val, margin):
+def test__logging_str_item_to_format_str(val: str, margin: int):
     item = LoggingStrItem(val=val)
     actual = item.format(padding_margin=margin)
     expected = val + " " * margin
@@ -111,7 +111,9 @@ def test__logging_str_item_to_format_str(val, margin):
         ({"v1": 1234455, "v2": 7832989}, "samples/", ".2e"),
     ],
 )
-def test__logging_dict_item_to_str(val, title, formatter):
+def test__logging_dict_item_to_str(
+    val: dict[str, float], title: str, formatter: str
+):
     item = LoggingDictItem(val=val, title=title)
     actual = item.format(formatter=formatter)
 
@@ -130,7 +132,11 @@ def test__logging_dict_item_to_str(val, title, formatter):
     ],
 )
 def test__logging_dict_item_to_format_str(
-    val, title, formatter, margin, force_title
+    val: dict[str, float],
+    title: str,
+    formatter: str,
+    margin: int,
+    force_title: str | None,
 ):
     item = LoggingDictItem(val=val, title=title)
     actual = item.format(
@@ -154,7 +160,9 @@ def test__logging_dict_item_to_format_str(
         ({}, "samples/", ".2e", 8),
     ],
 )
-def test__logging_empty_dict_item_to_format_str(val, title, formatter, margin):
+def test__logging_empty_dict_item_to_format_str(
+    val: dict, title: str, formatter: str, margin: int
+):
     item = LoggingDictItem(val=val, title=title)
     actual = item.format(formatter=formatter, padding_margin=margin)
     assert actual == ""
@@ -169,7 +177,9 @@ def test__logging_empty_dict_item_to_format_str(val, title, formatter, margin):
         ({"a": 3.14}, "test", LoggingDictItem),
     ],
 )
-def test__create_logitems(val, title, expected):
+def test__create_logitems(
+    val: int | float | dict, title: str, expected: ILoggingItem
+):
     item = create_logitems(value=val, title=title)
 
     assert isinstance(item, expected)

@@ -10,9 +10,17 @@ from phlower.utils.typing import DenseArrayType
 
 
 class NdArrayWrapper(IPhlowerArray):
-    def __init__(self, data: np.ndarray, is_timeseries: bool = False):
+    def __init__(
+        self,
+        data: np.ndarray,
+        is_time_series: bool = False,
+        is_voxel: bool = False,
+        dimensions: PhysicalDimensions | None = None,
+    ):
         self.data = data
-        self._is_time_series = is_timeseries
+        self._is_time_series = is_time_series
+        self._is_voxel = is_voxel
+        self._dimensions = dimensions
 
     @property
     def shape(self) -> tuple[int]:
@@ -21,6 +29,10 @@ class NdArrayWrapper(IPhlowerArray):
     @property
     def is_time_series(self) -> bool:
         return self._is_time_series
+
+    @property
+    def is_voxel(self) -> bool:
+        return self._is_voxel
 
     @property
     def is_sparse(self) -> bool:
@@ -63,10 +75,13 @@ class NdArrayWrapper(IPhlowerArray):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicalDimensions | None = None,
+        disable_dimensions: bool = False,
     ) -> PhlowerTensor:
         _tensor = phlower_tensor(
-            tensor=torch.from_numpy(self.data), dimension=dimension
+            tensor=torch.from_numpy(self.data),
+            dimension=None if disable_dimensions else self._dimensions,
+            is_time_series=self._is_time_series,
+            is_voxel=self._is_voxel,
         )
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor

@@ -3,7 +3,6 @@ import shutil
 
 import numpy as np
 import pytest
-
 from phlower.io import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
     PhlowerScalerWrapper,
@@ -27,7 +26,7 @@ def test__from_setting():
         ("scaler_c", True, None),
     ],
 )
-def test__get_scaler(name, allow_missing, method_name):
+def test__get_scaler(name: str, allow_missing: bool, method_name: str):
     name2scaler = {"scaler_a": "identity", "scaler_b": "std_scale"}
     scalers_dict = {k: PhlowerScalerWrapper(v) for k, v in name2scaler.items()}
 
@@ -43,7 +42,7 @@ def test__get_scaler(name, allow_missing, method_name):
 
 
 @pytest.fixture(scope="module")
-def create_sample_dataset():
+def create_sample_dataset() -> list[PhlowerNumpyFile]:
     output_directory = pathlib.Path(__file__).parent / "tmp"
 
     if output_directory.exists():
@@ -76,7 +75,9 @@ def create_sample_dataset():
         )
     ],
 )
-def test__retrieve_from_dumped_data(name2scaler, create_sample_dataset):
+def test__retrieve_from_dumped_data(
+    name2scaler: dict, create_sample_dataset: list[PhlowerNumpyFile]
+):
     data_files = create_sample_dataset
 
     # fit to sample data

@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import torch
-
 from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory
 from phlower.services.predictor import PhlowerPredictor
@@ -55,7 +54,7 @@ def prepare_sample_preprocessed_files():
 
 
 @pytest.fixture(scope="module")
-def simple_training(prepare_sample_preprocessed_files):
+def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
@@ -80,7 +79,9 @@ def simple_training(prepare_sample_preprocessed_files):
 
 
 @pytest.mark.e2e_test
-def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
+def test__training_with_multiple_batch_size(
+    prepare_sample_preprocessed_files: None,
+):
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
@@ -110,18 +111,16 @@ def test__training_with_multiple_batch_size(prepare_sample_preprocessed_files):
 
 
 @pytest.mark.e2e_test
-def test__simple_training(simple_training):
+def test__simple_training(simple_training: PhlowerTensor):
     loss: PhlowerTensor = simple_training
 
-    print(loss)
-    print(loss.shape)
     assert loss.has_dimension
     assert not torch.isinf(loss.to_tensor())
     assert not torch.isnan(loss.to_tensor())
 
 
 @pytest.mark.e2e_test
-def test__predict(simple_training):
+def test__predict(simple_training: PhlowerTensor):
     setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/predict.yml")
     model_directory = _OUTPUT_DIR / "model"
 

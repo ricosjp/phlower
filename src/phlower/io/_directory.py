@@ -91,7 +91,7 @@ class PhlowerDirectory:
         builder: Callable[[pathlib.Path], Any] | None = None,
         *,
         allow_missing: bool = False,
-    ):
+    ) -> pathlib.Path:
         if builder is None:
             builder = lambda x: x  # NOQA
 

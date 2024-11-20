@@ -1,12 +1,14 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower._base import phlower_dimension_tensor, phlower_tensor
 from phlower._base._functionals import is_same_dimensions, is_same_layout
+from phlower._base.tensors._interface import IPhlowerTensor
 
 
-def _create_random_tensors(shapes: list[tuple], is_sparse: list[bool]):
+def _create_random_tensors(
+    shapes: list[tuple], is_sparse: list[bool]
+) -> list[IPhlowerTensor]:
     assert len(shapes) == len(is_sparse)
     tensors = [torch.tensor(np.random.rand(*shape)) for shape in shapes]
     tensors = [
@@ -17,7 +19,7 @@ def _create_random_tensors(shapes: list[tuple], is_sparse: list[bool]):
 
 def _create_random_tensors_with_dims(
     shapes: list[tuple], dimensions: list[dict[str, float]]
-):
+) -> list[IPhlowerTensor]:
     assert len(shapes) == len(dimensions)
     tensors = [torch.tensor(np.random.rand(*shape)) for shape in shapes]
     _dimensions = [phlower_dimension_tensor(v) for v in dimensions]
@@ -33,7 +35,9 @@ def _create_random_tensors_with_dims(
         ([(3, 6), (11, 5)], [False, False], True),
     ],
 )
-def test__is_same_layout(shapes, is_sparse, desired):
+def test__is_same_layout(
+    shapes: list[tuple[int]], is_sparse: list[bool], desired: bool
+):
     tensors = _create_random_tensors(shapes, is_sparse)
     assert is_same_layout(tensors) == desired
 
@@ -70,6 +74,8 @@ def test__is_same_layout(shapes, is_sparse, desired):
         ),
     ],
 )
-def test__is_same_dimensions(shapes, dimensions, desired):
+def test__is_same_dimensions(
+    shapes: list[tuple[int]], dimensions: list[dict], desired: bool
+):
     tensors = _create_random_tensors_with_dims(shapes, dimensions)
     assert is_same_dimensions(tensors) == desired

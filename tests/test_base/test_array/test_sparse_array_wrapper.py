@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower._base.array.sparse import (
     SparseArrayWrapper,
     batch,
@@ -17,7 +16,7 @@ from phlower._base.array.sparse import (
         ([(3, 5)], (3, 5)),
     ],
 )
-def test__batch(shapes, expected_shape):
+def test__batch(shapes: tuple[int], expected_shape: tuple[int]):
     rng = np.random.default_rng()
 
     sparse_arrays = [
@@ -35,7 +34,7 @@ def test__batch(shapes, expected_shape):
     "shapes",
     [([(5, 6), (4, 9), (10, 11)]), ([(1, 1), (2, 1), (1, 1)]), ([(3, 5)])],
 )
-def test__unbatch(shapes):
+def test__unbatch(shapes: list[tuple[int]]):
     rng = np.random.default_rng()
 
     sparse_arrays = [

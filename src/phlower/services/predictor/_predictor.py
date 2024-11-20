@@ -38,16 +38,15 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
     ) -> Iterator[IPhlowerTensorCollections]:
         dataset = LazyPhlowerDataset(
-            x_variable_names=self._model_setting.network.get_input_keys(),
-            y_variable_names=self._model_setting.network.get_output_keys(),
-            support_names=self._model_setting.network.support_names,
+            input_settings=self._model_setting.inputs,
+            label_settings=self._model_setting.labels,
+            field_settings=self._model_setting.fields,
             directories=preprocessed_directories,
         )
 
         builder = DataLoaderBuilder.from_setting(self._predict_setting)
         data_loader = builder.create(
             dataset,
-            variable_dimensions=self._model_setting.variable_dimensions,
             disable_dimensions=disable_dimensions,
             shuffle=False,
         )
@@ -55,9 +54,7 @@ class PhlowerPredictor:
         for batch in data_loader:
             batch: LumpedTensorData
 
-            h = self._model.forward(
-                batch.x_data, supports=batch.sparse_supports
-            )
+            h = self._model.forward(batch.x_data, field_data=batch.field_data)
             yield h
 
         # HACK: Need to save h

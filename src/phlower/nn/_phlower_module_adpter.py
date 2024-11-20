@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from phlower import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
@@ -13,6 +13,7 @@ from phlower.nn._core_modules import get_module
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
 )
 from phlower.settings._group_settings import ModuleSetting
 
@@ -57,15 +58,28 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
     def get_destinations(self) -> list[str]:
         return self._destinations
 
-    def resolve(self) -> None: ...
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None, **kwards
+    ) -> None:
+        if not self._layer.need_reference():
+            return
+
+        self._layer.resolve(parent=parent, **kwards)
 
     def get_n_nodes(self) -> list[int]:
         return self._n_nodes
 
     def get_display_info(self) -> str:
+        if not self._layer.need_reference():
+            return (
+                f"nn_type: {self._layer.get_nn_name()}\n"
+                f"n_nodes: {self.get_n_nodes()}"
+            )
+
         return (
             f"nn_type: {self._layer.get_nn_name()}\n"
-            f"n_nodes: {self.get_n_nodes()}"
+            f"n_nodes: {self.get_n_nodes()} \n"
+            f"reference: {self._layer.get_reference_name()}"
         )
 
     def draw(self, output_directory: Path, recursive: bool): ...
@@ -78,15 +92,18 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        field_data: ISimulationField,
     ) -> IPhlowerTensorCollections:
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
         )
         if self._no_grad:
             with torch.no_grad():
-                result = self._layer.forward(inputs, supports=supports)
+                result = self._layer.forward(inputs, field_data=field_data)
         else:
-            result = self._layer.forward(inputs, supports=supports)
+            result = self._layer.forward(inputs, field_data=field_data)
 
         return phlower_tensor_collection({self._output_key: result})
+
+    def get_core_module(self) -> IPhlowerCoreModule:
+        return self._layer

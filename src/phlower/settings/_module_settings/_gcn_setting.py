@@ -4,13 +4,16 @@ import pydantic
 from pydantic import Field
 from typing_extensions import Self
 
-from ._interface import IPhlowerLayerParameters
+from phlower.settings._interface import (
+    IModuleSetting,
+    IPhlowerLayerParameters,
+    IReadOnlyReferenceGroupSetting,
+)
 
 
 class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    nodes: list[int] = Field(
-        ...
-    )  # This property only overwritten when resolving.
+    # This property only overwritten when resolving.
+    nodes: list[int] = Field(...)
     support_name: str = Field(..., frozen=True)
     repeat: int = Field(1, frozen=True)
     factor: float = Field(1.0, frozen=True)
@@ -21,8 +24,9 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
-    @classmethod
-    def gather_input_dims(cls, *input_dims: int) -> int:
+    def confirm(self, self_module: IModuleSetting) -> None: ...
+
+    def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
             raise ValueError("only one input is allowed in GCN.")
         return input_dims[0]
@@ -50,6 +54,21 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         return vals
 
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def fill_empty_activations_dropouts(cls, values: dict) -> dict:
+        n_nodes = len(values.get("nodes"))
+        activations = values.get("activations", [])
+        dropouts = values.get("dropouts", [])
+
+        if len(activations) == 0:
+            values["activations"] = ["identity" for _ in range(n_nodes - 1)]
+
+        if len(dropouts) == 0:
+            values["dropouts"] = [0 for _ in range(n_nodes - 1)]
+
+        return values
+
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
         if len(self.nodes) - 1 != len(self.activations):
@@ -58,6 +77,13 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 "in GCNSettings."
                 " len(nodes) must be equal to 1 + len(activations)."
             )
+
+        if len(self.nodes) - 1 != len(self.dropouts):
+            raise ValueError(
+                "Size of nodes and dropouts is not compatible "
+                "in GCNSettings."
+                " len(nodes) must be equal to 1 + len(dropouts)."
+            )
         return self
 
     def get_n_nodes(self) -> list[int]:
@@ -65,3 +91,10 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
+
+    @property
+    def need_reference(self) -> bool:
+        return False
+
+    def get_reference(self, parent: IReadOnlyReferenceGroupSetting):
+        return

@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import Concatenator
@@ -21,7 +20,9 @@ def test__can_call_parameters():
         ([(1, 2, 16), (1, 2, 16), (1, 2, 16)], (1, 2, 48)),
     ],
 )
-def test__concatenated_tensor_shape(input_shapes, desired_shape):
+def test__concatenated_tensor_shape(
+    input_shapes: list[tuple[int]], desired_shape: tuple[int]
+):
     phlower_tensors = {
         f"phlower_tensor_{i}": PhlowerTensor(
             torch.from_numpy(np.random.rand(*s))

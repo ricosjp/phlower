@@ -84,7 +84,7 @@ def to_pathlib_object(
 ) -> pathlib.Path:
     if isinstance(path, pathlib.Path):
         return path
-    if isinstance(path, IPhlowerYamlFile):
+    if isinstance(path, IPhlowerBaseFile):
         return path.file_path
     if isinstance(path, str):
         return pathlib.Path(path)

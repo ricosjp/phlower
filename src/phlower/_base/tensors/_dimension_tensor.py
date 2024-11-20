@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
+from typing import Any
 
 import torch
+from pipe import uniq
 
 from phlower._base._dimension import PhysicalDimensions
 from phlower.utils.enums import PhysicalDimensionSymbolType
@@ -15,16 +17,23 @@ _HANDLED_FUNCTIONS: dict[str, Callable] = {}
 def phlower_dimension_tensor(
     values: dict[str, float] | PhysicalDimensions,
     dtype: torch.dtype = torch.float32,
+    device: str | torch.device = None,
 ) -> PhlowerDimensionTensor:
     if not isinstance(values, PhysicalDimensions):
         values = PhysicalDimensions(values)
 
     _list = values.to_list()
-    return PhlowerDimensionTensor.from_list(_list)
+    return PhlowerDimensionTensor.from_list(_list, dtype=dtype).to(device)
 
 
-def zero_dimension_tensor() -> PhlowerDimensionTensor:
-    return phlower_dimension_tensor({})
+def zero_dimension_tensor(
+    device: str | torch.device | None,
+) -> PhlowerDimensionTensor:
+    zerodim = phlower_dimension_tensor({})
+    if device is None:
+        return zerodim
+
+    return zerodim.to(device)
 
 
 class PhlowerDimensionTensor:
@@ -36,15 +45,17 @@ class PhlowerDimensionTensor:
 
     @classmethod
     def from_list(
-        cls, values: list[float] | tuple[float]
+        cls,
+        values: list[float] | tuple[float],
+        dtype: torch.dtype = torch.float32,
     ) -> PhlowerDimensionTensor:
         """
         Parse from list object
 
         Args:
             values (list[float] | tuple[float]): list or tuple
-                if length of values is not equal to the number of registered dimension type,
-                raise ValueError.
+                if length of values is not equal to the number of registered
+                dimension type, raise ValueError.
 
         Returns:
             PhlowerDimensionTensor: tensor object
@@ -54,7 +65,7 @@ class PhlowerDimensionTensor:
                 "length of values is not equal to the number of "
                 f"registered dimension types. input: {len(values)}"
             )
-        _tensor = torch.tensor(values, dtype=torch.int64).reshape(
+        _tensor = torch.tensor(values, dtype=dtype).reshape(
             len(PhysicalDimensionSymbolType), 1
         )
         return PhlowerDimensionTensor(_tensor)
@@ -70,11 +81,34 @@ class PhlowerDimensionTensor:
             )
             return
 
+        assert isinstance(tensor, torch.Tensor), f"Unexpected type: {tensor}"
+
         self._tensor = tensor
         assert self._tensor.shape[0] == len(PhysicalDimensionSymbolType)
 
+    def __sub__(self, __value: object):
+        return torch.sub(self, __value)
+
+    def __rsub__(self, __value: object):
+        return torch.sub(self, __value)
+
     def __add__(self, __value: object):
         return torch.add(self, __value)
+
+    def __radd__(self, __value: object):
+        return torch.add(self, __value)
+
+    def __mul__(self, __value: object):
+        return torch.mul(self, __value)
+
+    def __rmul__(self, __value: object):
+        return torch.mul(self, __value)
+
+    def __truediv__(self, __value: object):
+        return torch.div(self, __value)
+
+    def __rtruediv__(self, __value: object):
+        return torch.div(__value, self)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PhlowerDimensionTensor):
@@ -94,7 +128,7 @@ class PhlowerDimensionTensor:
         )
         return f"{self.__class__.__name__}({texts})"
 
-    def to_physics_dimension(self):
+    def to_physics_dimension(self) -> PhysicalDimensions:
         _dict = self.to_dict()
         return PhysicalDimensions(_dict)
 
@@ -104,14 +138,42 @@ class PhlowerDimensionTensor:
             for k, v in PhysicalDimensionSymbolType.__members__.items()
         }
 
-    def to(self, device: str | torch.device, non_blocking: bool = False):
-        self._tensor.to(device, non_blocking=non_blocking)
+    def to(
+        self,
+        device: str | torch.device = None,
+        non_blocking: bool = False,
+        dtype: torch.dtype = None,
+    ) -> PhlowerDimensionTensor:
+        new_dimension = self._tensor.to(
+            device, non_blocking=non_blocking, dtype=dtype
+        )
+        new_dtype = dtype or self.dtype
+        return PhlowerDimensionTensor(new_dimension, dtype=new_dtype)
 
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
+    @property
+    def dtype(self) -> torch.dtype:
+        return self._tensor.dtype
+
+    @property
+    def device(self) -> torch.device:
+        return self._tensor.device
+
+    @property
+    def is_dimensionless(self) -> bool:
+        """Return True if the tensor is dimensionless."""
+        return torch.sum(torch.abs(self._tensor)) < 1e-5
+
     @classmethod
-    def __torch_function__(cls, func, types, args: tuple, kwargs=None):
+    def __torch_function__(
+        cls,
+        func: Callable,
+        types: list[type],
+        args: tuple,
+        kwargs: dict | None = None,
+    ) -> PhlowerDimensionTensor:
         if kwargs is None:
             kwargs = {}
 
@@ -121,10 +183,10 @@ class PhlowerDimensionTensor:
         return _HANDLED_FUNCTIONS[func](*args, **kwargs)
 
 
-def dimension_wrap_implements(torch_function):
+def dimension_wrap_implements(torch_function: Callable) -> Callable:
     """Register a torch function override for PhysicsUnitTensor"""
 
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         functools.update_wrapper(func, torch_function)
         _HANDLED_FUNCTIONS[torch_function] = func
         return func
@@ -133,45 +195,111 @@ def dimension_wrap_implements(torch_function):
 
 
 @dimension_wrap_implements(torch.mean)
-def mean(inputs: PhlowerDimensionTensor):
+def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
+def _determine_device(
+    *args: PhlowerDimensionTensor | torch.Tensor | float | int,
+) -> torch.device:
+    devices = {
+        v.device
+        for v in args
+        if isinstance(v, PhlowerDimensionTensor | torch.Tensor)
+    }
+
+    if len(devices) != 1:
+        raise PhlowerDimensionTensor(
+            f"Cannot determine unique device. {devices}. args: {args}"
+        )
+
+    return devices.pop()
+
+
+def _convert_phlower_dimension_tensors(
+    *args: PhlowerDimensionTensor | torch.Tensor | float | int,
+    device: str | torch.device | None = None,
+) -> tuple[PhlowerDimensionTensor, ...]:
+    _dimensions = (
+        v
+        if isinstance(v, PhlowerDimensionTensor)
+        else zero_dimension_tensor(device=device)
+        for v in args
+    )
+    return _dimensions
+
+
 @dimension_wrap_implements(torch.add)
-def add(inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor):
-    if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
-        if inputs != other:
-            raise DimensionIncompatibleError(
-                "Add operation for different physical dimensions is not allowed."
-            )
+def add(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
+    device = _determine_device(inputs, other)
+    inputs, other = _convert_phlower_dimension_tensors(
+        inputs, other, device=device
+    )
+    if inputs != other:
+        raise DimensionIncompatibleError(
+            "Add operation for different physical dimensions is not " "allowed."
+        )
 
-        return PhlowerDimensionTensor(inputs._tensor)
+    return PhlowerDimensionTensor(inputs._tensor)
 
-    raise DimensionIncompatibleError()
+
+@dimension_wrap_implements(torch.sub)
+def sub(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
+    device = _determine_device(inputs, other)
+    inputs, other = _convert_phlower_dimension_tensors(
+        inputs, other, device=device
+    )
+    if inputs != other:
+        raise DimensionIncompatibleError(
+            "Sub operation for different physical dimensions is not " "allowed."
+        )
+
+    return PhlowerDimensionTensor(inputs._tensor)
 
 
 @dimension_wrap_implements(torch.pow)
-def pow(inputs: PhlowerDimensionTensor, other):
+def pow(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor * other)
 
 
+@dimension_wrap_implements(torch.sqrt)
+def sqrt(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    return PhlowerDimensionTensor(inputs._tensor / 2)
+
+
 @dimension_wrap_implements(torch.mul)
-def mul(inputs, other):
-    _input = (
-        inputs
-        if isinstance(inputs, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+def mul(
+    inputs: PhlowerDimensionTensor | torch.Tensor,
+    other: PhlowerDimensionTensor | torch.Tensor,
+) -> PhlowerDimensionTensor:
+    device = _determine_device(inputs, other)
+    _inputs, _other = _convert_phlower_dimension_tensors(
+        inputs, other, device=device
     )
-    _other = (
-        other
-        if isinstance(other, PhlowerDimensionTensor)
-        else zero_dimension_tensor()
+    return PhlowerDimensionTensor(_inputs._tensor + _other._tensor)
+
+
+@dimension_wrap_implements(torch.div)
+def div(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
+    device = _determine_device(inputs, other)
+    _inputs, _other = _convert_phlower_dimension_tensors(
+        inputs, other, device=device
     )
-    return PhlowerDimensionTensor(_input._tensor + _other._tensor)
+    return PhlowerDimensionTensor(_inputs._tensor - _other._tensor)
 
 
 @dimension_wrap_implements(torch.reshape)
-def reshape(inputs, shape):
+def reshape(
+    inputs: PhlowerDimensionTensor, shape: tuple[int]
+) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
@@ -182,16 +310,23 @@ def cat(
     *,
     out: PhlowerDimensionTensor = None,
 ) -> PhlowerDimensionTensor:
-    if all(isinstance(v, PhlowerDimensionTensor) for v in tensors):
-        # HACK: is it possible to use unique method ?
-        for v in tensors:
-            if v != tensors[0]:
-                raise DimensionIncompatibleError()
-    return PhlowerDimensionTensor(tensors[0]._tensor)
+    device = _determine_device(*tensors)
+    uniq_inputs: list[PhlowerDimensionTensor] = list(
+        _convert_phlower_dimension_tensors(*tensors, device=device) | uniq
+    )
+
+    if len(uniq_inputs) != 1:
+        raise DimensionIncompatibleError(
+            "Only same physical dimensions are allowed when torch.cat."
+        )
+
+    return PhlowerDimensionTensor(uniq_inputs[0]._tensor)
 
 
 @dimension_wrap_implements(torch.sparse.mm)
-def sparse_mm(inputs, other):
+def sparse_mm(
+    inputs: PhlowerDimensionTensor, other: PhlowerDimensionTensor
+) -> PhlowerDimensionTensor:
     if all(isinstance(v, PhlowerDimensionTensor) for v in (inputs, other)):
         return PhlowerDimensionTensor(inputs._tensor + other._tensor)
 
@@ -199,30 +334,41 @@ def sparse_mm(inputs, other):
 
 
 @dimension_wrap_implements(torch.nn.functional.linear)
-def nn_linear(inputs, *args):
+def nn_linear(
+    inputs: PhlowerDimensionTensor, *args: Any
+) -> PhlowerDimensionTensor:
     return inputs
 
 
 @dimension_wrap_implements(torch.nn.functional.dropout)
-def dropout(inputs, *args, **kwards):
+def dropout(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     return inputs
 
 
 @dimension_wrap_implements(torch.stack)
-def stack(inputs):
-    if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
-        # HACK: is it possible to use unique method ?
-        for v in inputs:
-            if v != inputs[0]:
-                raise DimensionIncompatibleError()
+def stack(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    device = _determine_device(*inputs)
+    uniq_inputs: list[PhlowerDimensionTensor] = list(
+        _convert_phlower_dimension_tensors(*inputs, device=device) | uniq
+    )
 
-        return PhlowerDimensionTensor(inputs[0]._tensor)
+    if len(uniq_inputs) != 1:
+        raise DimensionIncompatibleError(
+            "Only same physical dimensions are allowed when torch.stack"
+        )
 
-    raise DimensionIncompatibleError()
+    return PhlowerDimensionTensor(uniq_inputs[0]._tensor)
 
 
 @dimension_wrap_implements(torch.nn.functional.mse_loss)
-def mse_loss(inputs, others, *args, **kwards):
+def mse_loss(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
     if inputs != others:
         raise DimensionIncompatibleError()
 
@@ -230,7 +376,9 @@ def mse_loss(inputs, others, *args, **kwards):
 
 
 @dimension_wrap_implements(torch.sum)
-def _sum(inputs, *args, **kwards):
+def _sum(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     if isinstance(inputs, PhlowerDimensionTensor):
         return inputs
 
@@ -238,13 +386,39 @@ def _sum(inputs, *args, **kwards):
 
 
 @dimension_wrap_implements(torch.concatenate)
-def concatenate(inputs, *args, **kwards):
-    if all(isinstance(v, PhlowerDimensionTensor) for v in inputs):
-        # HACK: is it possible to use unique method ?
-        for v in inputs:
-            if v != inputs[0]:
-                raise DimensionIncompatibleError()
+def concatenate(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    device = _determine_device(*inputs)
+    uniq_inputs: list[PhlowerDimensionTensor] = list(
+        _convert_phlower_dimension_tensors(*inputs, device=device) | uniq
+    )
 
-        return PhlowerDimensionTensor(inputs[0]._tensor)
+    return PhlowerDimensionTensor(uniq_inputs[0]._tensor)
 
-    raise DimensionIncompatibleError()
+
+@dimension_wrap_implements(torch.tanh)
+def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply tanh but {tensor}"
+        )
+    return tensor
+
+
+@dimension_wrap_implements(torch.nn.functional.leaky_relu)
+def leaky_relu(
+    tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply leaky_relu but {tensor}"
+        )
+    return tensor
+
+
+@dimension_wrap_implements(torch.unsqueeze)
+def unsqueeze(
+    input: PhlowerDimensionTensor, dim: int
+) -> PhlowerDimensionTensor:
+    return input

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import scipy.sparse as sp
 from numpy.typing import NDArray
@@ -29,7 +27,7 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
         for k, v in kwargs.items():
             setattr(self, k, self._convert(k, v))
 
-    def _convert(self, field_name: str, value: Any):
+    def _convert(self, field_name: str, value: float | None) -> float:
         if field_name == "max_":
             if value is None:
                 return value
@@ -61,7 +59,7 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     def is_fitted(self) -> bool:
         return self.max_ is not None
 
-    def transform(self, data: ArrayDataType):
+    def transform(self, data: ArrayDataType) -> ArrayDataType:
         if not self.is_fitted():
             raise ValueError(
                 f"This scaler has not fitted yet. {self.__class__.__name__}"
@@ -79,7 +77,7 @@ class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
         return data * ((1.0 / self.max_) ** self.power)
 
-    def inverse_transform(self, data: ArrayDataType):
+    def inverse_transform(self, data: ArrayDataType) -> ArrayDataType:
         if not self.is_fitted():
             raise ValueError(
                 f"This scaler has not fitted yet. {self.__class__.__name__}"

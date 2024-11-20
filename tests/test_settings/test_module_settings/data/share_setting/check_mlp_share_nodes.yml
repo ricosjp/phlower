@@ -1,0 +1,64 @@
+misc:
+
+  tests:
+    Share0: [10, 20, 10]
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - Share0
+        nn_parameters:
+          nodes: [-1, 20, 10]
+          activations: ["Identity", "identity"]
+
+      - nn_type: Share
+        name: Share0
+        input_keys:
+          - mlp0
+        output_key: share1
+        destinations:
+          - GCN0
+        nn_parameters:
+          reference_name: MLP0
+
+      - nn_type: GCN
+        name: GCN0
+        input_keys:
+          - share1
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

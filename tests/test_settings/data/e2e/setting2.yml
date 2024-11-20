@@ -1,0 +1,64 @@
+
+
+model:
+  variable_dimensions:
+    feature0: {"L": 1, "T": -1}
+    feature1: {"L": 1, "T": -1}
+
+  inputs:
+    feature0:
+      is_time_series: true
+      is_voxel: true
+      physics_dimension: {"L": 1, "T": -1}
+      n_last_dim: 1
+      members:
+        - geo1
+        - geo2
+
+    feature1:
+      is_time_series: true
+      is_voxel: true
+      members:
+        - name: geo1
+          n_last_dim: 1
+
+  fields:
+    - name: adj_gcn0
+
+  labels:
+    - name: feature1
+      is_time_series: true
+      is_voxel: true
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+      - name: feature1
+
+    outputs:
+      - name: out_feature0
+        n_dim: 5
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - GCN0
+        nn_parameters:
+          nodes: [-1, 20, 100]
+          activations: ["Identity", "identity"]
+
+      - nn_type: GCN
+        name: GCN0
+        input_keys:
+          - mlp0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

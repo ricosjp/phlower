@@ -14,22 +14,28 @@ mypy:
 
 .PHONY: format
 format:
-	poetry run python3 -m ruff check --select I --fix
 	poetry run python3 -m ruff format
+	poetry run python3 -m ruff check --fix
 
 .PHONY: test
 test:
-	poetry run pytest tests -m "not e2e_test" --cov=src --cov-report term-missing --durations 5
+	poetry run pytest tests -m "not e2e_test and not gpu_test" --cov=src --cov-report term-missing --durations 5
 
 
-.PHONY: test
+.PHONY: e2e_test
 e2e_test:
 	poetry run pytest tests -m "e2e_test"
 
 
+.PHONY: gpu_test
+gpu_test:
+	poetry run pytest tests -m "gpu_test"
+
+
 .PHONY: lint
 lint:
-	poetry run python3 -m ruff check --diff
+	poetry run python3 -m ruff check --output-format=full
+	poetry run python3 -m ruff format --diff
 	# $(MAKE) mypy
 
 .PHONY: dev-install

@@ -9,89 +9,105 @@ misc:
     GCN0: 400
 
 model:
-  nn_type: GROUP
-  name: CYCLE_MODEL
   inputs:
     - name: feature0
-      n_dim: 10
+      members:
+        - name: feature0
+          n_last_dim: 10
+
     - name: feature1
-      n_dim: 12
-  
-  outputs:
-    - name: out_feature0
-      n_dim: 5
-  
-  modules:
-    - nn_type: MLP
-      name: ENCODER0
-      input_keys:
-        - feature0
-      output_key: mlp0
-      destinations:
-        - SUB_GROUP
-      nn_parameters:
-        nodes: [-1, 20, 100]
-        activations: ["relu", "relu"]
+      members:
+        - name: feature1
+          n_last_dim: 12
 
-    - nn_type: MLP
-      name: ENCODER1
-      input_keys:
-        - feature1
-      output_key: mlp1
-      destinations:
-        - SUB_GROUP
-      nn_parameters:
-        nodes: [-1, 20, 200]
-        activations: ["relu", "relu"]
+  fields:
+    - name: support1
+      is_time_series: false
 
-    - nn_type: GROUP
-      name: SUB_GROUP
-      inputs:
-        - name: mlp0
-          n_dim: 100
-        - name: mlp1
-          n_dim: 200
-      outputs:
-        - name: mlp2
-          n_dim: 400
-      destinations:
-        - GCN0
-      modules:
-        - nn_type: MLP
-          name: MLP0
-          input_keys:
-            - mlp0
-          output_key: mlp0
-          destinations:
-            - CONCAT
-          nn_parameters:
-            nodes: [-1, 20, 200]
-            activations: ["relu", "relu"]
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: ENCODER0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - SUB_GROUP
+        nn_parameters:
+          nodes: [-1, 20, 100]
+          activations: ["relu", "relu"]
 
-        - nn_type: MLP
-          name: MLP1
-          input_keys:
-            - mlp1
-          output_key: mlp1
-          destinations:
-            - CONCAT
-          nn_parameters:
-            nodes: [-1, 20, 200]
-            activations: ["relu", "relu"]
+      - nn_type: MLP
+        name: ENCODER1
+        input_keys:
+          - feature1
+        output_key: mlp1
+        destinations:
+          - SUB_GROUP
+        nn_parameters:
+          nodes: [-1, 20, 200]
+          activations: ["relu", "relu"]
 
-        - nn_type: Concatenator
-          name: CONCAT
-          input_keys:
-            - mlp0
-            - mlp1
-          output_key: mlp2
+      - nn_type: GROUP
+        name: SUB_GROUP
+        inputs:
+          - name: mlp0
+            n_last_dim: 100
+          - name: mlp1
+            n_last_dim: 200
+        outputs:
+          - name: mlp2
+            n_last_dim: 400
+        destinations:
+          - GCN0
+        modules:
+          - nn_type: MLP
+            name: MLP0
+            input_keys:
+              - mlp0
+            output_key: mlp0
+            destinations:
+              - CONCAT
+            nn_parameters:
+              nodes: [-1, 20, 200]
+              activations: ["relu", "relu"]
 
-    - nn_type: GCN
-      name: GCN0
-      input_keys:
-        - mlp2
-      output_key: out_feature0
-      nn_parameters:
-        nodes: [-1, 5]
-        activations: ["identity"]
-        support_name: support1
+          - nn_type: MLP
+            name: MLP1
+            input_keys:
+              - mlp1
+            output_key: mlp1
+            destinations:
+              - CONCAT
+            nn_parameters:
+              nodes: [-1, 20, 200]
+              activations: ["relu", "relu"]
+
+          - nn_type: Concatenator
+            name: CONCAT
+            input_keys:
+              - mlp0
+              - mlp1
+            output_key: mlp2
+
+      - nn_type: GCN
+        name: GCN0
+        input_keys:
+          - mlp2
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

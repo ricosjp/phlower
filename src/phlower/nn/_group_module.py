@@ -6,21 +6,27 @@ import dagstream
 import torch
 from typing_extensions import Self
 
-from phlower import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
     reduce_collections,
 )
 from phlower.io._files import IPhlowerCheckpointFile
-from phlower.nn._interface_module import IPhlowerModuleAdapter
+from phlower.nn._interface_module import (
+    IPhlowerCoreModule,
+    IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
+)
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
 
-class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
+class PhlowerGroupModule(
+    IPhlowerModuleAdapter, IReadonlyReferenceGroup, torch.nn.Module
+):
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> Self:
         _modules: list[IPhlowerModuleAdapter] = []
@@ -79,9 +85,9 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
     def get_n_nodes(self) -> list[int]:
         return None
 
-    def resolve(self):
+    def resolve(self) -> dagstream.DagStream:
         for module in self._phlower_modules:
-            module.resolve()
+            module.resolve(parent=self)
 
         # topological-sort
         stream = dagstream.DagStream()
@@ -122,7 +128,8 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        field_data: ISimulationField,
+        **kwards,
     ) -> IPhlowerTensorCollections:
         results = phlower_tensor_collection({})
 
@@ -140,7 +147,7 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
                 args = reduce_collections(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
-                _result = _module.forward(args, supports=supports)
+                _result = _module.forward(args, field_data=field_data, **kwards)
 
                 dag_modules.send(node.mut_name, _result)
                 dag_modules.done(node.mut_name)
@@ -152,6 +159,13 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
 
     def get_destinations(self) -> list[str]:
         return self._destinations
+
+    def search_module(self, name: str) -> IPhlowerCoreModule:
+        for _module in self._phlower_modules:
+            if _module.name == name:
+                return _module.get_core_module()
+
+        raise KeyError(f"Module {name} is not found in group {self.name}.")
 
     def load_checkpoint_file(
         self,
@@ -169,4 +183,9 @@ class PhlowerGroupModule(IPhlowerModuleAdapter, torch.nn.Module):
             )
         self.load_state_dict(
             content[TrainerSavedKeyType.MODEL_STATE_DICT.value]
+        )
+
+    def get_core_module(self) -> IPhlowerCoreModule:
+        raise ValueError(
+            "`get_core_module` cannot be called in PhlowerGroupModule."
         )

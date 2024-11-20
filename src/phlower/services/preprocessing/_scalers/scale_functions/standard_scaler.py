@@ -42,7 +42,7 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
         for k, v in kwargs.items():
             setattr(self, k, self._convert(k, v))
 
-    def _convert(self, field_name: str, value: Any) -> Any:
+    def _convert(self, field_name: str, value: Any) -> Any:  # noqa: ANN401
         if field_name in ["copy", "with_mean", "with_std"]:
             return value
 

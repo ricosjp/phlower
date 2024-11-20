@@ -48,11 +48,24 @@ class PhlowerScalerName(Enum):
     STD_SCALE = "std_scale"
 
 
+class ActivationType(str, Enum):
+    identity = "identity"
+    inversed_leaky_relu0p5 = "inversed_leaky_relu0p5"
+    inversed_smooth_leaky_relu = "inversed_smooth_leaky_relu"
+    leaky_relu0p5 = "leaky_relu0p5"
+    relu = "relu"
+    sigmoid = "sigmoid"
+    smooth_leaky_relu = "smooth_leaky_relu"
+    sqrt = "sqrt"
+    tanh = "tanh"
+    truncated_atanh = "truncated_atanh"
+
+
 class PhysicalDimensionSymbolType(Enum):
     T = 0  # time
     L = 1  # length
     M = 2  # mass
-    I = 3  # electric current
+    I = 3  # electric current  # noqa: E741
     Theta = 4  # thermodynamic temperature
     N = 5  # amount of substance
     J = 6  # luminous intensity

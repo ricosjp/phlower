@@ -17,27 +17,34 @@ logger = get_logger(__name__)
 
 
 class SparseArrayWrapper(IPhlowerArray):
-    def __init__(self, arr: SparseArrayType) -> None:
+    def __init__(
+        self, arr: SparseArrayType, dimensions: PhysicalDimensions | None = None
+    ) -> None:
         self._sparse_data = arr
+        self._dimensions = dimensions
 
     @property
     def is_sparse(self) -> bool:
         return True
 
     @property
-    def is_time_series(self):
+    def is_time_series(self) -> bool:
         return False
 
     @property
-    def row(self):
+    def is_voxel(self) -> bool:
+        return False
+
+    @property
+    def row(self) -> np.ndarray:
         return self._sparse_data.row
 
     @property
-    def col(self):
+    def col(self) -> np.ndarray:
         return self._sparse_data.col
 
     @property
-    def data(self):
+    def data(self) -> np.ndarray:
         return self._sparse_data.data
 
     @property
@@ -95,7 +102,7 @@ class SparseArrayWrapper(IPhlowerArray):
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        dimension: PhysicalDimensions | None = None,
+        disable_dimensions: bool = False,
     ) -> PhlowerTensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(
@@ -107,7 +114,12 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(tensor=sparse_tensor, dimension=dimension)
+        _tensor = phlower_tensor(
+            tensor=sparse_tensor,
+            dimension=None if disable_dimensions else self._dimensions,
+            is_time_series=False,
+            is_voxel=False,
+        )
         _tensor = _tensor.coalesce()
         _tensor.to(device=device, non_blocking=non_blocking)
         return _tensor
@@ -131,12 +143,16 @@ def batch(
     return SparseArrayWrapper(concat_arr), info
 
 
-def unbatch(array: SparseArrayWrapper, batch_info: GraphBatchInfo):
+def unbatch(
+    array: SparseArrayWrapper, batch_info: GraphBatchInfo
+) -> list[SparseArrayWrapper]:
     results = _sparse_decompose(array.to_numpy(), batch_info)
     return [SparseArrayWrapper(arr) for arr in results]
 
 
-def _sparse_concatenate(arrays: Sequence[SparseArrayWrapper]):
+def _sparse_concatenate(
+    arrays: Sequence[SparseArrayWrapper],
+) -> SparseArrayWrapper:
     offsets = np.cumsum(
         np.array(
             [
@@ -163,7 +179,9 @@ def _sparse_concatenate(arrays: Sequence[SparseArrayWrapper]):
     return sparse_arr
 
 
-def _sparse_decompose(array: SparseArrayType, batch_info: GraphBatchInfo):
+def _sparse_decompose(
+    array: SparseArrayType, batch_info: GraphBatchInfo
+) -> list[sp.coo_matrix]:
     sizes = np.cumsum(batch_info.sizes)
     offsets = np.cumsum(
         np.array([[0, 0]] + batch_info.shapes[:-1], dtype=np.int32), axis=0

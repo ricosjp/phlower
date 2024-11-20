@@ -1,14 +1,15 @@
 from unittest import mock
 
 import pytest
-
 from phlower.utils import StopWatch
 
 
 @pytest.mark.parametrize(
     "offset, times, expected", [(0, [0, 100], 100), (10, [0, 100], 110)]
 )
-def test__stop_function_elapsed_time(offset, times, expected):
+def test__stop_function_elapsed_time(
+    offset: int, times: list[int], expected: int
+) -> None:
     timer = StopWatch(offset)
     with mock.patch("time.time", side_effect=times):
         timer.start()
@@ -19,7 +20,9 @@ def test__stop_function_elapsed_time(offset, times, expected):
 @pytest.mark.parametrize(
     "offset, times, expected", [(0, [0, 100], 100), (10, [0, 100], 110)]
 )
-def test__watch_function_elapsed_time(offset, times, expected):
+def test__watch_function_elapsed_time(
+    offset: int, times: list[int], expected: int
+) -> None:
     timer = StopWatch(offset)
     with mock.patch("time.time", side_effect=times):
         timer.start()
@@ -27,7 +30,7 @@ def test__watch_function_elapsed_time(offset, times, expected):
         assert timer._start is not None
 
 
-def test__cannot_start_multiple_times():
+def test__cannot_start_multiple_times() -> None:
     timer = StopWatch()
     with pytest.raises(ValueError):
         timer.start()

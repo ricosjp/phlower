@@ -1,19 +1,19 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from phlower.services.preprocessing._scalers.scale_functions import (
     MaxAbsPoweredScaler,
 )
+from phlower.utils.typing import ArrayDataType
 
 
 @pytest.mark.parametrize("name, kwards", [("max_abs_powered", {})])
-def test__create(name, kwards):
+def test__create(name: str, kwards: dict):
     _ = MaxAbsPoweredScaler.create(name, **kwards)
 
 
 @pytest.mark.parametrize("name", ["isoam_scale", "identity"])
-def test__failed_create(name):
+def test__failed_create(name: str):
     with pytest.raises(NotImplementedError):
         MaxAbsPoweredScaler.create(name)
 
@@ -63,7 +63,7 @@ def test__default_parameter():
         ),
     ],
 )
-def test__partial_fit(data, desired):
+def test__partial_fit(data: list[ArrayDataType], desired: list[float]):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered")
     for v in data:
         scaler.partial_fit(v)
@@ -107,7 +107,9 @@ def test__partial_fit(data, desired):
         ),
     ],
 )
-def test__transform(max_data, power, inputs, desired):
+def test__transform(
+    max_data: np.ndarray, power: float, inputs: np.ndarray, desired: np.ndarray
+):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
     scaler.max_ = max_data
 
@@ -149,7 +151,9 @@ def test__transform(max_data, power, inputs, desired):
         ),
     ],
 )
-def test__transform_sparse_array(max_data, power, inputs, desired):
+def test__transform_sparse_array(
+    max_data: np.ndarray, power: float, inputs: np.ndarray, desired: np.ndarray
+):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
     scaler.max_ = max_data
 
@@ -181,7 +185,9 @@ def test__transform_sparse_array(max_data, power, inputs, desired):
         ),
     ],
 )
-def test__inverse_transform(max_data, power, inputs):
+def test__inverse_transform(
+    max_data: np.ndarray, power: float, inputs: np.ndarray
+):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
     scaler.max_ = max_data
 
@@ -205,7 +211,9 @@ def test__inverse_transform(max_data, power, inputs):
         ),
     ],
 )
-def test__inverse_transform_sparse_array(max_data, power, inputs):
+def test__inverse_transform_sparse_array(
+    max_data: np.ndarray, power: float, inputs: np.ndarray
+):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered", power=power)
     scaler.max_ = max_data
 
@@ -221,7 +229,7 @@ def test__inverse_transform_sparse_array(max_data, power, inputs):
         ({"max_": [1.0, 3.0]}, sp.coo_matrix(np.array([[3.0], [7.0]]))),
     ],
 )
-def test__raise_error_when_transform(kwards, data):
+def test__raise_error_when_transform(kwards: dict, data: ArrayDataType):
     scaler = MaxAbsPoweredScaler.create("max_abs_powered")
     for k, v in kwards.items():
         setattr(scaler, k, np.array(v))
@@ -237,7 +245,9 @@ def test__raise_error_when_transform(kwards, data):
         ("max_abs_powered", 2.0, 100000, 3),
     ],
 )
-def test__retrieve_from_dumped_data(name, power, n_nodes, n_feature):
+def test__retrieve_from_dumped_data(
+    name: str, power: float, n_nodes: int, n_feature: int
+):
     interim_value = np.random.randn(n_nodes, n_feature) * 2
 
     scaler = MaxAbsPoweredScaler.create(name, power=power)

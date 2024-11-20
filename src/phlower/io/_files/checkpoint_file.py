@@ -89,13 +89,13 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
     def is_encrypted(self) -> bool:
         return self._ext_type == PhlowerFileExtType.PTHENC
 
-    def load(self, device: str, *, decrypt_key: bytes = None) -> Any:
+    def load(self, device: str, *, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         if self.is_encrypted:
             return self._load_encrypted(device=device, decrypt_key=decrypt_key)
         else:
             return self._load(device=device)
 
-    def _load(self, device: str) -> Any:
+    def _load(self, device: str) -> Any:  # noqa: ANN401
         return torch.load(self._path, map_location=device)
 
     def _load_encrypted(

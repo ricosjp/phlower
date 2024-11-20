@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 from typing import Literal
 
 import dagstream
@@ -10,8 +9,12 @@ from pydantic import Field
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
+from phlower.settings._interface import (
+    IModuleSetting,
+    IPhlowerLayerParameters,
+    IReadOnlyReferenceGroupSetting,
+)
 from phlower.settings._module_parameter_setting import PhlowerModuleParameters
-from phlower.settings._module_settings import gather_input_dims
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -21,38 +24,27 @@ from phlower.utils.exceptions import (
 )
 
 
-class IModuleSetting(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def get_name(self) -> str: ...
-
-    @abc.abstractmethod
-    def get_destinations(self) -> list[str]: ...
-
-    @abc.abstractmethod
-    def get_output_info(self) -> dict[str, int]: ...
-
-    @abc.abstractmethod
-    def resolve(self, *resolved_outputs: dict[str, int]) -> None: ...
-
-
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class ModuleIOSetting:
+class GroupIOSetting:
     name: str
-    n_dim: int
+    n_last_dim: int
+    skip_converge: bool = False  # HACK need to fix
 
 
-class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
+class GroupModuleSetting(
+    IModuleSetting, IReadOnlyReferenceGroupSetting, pydantic.BaseModel
+):
     name: str
     """
     name of group
     """
 
-    inputs: list[ModuleIOSetting]
+    inputs: list[GroupIOSetting]
     """
     definition of input varaibles
     """
 
-    outputs: list[ModuleIOSetting]
+    outputs: list[GroupIOSetting]
     """
     definition of output varaibles
     """
@@ -84,7 +76,9 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
 
     @pydantic.field_validator("modules", mode="before")
     @classmethod
-    def validate_annotate_modules(cls, vals):
+    def validate_annotate_modules(
+        cls, vals: list
+    ) -> list[ModuleSetting | GroupModuleSetting]:
         if not isinstance(vals, list):
             raise ValueError(f"'modules' expected to be List. actual: {vals}")
 
@@ -127,19 +121,31 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
         return [v.name for v in self.outputs]
 
     def get_output_info(self) -> dict[str, int]:
-        return {output.name: output.n_dim for output in self.outputs}
+        return {output.name: output.n_last_dim for output in self.outputs}
+
+    def search_module_setting(self, name: str) -> IPhlowerLayerParameters:
+        for module in self.modules:
+            if module.name == name:
+                return module.nn_parameters
+
+        raise KeyError(
+            f"ModuleSetting {name} is not found in GroupSetting {self.name}."
+        )
 
     def resolve(
-        self, *resolved_outputs: dict[str, int], is_first: bool = False
+        self,
+        *resolved_outputs: dict[str, int],
+        is_first: bool = False,
+        **kwards,
     ) -> None:
         if not is_first:
             self._check_keys(*resolved_outputs)
             self._check_nodes(*resolved_outputs)
 
-        input_info = {v.name: v.n_dim for v in self.inputs}
+        input_info = {v.name: v.n_last_dim for v in self.inputs}
 
         try:
-            results = _resolve_modules(input_info, self.modules)
+            results = _resolve_modules(input_info, self.modules, self)
         except DagStreamCycleError as ex:
             raise PhlowerModuleCycleError(
                 f"A cycle is detected in {self.name}."
@@ -185,10 +191,10 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
             key2node.update(output)
 
         for input_item in self.inputs:
-            if key2node[input_item.name] != input_item.n_dim:
+            if key2node[input_item.name] != input_item.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {input_item.name} in {self.name} "
-                    f"is {input_item.n_dim}. "
+                    f"is {input_item.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
@@ -210,10 +216,10 @@ class GroupModuleSetting(IModuleSetting, pydantic.BaseModel):
                     "Please check last module in this group."
                 )
 
-            if key2node[self_output.name] != self_output.n_dim:
+            if key2node[self_output.name] != self_output.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {self_output.name} in {self.name} "
-                    f"is {self_output.n_dim}. "
+                    f"is {self_output.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
@@ -267,17 +273,29 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     def get_name(self) -> str:
         return self.name
 
+    def get_input_keys(self) -> list[str]:
+        return self.input_keys
+
     def get_destinations(self) -> list[str]:
         return self.destinations
 
     def get_output_info(self) -> dict[str, int]:
         return {self.output_key: self.nn_parameters.get_n_nodes()[-1]}
 
-    def resolve(self, *resolved_outputs: dict[str, int]) -> None:
+    def resolve(
+        self,
+        *resolved_outputs: dict[str, int],
+        parent: IReadOnlyReferenceGroupSetting | None = None,
+    ) -> None:
         self._check_keys(*resolved_outputs)
+
+        if self.nn_parameters.need_reference:
+            self.nn_parameters.get_reference(parent)
+
         _resolved_nodes = self._resolve_nodes(*resolved_outputs)
         # NOTE: overwrite nodes
         self.nn_parameters.overwrite_nodes(_resolved_nodes)
+        self.nn_parameters.confirm(self)
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _to_input_keys: set[str] = set()
@@ -306,8 +324,8 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
             key2node.update(output)
 
         try:
-            first_node = gather_input_dims(
-                self.nn_type, *(key2node[key] for key in self.input_keys)
+            first_node = self.nn_parameters.gather_input_dims(
+                *(key2node[key] for key in self.input_keys)
             )
         except ValueError as ex:
             raise PhlowerModuleNodeDimSizeError(
@@ -345,13 +363,19 @@ class _SettingResolverAdapter:
     def name(self) -> str:
         return self._setting.get_name()
 
-    def __call__(self, *resolved_output: dict[str, int]) -> int:
-        self._setting.resolve(*resolved_output)
+    def __call__(
+        self,
+        *resolved_output: dict[str, int],
+        parent: IReadOnlyReferenceGroupSetting | None = None,
+    ) -> int:
+        self._setting.resolve(*resolved_output, parent=parent)
         return self._setting.get_output_info()
 
 
 def _resolve_modules(
-    starts: dict[str, int], modules: list[IModuleSetting]
+    starts: dict[str, int],
+    modules: list[IModuleSetting],
+    parent: IReadOnlyReferenceGroupSetting | None = None,
 ) -> list[dict[str, int]]:
     stream = dagstream.DagStream()
     resolvers = [_SettingResolverAdapter(layer) for layer in modules]
@@ -367,6 +391,6 @@ def _resolve_modules(
     _dag = stream.construct()
 
     executor = dagstream.StreamExecutor(_dag)
-    results = executor.run(first_args=(starts,))
+    results = executor.run(parent=parent, first_args=(starts,))
 
     return list(results.values())

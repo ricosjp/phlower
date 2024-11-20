@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import abc
 import pathlib
 
 from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._module_settings import IPhlowerLayerParameters
 
@@ -17,13 +20,30 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_nn_name(cls) -> str: ...
 
+    @classmethod
+    @abc.abstractmethod
+    def need_reference(cls) -> bool: ...
+
+    @abc.abstractmethod
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> None: ...
+
     @abc.abstractmethod
     def forward(
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] = None,
+        field_data: ISimulationField = None,
     ) -> PhlowerTensor: ...
+
+    @abc.abstractmethod
+    def get_reference_name(self) -> str | None: ...
+
+
+class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def search_module(self, name: str) -> IPhlowerCoreModule: ...
 
 
 class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
@@ -32,14 +52,17 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def name(self) -> str: ...
 
     @abc.abstractmethod
-    def resolve(self) -> None: ...
+    def resolve(
+        cls, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> None: ...
 
     @abc.abstractmethod
     def forward(
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor],
+        supports: dict[str, PhlowerTensor] | None = None,
+        **kwards,
     ) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
@@ -53,3 +76,6 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def draw(self, output_directory: pathlib.Path, recursive: bool): ...
+
+    @abc.abstractmethod
+    def get_core_module(self) -> IPhlowerCoreModule: ...

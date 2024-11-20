@@ -41,3 +41,60 @@ class PhlowerFeatureStoreOverwriteError(ValueError):
     """This error raises when to try to overwrite feature store item"""
 
     ...
+
+
+class PhlowerRestartTrainingCompletedError(ValueError):
+    """This error raises when trying to restart train job
+    which has already completed.
+    """
+
+    ...
+
+
+class PhlowerSparseUnsupportedError(ValueError):
+    """
+    This error raises when trying to call methods not supported for sparse
+    tensors
+    """
+
+
+class PhlowerUnsupportedTorchFunctionError(ValueError):
+    """
+    This error raises when trying to call a function not supported
+    by the phlower library although torch does
+    """
+
+
+class PhlowerReshapeError(ValueError):
+    """
+    This error raises when trying to reshape a tensor in an invalid
+    manner
+    """
+
+
+class NotFoundReferenceModuleError(ValueError): ...
+
+
+class PhlowerIncompatibleTensorError(ValueError):
+    """
+    This error raises when trying to perform an operation for incompatible
+    tensor(s)
+    """
+
+
+class PhlowerTypeError(TypeError):
+    """This error raises when type is not compatible with what is expected."""
+
+
+class PhlowerInvalidActivationError(ValueError):
+    """This error raises when a set activation is invalid"""
+
+
+class PhlowerDimensionRequiredError(ValueError):
+    """
+    This error raises when the dimension does not exist despite required.
+    """
+
+
+class PhlowerInvalidArgumentsError(ValueError):
+    """This error raises when the arguments are invalid."""
