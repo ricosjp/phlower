@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>High Level API for scaling, training and prediction &mdash; phlower 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            phlower
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Module Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Tutorial</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">phlower</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">High Level API for scaling, training and prediction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/basic_usages/03_high_level_api_for_scaling_training_and_prediction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-basic-usages-03-high-level-api-for-scaling-training-and-prediction-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="high-level-api-for-scaling-training-and-prediction">
+<span id="third"></span><span id="sphx-glr-tutorials-basic-usages-03-high-level-api-for-scaling-training-and-prediction-py"></span><h1>High Level API for scaling, training and prediction<a class="headerlink" href="#high-level-api-for-scaling-training-and-prediction" title="Link to this heading">¶</a></h1>
+<p>In this section, we will use high level API for performing machine learning process.</p>
+<p>At First, we will prepare dummy data.
+These dummy data corresponds to feature values extracted from simultion data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sp</span>
+
+
+<span class="k">def</span> <span class="nf">prepare_sample_interim_files</span><span class="p">():</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">output_directory</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">output_directory</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">output_directory</span><span class="p">)</span>
+
+    <span class="n">base_interim_dir</span> <span class="o">=</span> <span class="n">output_directory</span> <span class="o">/</span> <span class="s2">&quot;interim&quot;</span>
+    <span class="n">base_interim_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">n_cases</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_cases</span><span class="p">):</span>
+        <span class="n">n_nodes</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">interim_dir</span> <span class="o">=</span> <span class="n">base_interim_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;case_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">interim_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+
+        <span class="n">nodal_initial_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+            <span class="n">interim_dir</span> <span class="o">/</span> <span class="s2">&quot;nodal_initial_u.npy&quot;</span><span class="p">,</span>
+            <span class="n">nodal_initial_u</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># nodal_last_u = np.random.rand(n_nodes, 3, 1)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">interim_dir</span> <span class="o">/</span> <span class="s2">&quot;nodal_last_u.npy&quot;</span><span class="p">,</span> <span class="n">nodal_initial_u</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="n">sparse_array_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;nodal_nadj&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;nodal_x_grad_hop1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;nodal_y_grad_hop1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;nodal_z_grad_hop1&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">sparse_array_names</span><span class="p">:</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="n">n_nodes</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+            <span class="n">sp</span><span class="o">.</span><span class="n">save_npz</span><span class="p">(</span><span class="n">interim_dir</span> <span class="o">/</span> <span class="n">name</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">tocoo</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="p">(</span><span class="n">interim_dir</span> <span class="o">/</span> <span class="s2">&quot;converted&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+
+
+<span class="n">prepare_sample_interim_files</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Setting file for scaling and training can be downloaded from
+<a class="reference external" href="https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/setting.yml">data.yml</a>
+we perform scaling process for data above.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">phlower.services.preprocessing</span> <span class="kn">import</span> <span class="n">PhlowerScalingService</span>
+<span class="kn">from</span> <span class="nn">phlower.settings</span> <span class="kn">import</span> <span class="n">PhlowerSetting</span>
+
+<span class="n">setting</span> <span class="o">=</span> <span class="n">PhlowerSetting</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="s2">&quot;sample_data/e2e/setting.yml&quot;</span><span class="p">)</span>
+
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">PhlowerScalingService</span><span class="o">.</span><span class="n">from_setting</span><span class="p">(</span><span class="n">setting</span><span class="p">)</span>
+<span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform_all</span><span class="p">(</span>
+    <span class="n">interim_data_directories</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/interim/case_0&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/interim/case_1&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/interim/case_2&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/interim/case_3&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/interim/case_4&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">output_base_directory</span><span class="o">=</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we perform training by using preprocessed data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">phlower.services.trainer</span> <span class="kn">import</span> <span class="n">PhlowerTrainer</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">PhlowerTrainer</span><span class="o">.</span><span class="n">from_setting</span><span class="p">(</span><span class="n">setting</span><span class="p">)</span>
+
+<span class="n">loss</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+    <span class="n">train_directories</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_0&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_1&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_2&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">validation_directories</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_3&quot;</span><span class="p">),</span>
+        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_4&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">output_directory</span><span class="o">=</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/model&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>epoch    train_loss    validation_loss    elapsed_time
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+0        3.65853e-01   3.49816e-01        0.11
+
+  0%|                                                    | 0/10 [00:00&lt;?, ?it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+1        3.58065e-01   3.42368e-01        0.22
+
+val loss 0.350:  10%|##8                         | 1/10 [00:00&lt;00:01,  8.84it/s]
+val loss 0.342:  20%|#####6                      | 2/10 [00:00&lt;00:00, 17.64it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+2        3.50439e-01   3.35074e-01        0.33
+
+val loss 0.342:  20%|#####6                      | 2/10 [00:00&lt;00:00, 17.64it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+3        3.42973e-01   3.27933e-01        0.44
+
+val loss 0.335:  30%|########4                   | 3/10 [00:00&lt;00:00, 17.64it/s]
+val loss 0.328:  40%|###########2                | 4/10 [00:00&lt;00:00, 11.25it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+4        3.35662e-01   3.20941e-01        0.55
+
+val loss 0.328:  40%|###########2                | 4/10 [00:00&lt;00:00, 11.25it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+5        3.28504e-01   3.14095e-01        0.66
+
+val loss 0.321:  50%|##############              | 5/10 [00:00&lt;00:00, 11.25it/s]
+val loss 0.314:  60%|################8           | 6/10 [00:00&lt;00:00, 10.21it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+6        3.21496e-01   3.07392e-01        0.77
+
+val loss 0.314:  60%|################8           | 6/10 [00:00&lt;00:00, 10.21it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+7        3.14634e-01   3.00829e-01        0.88
+
+val loss 0.307:  70%|###################5        | 7/10 [00:00&lt;00:00, 10.21it/s]
+val loss 0.301:  80%|######################4     | 8/10 [00:00&lt;00:00,  9.74it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+8        3.07916e-01   2.94404e-01        0.99
+
+val loss 0.301:  80%|######################4     | 8/10 [00:00&lt;00:00,  9.74it/s]
+
+  0%|                                                     | 0/3 [00:00&lt;?, ?it/s]
+
+
+
+  0%|                                                     | 0/2 [00:00&lt;?, ?it/s]
+
+
+
+9        3.01338e-01   2.88113e-01        1.10
+
+val loss 0.294:  90%|#########################2  | 9/10 [00:00&lt;00:00,  9.74it/s]
+val loss 0.288: 100%|###########################| 10/10 [00:00&lt;00:00,  9.48it/s]
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">train</span></code> function returns PhlowerTensor object which corresponds to last validation loss.
+Let’s call print it.</p>
+<p>We can find that loss object has physical dimension and it is L^2 T^(-2)
+because we use MSE (Mean Squared Error) as a loss function.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>PhlowerTensor(0.2984323501586914, Dimension: PhlowerDimensionTensor(T: -2.0, L: 2.0, M: 0.0, I: 0.0, Theta: 0.0, N: 0.0, J: 0.0)), is_time_series: False, is_voxel: False
+</pre></div>
+</div>
+<p>Finally, we perform predicion by using pretrained model.
+Setting file for prediction can be downloaded from
+<a class="reference external" href="https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/e2e/predict.yml">data.yml</a></p>
+<p>It is found that physical dimension is also considered properly.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">phlower.services.predictor</span> <span class="kn">import</span> <span class="n">PhlowerPredictor</span>
+
+<span class="n">setting</span> <span class="o">=</span> <span class="n">PhlowerSetting</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="s2">&quot;sample_data/e2e/predict.yml&quot;</span><span class="p">)</span>
+
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">PhlowerPredictor</span><span class="p">(</span>
+    <span class="n">model_directory</span><span class="o">=</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/model&quot;</span><span class="p">),</span>
+    <span class="n">predict_setting</span><span class="o">=</span><span class="n">setting</span><span class="o">.</span><span class="n">prediction</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">preprocessed_directories</span> <span class="o">=</span> <span class="p">[</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;out/preprocessed/case_3&quot;</span><span class="p">)]</span>
+
+<span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">preprocessed_directories</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dimension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/__w/phlower/phlower/src/phlower/io/_files/checkpoint_file.py:99: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(self._path, map_location=device)
+nodal_last_u: PhlowerDimensionTensor(T: -1.0, L: 1.0, M: 0.0, I: 0.0, Theta: 0.0, N: 0.0, J: 0.0)
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.418 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-basic-usages-03-high-level-api-for-scaling-training-and-prediction-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/0eb4c6068b55102daf56ad0a3da6baf3/03_high_level_api_for_scaling_training_and_prediction.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">03_high_level_api_for_scaling_training_and_prediction.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/15af1fc81b615371e46cf85a99e84a46/03_high_level_api_for_scaling_training_and_prediction.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">03_high_level_api_for_scaling_training_and_prediction.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/a8b3e29073e87a5e35bafae20ada8d9f/03_high_level_api_for_scaling_training_and_prediction.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">03_high_level_api_for_scaling_training_and_prediction.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, RICOS.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
