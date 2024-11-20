@@ -98,3 +98,13 @@ deploy:wheel:tags:
     - export VERSION=$CI_COMMIT_REF_NAME
   only:
     - tags
+
+docker:
+  stage: deploy
+  services:
+    - docker:dind
+  script:
+    - make push
+  only:
+    - main
+
