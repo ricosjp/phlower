@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import abc
-from _collections_abc import dict_items
-from collections.abc import Iterable, Sequence
+from collections.abc import ItemsView, Iterable, KeysView, Sequence
 from typing import Any
 
 import numpy as np
@@ -42,7 +41,7 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def to_numpy(self) -> dict[str, ArrayDataType]: ...
 
     @abc.abstractmethod
-    def keys(self) -> Iterable[str]: ...
+    def keys(self) -> KeysView[str]: ...
 
     @abc.abstractmethod
     def values(self): ...
@@ -61,6 +60,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update(self, data: IPhlowerTensorCollections) -> None: ...
+
+    @abc.abstractmethod
+    def mask(self, keys: list[str]) -> IPhlowerTensorCollections: ...
 
 
 def phlower_tensor_collection(
@@ -96,7 +98,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def keys(self) -> Iterable[str]:
         return self._x.keys()
 
-    def items(self) -> dict_items[str, PhlowerTensor]:
+    def items(self) -> ItemsView[str, PhlowerTensor]:
         return self._x.items()
 
     def pop(
@@ -160,6 +162,9 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
                 )
 
             self._x[k] = data[k]
+
+    def mask(self, keys: list[str]) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors({self._x[k] for k in keys})
 
 
 def reduce_collections(
