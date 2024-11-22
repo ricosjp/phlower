@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import ItemsView, Iterable, KeysView, Sequence
+from collections.abc import Callable, ItemsView, Iterable, KeysView, Sequence
 from typing import Any
 
 import numpy as np
@@ -16,6 +16,18 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def __init__(
         self, value: dict[str, torch.Tensor | PhlowerTensor]
     ) -> None: ...
+
+    @abc.abstractmethod
+    def __add__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __sub__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __mul__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __div__(self, __value: object) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
     def __contains__(self, key: str): ...
@@ -79,6 +91,46 @@ def phlower_tensor_collection(
 class PhlowerDictTensors(IPhlowerTensorCollections):
     def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]):
         self._x = {k: phlower_tensor(v) for k, v in value.items()}
+
+    def __add__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to add other which has different keys"
+            return PhlowerDictTensors(
+                {self._x[k] + __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors({self._x[k] + __value} for k in self.keys())
+
+    def __sub__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to substract other which has different keys"
+            return PhlowerDictTensors(
+                {self._x[k] / __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors({self._x[k] / __value} for k in self.keys())
+
+    def __mul__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to multple other which has different keys"
+            return PhlowerDictTensors(
+                {self._x[k] * __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors({self._x[k] * __value} for k in self.keys())
+
+    def __div__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to divide by other which has different keys"
+            return PhlowerDictTensors(
+                {self._x[k] / __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors({self._x[k] / __value} for k in self.keys())
 
     def __str__(self) -> str:
         txt = ""
@@ -165,6 +217,9 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def mask(self, keys: list[str]) -> IPhlowerTensorCollections:
         return PhlowerDictTensors({self._x[k] for k in keys})
+
+    def apply(self, function: Callable) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors({function(self._x[k]) for k in self.keys()})
 
 
 def reduce_collections(

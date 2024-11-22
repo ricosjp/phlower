@@ -11,6 +11,7 @@ from phlower.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from phlower.nn._core_modules import _functions as functions
 from phlower.nn._interface_module import IPhlowerGroup
 from phlower.nn._iteration_solver import IFIterationSolver
 
@@ -103,10 +104,10 @@ class ImplicitIterationSolver(IFIterationSolver):
             operator_value = group.step_forward(
                 h_inputs, field_data=field_data, **kwards
             )
-            residuals = (
-                h_inputs.mask(self._keys)
-                - inputs.mask(self._keys)
-                - operator_value.mask(self._keys)
+            residuals = self._calculate_residuals(
+                h_inputs.mask(self._keys),
+                inputs.mask(self._keys),
+                operator_value.mask(self._keys),
             )
 
             v_history.append(v_next)
@@ -161,9 +162,9 @@ class AlphaCalculator:
             return self._alpha_model(
                 torch.cat(
                     [
-                        torch.einsum("n...f,n...f->f", delta_x, delta_x),
-                        torch.einsum("n...f,n...f->f", delta_g, delta_g),
-                        torch.einsum("n...f,n...f->f", delta_x, delta_g),
+                        functions.einsum("n...f,n...f->f", delta_x, delta_x),
+                        functions.einsum("n...f,n...f->f", delta_g, delta_g),
+                        functions.einsum("n...f,n...f->f", delta_x, delta_g),
                     ],
                     dim=-1,
                 )
@@ -177,12 +178,12 @@ class AlphaCalculator:
 
         pattern = self._get_einsum_pattern()
         if self._type_bb == "long":
-            return torch.einsum(pattern, delta_x, delta_x) / (
-                torch.einsum(pattern, delta_x, delta_g) + 1.0e-5
+            return functions.einsum(pattern, delta_x, delta_x) / (
+                functions.einsum(pattern, delta_x, delta_g) + 1.0e-5
             )
         if self._type_bb == "short":
-            return torch.einsum(pattern, delta_x, delta_g) / (
-                torch.einsum(pattern, delta_g, delta_g) + 1.0e-5
+            return functions.einsum(pattern, delta_x, delta_g) / (
+                functions.einsum(pattern, delta_g, delta_g) + 1.0e-5
             )
 
         raise NotImplementedError(
