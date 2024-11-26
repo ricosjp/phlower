@@ -42,7 +42,12 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(self, activation: str, nodes: list[int] = None, index: int = 0):
+    def __init__(
+        self,
+        nodes: list[int] = None,
+        activation: str = "identity",
+        index: int = 0
+    ) -> None:
         super().__init__()
         self._nodes = nodes
         self._activation_name = activation

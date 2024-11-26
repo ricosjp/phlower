@@ -36,4 +36,7 @@ def test__accessed_tensor_shape(
 
     assert actual.shape == desired_shape
 
-    np.testing.assert_almost_equal(phlower_tensors.to_numpy()["tensor"][index], actual.to('cpu').detach().numpy().copy())
+    np.testing.assert_almost_equal(
+        phlower_tensors.to_numpy()["tensor"][index],
+        actual.to('cpu').detach().numpy().copy()
+    )

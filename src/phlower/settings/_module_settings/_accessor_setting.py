@@ -27,8 +27,6 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         sum_dim = sum(v for v in input_dims)
         return sum_dim
 
-    def confirm(self, self_module: IModuleSetting) -> None: ...
-
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
