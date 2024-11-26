@@ -26,8 +26,8 @@ def test__accessed_tensor_shape(
 ):
 
     phlower_tensor = PhlowerTensor(
-            torch.from_numpy(np.random.rand(*input_shape))
-            )
+        torch.from_numpy(np.random.rand(*input_shape))
+    )
     phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
 
     model = Accessor(activation="identity", index=index)
@@ -38,5 +38,5 @@ def test__accessed_tensor_shape(
 
     np.testing.assert_almost_equal(
         phlower_tensors.to_numpy()["tensor"][index],
-        actual.to('cpu').detach().numpy().copy()
+        actual.to('cpu').detach().numpy().copy(),
     )

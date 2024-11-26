@@ -46,7 +46,7 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         self,
         nodes: list[int] = None,
         activation: str = "identity",
-        index: int = 0
+        index: int = 0,
     ) -> None:
         super().__init__()
         self._nodes = nodes
