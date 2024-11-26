@@ -422,3 +422,10 @@ def unsqueeze(
     input: PhlowerDimensionTensor, dim: int
 ) -> PhlowerDimensionTensor:
     return input
+
+
+@dimension_wrap_implements(torch.abs)
+def torch_abs(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    return inputs
