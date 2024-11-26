@@ -1,3 +1,4 @@
+from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._gcn import GCN
@@ -12,6 +13,7 @@ from phlower.nn._core_modules._similarity_equivariant_mlp import (
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[IPhlowerCoreModule] = [
+    Accessor,
     Concatenator,
     EnEquivariantMLP,
     GCN,
