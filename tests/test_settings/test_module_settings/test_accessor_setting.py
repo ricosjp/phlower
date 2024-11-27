@@ -33,9 +33,7 @@ def test__can_accept_valid_n_nodes(
         ([10, 30], "identity"),
     ],
 )
-def test__raise_error_when_invalid_n_nodes(
-    nodes: list[int], activation: str
-):
+def test__raise_error_when_invalid_n_nodes(nodes: list[int], activation: str):
     with pytest.raises(ValueError):
         _ = AccessorSetting(nodes=nodes, activation=activation)
 
@@ -44,12 +42,8 @@ def test__raise_error_when_invalid_n_nodes(
     "nodes, activation, index",
     [([10, 20, 30], "identity", 0), ([10, 20, 30, 40, 50], "identity", 0)],
 )
-def test__fill_default_settings(
-    nodes: list[int], activation: str, index: int
-):
-    setting = AccessorSetting(
-        nodes=nodes, activation=activation, index=index
-    )
+def test__fill_default_settings(nodes: list[int], activation: str, index: int):
+    setting = AccessorSetting(nodes=nodes, activation=activation, index=index)
     desired_activation = "identity"
     desired_index = 0
 
@@ -59,18 +53,14 @@ def test__fill_default_settings(
 
 @pytest.mark.parametrize("input_dims", [([30]), ([40]), ([100])])
 def test__gather_input_dims(input_dims: list[int]):
-    setting = AccessorSetting(
-        nodes=[10, 20], activation="identity", index=0
-    )
+    setting = AccessorSetting(nodes=[10, 20], activation="identity", index=0)
 
     assert setting.gather_input_dims(*input_dims) == input_dims[0]
 
 
 @pytest.mark.parametrize("input_dims", [([]), ([40, 400]), ([10, 0, 1])])
 def test__raise_error_invalid_input_dims(input_dims: list[int]):
-    setting = AccessorSetting(
-        nodes=[10, 20], activation="identity", index=0
-    )
+    setting = AccessorSetting(nodes=[10, 20], activation="identity", index=0)
 
     with pytest.raises(ValueError):
         _ = setting.gather_input_dims(*input_dims)
@@ -109,9 +99,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 
 
 def test__reference_is_not_necessary():
-    setting = AccessorSetting(
-        nodes=[10, 20], activation="identity", index=0
-    )
+    setting = AccessorSetting(nodes=[10, 20], activation="identity", index=0)
 
     assert not setting.need_reference
 

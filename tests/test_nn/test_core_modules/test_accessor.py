@@ -28,7 +28,6 @@ def test__accessed_tensor_shape(
     index: int,
     desired_shape: tuple[int]
 ):
-
     phlower_tensor = PhlowerTensor(
         torch.from_numpy(np.random.rand(*input_shape))
     )
@@ -43,5 +42,5 @@ def test__accessed_tensor_shape(
     if activation == "identity":
         np.testing.assert_almost_equal(
             phlower_tensors.to_numpy()["tensor"][index],
-            actual.to('cpu').detach().numpy().copy(),
+            actual.to("cpu").detach().numpy().copy(),
         )
