@@ -419,9 +419,9 @@ def leaky_relu(
 
 @dimension_wrap_implements(torch.unsqueeze)
 def unsqueeze(
-    input: PhlowerDimensionTensor, dim: int
+    inputs: PhlowerDimensionTensor, dim: int
 ) -> PhlowerDimensionTensor:
-    return input
+    return inputs
 
 
 @dimension_wrap_implements(torch.abs)
