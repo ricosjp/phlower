@@ -26,7 +26,7 @@ def test__accessed_tensor_shape(
     input_shape: tuple[int],
     activation: str,
     index: int,
-    desired_shape: tuple[int]
+    desired_shape: tuple[int],
 ):
     phlower_tensor = PhlowerTensor(
         torch.from_numpy(np.random.rand(*input_shape))
