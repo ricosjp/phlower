@@ -42,4 +42,3 @@ def test__accessed_tensor_shape(
     actual: PhlowerTensor = model(phlower_tensors)
 
     assert actual.shape == desired_shape
-

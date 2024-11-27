@@ -49,13 +49,9 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
         self._activation_func = _utils.ActivationSelector.select(activation)
         self._operator_name = operator
 
-        _REGISTERED_OPERATORS = {
-            "add": torch.add,
-            "mul": torch.mul
-        }
+        _REGISTERED_OPERATORS = {"add": torch.add, "mul": torch.mul}
 
         self._operator = _REGISTERED_OPERATORS[self._operator_name]
-
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -85,7 +81,7 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
 
         tensors = tuple(data.values())
         ans = tensors[0]
-        for i in range(len(tensors)-1):
-            ans = self._operator(ans, tensors[i+1])
+        for i in range(len(tensors) - 1):
+            ans = self._operator(ans, tensors[i + 1])
 
         return self._activation_func(ans)

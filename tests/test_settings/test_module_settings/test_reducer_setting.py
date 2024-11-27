@@ -40,10 +40,17 @@ def test__raise_error_when_invalid_n_nodes(nodes: list[int], activation: str):
 
 @pytest.mark.parametrize(
     "nodes, activation, operator",
-    [([10, 20, 30], "identity", "add"), ([10, 20, 30, 40, 50], "identity", "mul")],
+    [
+        ([10, 20, 30], "identity", "add"),
+        ([10, 20, 30, 40, 50], "identity", "mul"),
+    ],
 )
-def test__fill_default_settings(nodes: list[int], activation: str, operator: str):
-    setting = ReducerSetting(nodes=nodes, activation=activation, operator=operator)
+def test__fill_default_settings(
+    nodes: list[int], activation: str, operator: str
+):
+    setting = ReducerSetting(
+        nodes=nodes, activation=activation, operator=operator
+    )
     desired_activation = "identity"
     desired_operator = operator
 
@@ -53,14 +60,18 @@ def test__fill_default_settings(nodes: list[int], activation: str, operator: str
 
 @pytest.mark.parametrize("input_dims", [([30]), ([40]), ([100])])
 def test__gather_input_dims(input_dims: list[int]):
-    setting = ReducerSetting(nodes=[10, 20], activation="identity", operator="add")
+    setting = ReducerSetting(
+        nodes=[10, 20], activation="identity", operator="add"
+    )
 
     assert setting.gather_input_dims(*input_dims) == input_dims[0]
 
 
 @pytest.mark.parametrize("input_dims", [([]), ([40, 400]), ([10, 0, 1])])
 def test__raise_error_invalid_input_dims(input_dims: list[int]):
-    setting = ReducerSetting(nodes=[10, 20], activation="identity", operator="add")
+    setting = ReducerSetting(
+        nodes=[10, 20], activation="identity", operator="add"
+    )
 
     with pytest.raises(ValueError):
         _ = setting.gather_input_dims(*input_dims)
@@ -99,7 +110,9 @@ def test__nodes_is_update_after_overwrite_nodes(
 
 
 def test__reference_is_not_necessary():
-    setting = ReducerSetting(nodes=[10, 20], activation="identity", operator="add")
+    setting = ReducerSetting(
+        nodes=[10, 20], activation="identity", operator="add"
+    )
 
     assert not setting.need_reference
 
