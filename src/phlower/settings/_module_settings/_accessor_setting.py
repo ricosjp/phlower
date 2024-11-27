@@ -23,9 +23,9 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def gather_input_dims(self, *input_dims: int) -> int:
-        assert len(input_dims) > 0
-        sum_dim = sum(v for v in input_dims)
-        return sum_dim
+        if len(input_dims) != 1:
+            raise ValueError("only one input is allowed in Accessor.")
+        return input_dims[0]
 
     @pydantic.field_validator("nodes")
     @classmethod
@@ -33,11 +33,6 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if vals is None:
             return vals
 
-        if len(vals) != 2:
-            raise ValueError(
-                "size of nodes must be 2 in ConcatenatorSettings."
-                f" input: {vals}"
-            )
         return vals
 
     @property
