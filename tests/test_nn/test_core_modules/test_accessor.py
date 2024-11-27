@@ -14,15 +14,19 @@ def test__can_call_parameters():
 
 
 @pytest.mark.parametrize(
-    "input_shape, index, desired_shape",
+    "input_shape, activation, index, desired_shape",
     [
-        ((5, 5, 16), 0, (5, 16)),
-        ((1, 2, 16), -1, (2, 16)),
-        ((5, 2, 3, 4), 1, (2, 3, 4)),
+        ((5, 5, 16), "identity", 0, (5, 16)),
+        ((4, 2, 16), "identity", -1, (2, 16)),
+        ((5, 2, 3, 4), "tanh", 1, (2, 3, 4)),
+        ((3, 2, 1), "relu", 2, (2, 1)),
     ],
 )
 def test__accessed_tensor_shape(
-    input_shape: tuple[int], index: int, desired_shape: tuple[int]
+    input_shape: tuple[int],
+    activation: str,
+    index: int,
+    desired_shape: tuple[int]
 ):
 
     phlower_tensor = PhlowerTensor(
@@ -30,13 +34,14 @@ def test__accessed_tensor_shape(
     )
     phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
 
-    model = Accessor(activation="identity", index=index)
+    model = Accessor(activation=activation, index=index)
 
     actual: PhlowerTensor = model(phlower_tensors)
 
     assert actual.shape == desired_shape
 
-    np.testing.assert_almost_equal(
-        phlower_tensors.to_numpy()["tensor"][index],
-        actual.to('cpu').detach().numpy().copy(),
-    )
+    if activation == "identity":
+        np.testing.assert_almost_equal(
+            phlower_tensors.to_numpy()["tensor"][index],
+            actual.to('cpu').detach().numpy().copy(),
+        )
