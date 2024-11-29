@@ -13,5 +13,8 @@ from phlower.nn._core_modules._share import Share
 from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
 )
+from phlower.nn._core_modules._time_series_to_features import (
+    TimeSeriesToFeatures,
+)
 from phlower.nn._group_module import PhlowerGroupModule
 from phlower.nn._interface_module import IPhlowerCoreModule

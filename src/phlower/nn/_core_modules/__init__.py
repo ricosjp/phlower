@@ -11,6 +11,9 @@ from phlower.nn._core_modules._share import Share
 from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
 )
+from phlower.nn._core_modules._time_series_to_features import (
+    TimeSeriesToFeatures,
+)
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[IPhlowerCoreModule] = [
@@ -25,6 +28,7 @@ _all_models: list[IPhlowerCoreModule] = [
     Reducer,
     Share,
     SimilarityEquivariantMLP,
+    TimeSeriesToFeatures,
 ]
 
 _name2model = {cls.get_nn_name(): cls for cls in _all_models}
