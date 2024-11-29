@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 @overload
 def phlower_tensor(
-    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
+    tensor: list | float | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool = False,
     is_voxel: bool = False,
@@ -54,14 +54,14 @@ def phlower_tensor(
 
 @overload
 def phlower_tensor(
-    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
+    tensor: list | float | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     pattern: str = "n...",
 ) -> PhlowerTensor: ...
 
 
 def phlower_tensor(
-    tensor: list | np.ndarray | torch.Tensor | PhlowerTensor,
+    tensor: list | float | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
@@ -72,7 +72,7 @@ def phlower_tensor(
             logger.warning("Input dimension_tensor are ignored.")
         return tensor
 
-    if isinstance(tensor, list | np.ndarray):
+    if isinstance(tensor, float | list | np.ndarray):
         tensor = torch.tensor(tensor, dtype=torch.float32)
 
     dimension_tensor = _resolve_dimension_arg(dimension)
@@ -142,9 +142,7 @@ class PhlowerTensor(IPhlowerTensor):
         if pattern is None:
             raise ValueError("pattern must be set when calling from_pattern.")
 
-        phlower_shape: PhlowerShapePattern = PhlowerShapePattern.from_pattern(
-            tensor.shape, pattern
-        )
+        phlower_shape = PhlowerShapePattern.from_pattern(tensor.shape, pattern)
 
         return PhlowerTensor(
             tensor=tensor,
@@ -253,6 +251,12 @@ class PhlowerTensor(IPhlowerTensor):
 
     def __pow__(self, other: PhlowerTensor) -> PhlowerTensor:
         return torch.pow(self, other)
+
+    def __matmul__(self, other: PhlowerTensor) -> PhlowerTensor:
+        return torch.matmul(self, other)
+
+    def __bool__(self) -> bool:
+        return bool(self._tensor)
 
     @functools.wraps(torch.Tensor.__getitem__)
     def __getitem__(self, key: Any) -> torch.Tensor:

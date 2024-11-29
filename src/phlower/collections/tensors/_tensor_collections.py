@@ -71,7 +71,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def unique_item(self) -> PhlowerTensor: ...
 
     @abc.abstractmethod
-    def update(self, data: IPhlowerTensorCollections) -> None: ...
+    def update(
+        self, data: IPhlowerTensorCollections, overwrite: bool = False
+    ) -> None: ...
 
     @abc.abstractmethod
     def mask(self, keys: list[str]) -> IPhlowerTensorCollections: ...
@@ -94,6 +96,42 @@ def phlower_tensor_collection(
 class PhlowerDictTensors(IPhlowerTensorCollections):
     def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]):
         self._x = {k: phlower_tensor(v) for k, v in value.items()}
+
+    def __lt__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x < __value[k] for k in self.keys())
+
+        return all(self._x[k] < __value for k in self.keys())
+
+    def __le__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x <= __value[k] for k in self.keys())
+
+        return all(self._x[k] <= __value for k in self.keys())
+
+    def __gt__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x > __value[k] for k in self.keys())
+
+        return all(self._x[k] > __value for k in self.keys())
+
+    def __ge__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x >= __value[k] for k in self.keys())
+
+        return all(self._x[k] >= __value for k in self.keys())
 
     def __add__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):

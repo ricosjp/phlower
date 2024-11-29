@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
+from functools import partial
 
 import dagstream
 import torch
@@ -13,8 +15,13 @@ from phlower.collections.tensors import (
     reduce_collections,
 )
 from phlower.io._files import IPhlowerCheckpointFile
+from phlower.nn._interface_iteration_solver import (
+    IFIterationSolver,
+    IOptimizeProblem,
+)
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
+    IPhlowerGroup,
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
@@ -23,9 +30,50 @@ from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
+TargetFunctionType = Callable[
+    [IPhlowerTensorCollections], IPhlowerTensorCollections
+]
+
+
+class _GroupOptimizeProblem(IOptimizeProblem):
+    def __init__(
+        self,
+        initials: IPhlowerTensorCollections,
+        step_forward: TargetFunctionType,
+        steady_mode: bool = False,
+    ):
+        self._step_forward = step_forward
+
+        # Copy not to update during optimizing
+        self._fixed_initials = phlower_tensor_collection(
+            {k: initials[k] for k in initials.keys()}
+        )
+        self._steady_mode = steady_mode
+
+    def step_forward(
+        self, h: IPhlowerTensorCollections
+    ) -> IPhlowerTensorCollections:
+        return self._step_forward(h)
+
+    def gradient(
+        self, h: IPhlowerTensorCollections
+    ) -> IPhlowerTensorCollections:
+        operator_value = self._step_forward(h)
+        if self._steady_mode:
+            # R(u) = - D[u] dt
+            residuals = -1.0 * operator_value
+        else:
+            # R(u) = v - u(t) - D[u] dt
+            residuals = h - self._fixed_initials - operator_value
+
+        return residuals
+
 
 class PhlowerGroupModule(
-    IPhlowerModuleAdapter, IReadonlyReferenceGroup, torch.nn.Module
+    IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
+    IPhlowerGroup,
+    torch.nn.Module,
 ):
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> Self:
@@ -60,6 +108,7 @@ class PhlowerGroupModule(
         input_keys: list[str],
         destinations: list[str],
         output_keys: list[str],
+        iteration_solver: IFIterationSolver,
     ) -> None:
         super().__init__()
         self._phlower_modules = modules
@@ -69,6 +118,8 @@ class PhlowerGroupModule(
         self._destinations = destinations
         self._output_keys = output_keys
 
+        self._iteration_solver = iteration_solver
+        self._steady_mode = False
         self._stream = self.resolve()
         for _module in self._phlower_modules:
             self.add_module(_module.name, _module)
@@ -125,6 +176,26 @@ class PhlowerGroupModule(
             module.draw(output_directory, recursive=recursive)
 
     def forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+        step_forward = partial(
+            self.step_forward, field_data=field_data, **kwards
+        )
+        problem = _GroupOptimizeProblem(
+            initials=data,
+            step_forward=step_forward,
+            steady_mode=self._steady_mode,
+        )
+
+        self._iteration_solver.zero_residuals()
+
+        return self._iteration_solver.run(initial_values=data, problem=problem)
+
+    def step_forward(
         self,
         data: IPhlowerTensorCollections,
         *,

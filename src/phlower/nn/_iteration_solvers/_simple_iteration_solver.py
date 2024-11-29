@@ -1,51 +1,47 @@
-from types import TracebackType
-
 import torch
-from typing_extensions import Self
 
-from phlower._fields._simulation_field import ISimulationField
 from phlower.collections import IPhlowerTensorCollections
-from phlower.nn._interface_module import IPhlowerGroup
-from phlower.nn._iteration_solver import IFIterationSolver
-from phlower.utils.calculations import calculate_residual
+from phlower.nn._interface_iteration_solver import (
+    IFIterationSolver,
+    IOptimizeProblem,
+)
 
 
 class SimpleIterationSolver(IFIterationSolver):
-    def __init__(self) -> None:
-        self._max_iterations = 10
-        self._criteria: float = 0.0
-        self._keys = []
-        self._residuals: torch.Tensor = torch.Tensor(0.0, dtype=torch.float32)
-
-    def __enter__(self) -> Self:
-        self._residuals *= 0.0
-        return self
-
-    def __exit__(
+    def __init__(
         self,
-        type_: type[BaseException] | None,
-        value: BaseException | None,
-        traceback: TracebackType | None,
-    ):
-        return None
+        max_iterations: int,
+        divergence_threshold: float,
+        targets: list[str],
+    ) -> None:
+        self._max_iterations = max_iterations
+        self._divergence_threshold: float = divergence_threshold
+        self._targets = targets
+        self._is_converged = False
 
-    def get_converged(self) -> bool: ...
+    def zero_residuals(self) -> None:
+        self._is_converged = False
+        return
+
+    def get_converged(self) -> bool:
+        return self._is_converged
 
     def run(
         self,
-        group: IPhlowerGroup,
-        *,
-        inputs: IPhlowerTensorCollections,
-        field_data: ISimulationField,
-        **kwards,
+        initial_values: IPhlowerTensorCollections,
+        problem: IOptimizeProblem,
     ) -> IPhlowerTensorCollections:
-        h = inputs
-        for _ in self._max_iterations:
-            h_next = group.step_forward(h, field_data=field_data, **kwards)
-            self._residuals = calculate_residual(h, h_next, keys=self._keys)
-            h = h_next
+        h = initial_values
+        for _ in range(self._max_iterations):
+            h_next = problem.objective(h)
 
-            if self.get_converged():
+            diff_h = (h_next.mask(self._targets) - h.mask(self._targets)).apply(
+                torch.linalg.norm
+            )
+            h.update(h_next.mask(self._targets), overwrite=True)
+
+            if diff_h < self._divergence_threshold:
+                self._is_converged = True
                 break
 
         return h

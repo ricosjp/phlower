@@ -69,6 +69,8 @@ class GroupModuleSetting(
     A Flag not to calculate gradient. Defauls to False.
     """
 
+    solver_setting: int = 0
+
     support_names: list[str] = pydantic.Field(default_factory=lambda: [])
 
     # special keyward to forbid extra fields in pydantic
@@ -264,6 +266,13 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     parameters for neural networks.
     Allowed items depend on `nn_type`.
     """
+
+    solver_type: str = "none"
+    """
+    solver to be used in the iteration of forward function in group
+    """
+
+    # solver_parameters = {}
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
