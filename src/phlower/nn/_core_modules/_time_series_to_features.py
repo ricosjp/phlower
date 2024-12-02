@@ -72,7 +72,8 @@ class TimeSeriesToFeatures(IPhlowerCoreModule, torch.nn.Module):
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
             supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None. TimeSeriesToFeatures will not use it.
+                Graph object. Defaults to None.
+                TimeSeriesToFeatures will not use it.
 
         Returns:
             PhlowerTensor: Tensor object
