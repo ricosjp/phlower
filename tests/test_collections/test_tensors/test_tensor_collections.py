@@ -42,6 +42,119 @@ def phlower_tensors_with_same_dimension(
     return [phlower_tensor(arr, dimension=dimensions) for arr in arrays]
 
 
+# region Test for comparison
+
+
+@given(
+    st.lists(
+        extra_np.arrays(
+            np.float32,
+            1,
+            elements=st.floats(
+                min_value=-1000,
+                max_value=1000,
+                allow_nan=False,
+                allow_infinity=False,
+                width=32,
+            ),
+        ),
+        min_size=1,
+        max_size=20,
+    )
+)
+def test__comparison_with_the_other_collection(values: list[np.ndarray]):
+    dict_data = phlower_tensor_collection(
+        {f"key_{i}": v for i, v in enumerate(values)}
+    )
+    less_dict_data = dict_data - 1.0
+    large_dict_data = dict_data + 1.0
+
+    assert dict_data > less_dict_data
+    assert dict_data >= less_dict_data
+
+    assert dict_data >= dict_data
+    assert dict_data <= dict_data
+
+    assert large_dict_data > dict_data
+    assert large_dict_data >= dict_data
+
+
+@given(
+    st.lists(
+        extra_np.arrays(
+            np.float32,
+            1,
+            elements=st.floats(
+                min_value=-1000,
+                max_value=1000,
+                allow_nan=False,
+                allow_infinity=False,
+                width=32,
+            ),
+        ),
+        min_size=1,
+        max_size=20,
+    )
+)
+def test__comparison_with_less_float_value(values: list[np.ndarray]):
+    dict_data = phlower_tensor_collection(
+        {f"key_{i}": v for i, v in enumerate(values)}
+    )
+
+    assert dict_data >= -1000.0
+    assert dict_data > -1001.0
+
+
+@given(
+    st.lists(
+        extra_np.arrays(
+            np.float32,
+            1,
+            elements=st.floats(
+                min_value=-1000,
+                max_value=1000,
+                allow_nan=False,
+                allow_infinity=False,
+                width=32,
+            ),
+        ),
+        min_size=1,
+        max_size=20,
+    )
+)
+def test__comparison_with_greater_float_value(values: list[np.ndarray]):
+    dict_data = phlower_tensor_collection(
+        {f"key_{i}": v for i, v in enumerate(values)}
+    )
+
+    assert dict_data <= 1000.0
+    assert dict_data < 1001.0
+
+
+@given(
+    phlower_tensors_with_same_dimension(
+        shape=(3, 4), has_dimension=False, n_items=5
+    )
+)
+def test__raise_error_when_cannot_compare(values: list[PhlowerTensor]):
+    dict_data = phlower_tensor_collection(
+        {f"key_{i}": v for i, v in enumerate(values)}
+    )
+
+    less_dict_data = dict_data - 1.0
+
+    with pytest.raises(RuntimeError) as ex:
+        _ = dict_data > less_dict_data
+
+    assert (
+        "Boolean value of Tensor with more than one value is ambiguous"
+        in str(ex)
+    )
+
+
+#  endregion
+
+
 # region Test for add
 
 

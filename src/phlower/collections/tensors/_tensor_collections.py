@@ -102,7 +102,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             assert (
                 self.keys() == __value.keys()
             ), "Not allowed to compare other which has different keys"
-            return all(self._x < __value[k] for k in self.keys())
+            return all(self._x[k] < __value[k] for k in self.keys())
 
         return all(self._x[k] < __value for k in self.keys())
 
@@ -111,25 +111,25 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             assert (
                 self.keys() == __value.keys()
             ), "Not allowed to compare other which has different keys"
-            return all(self._x <= __value[k] for k in self.keys())
+            return all(self._x[k] <= __value[k] for k in self.keys())
 
         return all(self._x[k] <= __value for k in self.keys())
 
-    def __gt__(self, __value: object) -> IPhlowerTensorCollections:
+    def __gt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             assert (
                 self.keys() == __value.keys()
             ), "Not allowed to compare other which has different keys"
-            return all(self._x > __value[k] for k in self.keys())
+            return all(self._x[k] > __value[k] for k in self.keys())
 
         return all(self._x[k] > __value for k in self.keys())
 
-    def __ge__(self, __value: object) -> IPhlowerTensorCollections:
+    def __ge__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             assert (
                 self.keys() == __value.keys()
             ), "Not allowed to compare other which has different keys"
-            return all(self._x >= __value[k] for k in self.keys())
+            return all(self._x[k] >= __value[k] for k in self.keys())
 
         return all(self._x[k] >= __value for k in self.keys())
 
