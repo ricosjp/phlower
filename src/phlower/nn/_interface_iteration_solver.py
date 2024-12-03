@@ -3,6 +3,9 @@ from __future__ import annotations
 import abc
 
 from phlower.collections import IPhlowerTensorCollections
+from phlower.settings._nonlinear_solver_setting import (
+    IPhlowerIterationSolverSetting,
+)
 
 
 class IOptimizeProblem:
@@ -41,6 +44,12 @@ class IOptimizeProblem:
 
 
 class IFIterationSolver(metaclass=abc.ABCMeta):
+    @classmethod
+    @abc.abstractmethod
+    def from_setting(
+        cls, setting: IPhlowerIterationSolverSetting
+    ) -> IFIterationSolver: ...
+
     @abc.abstractmethod
     def get_converged(self) -> bool: ...
 

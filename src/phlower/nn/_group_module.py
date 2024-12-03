@@ -25,6 +25,7 @@ from phlower.nn._interface_module import (
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
+from phlower.nn._iteration_solvers import EmptySolver, get_iteration_solver
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
@@ -91,6 +92,8 @@ class PhlowerGroupModule(
 
             raise NotImplementedError()
 
+        solver_cls = get_iteration_solver(setting.solver_type)
+
         return PhlowerGroupModule(
             modules=_modules,
             name=setting.name,
@@ -98,6 +101,8 @@ class PhlowerGroupModule(
             input_keys=setting.get_input_keys(),
             output_keys=setting.get_output_keys(),
             destinations=setting.destinations,
+            is_steady_problem=setting.is_steady_problem,
+            iteration_solver=solver_cls.from_setting(setting.solver_parameters),
         )
 
     def __init__(
@@ -108,18 +113,22 @@ class PhlowerGroupModule(
         input_keys: list[str],
         destinations: list[str],
         output_keys: list[str],
-        iteration_solver: IFIterationSolver,
+        is_steady_problem: bool = False,
+        iteration_solver: IFIterationSolver | None = None,
     ) -> None:
         super().__init__()
+        if iteration_solver is None:
+            iteration_solver = EmptySolver()
+
         self._phlower_modules = modules
         self._name = name
         self._no_grad = no_grad
         self._input_keys = input_keys
         self._destinations = destinations
         self._output_keys = output_keys
-
+        self._is_steady_problem = is_steady_problem
         self._iteration_solver = iteration_solver
-        self._steady_mode = False
+
         self._stream = self.resolve()
         for _module in self._phlower_modules:
             self.add_module(_module.name, _module)
@@ -188,7 +197,7 @@ class PhlowerGroupModule(
         problem = _GroupOptimizeProblem(
             initials=data,
             step_forward=step_forward,
-            steady_mode=self._steady_mode,
+            steady_mode=self._is_steady_problem,
         )
 
         self._iteration_solver.zero_residuals()

@@ -64,7 +64,7 @@ def test__can_converge_quadratic_equation(
     solver = BarzilaiBorweinSolver(
         max_iterations=10000,
         divergence_threshold=0.00001,
-        keys=["x"],
+        target_keys=["x"],
         bb_type=bb_type,
     )
 

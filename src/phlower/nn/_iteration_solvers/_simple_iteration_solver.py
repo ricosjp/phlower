@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 from phlower.collections import IPhlowerTensorCollections
@@ -5,18 +7,29 @@ from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,
 )
+from phlower.settings._nonlinear_solver_setting import (
+    IPhlowerIterationSolverSetting,
+    SimpleSolverSetting,
+)
 
 
 class SimpleIterationSolver(IFIterationSolver):
+    @classmethod
+    def from_setting(
+        cls, setting: IPhlowerIterationSolverSetting
+    ) -> IFIterationSolver:
+        assert isinstance(setting, SimpleSolverSetting)
+        return SimpleIterationSolver(**setting.__dict__)
+
     def __init__(
         self,
         max_iterations: int,
         divergence_threshold: float,
-        targets: list[str],
+        target_keys: list[str],
     ) -> None:
         self._max_iterations = max_iterations
         self._divergence_threshold: float = divergence_threshold
-        self._targets = targets
+        self._targets = target_keys
         self._is_converged = False
 
     def zero_residuals(self) -> None:

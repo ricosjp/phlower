@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import deque
 from typing import Generic, Literal, TypeVar
 
@@ -12,6 +14,10 @@ from phlower.nn._core_modules import _functions as functions
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,
+)
+from phlower.settings._nonlinear_solver_setting import (
+    BarzilaiBoweinSolverSetting,
+    IPhlowerIterationSolverSetting,
 )
 
 T = TypeVar("T")
@@ -47,19 +53,26 @@ class _FixedSizeMemory(Generic[T]):
 
 # Barzilai–Borwein Method
 class BarzilaiBorweinSolver(IFIterationSolver):
+    @classmethod
+    def from_setting(
+        cls, setting: IPhlowerIterationSolverSetting
+    ) -> BarzilaiBorweinSolver:
+        assert isinstance(setting, BarzilaiBoweinSolverSetting)
+        return BarzilaiBorweinSolver(**setting.__dict__)
+
     def __init__(
         self,
         max_iterations: int,
+        convergence_threshold: float,
         divergence_threshold: float,
-        keys: list[str],
-        is_steady_mode: bool = False,
+        target_keys: list[str],
         alpha_component_wise: bool = False,
         bb_type: Literal["long", "short"] = "long",
     ) -> None:
         self._max_iterations = max_iterations
-        self._divergence_threshold: float = divergence_threshold
-        self._keys: list[str] = keys
-        self.steady = is_steady_mode
+        self._convergence_threshold = convergence_threshold
+        self._divergence_threshold = divergence_threshold
+        self._keys = target_keys
 
         self._alpha_calculator = AlphaCalculator(
             component_wise=alpha_component_wise,

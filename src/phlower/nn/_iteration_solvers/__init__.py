@@ -8,15 +8,15 @@ from phlower.nn._iteration_solvers._simple_iteration_solver import (
 )
 from phlower.utils.enums import PhlowerIterationSolverType
 
-_name2solver: dict[str, IFIterationSolver] = {
+_name2solver: dict[str, type[IFIterationSolver]] = {
     PhlowerIterationSolverType.none.name: EmptySolver,
     PhlowerIterationSolverType.simple.name: SimpleIterationSolver,
-    PhlowerIterationSolverType.barzilai_borwein.name: BarzilaiBorweinSolver,
+    PhlowerIterationSolverType.bb.name: BarzilaiBorweinSolver,
 }
 
 
-def get_iteration_solver(name: str) -> IFIterationSolver:
-    if name in _name2solver:
+def get_iteration_solver(name: str) -> type[IFIterationSolver]:
+    if name not in _name2solver:
         raise NotImplementedError(
             f"Iteration solver named {name} is not implemented."
         )

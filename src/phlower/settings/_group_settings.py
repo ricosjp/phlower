@@ -15,6 +15,7 @@ from phlower.settings._interface import (
     IReadOnlyReferenceGroupSetting,
 )
 from phlower.settings._module_parameter_setting import PhlowerModuleParameters
+from phlower.settings._nonlinear_solver_setting import SolverParameters
 from phlower.utils.exceptions import (
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
@@ -32,7 +33,7 @@ class GroupIOSetting:
 
 
 class GroupModuleSetting(
-    IModuleSetting, IReadOnlyReferenceGroupSetting, pydantic.BaseModel
+    pydantic.BaseModel, IModuleSetting, IReadOnlyReferenceGroupSetting
 ):
     name: str
     """
@@ -69,9 +70,27 @@ class GroupModuleSetting(
     A Flag not to calculate gradient. Defauls to False.
     """
 
-    solver_setting: int = 0
+    solver_type: str = "none"
+    """
+    Solver name calculating in iteration loop
 
-    support_names: list[str] = pydantic.Field(default_factory=lambda: [])
+    none: No iteration.
+    simple: run iteration until calculated value is converged.
+    bb: Barzilan-Borwein method is used to converge iteration results.
+    """
+
+    is_steady_problem: bool = False
+    """
+    When true, updating function in the group iteraion
+      is defined as steady problems
+    """
+
+    solver_parameters: SolverParameters = pydantic.Field(
+        default_factory=dict, validate_default=True
+    )
+    """
+    Parameters to pass iteration solver.  Contents depends on solver_type
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -107,6 +126,19 @@ class GroupModuleSetting(
                     f"Duplicate module name '{module.name}' is detected "
                     f"in {self.name}"
                 )
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def check_solver_target_exists_in_inputs_and_outputs(self) -> Self:
+        input_keys = self.get_input_keys()
+        output_keys = self.get_output_keys()
+
+        for key in self.solver_parameters.get_target_keys():
+            if key not in input_keys:
+                raise ValueError(f"{key} is missing in inputs.")
+            if key not in output_keys:
+                raise ValueError(f"{key} is missing in outputs.")
 
         return self
 
@@ -260,19 +292,12 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     """
 
     nn_parameters: PhlowerModuleParameters = Field(
-        default_factory=lambda: {}, validate_default=True
+        default_factory=dict, validate_default=True
     )
     """
     parameters for neural networks.
     Allowed items depend on `nn_type`.
     """
-
-    solver_type: str = "none"
-    """
-    solver to be used in the iteration of forward function in group
-    """
-
-    # solver_parameters = {}
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(

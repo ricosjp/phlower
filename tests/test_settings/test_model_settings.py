@@ -16,7 +16,7 @@ from phlower.utils.exceptions import (
 
 
 def parse_file(file_name: str) -> dict:
-    _TEST_DATA_DIR = pathlib.Path("tests/test_settings/data/groups")
+    _TEST_DATA_DIR = pathlib.Path("tests/test_settings/data/models")
     with open(_TEST_DATA_DIR / file_name) as fr:
         data = yaml.load(fr, Loader=yaml.SafeLoader)
 

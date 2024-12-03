@@ -95,4 +95,4 @@ _symbol2quntityname = {
 class PhlowerIterationSolverType(str, Enum):
     none = "none"
     simple = "simple"
-    barzilai_borwein = "bb"
+    bb = "bb"  # barzilai_borwein
