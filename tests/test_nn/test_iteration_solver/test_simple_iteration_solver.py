@@ -16,7 +16,7 @@ from phlower.nn._iteration_solvers._simple_iteration_solver import (
 class ConvergedProblem(IOptimizeProblem):
     def __init__(self): ...
 
-    def objective(
+    def step_forward(
         self, value: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
         h = value.unique_item()

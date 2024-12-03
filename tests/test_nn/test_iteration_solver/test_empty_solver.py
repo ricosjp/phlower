@@ -19,7 +19,7 @@ class TestProblem(IOptimizeProblem):
     def __init__(self, function: Callable):
         self._function = function
 
-    def objective(
+    def step_forward(
         self, value: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
         return self._function(value)

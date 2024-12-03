@@ -46,7 +46,7 @@ class SimpleIterationSolver(IFIterationSolver):
     ) -> IPhlowerTensorCollections:
         h = initial_values
         for _ in range(self._max_iterations):
-            h_next = problem.objective(h)
+            h_next = problem.step_forward(h)
 
             diff_h = (h_next.mask(self._targets) - h.mask(self._targets)).apply(
                 torch.linalg.norm

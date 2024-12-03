@@ -20,7 +20,7 @@ class IPhlowerIterationSolverSetting(metaclass=abc.ABCMeta):
     def get_target_keys(self) -> list[str]: ...
 
 
-class EmptySolverSetting(IPhlowerIterationSolverSetting):
+class EmptySolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
     def get_target_keys(self) -> list[str]:
         return []
 

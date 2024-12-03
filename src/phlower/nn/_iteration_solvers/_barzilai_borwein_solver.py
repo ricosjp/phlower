@@ -19,6 +19,9 @@ from phlower.settings._nonlinear_solver_setting import (
     BarzilaiBoweinSolverSetting,
     IPhlowerIterationSolverSetting,
 )
+from phlower.utils import get_logger
+
+_logger = get_logger(__name__)
 
 T = TypeVar("T")
 
@@ -127,8 +130,14 @@ class BarzilaiBorweinSolver(IFIterationSolver):
             v_history.append(v_next)
             gradients_history.append(gradient)
 
-            if gradient.apply(torch.linalg.norm) < self._divergence_threshold:
+            criteria = gradient.apply(torch.linalg.norm)
+            if criteria < self._convergence_threshold:
                 self._is_converged = True
+                break
+
+            if criteria > self._divergence_threshold:
+                _logger.warning("BB solver has diverged.")
+                self._is_converged = False
                 break
 
         return h_inputs

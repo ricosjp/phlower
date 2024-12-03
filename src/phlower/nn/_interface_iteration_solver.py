@@ -8,10 +8,10 @@ from phlower.settings._nonlinear_solver_setting import (
 )
 
 
-class IOptimizeProblem:
+class IOptimizeProblem(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def objective(
-        self, value: IPhlowerTensorCollections
+    def step_forward(
+        self, h: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
         """Objective function to minimize
 
@@ -19,7 +19,7 @@ class IOptimizeProblem:
          x
 
         Args:
-            value (IPhlowerTensorCollections): collection of inputs
+            h (IPhlowerTensorCollections): collection of inputs
 
         Returns:
             IPhlowerTensorCollections: collection of outputs
@@ -28,14 +28,14 @@ class IOptimizeProblem:
 
     @abc.abstractmethod
     def gradient(
-        self, value: IPhlowerTensorCollections
+        self, h: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
         """gradient value of optimize problem
 
         Return \nabla f
 
         Args:
-            value (IPhlowerTensorCollections): collection of inputs
+            h (IPhlowerTensorCollections): collection of inputs
 
         Returns:
             IPhlowerTensorCollections: collection of outputs

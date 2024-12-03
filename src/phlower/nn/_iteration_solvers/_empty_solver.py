@@ -32,4 +32,4 @@ class EmptySolver(IFIterationSolver):
         initial_values: IPhlowerTensorCollections,
         problem: IOptimizeProblem,
     ) -> IPhlowerTensorCollections:
-        return problem.objective(initial_values)
+        return problem.step_forward(initial_values)

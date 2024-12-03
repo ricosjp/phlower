@@ -28,6 +28,11 @@ class QuadraticProblem(IOptimizeProblem):
     def desired_solution(self) -> PhlowerTensor:
         return torch.linalg.inv(self._A) @ self._b
 
+    def step_forward(
+        self, h: IPhlowerTensorCollections
+    ) -> IPhlowerTensorCollections:
+        return phlower_tensor_collection({})
+
     def objective(
         self, value: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
@@ -63,7 +68,8 @@ def test__can_converge_quadratic_equation(
 ):
     solver = BarzilaiBorweinSolver(
         max_iterations=10000,
-        divergence_threshold=0.00001,
+        convergence_threshold=0.00001,
+        divergence_threshold=100000,
         target_keys=["x"],
         bb_type=bb_type,
     )
