@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import abc
-from _collections_abc import dict_items
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, ItemsView, Iterable, KeysView, Sequence
 from typing import Any
 
 import numpy as np
@@ -17,6 +16,18 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def __init__(
         self, value: dict[str, torch.Tensor | PhlowerTensor]
     ) -> None: ...
+
+    @abc.abstractmethod
+    def __add__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __sub__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __mul__(self, __value: object) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def __truediv__(self, __value: object) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
     def __contains__(self, key: str): ...
@@ -42,7 +53,7 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def to_numpy(self) -> dict[str, ArrayDataType]: ...
 
     @abc.abstractmethod
-    def keys(self) -> Iterable[str]: ...
+    def keys(self) -> KeysView[str]: ...
 
     @abc.abstractmethod
     def values(self): ...
@@ -60,7 +71,15 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def unique_item(self) -> PhlowerTensor: ...
 
     @abc.abstractmethod
-    def update(self, data: IPhlowerTensorCollections) -> None: ...
+    def update(
+        self, data: IPhlowerTensorCollections, overwrite: bool = False
+    ) -> None: ...
+
+    @abc.abstractmethod
+    def mask(self, keys: list[str]) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def apply(self, function: Callable) -> IPhlowerTensorCollections: ...
 
 
 def phlower_tensor_collection(
@@ -77,6 +96,91 @@ def phlower_tensor_collection(
 class PhlowerDictTensors(IPhlowerTensorCollections):
     def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]):
         self._x = {k: phlower_tensor(v) for k, v in value.items()}
+
+    def __lt__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x[k] < __value[k] for k in self.keys())
+
+        return all(self._x[k] < __value for k in self.keys())
+
+    def __le__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x[k] <= __value[k] for k in self.keys())
+
+        return all(self._x[k] <= __value for k in self.keys())
+
+    def __gt__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x[k] > __value[k] for k in self.keys())
+
+        return all(self._x[k] > __value for k in self.keys())
+
+    def __ge__(self, __value: object) -> bool:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to compare other which has different keys"
+            return all(self._x[k] >= __value[k] for k in self.keys())
+
+        return all(self._x[k] >= __value for k in self.keys())
+
+    def __add__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to add other which has different keys"
+            return PhlowerDictTensors(
+                {k: self._x[k] + __value[k] for k in self.keys()}
+            )
+
+        return PhlowerDictTensors(
+            {k: self._x[k] + __value for k in self.keys()}
+        )
+
+    def __sub__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to substract other which has different keys"
+            return PhlowerDictTensors(
+                {k: self._x[k] - __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors(
+            {k: self._x[k] - __value for k in self.keys()}
+        )
+
+    def __mul__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to multple other which has different keys"
+            return PhlowerDictTensors(
+                {k: self._x[k] * __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors(
+            {k: self._x[k] * __value for k in self.keys()}
+        )
+
+    def __truediv__(self, __value: object) -> IPhlowerTensorCollections:
+        if isinstance(__value, PhlowerDictTensors):
+            assert (
+                self.keys() == __value.keys()
+            ), "Not allowed to divide by other which has different keys"
+            return PhlowerDictTensors(
+                {k: self._x[k] / __value[k] for k in self.keys()}
+            )
+        return PhlowerDictTensors(
+            {k: self._x[k] / __value for k in self.keys()}
+        )
 
     def __str__(self) -> str:
         txt = ""
@@ -96,7 +200,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def keys(self) -> Iterable[str]:
         return self._x.keys()
 
-    def items(self) -> dict_items[str, PhlowerTensor]:
+    def items(self) -> ItemsView[str, PhlowerTensor]:
         return self._x.items()
 
     def pop(
@@ -160,6 +264,14 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
                 )
 
             self._x[k] = data[k]
+
+    def mask(self, keys: list[str]) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors({k: self._x[k] for k in keys})
+
+    def apply(self, function: Callable) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors(
+            {k: function(self._x[k]) for k in self.keys()}
+        )
 
 
 def reduce_collections(

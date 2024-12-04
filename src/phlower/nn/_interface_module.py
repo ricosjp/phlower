@@ -46,6 +46,17 @@ class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
     def search_module(self, name: str) -> IPhlowerCoreModule: ...
 
 
+class IPhlowerGroup(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def step_forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections: ...
+
+
 class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
