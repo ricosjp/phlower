@@ -14,6 +14,7 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
     nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
+    return_n_nodes: list[int]
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -46,7 +47,9 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def get_n_nodes(self) -> list[int] | None:
-        return self.nodes
+        # return self.nodes
+        return self.return_n_nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
+        self.return_n_nodes[0] = nodes[0]

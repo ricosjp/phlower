@@ -3,7 +3,7 @@ misc:
   tests:
     MLP0: [10, 20, 25]
     MLP1: [12, 20, 25]
-    Einsum0: [25, 25]
+    Einsum0: [50, 25, 25]
     MLP2:  [25, 20, 5]
 
 
@@ -64,7 +64,8 @@ model:
         destinations:
           - MLP2
         nn_parameters:
-          equation: "ij,ij->ij"
+          equation: "ij,ik->ijk"
+          return_n_nodes: [-1, 25, 25]
 
       - nn_type: MLP
         name: MLP2

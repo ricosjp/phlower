@@ -2,9 +2,9 @@ misc:
 
   tests:
     MLP0: [10, 20, 15]
-    MLP1: [12, 20, 25]
-    Contract0: [40, 40]
-    MLP2:  [40, 20, 5]
+    MLP1: [12, 20, 15]
+    Contract0: [30, 15]
+    MLP2:  [15, 20, 5]
 
 
 model:
@@ -52,7 +52,7 @@ model:
         destinations:
           - Contract0
         nn_parameters:
-          nodes: [-1, 20, 25]
+          nodes: [-1, 20, 15]
           activations: ["Identity", "identity"]
 
       - nn_type: Contraction
@@ -63,6 +63,8 @@ model:
         output_key: contract0
         destinations:
           - MLP2
+        nn_parameters:
+          return_n_nodes: [-1, 15]
 
       - nn_type: MLP
         name: MLP2
