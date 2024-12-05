@@ -26,7 +26,7 @@ class DefaultLoggerFactory:
         )
 
         _handler = logging.StreamHandler()
-        _handler.setLevel(logging.WARN)
+        _handler.setLevel(logging.WARNING)
         _handler.setFormatter(formatter)
 
         _phlower_root_logger = logging.getLogger("phlower")
@@ -55,3 +55,9 @@ def get_logger(name: str) -> logging.Logger:
     DefaultLoggerFactory._initialize_handler()
     logger = logging.getLogger(name)
     return logger
+
+
+def enable_propagation() -> None:
+    """Enable propagation of Phlower logger"""
+    _library_logger = DefaultLoggerFactory._get_library_logger()
+    _library_logger.propagate = True
