@@ -73,8 +73,7 @@ class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        print(data)
-        print(list(data.keys()))
-        dirichlet_filter = ~torch.isnan(data.values()[1])
-        ans = torch.where(dirichlet_filter, data.values()[1], data.values()[0])
+        dirichlet = tuple(data.values())[1]
+        dirichlet_filter = torch.isnan(dirichlet)
+        ans = torch.where(dirichlet_filter, tuple(data.values())[0], dirichlet)
         return self._activation_func(ans)
