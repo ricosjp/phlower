@@ -60,9 +60,9 @@ class GroupModuleSetting(
     name of destination modules.
     """
 
-    nn_type: Literal["GROUP"] = "GROUP"
+    nn_type: Literal["Group", "GROUP"] = "Group"
     """
-    name of neural network type. Fixed to "GROUP"
+    name of neural network type. Fixed to "Group" or "GROUP"
     """
 
     no_grad: bool = False
