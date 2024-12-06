@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from typing import Literal
 
 import pydantic
@@ -17,6 +18,7 @@ from phlower.settings._module_setting import ModuleSetting
 from phlower.settings._nonlinear_solver_setting import SolverParameters
 from phlower.settings._resolver import resolve_modules
 from phlower.utils.exceptions import (
+    PhlowerIterationSolverSettingError,
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
     PhlowerModuleDuplicateNameError,
@@ -29,7 +31,6 @@ from phlower.utils.exceptions import (
 class GroupIOSetting:
     name: str
     n_last_dim: int
-    skip_converge: bool = False  # HACK need to fix
 
 
 class GroupModuleSetting(
@@ -40,27 +41,33 @@ class GroupModuleSetting(
     name of group
     """
 
-    inputs: list[GroupIOSetting]
+    inputs: list[GroupIOSetting] = Field(
+        default_factory=list, validate_default=True
+    )
     """
     definition of input varaibles
     """
 
-    outputs: list[GroupIOSetting]
+    outputs: list[GroupIOSetting] = Field(
+        default_factory=list, validate_default=True
+    )
     """
     definition of output varaibles
     """
 
-    modules: list[ModuleSetting | GroupModuleSetting]
+    modules: list[ModuleSetting | GroupModuleSetting] = Field(
+        default_factory=list
+    )
     """
     modules which belongs to this group
     """
 
-    destinations: list[str] = Field(default_factory=lambda: [])
+    destinations: list[str] = Field(default_factory=list, frozen=True)
     """
     name of destination modules.
     """
 
-    nn_type: Literal["Group", "GROUP"] = "Group"
+    nn_type: Literal["Group", "GROUP"] = Field("Group", frozen=True)
     """
     name of neural network type. Fixed to "Group" or "GROUP"
     """
@@ -85,7 +92,7 @@ class GroupModuleSetting(
       is defined as steady problems
     """
 
-    solver_parameters: SolverParameters = pydantic.Field(
+    solver_parameters: SolverParameters = Field(
         default_factory=dict, validate_default=True
     )
     """
@@ -117,6 +124,19 @@ class GroupModuleSetting(
 
         return parsed_items
 
+    @pydantic.field_validator("inputs", "outputs")
+    @classmethod
+    def _check_unique_items(
+        cls, values: list[GroupIOSetting], info: pydantic.ValidationInfo
+    ) -> list[GroupIOSetting]:
+        names = [v.name for v in values]
+        if len(names) != len(set(names)):
+            raise PhlowerModuleDuplicateKeyError(
+                f"duplicate keys exist in {info.field_name}."
+                f" GROUP = {info.data['name']}"
+            )
+        return values
+
     @pydantic.model_validator(mode="after")
     def _check_duplicate_module_name(self) -> Self:
         _names: set[str] = {v.name for v in self.modules}
@@ -132,19 +152,6 @@ class GroupModuleSetting(
 
         # it is not supposed to be reached here
         raise NotImplementedError()
-
-    @pydantic.model_validator(mode="after")
-    def check_solver_target_exists_in_inputs_and_outputs(self) -> Self:
-        input_keys = self.get_input_keys()
-        output_keys = self.get_output_keys()
-
-        for key in self.solver_parameters.get_target_keys():
-            if key not in input_keys:
-                raise ValueError(f"{key} is missing in inputs.")
-            if key not in output_keys:
-                raise ValueError(f"{key} is missing in outputs.")
-
-        return self
 
     def get_name(self) -> str:
         return self.name
@@ -177,8 +184,7 @@ class GroupModuleSetting(
         **kwards,
     ) -> None:
         if not is_first:
-            self._check_keys(*resolved_outputs)
-            self._check_nodes(*resolved_outputs)
+            self._check_inputs(*resolved_outputs)
 
         input_info = {v.name: v.n_last_dim for v in self.inputs}
 
@@ -192,6 +198,9 @@ class GroupModuleSetting(
         # check last state
         self._check_last_outputs(*results)
 
+        # check target of solver setting if exist
+        self._check_solver_target_exists_in_inputs_and_outputs()
+
     def find_module(
         self, name: str
     ) -> ModuleSetting | GroupModuleSetting | None:
@@ -201,62 +210,80 @@ class GroupModuleSetting(
 
         return None
 
-    def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
-        _to_input_keys: set[str] = set()
-        n_keys: int = 0
+    def _check_inputs(self, *resolved_outputs: dict[str, int]) -> None:
+        _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
+        _n_keys = sum(len(v.keys()) for v in resolved_outputs)
 
-        for output in resolved_outputs:
-            _to_input_keys.update(output.keys())
-            n_keys += len(output)
-
-        if len(_to_input_keys) != n_keys:
+        if len(_flatten_dict) != _n_keys:
             raise PhlowerModuleDuplicateKeyError(
                 "Duplicate key name is detected in input keys "
                 f"for {self.name}. Please check precedents."
             )
 
+        if len(self.inputs) == 0:
+            # set automatically
+            self.inputs = [
+                GroupIOSetting(name=k, n_last_dim=v)
+                for k, v in _flatten_dict.items()
+            ]
+
         for input_v in self.inputs:
-            if input_v.name not in _to_input_keys:
+            if input_v.name not in _flatten_dict:
                 raise PhlowerModuleKeyError(
                     f"{input_v.name} is not passed to {self.name}. "
                     "Please check precedents."
                 )
 
-    def _check_nodes(self, *resolved_outputs: dict[str, int]) -> None:
-        key2node: dict[str, int] = {}
-        for output in resolved_outputs:
-            # NOTE: Duplicate key error is check in self._check_keys
-            key2node.update(output)
-
-        for input_item in self.inputs:
-            if key2node[input_item.name] != input_item.n_last_dim:
+            if _flatten_dict[input_v.name] != input_v.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
-                    f"n_dim of {input_item.name} in {self.name} "
-                    f"is {input_item.n_last_dim}. "
+                    f"n_dim of {input_v.name} in {self.name} "
+                    f"is {input_v.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
 
     def _check_last_outputs(self, *resolved_outputs: dict[str, int]) -> None:
-        key2node: dict[str, int] = {}
-        for output in resolved_outputs:
-            for key, val in output.items():
-                if key in key2node:
-                    raise PhlowerModuleDuplicateKeyError(
-                        "Duplicate key name is detected in input keys "
-                        f"for {self.name}. Please check precedents"
-                    )
-                key2node[key] = val
+        _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
+        _n_keys = sum(len(v.keys()) for v in resolved_outputs)
+
+        if len(_flatten_dict) != _n_keys:
+            raise PhlowerModuleDuplicateKeyError(
+                "Duplicate key name is detected in input keys "
+                f"for {self.name}. Please check precedents"
+            )
+
+        if len(self.outputs) == 0:
+            # set automatically
+            self.outputs = [
+                GroupIOSetting(name=k, n_last_dim=v)
+                for k, v in _flatten_dict.items()
+            ]
 
         for self_output in self.outputs:
-            if self_output.name not in key2node:
+            if self_output.name not in _flatten_dict:
                 raise PhlowerModuleKeyError(
                     f"{self_output.name} is not created in {self.name}. "
                     "Please check last module in this group."
                 )
 
-            if key2node[self_output.name] != self_output.n_last_dim:
+            if _flatten_dict[self_output.name] != self_output.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {self_output.name} in {self.name} "
                     f"is {self_output.n_last_dim}. "
                     "It is not consistent with the precedent modules"
                 )
+
+    def _check_solver_target_exists_in_inputs_and_outputs(self) -> None:
+        input_keys = self.get_input_keys()
+        output_keys = self.get_output_keys()
+
+        for key in self.solver_parameters.get_target_keys():
+            if key not in input_keys:
+                raise PhlowerIterationSolverSettingError(
+                    f"{key} is missing in inputs."
+                )
+            if key not in output_keys:
+                raise PhlowerIterationSolverSettingError(
+                    f"{key} is missing in outputs."
+                )
+
+        return

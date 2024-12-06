@@ -8,6 +8,7 @@ from phlower.settings import (
     PhlowerModelSetting,
 )
 from phlower.utils.exceptions import (
+    PhlowerIterationSolverSettingError,
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
     PhlowerModuleKeyError,
@@ -84,4 +85,20 @@ def test__detect_key_missing(file_name: str):
     setting = PhlowerModelSetting(**data["model"])
 
     with pytest.raises(PhlowerModuleKeyError):
+        setting.resolve()
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "target_missing_solver_1.yml",
+        "target_missing_solver_2.yml",
+        "target_missing_solver_3.yml",
+    ],
+)
+def test__check_solver_target_name_is_missing(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+
+    with pytest.raises(PhlowerIterationSolverSettingError):
         setting.resolve()

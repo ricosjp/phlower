@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 import pydantic
 from pydantic import Field
 
@@ -26,12 +28,12 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     name of group
     """
 
-    input_keys: list[str] = Field(..., frozen=True)
+    input_keys: list[str] = Field(default_factory=list)
     """
     key names of input variables
     """
 
-    output_key: str = Field(..., frozen=True)
+    output_key: str = Field(default="")
     """
     key names of output variables
     """
@@ -86,24 +88,28 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         _resolved_nodes = self._resolve_nodes(*resolved_outputs)
         # NOTE: overwrite nodes
         self.nn_parameters.overwrite_nodes(_resolved_nodes)
+
+        #
+        if len(self.output_key) == 0:
+            self.output_key = f"OUT_{self.name}"
         self.nn_parameters.confirm(self)
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
-        _to_input_keys: set[str] = set()
-        n_keys: int = 0
+        _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
+        _n_keys = sum(len(v.keys()) for v in resolved_outputs)
 
-        for output in resolved_outputs:
-            _to_input_keys.update(output.keys())
-            n_keys += len(output)
-
-        if len(_to_input_keys) != n_keys:
+        if len(_flatten_dict) != _n_keys:
             raise PhlowerModuleDuplicateKeyError(
                 "Duplicate key name is detected in input keys for "
                 f"{self.name}. Please check precedents"
             )
 
+        if len(self.input_keys) == 0:
+            # set automatically
+            self.input_keys = list(_flatten_dict.keys())
+
         for input_key in self.input_keys:
-            if input_key not in _to_input_keys:
+            if input_key not in _flatten_dict:
                 raise PhlowerModuleKeyError(
                     f"{input_key} is not passed to {self.name}. "
                     "Please check precedents."
