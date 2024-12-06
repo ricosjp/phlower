@@ -120,14 +120,9 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         for output in resolved_outputs:
             key2node.update(output)
 
-        try:
-            first_node = self.nn_parameters.gather_input_dims(
-                *(key2node[key] for key in self.input_keys)
-            )
-        except ValueError as ex:
-            raise PhlowerModuleNodeDimSizeError(
-                f"inputs for {self.name} have problems"
-            ) from ex
+        first_node = self.nn_parameters.gather_input_dims(
+            *(key2node[key] for key in self.input_keys)
+        )
 
         nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:

@@ -36,7 +36,7 @@ class GroupIOSetting:
 class GroupModuleSetting(
     pydantic.BaseModel, IModuleSetting, IReadOnlyReferenceGroupSetting
 ):
-    name: str
+    name: str = Field(..., frozen=True)
     """
     name of group
     """
@@ -72,12 +72,12 @@ class GroupModuleSetting(
     name of neural network type. Fixed to "Group" or "GROUP"
     """
 
-    no_grad: bool = False
+    no_grad: bool = Field(False, frozen=True)
     """
     A Flag not to calculate gradient. Defauls to False.
     """
 
-    solver_type: str = "none"
+    solver_type: str = Field("none", frozen=True)
     """
     Solver name calculating in iteration loop
 
@@ -86,21 +86,21 @@ class GroupModuleSetting(
     bb: Barzilan-Borwein method is used to converge iteration results.
     """
 
-    is_steady_problem: bool = False
+    is_steady_problem: bool = Field(False, frozen=True)
     """
     When true, updating function in the group iteraion
       is defined as steady problems
     """
 
     solver_parameters: SolverParameters = Field(
-        default_factory=dict, validate_default=True
+        default_factory=dict, validate_default=True, frozen=True
     )
     """
     Parameters to pass iteration solver.  Contents depends on solver_type
     """
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+    model_config = pydantic.ConfigDict(extra="forbid")
 
     @pydantic.field_validator("modules", mode="before")
     @classmethod
