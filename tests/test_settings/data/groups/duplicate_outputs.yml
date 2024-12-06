@@ -6,21 +6,14 @@ network:
       n_last_dim: 10
     - name: feature1
       n_last_dim: 12
-
-  solver_type: bb  # simple, none
-  solver_parameters:
-    max_iterations: 100
-    convergence_threshold: 0.0001
-    divergence_threshold: 10000
-    target_keys: [out_feature0]
-    is_steady_mode: false
-    alpha_component_wise: false
-    bb_type: long
   
   outputs:
     - name: out_feature0
       n_last_dim: 5
-  
+
+    - name: out_feature0
+      n_last_dim: 5
+
   modules:
     - nn_type: MLP
       name: MLP0

@@ -28,7 +28,7 @@ from phlower.nn._interface_module import (
 from phlower.nn._iteration_solvers import EmptySolver, get_iteration_solver
 from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
-from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
+from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
 TargetFunctionType = Callable[
