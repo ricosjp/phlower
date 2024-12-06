@@ -21,7 +21,7 @@ def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
 
 
 @pytest.mark.parametrize(
-    "input_dims, desired", [([30, 50, 40], 120), ([40], 40), ([100, 10], 110)]
+    "input_dims, desired", [([30, 30], 60), ([40, 40], 80), ([100, 100], 200)]
 )
 def test__gather_input_dims(input_dims: list[int], desired: int):
     setting = DirichletSetting()

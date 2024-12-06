@@ -28,7 +28,7 @@ def test__concatenated_tensor_shape(
         )
         for i, s in enumerate(input_shapes)
     }
-    phlower_tensors["phlower_tensor_1"][0, 0, 0] = float('nan')
+    phlower_tensors["phlower_tensor_1"][0, 0, 0] = float("nan")
     phlower_tensors = phlower_tensor_collection(phlower_tensors)
 
     model = Dirichlet("identity")
@@ -45,6 +45,6 @@ def test__concatenated_tensor_shape(
     desired[0, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[0, 0, 0]
 
     np.testing.assert_almost_equal(
-            desired,
-            actual.to_numpy(),
-            )
+        desired,
+        actual.to_numpy(),
+    )
