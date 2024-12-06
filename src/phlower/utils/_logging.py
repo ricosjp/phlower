@@ -2,7 +2,7 @@ import logging
 
 
 class DefaultLoggerFactory:
-    _is_propagate: bool = False
+    _is_propagate: bool = True
 
     @classmethod
     def _get_phlower_root_logger(cls) -> logging.Logger:
@@ -22,7 +22,8 @@ class DefaultLoggerFactory:
             return
 
         formatter = logging.Formatter(
-            r"[%(asctime)s] [%(levelname)s] [%(funcName)s] %(message)s"
+            r"[%(name)s] [%(asctime)s] [%(levelname)s] "
+            r"[%(funcName)s] %(message)s"
         )
 
         _handler = logging.StreamHandler()
@@ -55,9 +56,3 @@ def get_logger(name: str) -> logging.Logger:
     DefaultLoggerFactory._initialize_handler()
     logger = logging.getLogger(name)
     return logger
-
-
-def enable_propagation() -> None:
-    """Enable propagation of Phlower logger"""
-    _library_logger = DefaultLoggerFactory._get_library_logger()
-    _library_logger.propagate = True

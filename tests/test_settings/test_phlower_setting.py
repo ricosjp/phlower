@@ -67,10 +67,10 @@ def test__raise_warnings_when_version_is_not_compatible(
     yaml_file: str,
     caplog: pytest.LogCaptureFixture,
 ):
-    with caplog.at_level(logging.WARNING, logger="root.phlower"):
+    with caplog.at_level(logging.WARNING, logger="phlower"):
         _ = PhlowerSetting.read_yaml(yaml_file)
 
-        assert len(caplog.records) > 0
-        for record in caplog.records:
-            assert record.levelname == "WARNING"
-        assert "Version number of input setting file is higher" in caplog.text
+    assert len(caplog.records) > 0
+    for record in caplog.records:
+        assert record.levelname == "WARNING"
+    assert "Version number of input setting file is higher" in caplog.text
