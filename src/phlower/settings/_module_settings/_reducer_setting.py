@@ -34,16 +34,6 @@ class ReducerSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-
-        """
-        if len(vals) != 2:
-            raise ValueError(
-                "size of nodes must be 2 in ReducerSettings."
-                f" input: {vals}"
-            )
-        """
         return vals
 
     @property
