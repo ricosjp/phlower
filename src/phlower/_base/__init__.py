@@ -5,8 +5,10 @@ from phlower._base.array import (
     phlower_array,
 )
 from phlower._base.tensors import (
+    IPhlowerTensor,
     PhlowerDimensionTensor,
     PhlowerTensor,
     phlower_dimension_tensor,
     phlower_tensor,
+    zero_dimension_tensor,
 )

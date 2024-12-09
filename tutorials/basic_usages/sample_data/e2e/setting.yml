@@ -58,8 +58,6 @@ model:
       - name: nodal_last_u
         n_last_dim: 1
 
-    support_names: ["nodal_nadj"]
-
     modules:
       - nn_type: MLP
         name: MLP0
