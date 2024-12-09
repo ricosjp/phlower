@@ -26,8 +26,11 @@ class ReducerSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             if input_dims[0] != input_dims[i]:
                 raise ValueError("input dimensions should be same in Reducer.")
         sum_dim = sum(v for v in input_dims)
-        self.nodes = [sum_dim, sum_dim / len(input_dims)]
         return sum_dim
+
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        sum_dim = self.gather_input_dims(*input_dims)
+        return [sum_dim, sum_dim / len(input_dims)]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
