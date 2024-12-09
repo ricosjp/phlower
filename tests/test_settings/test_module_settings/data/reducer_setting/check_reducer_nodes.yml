@@ -3,7 +3,7 @@ misc:
   tests:
     MLP0: [10, 20, 15]
     MLP1: [12, 20, 15]
-    Reducer0: [15, 15]
+    Reducer0: [30, 15]
     MLP2:  [15, 20, 5]
 
 

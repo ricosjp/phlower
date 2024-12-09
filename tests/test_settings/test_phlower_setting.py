@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import shutil
 
@@ -57,3 +58,19 @@ def test__model_dump():
     setting2 = PhlowerSetting.read_yaml("tests/test_settings/tmp/output.yml")
 
     assert setting.model_dump_json() == setting2.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    "yaml_file", ["tests/test_settings/data/e2e/too_high_version.yml"]
+)
+def test__raise_warnings_when_version_is_not_compatible(
+    yaml_file: str,
+    caplog: pytest.LogCaptureFixture,
+):
+    with caplog.at_level(logging.WARNING, logger="phlower"):
+        _ = PhlowerSetting.read_yaml(yaml_file)
+
+    assert len(caplog.records) > 0
+    for record in caplog.records:
+        assert record.levelname == "WARNING"
+    assert "Version number of input setting file is higher" in caplog.text

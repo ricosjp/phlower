@@ -34,6 +34,12 @@ class PhlowerModuleCycleError(ValueError):
     """This error raises when a cycle is detected in modules."""
 
 
+class PhlowerIterationSolverSettingError(ValueError):
+    """This error raises when an settin item in interation solver is invalid."""
+
+    ...
+
+
 class PhlowerMultiProcessError(ValueError): ...
 
 

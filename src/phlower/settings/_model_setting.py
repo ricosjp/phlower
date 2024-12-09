@@ -7,7 +7,7 @@ from pipe import select, uniq
 from typing_extensions import Self
 
 from phlower._base import PhysicalDimensions, PhysicalDimensionsClass
-from phlower.settings._group_settings import GroupModuleSetting
+from phlower.settings._group_setting import GroupModuleSetting
 
 
 class _MemberSetting(pydantic.BaseModel):

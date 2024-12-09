@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 
 import pydantic
+from packaging.version import Version
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
@@ -10,10 +11,16 @@ from phlower.io import PhlowerYamlFile
 from phlower.settings._model_setting import PhlowerModelSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
+from phlower.utils import get_logger
 from phlower.utils.enums import ModelSelectionType
+from phlower.version import __version__
+
+_logger = get_logger(__name__)
 
 
 class PhlowerSetting(pydantic.BaseModel):
+    version: str = __version__
+
     training: PhlowerTrainerSetting | None = None
     """
     training setting. Defaults to None.
@@ -38,6 +45,18 @@ class PhlowerSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(
         frozen=True, extra="forbid", arbitrary_types_allowed=True
     )
+
+    @pydantic.field_validator("version")
+    @classmethod
+    def check_version(cls, version: str) -> str:
+        if Version(version) > Version(__version__):
+            # When version number in yaml file is larger than program.
+            _logger.warning(
+                "Version number of input setting file is "
+                "higher than program version."
+                f"File version: {version}, program: {__version__}"
+            )
+        return version
 
     @classmethod
     def read_yaml(

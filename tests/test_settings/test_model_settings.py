@@ -8,6 +8,7 @@ from phlower.settings import (
     PhlowerModelSetting,
 )
 from phlower.utils.exceptions import (
+    PhlowerIterationSolverSettingError,
     PhlowerModuleCycleError,
     PhlowerModuleDuplicateKeyError,
     PhlowerModuleKeyError,
@@ -85,3 +86,82 @@ def test__detect_key_missing(file_name: str):
 
     with pytest.raises(PhlowerModuleKeyError):
         setting.resolve()
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "target_missing_solver_1.yml",
+        "target_missing_solver_2.yml",
+        "target_missing_solver_3.yml",
+    ],
+)
+def test__check_solver_target_name_is_missing(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+
+    with pytest.raises(PhlowerIterationSolverSettingError):
+        setting.resolve()
+
+
+def _recursive_check_inputs_and_outputs(
+    setting: GroupModuleSetting | ModuleSetting,
+    desired: dict[str, dict[str, list]],
+):
+    name = setting.name
+    answer = desired[name]
+
+    if isinstance(setting, GroupModuleSetting):
+        desired_inputs = answer["inputs"]
+        desired_outputs = answer["outputs"]
+
+        for actual in setting.inputs:
+            assert actual.name in desired_inputs
+            assert actual.n_last_dim == desired_inputs[actual.name]
+
+        for actual in setting.outputs:
+            assert actual.name in desired_outputs
+            assert actual.n_last_dim == desired_outputs[actual.name]
+
+        for module in setting.modules:
+            _recursive_check_inputs_and_outputs(module, desired)
+
+    else:
+        desired_inputs = answer.get("input_keys")
+        desired_outputs = answer.get("output_key")
+
+        assert setting.input_keys == desired_inputs
+        assert setting.output_key == desired_outputs
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "set_naming_1.yml",
+        "set_naming_2.yml",
+    ],
+)
+def test__set_automatically_inputs_and_outpus(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
+
+    desired = data["misc"]["tests"]
+
+    _recursive_check_inputs_and_outputs(setting.network, desired)
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "cannot_omit_inputs.yml",
+    ],
+)
+def test__raise_error_when_omitting_inputs_in_the_head_modules(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+
+    with pytest.raises(ValueError) as ex:
+        setting.resolve()
+
+    assert "only one input is allowed" in str(ex.value)
