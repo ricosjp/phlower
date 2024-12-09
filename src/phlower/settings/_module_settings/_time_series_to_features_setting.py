@@ -31,9 +31,6 @@ class TimeSeriesToFeaturesSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-
         return vals
 
     @property

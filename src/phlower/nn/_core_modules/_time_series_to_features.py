@@ -6,7 +6,7 @@ from typing_extensions import Self
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _utils
+from phlower.nn._core_modules import _functions, _utils
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -78,11 +78,5 @@ class TimeSeriesToFeatures(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        tensor = data.unique_item()._tensor
-        shape = tensor.shape
-        tensor = torch.reshape(
-            torch.transpose(torch.reshape(tensor, (shape[0], -1)), 1, 0),
-            (*shape[1:], shape[0]),
-        )
 
-        return self._activation_func(tensor)
+        return self._activation_func(_functions.time_series_to_features(data))
