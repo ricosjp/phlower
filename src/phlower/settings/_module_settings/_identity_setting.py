@@ -37,8 +37,7 @@ class IdentitySetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         if len(vals) != 2:
             raise ValueError(
-                "size of nodes must be 2 in IdentitySetting."
-                f" input: {vals}"
+                "size of nodes must be 2 in IdentitySetting." f" input: {vals}"
             )
 
         if vals[0] == -1:
