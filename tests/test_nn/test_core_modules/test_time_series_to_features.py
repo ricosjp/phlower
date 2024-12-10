@@ -35,6 +35,7 @@ def test__accessed_tensor_shape(
     model = TimeSeriesToFeatures(activation=activation)
     actual: PhlowerTensor = model.forward(phlower_tensors)
     assert actual.shape == desired_shape
+    assert not actual.is_time_series
 
     activate_func = ActivationSelector.select(activation)
 
