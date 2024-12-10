@@ -24,9 +24,14 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if input_dims[0] != input_dims[1]:
             raise ValueError("input dimensions should be same in Dirichlet.")
         sum_dim = sum(v for v in input_dims)
-        out_dim = sum(input_dims[0])
+        out_dim = input_dims[0]
         self.nodes = [sum_dim, out_dim]
         return sum_dim
+
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        n_dim = self.gather_input_dims(*input_dims)
+        out_dim = input_dims[0]
+        return [n_dim, out_dim]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
