@@ -1,3 +1,4 @@
+import einops
 import torch
 
 from phlower._base.tensors import phlower_tensor
@@ -74,6 +75,53 @@ def spmm(
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(restore_pattern, **restore_axes_length)
+
+
+def time_series_to_features(
+    arg: IPhlowerTensor,
+    dimension: PhysicDimensionLikeObject | None = None,
+    is_time_series: bool | None = None,
+    is_voxel: bool | None = None,
+) -> IPhlowerTensor:
+    """
+    Compute time_series_to_features for phlower tensors.
+
+    Args:
+        args: list[IPhlowerTensor]
+            List of IPhlowerTensor objects.
+        dimension:
+                PhlowerDimensions | PhlowerDimensionTensor | torch.Tensor
+                | dict[str, float] | list[float] | tuple[float] | None
+            Dimension for the resultant tensor.
+        is_time_series: bool, optional
+            Flag for time series. The default is False.
+        is_voxel: bool, optional
+            Flag for voxel. The default is False.
+
+    Returns:
+        IPhlowerTensor:
+            Resultant tensor
+    """
+
+    if not arg.is_time_series:
+        raise ValueError(
+            "input tensor is not timeseries tensor. "
+            "time_series_to_features cannot be computed."
+        )
+
+    original_pattern = arg.shape_pattern.get_pattern()
+    patterns = original_pattern.split(" ")
+    resultant_pattern = " ".join(
+        patterns[1:-1] + [f"({patterns[-1]} {patterns[0]})"]
+    )
+
+    _to_tensor = einops.rearrange(
+        arg.to_tensor(), f"{original_pattern} -> {resultant_pattern}"
+    )
+
+    return phlower_tensor(
+        _to_tensor, dimension=arg.dimension, pattern=resultant_pattern
+    )
 
 
 def einsum(

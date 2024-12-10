@@ -26,6 +26,9 @@ class PInvMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def gather_input_dims(self, *input_dims: int) -> int:
         return self.reference.gather_input_dims(*input_dims)
 
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        return self.reference.get_n_nodes()
+
     def get_n_nodes(self) -> list[int] | None:
         return self.reference.get_n_nodes()[::-1]
 
