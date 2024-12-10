@@ -28,6 +28,11 @@ class TimeSeriesToFeaturesSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             )
         return input_dims[0]
 
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        raise ValueError(
+            "Cannot detect default nodes. Please set nodes explicitly."
+        )
+
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
