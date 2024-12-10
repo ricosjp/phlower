@@ -1,3 +1,4 @@
+import einops
 import torch
 
 from phlower._base.tensors import phlower_tensor
@@ -77,7 +78,7 @@ def spmm(
 
 
 def time_series_to_features(
-    *args: IPhlowerTensor,
+    arg: IPhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
@@ -102,31 +103,24 @@ def time_series_to_features(
             Resultant tensor
     """
 
-    if len(args) != 1:
-        raise ValueError(f"time_series_to_features must be 1 but {len(args)}")
-
-    tensor = args[0]["tensor"].to_tensor()
-    is_time_series = args[0]["tensor"].is_time_series
-    if is_time_series:
-        axes = list(range(len(tensor.shape)))
-        ret_tensor = torch.reshape(
-            torch.permute(tensor, axes[1:] + [0]),
-            list(tensor.shape[1:-1]) + [-1],
+    if not arg.is_time_series:
+        raise ValueError(
+            "input tensor is not timeseries tensor. "
+            "time_series_to_features cannot be computed."
         )
-    else:
-        ret_tensor = tensor
 
-    is_none_time = is_time_series is None
-    is_none_voxel = is_voxel is None
+    original_pattern = arg.shape_pattern.get_pattern()
+    patterns = original_pattern.split(" ")
+    resultant_pattern = " ".join(
+        patterns[1:-1] + [f"({patterns[-1]} {patterns[0]})"]
+    )
 
-    if is_none_time and is_none_voxel:
-        return phlower_tensor(ret_tensor, dimension=dimension)
+    _to_tensor = einops.rearrange(
+        arg.to_tensor(), f"{original_pattern} -> {resultant_pattern}"
+    )
 
     return phlower_tensor(
-        ret_tensor,
-        dimension=dimension,
-        is_time_series=is_time_series,
-        is_voxel=is_voxel,
+        _to_tensor, dimension=arg.dimension, pattern=resultant_pattern
     )
 
 

@@ -3,7 +3,7 @@ import pytest
 import torch
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
-from phlower.nn import TimeSeriesToFeatures
+from phlower.nn import ActivationSelector, TimeSeriesToFeatures
 
 
 def test__can_call_parameters():
@@ -33,19 +33,18 @@ def test__accessed_tensor_shape(
     phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
 
     model = TimeSeriesToFeatures(activation=activation)
-
-    actual: PhlowerTensor = model(phlower_tensors)
-
+    actual: PhlowerTensor = model.forward(phlower_tensors)
     assert actual.shape == desired_shape
 
-    if activation == "identity":
-        s = len(input_shape)
-        shape = (i for i in range(1, s))
+    activate_func = ActivationSelector.select(activation)
 
-        ans = np.reshape(
-            np.transpose(phlower_tensors.to_numpy()["tensor"], (*shape, 0)),
+    shape = list(range(1, len(input_shape)))
+    desired = activate_func(
+        torch.reshape(
+            torch.permute(phlower_tensor.to_tensor(), (*shape, 0)),
             list(input_shape[1:-1]) + [-1],
         )
-        act = actual.to_tensor().to("cpu").detach().numpy().copy()
+    )
+    act = actual.to_tensor()
 
-        np.testing.assert_almost_equal(ans, act)
+    np.testing.assert_array_almost_equal(desired, act)

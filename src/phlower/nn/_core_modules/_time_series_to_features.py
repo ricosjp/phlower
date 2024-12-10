@@ -79,4 +79,6 @@ class TimeSeriesToFeatures(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor: Tensor object
         """
 
-        return self._activation_func(_functions.time_series_to_features(data))
+        return self._activation_func(
+            _functions.time_series_to_features(data.unique_item())
+        )
