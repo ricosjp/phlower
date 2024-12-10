@@ -76,6 +76,60 @@ def spmm(
     return h.rearrange(restore_pattern, **restore_axes_length)
 
 
+def time_series_to_features(
+    *args: IPhlowerTensor,
+    dimension: PhysicDimensionLikeObject | None = None,
+    is_time_series: bool | None = None,
+    is_voxel: bool | None = None,
+) -> IPhlowerTensor:
+    """
+    Compute time_series_to_features for phlower tensors.
+
+    Args:
+        args: list[IPhlowerTensor]
+            List of IPhlowerTensor objects.
+        dimension:
+                PhlowerDimensions | PhlowerDimensionTensor | torch.Tensor
+                | dict[str, float] | list[float] | tuple[float] | None
+            Dimension for the resultant tensor.
+        is_time_series: bool, optional
+            Flag for time series. The default is False.
+        is_voxel: bool, optional
+            Flag for voxel. The default is False.
+
+    Returns:
+        IPhlowerTensor:
+            Resultant tensor
+    """
+
+    if len(args) != 1:
+        raise ValueError(f"time_series_to_features must be 1 but {len(args)}")
+
+    tensor = args[0]["tensor"].to_tensor()
+    is_time_series = args[0]["tensor"].is_time_series
+    if is_time_series:
+        axes = list(range(len(tensor.shape)))
+        ret_tensor = torch.reshape(
+            torch.permute(tensor, axes[1:] + [0]),
+            list(tensor.shape[1:-1]) + [-1],
+        )
+    else:
+        ret_tensor = tensor
+
+    is_none_time = is_time_series is None
+    is_none_voxel = is_voxel is None
+
+    if is_none_time and is_none_voxel:
+        return phlower_tensor(ret_tensor, dimension=dimension)
+
+    return phlower_tensor(
+        ret_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+
+
 def einsum(
     equation: str,
     *args: IPhlowerTensor,
