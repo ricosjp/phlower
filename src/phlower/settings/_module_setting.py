@@ -126,7 +126,9 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
 
         nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:
-            return [first_node, first_node]
+            return self.nn_parameters.get_default_nodes(
+                *(key2node[key] for key in self.input_keys)
+            )
 
         if (nodes[0] != -1) and (nodes[0] != first_node):
             raise PhlowerModuleNodeDimSizeError(

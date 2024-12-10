@@ -43,6 +43,14 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
+    def get_default_nodes(self, *input_dims: int) -> list[str]:
+        """Return desired nodes when nodes is None
+        Returns:
+            list[str]: default nodes
+        """
+        ...
+
+    @abc.abstractmethod
     def get_n_nodes(self) -> list[int] | None:
         """Return feature dimensions inside PhlowerLayer.
 

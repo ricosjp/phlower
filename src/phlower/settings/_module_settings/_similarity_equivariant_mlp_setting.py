@@ -38,6 +38,10 @@ class SimilarityEquivariantMLPSetting(
             )
         return input_dims[0]
 
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        n_dim = self.gather_input_dims(*input_dims)
+        return [n_dim, n_dim]
+
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:

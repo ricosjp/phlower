@@ -14,6 +14,7 @@ from phlower.nn._core_modules._similarity_equivariant_mlp import (
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
+from phlower.nn._core_modules._utils import ActivationSelector
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[IPhlowerCoreModule] = [

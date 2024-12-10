@@ -27,7 +27,7 @@ def test__accessed_tensor_shape(
     activation: str,
     num: int,
     operator: str,
-    desired_operator: type(torch.add),
+    desired_operator: type[torch.add],
     desired_shape: tuple[int],
 ):
     np_tensors = [np.random.rand(*input_shape) for i in range(num)]
@@ -47,8 +47,7 @@ def test__accessed_tensor_shape(
     for i in range(1, num):
         ans = desired_operator(ans, phlower_tensors[f"phlower_tensor_{i}"])
 
-    if activation == "identity":
-        np.testing.assert_almost_equal(
-            ans,
-            actual.to_numpy(),
-        )
+    np.testing.assert_array_almost_equal(
+        ans,
+        actual.to_tensor(),
+    )
