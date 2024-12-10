@@ -29,9 +29,6 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-
         if len(vals) != 2 and len(vals) != 1:
             raise ValueError(
                 "size of nodes must be 1 or 2 in ContractionSettings."
@@ -47,7 +44,6 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def get_n_nodes(self) -> list[int] | None:
-        # return self.nodes
         return self.return_n_nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:

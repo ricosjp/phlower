@@ -30,9 +30,6 @@ class EinsumSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-
         return vals
 
     @property
@@ -43,7 +40,6 @@ class EinsumSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def get_n_nodes(self) -> list[int] | None:
-        # return self.nodes
         return self.return_n_nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
