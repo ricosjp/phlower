@@ -1,4 +1,4 @@
-from phlower.settings._group_settings import (
+from phlower.settings._group_setting import (
     GroupModuleSetting,
     ModuleSetting,
 )

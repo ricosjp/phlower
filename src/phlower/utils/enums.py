@@ -90,3 +90,9 @@ _symbol2quntityname = {
     PhysicalDimensionSymbolType.N.name: "amount of substance",
     PhysicalDimensionSymbolType.J.name: "luminous intensity",
 }
+
+
+class PhlowerIterationSolverType(str, Enum):
+    none = "none"
+    simple = "simple"
+    bb = "bb"  # barzilai_borwein

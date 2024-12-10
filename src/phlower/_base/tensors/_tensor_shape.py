@@ -127,6 +127,8 @@ def _check_shape_and_pattern(shape: torch.Size, patterns: list[str]) -> bool:
 
 
 def _check_is_time_series(patterns: list[str]) -> bool:
+    if not patterns:
+        return False
     return _match_to_one_word(patterns[0], "t")
 
 

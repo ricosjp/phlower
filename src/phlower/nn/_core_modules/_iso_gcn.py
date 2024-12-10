@@ -244,9 +244,6 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         inversed_moment: PhlowerTensor,
     ) -> PhlowerTensor:
         neumann_tensor = torch.nan_to_num(neumann_tensor, nan=0.0)
-        print(f"{neumann_tensor=}")
-        print(f"{neumann_tensor.is_time_series=}")
-        print(f"{neumann_tensor.is_voxel=}")
         # NOTE: Shape of inversed_moment is Shape(N, 3, 3)
         neumann = (
             _functions.einsum(

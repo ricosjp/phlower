@@ -21,9 +21,13 @@ from phlower.settings._module_settings._pinv_mlp_setting import PInvMLPSetting
 from phlower.settings._module_settings._proportional_setting import (
     ProportionalSetting,
 )
+from phlower.settings._module_settings._reducer_setting import ReducerSetting
 from phlower.settings._module_settings._share_setting import ShareSetting
 from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (  # noqa: E501
     SimilarityEquivariantMLPSetting,
+)
+from phlower.settings._module_settings._time_series_to_features_setting import (
+    TimeSeriesToFeaturesSetting,
 )
 
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
@@ -37,8 +41,10 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "MLP": MLPSetting,
     "PInvMLP": PInvMLPSetting,
     "Proportional": ProportionalSetting,
+    "Reducer": ReducerSetting,
     "Share": ShareSetting,
     "SimilarityEquivariantMLP": SimilarityEquivariantMLPSetting,
+    "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
     "IsoGCN": IsoGCNSetting,
 }
 
