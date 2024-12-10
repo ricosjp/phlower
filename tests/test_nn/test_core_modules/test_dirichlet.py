@@ -16,7 +16,8 @@ def test__can_call_parameters():
 @pytest.mark.parametrize(
     "input_shapes, desired_shape",
     [
-        ([(1, 1, 2), (1, 1, 2)], (1, 1, 2)),
+        ([(1, 2, 3), (1, 2, 3)], (1, 2, 3)),
+        ([(2, 3, 4), (3, 4)], (2, 3, 4)),
     ],
 )
 def test__concatenated_tensor_shape(
@@ -28,7 +29,7 @@ def test__concatenated_tensor_shape(
         )
         for i, s in enumerate(input_shapes)
     }
-    phlower_tensors["phlower_tensor_1"][0, 0, 0] = float("nan")
+    phlower_tensors["phlower_tensor_1"][tuple(0 for i in range(len(input_shapes[1])))] = float("nan")
     phlower_tensors = phlower_tensor_collection(phlower_tensors)
 
     model = Dirichlet("identity")
@@ -37,12 +38,16 @@ def test__concatenated_tensor_shape(
 
     assert actual.shape == desired_shape
 
-    print(phlower_tensors["phlower_tensor_0"])
-    print(phlower_tensors["phlower_tensor_1"])
-    print(actual)
-
-    desired = phlower_tensors["phlower_tensor_1"].to_numpy()
-    desired[0, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[0, 0, 0]
+    desired = np.copy(phlower_tensors["phlower_tensor_0"].to_numpy())
+    if len(input_shapes[0]) == len(input_shapes[1]):
+        desired = np.copy(phlower_tensors["phlower_tensor_1"].to_numpy())
+        desired[0, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[0, 0, 0]
+    elif len(input_shapes[0]) == len(input_shapes[1])+1:
+        desired[:] = np.copy(phlower_tensors["phlower_tensor_1"].to_numpy())
+        for i in range(input_shapes[0][0]):
+            desired[i, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[i, 0, 0]
+    else:
+        raise ValueError("input_shapes value error")
 
     np.testing.assert_almost_equal(
         desired,
