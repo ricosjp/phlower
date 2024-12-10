@@ -24,11 +24,18 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         sum_dim = sum(v for v in input_dims)
         return sum_dim
 
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        sum_dim = self.gather_input_dims(*input_dims)
+        self.return_n_nodes[0] = sum_dim
+        return self.return_n_nodes
+
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
+        if vals is None:
+            return vals
         if len(vals) != 2 and len(vals) != 1:
             raise ValueError(
                 "size of nodes must be 1 or 2 in ContractionSettings."
