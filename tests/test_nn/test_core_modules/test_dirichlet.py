@@ -29,7 +29,9 @@ def test__concatenated_tensor_shape(
         )
         for i, s in enumerate(input_shapes)
     }
-    phlower_tensors["phlower_tensor_1"][tuple(0 for i in range(len(input_shapes[1])))] = float("nan")
+    phlower_tensors["phlower_tensor_1"][
+        tuple(0 for i in range(len(input_shapes[1])))
+    ] = float("nan")
     phlower_tensors = phlower_tensor_collection(phlower_tensors)
 
     model = Dirichlet("identity")
@@ -41,11 +43,15 @@ def test__concatenated_tensor_shape(
     desired = np.copy(phlower_tensors["phlower_tensor_0"].to_numpy())
     if len(input_shapes[0]) == len(input_shapes[1]):
         desired = np.copy(phlower_tensors["phlower_tensor_1"].to_numpy())
-        desired[0, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[0, 0, 0]
-    elif len(input_shapes[0]) == len(input_shapes[1])+1:
+        desired[0, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[
+            0, 0, 0
+        ]
+    elif len(input_shapes[0]) == len(input_shapes[1]) + 1:
         desired[:] = np.copy(phlower_tensors["phlower_tensor_1"].to_numpy())
         for i in range(input_shapes[0][0]):
-            desired[i, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[i, 0, 0]
+            desired[i, 0, 0] = phlower_tensors["phlower_tensor_0"].to_numpy()[
+                i, 0, 0
+            ]
     else:
         raise ValueError("input_shapes value error")
 
