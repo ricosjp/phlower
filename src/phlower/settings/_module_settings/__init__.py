@@ -22,6 +22,9 @@ from phlower.settings._module_settings._share_setting import ShareSetting
 from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (  # noqa: E501
     SimilarityEquivariantMLPSetting,
 )
+from phlower.settings._module_settings._time_series_to_features_setting import (
+    TimeSeriesToFeaturesSetting,
+)
 
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Accessor": AccessorSetting,
@@ -35,6 +38,7 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Reducer": ReducerSetting,
     "Share": ShareSetting,
     "SimilarityEquivariantMLP": SimilarityEquivariantMLPSetting,
+    "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
     "IsoGCN": IsoGCNSetting,
 }
 
