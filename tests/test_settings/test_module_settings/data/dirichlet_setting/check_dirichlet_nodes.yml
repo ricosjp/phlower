@@ -63,6 +63,8 @@ model:
         output_key: dirichlet0
         destinations:
           - MLP2
+        nn_parameters:
+          dirichlet_name: "mlp1"
 
       - nn_type: MLP
         name: MLP2

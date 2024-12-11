@@ -42,11 +42,14 @@ class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(self, activation: str, nodes: list[int] = None):
+    def __init__(
+        self, activation: str, dirichlet_name: str, nodes: list[int] = None
+    ):
         super().__init__()
         self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
+        self._dirichlet_name = dirichlet_name
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -73,7 +76,10 @@ class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        dirichlet = tuple(data.values())[1]
+        dirichlet = data[self._dirichlet_name]
+        value_name = list(
+            filter(lambda name: name != self._dirichlet_name, data.keys())
+        )[0]
         dirichlet_filter = torch.isnan(dirichlet)
-        ans = torch.where(dirichlet_filter, tuple(data.values())[0], dirichlet)
+        ans = torch.where(dirichlet_filter, data[value_name], dirichlet)
         return self._activation_func(ans)

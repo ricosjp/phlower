@@ -14,6 +14,7 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
     nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
+    dirichlet_name: str
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -21,16 +22,12 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 2:
             raise ValueError("num of input should be 2 in Dirichlet.")
-        if input_dims[0] != input_dims[1]:
-            raise ValueError("input dimensions should be same in Dirichlet.")
         sum_dim = sum(v for v in input_dims)
-        out_dim = input_dims[0]
-        self.nodes = [sum_dim, out_dim]
         return sum_dim
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         n_dim = self.gather_input_dims(*input_dims)
-        out_dim = input_dims[0]
+        out_dim = max(input_dims)
         return [n_dim, out_dim]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...

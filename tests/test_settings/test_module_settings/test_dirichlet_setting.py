@@ -11,20 +11,20 @@ from phlower.settings._module_settings import DirichletSetting
 
 @pytest.mark.parametrize("nodes", [(None), ([10, 10])])
 def test__can_accept_valid_n_nodes(nodes: list[int] | None):
-    _ = DirichletSetting(nodes=nodes)
+    _ = DirichletSetting(nodes=nodes, dirichlet_name="")
 
 
 @pytest.mark.parametrize("nodes", [([5]), ([10, 10, 10])])
 def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
     with pytest.raises(ValueError):
-        _ = DirichletSetting(nodes=nodes)
+        _ = DirichletSetting(nodes=nodes, dirichlet_name="")
 
 
 @pytest.mark.parametrize(
     "input_dims, desired", [([30, 30], 60), ([40, 40], 80), ([100, 100], 200)]
 )
 def test__gather_input_dims(input_dims: list[int], desired: int):
-    setting = DirichletSetting()
+    setting = DirichletSetting(dirichlet_name="")
 
     assert setting.gather_input_dims(*input_dims) == desired
 
@@ -48,7 +48,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 ):
     nodes, update_nodes = lists
     assume(nodes != update_nodes)
-    setting = DirichletSetting()
+    setting = DirichletSetting(dirichlet_name="")
 
     before_nodes = setting.get_n_nodes()
     assert before_nodes != update_nodes
@@ -58,7 +58,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 
 
 def test__reference_is_not_necessary():
-    setting = DirichletSetting()
+    setting = DirichletSetting(dirichlet_name="")
 
     assert not setting.need_reference
 

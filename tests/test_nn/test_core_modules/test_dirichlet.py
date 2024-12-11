@@ -7,7 +7,7 @@ from phlower.nn import Dirichlet
 
 
 def test__can_call_parameters():
-    model = Dirichlet("identity")
+    model = Dirichlet("identity", dirichlet_name="")
 
     # To check Dirichlet inherit torch.nn.Module appropriately
     _ = model.parameters()
@@ -34,7 +34,7 @@ def test__concatenated_tensor_shape(
     ] = float("nan")
     phlower_tensors = phlower_tensor_collection(phlower_tensors)
 
-    model = Dirichlet("identity")
+    model = Dirichlet("identity", dirichlet_name="phlower_tensor_1")
 
     actual = model(phlower_tensors)
 
