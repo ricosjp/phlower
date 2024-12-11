@@ -12,35 +12,32 @@ from phlower.settings._interface import (
 
 class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int] | None = Field(None)
+    nodes: list[int] | None
     activation: str = Field("identity", frozen=True)
-    return_n_nodes: list[int]
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
     def gather_input_dims(self, *input_dims: int) -> int:
-        assert len(input_dims) > 0
+        if len(input_dims) != 2 and len(input_dims) != 1:
+            raise ValueError(
+                "size of input_dims should be 1 or 2 in ContractionSettings."
+                f" input: {input_dims}"
+            )
+
         sum_dim = sum(v for v in input_dims)
         return sum_dim
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
-        self.return_n_nodes[0] = sum_dim
-        return self.return_n_nodes
+        self.nodes[0] = sum_dim
+        return self.nodes
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-        if len(vals) != 2 and len(vals) != 1:
-            raise ValueError(
-                "size of nodes must be 1 or 2 in ContractionSettings."
-                f" input: {vals}"
-            )
         return vals
 
     @property
@@ -51,8 +48,7 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def get_n_nodes(self) -> list[int] | None:
-        return self.return_n_nodes
+        return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
-        self.return_n_nodes[0] = nodes[0]

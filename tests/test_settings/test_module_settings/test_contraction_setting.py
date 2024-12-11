@@ -11,20 +11,19 @@ from phlower.settings._module_settings import ContractionSetting
 
 @pytest.mark.parametrize("nodes", [(None), ([10, 10])])
 def test__can_accept_valid_n_nodes(nodes: list[int] | None):
-    _ = ContractionSetting(nodes=nodes, return_n_nodes=[])
+    _ = ContractionSetting(nodes=nodes)
 
 
-@pytest.mark.parametrize("nodes", [([]), ([10, 10, 10])])
-def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
+def test__raise_error_when_invalid_n_nodes():
     with pytest.raises(ValueError):
-        _ = ContractionSetting(nodes=nodes, return_n_nodes=[])
+        _ = ContractionSetting()
 
 
 @pytest.mark.parametrize(
-    "input_dims, desired", [([30, 50, 40], 120), ([40], 40), ([100, 10], 110)]
+    "input_dims, desired", [([30, 50], 80), ([40], 40), ([100, 10], 110)]
 )
 def test__gather_input_dims(input_dims: list[int], desired: int):
-    setting = ContractionSetting(return_n_nodes=[])
+    setting = ContractionSetting(nodes=[])
 
     assert setting.gather_input_dims(*input_dims) == desired
 
@@ -48,7 +47,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 ):
     nodes, update_nodes = lists
     assume(nodes != update_nodes)
-    setting = ContractionSetting(return_n_nodes=nodes)
+    setting = ContractionSetting(nodes=nodes)
 
     before_nodes = setting.get_n_nodes()
     assert before_nodes != update_nodes
@@ -58,7 +57,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 
 
 def test__reference_is_not_necessary():
-    setting = ContractionSetting(return_n_nodes=[])
+    setting = ContractionSetting(nodes=[])
 
     assert not setting.need_reference
 

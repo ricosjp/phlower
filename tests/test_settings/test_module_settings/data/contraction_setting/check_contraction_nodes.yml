@@ -64,7 +64,7 @@ model:
         destinations:
           - MLP2
         nn_parameters:
-          return_n_nodes: [-1, 15]
+          nodes: [-1, 15]
 
       - nn_type: MLP
         name: MLP2
