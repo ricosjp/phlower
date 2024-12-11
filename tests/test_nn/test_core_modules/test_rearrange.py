@@ -36,7 +36,7 @@ def test__can_pass_parameters_correctly(
 ):
     setting = RearrangeSetting(
         pattern=pattern,
-        n_last_feature=n_last_feature,
+        output_feature_dim=n_last_feature,
         save_as_time_series=save_as_time_series,
         save_as_voxel=save_as_voxel,
         axes_lengths=axes_lengths,
@@ -150,7 +150,6 @@ def test__same_output_with_time_series_to_feature(
         save_as_voxel=False,
     )
     time2feature = TimeSeriesToFeatures()
-
     phlower_tensors = phlower_tensor_collection(
         {
             "input": phlower_tensor(

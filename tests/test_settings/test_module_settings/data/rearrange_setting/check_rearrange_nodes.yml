@@ -49,7 +49,7 @@ model:
           - MLP2
         nn_parameters:
           pattern: "f t v -> v t f"
-          n_last_feature: 10
+          output_feature_dim: 10
 
       - nn_type: MLP
         name: MLP2

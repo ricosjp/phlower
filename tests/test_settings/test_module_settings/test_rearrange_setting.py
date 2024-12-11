@@ -32,14 +32,14 @@ def test__can_accept_valid_n_nodes(
     setting = RearrangeSetting(
         pattern=pattern,
         axes_lengths=axes_lengths,
-        n_last_feature=n_last_feature,
+        output_feature_dim=n_last_feature,
         save_as_time_series=save_as_time_series,
         save_as_voxel=save_as_voxel,
     )
 
     assert setting.pattern == pattern
     assert setting.axes_lengths == axes_lengths
-    assert setting.n_last_feature == setting.n_last_feature
+    assert setting.output_feature_dim == setting.output_feature_dim
     assert setting.save_as_time_series == save_as_time_series
     assert setting.save_as_voxel == save_as_voxel
 
@@ -60,7 +60,7 @@ def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
 def test__gather_input_dims(input_dims: list[int]):
     setting = RearrangeSetting(
         pattern="time vertex dim f1 -> f1 vertex dim time",
-        n_last_feature=10,
+        output_feature_dim=10,
         save_as_time_series=False,
         save_as_voxel=False,
     )
@@ -72,7 +72,7 @@ def test__gather_input_dims(input_dims: list[int]):
 def test__raise_error_invalid_input_dims(input_dims: list[int]):
     setting = RearrangeSetting(
         pattern="time vertex dim f1 -> f1 vertex dim time",
-        n_last_feature=10,
+        output_feature_dim=10,
     )
 
     with pytest.raises(ValueError) as ex:
@@ -85,7 +85,7 @@ def test__raise_error_invalid_input_dims(input_dims: list[int]):
 def test__nodes_after_overwriting(n_last_feature: int, input_ndim: int):
     setting = RearrangeSetting(
         pattern="time vertex dim f1 -> f1 vertex dim time",
-        n_last_feature=n_last_feature,
+        output_feature_dim=n_last_feature,
     )
 
     desired = [input_ndim, n_last_feature]
@@ -111,7 +111,7 @@ def test__cannot_update_by_invalid_nodes(
 ):
     setting = RearrangeSetting(
         pattern="time vertex dim f1 -> f1 vertex dim time",
-        n_last_feature=n_last_feature,
+        output_feature_dim=n_last_feature,
     )
 
     with pytest.raises(ValueError) as ex:
@@ -123,7 +123,7 @@ def test__cannot_update_by_invalid_nodes(
 def test__reference_is_not_necessary():
     setting = RearrangeSetting(
         pattern="time vertex dim f1 -> f1 vertex dim time",
-        n_last_feature=10,
+        output_feature_dim=10,
     )
 
     assert not setting.need_reference

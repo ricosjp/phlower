@@ -12,7 +12,7 @@ from phlower.settings._interface import (
 
 class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     pattern: str = Field(frozen=True)
-    n_last_feature: int = Field(frozen=True)
+    output_feature_dim: int = Field(frozen=True)
     save_as_time_series: bool = Field(False, frozen=True)
     save_as_voxel: bool = Field(False, frozen=True)
     axes_lengths: dict[str, int] = Field(default_factory=dict, frozen=True)
@@ -23,11 +23,11 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
-    @pydantic.field_validator("n_last_feature", mode="before")
-    def check__valid_n_last_feature(cls, value: int) -> int:
+    @pydantic.field_validator("output_feature_dim", mode="before")
+    def check__valid_output_feature_dim(cls, value: int) -> int:
         if value < 1:
             raise ValueError(
-                f"n_last_feature must be positive value. Input: {value}"
+                "output_feature_dim must be positive value. " f"Input: {value}"
             )
         return value
 
@@ -41,7 +41,7 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         n_dim = self.gather_input_dims(*input_dims)
-        return [n_dim, self.n_last_feature]
+        return [n_dim, self.output_feature_dim]
 
     @pydantic.field_validator("nodes", mode="before")
     @classmethod
@@ -72,7 +72,7 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 f"Invalid length of nodes to overwrite. Input: {nodes}"
             )
 
-        if nodes[-1] != self.n_last_feature:
+        if nodes[-1] != self.output_feature_dim:
             raise ValueError(
                 "the value of n_last_feature and "
                 "the last item of nodes are not consistent."
