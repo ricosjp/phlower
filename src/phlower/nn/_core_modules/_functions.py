@@ -77,9 +77,7 @@ def spmm(
     return h.rearrange(restore_pattern, **restore_axes_length)
 
 
-def time_series_to_features(
-    arg: IPhlowerTensor
-) -> IPhlowerTensor:
+def time_series_to_features(arg: IPhlowerTensor) -> IPhlowerTensor:
     """
     Compute time_series_to_features for phlower tensors.
 
