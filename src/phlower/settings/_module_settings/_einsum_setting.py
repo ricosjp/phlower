@@ -12,10 +12,9 @@ from phlower.settings._interface import (
 
 class EinsumSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int] | None = Field(None)
+    nodes: list[int] | None
     activation: str = Field("identity", frozen=True)
     equation: str
-    return_n_nodes: list[int]
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -27,8 +26,8 @@ class EinsumSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
-        self.return_n_nodes[0] = sum_dim
-        return self.return_n_nodes
+        self.nodes[0] = sum_dim
+        return self.nodes
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
@@ -45,8 +44,7 @@ class EinsumSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         return
 
     def get_n_nodes(self) -> list[int] | None:
-        return self.return_n_nodes
+        return self.nodes
 
     def overwrite_nodes(self, nodes: list[int]) -> None:
         self.nodes = nodes
-        self.return_n_nodes[0] = nodes[0]

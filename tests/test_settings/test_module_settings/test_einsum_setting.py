@@ -11,7 +11,7 @@ from phlower.settings._module_settings import EinsumSetting
 
 @pytest.mark.parametrize("nodes", [(None), ([10, 10])])
 def test__can_accept_valid_n_nodes(nodes: list[int] | None):
-    _ = EinsumSetting(nodes=nodes, equation="", return_n_nodes=[])
+    _ = EinsumSetting(nodes=nodes, equation="")
 
 
 @pytest.mark.parametrize("nodes", [([5]), ([10, 10, 10])])
@@ -24,7 +24,7 @@ def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
     "input_dims, desired", [([30, 50, 40], 120), ([40], 40), ([100, 10], 110)]
 )
 def test__gather_input_dims(input_dims: list[int], desired: int):
-    setting = EinsumSetting(equation="", return_n_nodes=[])
+    setting = EinsumSetting(equation="", nodes=[])
 
     assert setting.gather_input_dims(*input_dims) == desired
 
@@ -48,7 +48,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 ):
     nodes, update_nodes = lists
     assume(nodes != update_nodes)
-    setting = EinsumSetting(equation="", return_n_nodes=[])
+    setting = EinsumSetting(equation="", nodes=[])
 
     before_nodes = setting.get_n_nodes()
     assert before_nodes != update_nodes
@@ -58,7 +58,7 @@ def test__nodes_is_update_after_overwrite_nodes(
 
 
 def test__reference_is_not_necessary():
-    setting = EinsumSetting(equation="", return_n_nodes=[])
+    setting = EinsumSetting(equation="", nodes=[])
 
     assert not setting.need_reference
 
