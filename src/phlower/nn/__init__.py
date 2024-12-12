@@ -4,6 +4,7 @@ from phlower.nn._core_modules import (
     Accessor,
     ActivationSelector,
     Concatenator,
+    Dirichlet,
     EnEquivariantMLP,
     Identity,
     IsoGCN,
