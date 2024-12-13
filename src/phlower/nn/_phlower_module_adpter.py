@@ -34,6 +34,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
             destinations=setting.destinations,
             no_grad=setting.no_grad,
             n_nodes=setting.nn_parameters.get_n_nodes(),
+            coeff=setting.coeff,
         )
 
     def __init__(
@@ -45,6 +46,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         destinations: list[str],
         no_grad: bool,
         n_nodes: list[int],
+        coeff: float,
     ) -> None:
         super().__init__()
         self._layer = layer
@@ -54,6 +56,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         self._destinations = destinations
         self._output_key = output_key
         self._n_nodes = n_nodes
+        self._coeff = coeff
 
     def get_destinations(self) -> list[str]:
         return self._destinations
@@ -99,9 +102,13 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         )
         if self._no_grad:
             with torch.no_grad():
-                result = self._layer.forward(inputs, field_data=field_data)
+                result = self._coeff * self._layer.forward(
+                    inputs, field_data=field_data
+                )
         else:
-            result = self._layer.forward(inputs, field_data=field_data)
+            result = self._coeff * self._layer.forward(
+                inputs, field_data=field_data
+            )
 
         return phlower_tensor_collection({self._output_key: result})
 
