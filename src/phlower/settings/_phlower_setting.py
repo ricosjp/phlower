@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import pathlib
 
 import pydantic
 from packaging.version import Version
 from pydantic import dataclasses as dc
+from pydantic_core import ErrorDetails
 from typing_extensions import Self
 
 from phlower.io import PhlowerYamlFile
@@ -43,7 +45,7 @@ class PhlowerSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
-        frozen=True, extra="forbid", arbitrary_types_allowed=True
+        frozen=True, arbitrary_types_allowed=True
     )
 
     @pydantic.field_validator("version")
@@ -77,7 +79,14 @@ class PhlowerSetting(pydantic.BaseModel):
         """
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
-        return PhlowerSetting(**data)
+        try:
+            return PhlowerSetting(**data)
+        except pydantic.ValidationError as ex:
+            raise ValueError(
+                "Invalid contents are found in the input setting file. "
+                "Details are shown below. \n"
+                f"{_format_errors(ex.errors())}"
+            ) from ex
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
@@ -127,3 +136,18 @@ class PhlowerPredictorSetting:
         if name not in names:
             raise ValueError(f"{name} selection mode does not exist.")
         return name
+
+
+def _format_errors(errors: list[ErrorDetails]) -> str:
+    data = {"errors": []}
+
+    for error in errors:
+        _data = {
+            "type": error["type"],
+            "location": error["loc"],
+            "message": error["msg"],
+            "your input": error["input"],
+        }
+        data["errors"].append(_data)
+
+    return json.dumps(data, indent=4)

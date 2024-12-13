@@ -18,12 +18,12 @@ from phlower.utils.exceptions import (
 
 
 class ModuleSetting(IModuleSetting, pydantic.BaseModel):
-    nn_type: str = Field(..., frozen=True)
+    nn_type: str = Field(frozen=True)
     """
     name of neural network type. For example, GCN, MLP.
     """
 
-    name: str = Field(..., frozen=True)
+    name: str = Field(frozen=True)
     """
     name of group
     """
@@ -89,7 +89,6 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         # NOTE: overwrite nodes
         self.nn_parameters.overwrite_nodes(_resolved_nodes)
 
-        #
         if len(self.output_key) == 0:
             self.output_key = f"OUT_{self.name}"
         self.nn_parameters.confirm(self)

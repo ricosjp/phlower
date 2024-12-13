@@ -145,7 +145,9 @@ class PhlowerGroupModule(
     def get_n_nodes(self) -> list[int]:
         return None
 
-    def resolve(self) -> dagstream.DagStream:
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> dagstream.DagStream:
         for module in self._phlower_modules:
             module.resolve(parent=self)
 

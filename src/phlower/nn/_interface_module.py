@@ -64,7 +64,7 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def resolve(
-        cls, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> None: ...
 
     @abc.abstractmethod
