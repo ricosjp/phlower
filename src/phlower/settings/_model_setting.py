@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from functools import cached_property
 
 import pydantic
 from pipe import select, uniq
@@ -16,6 +17,7 @@ class _MemberSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
 
 class ModelIOSetting(pydantic.BaseModel):
     name: str
@@ -40,8 +42,20 @@ class ModelIOSetting(pydantic.BaseModel):
 
         return values
 
+    @cached_property
+    def _contain_none(self) -> bool:
+        dims = [m.n_last_dim for m in self.members]
+        return None in dims
+
     @property
     def n_last_dim(self) -> int:
+        if self._contain_none:
+            raise ValueError(
+                "Feature dimensions cannot be calculated "
+                "because n_last_dim set to be None "
+                "among these members. "
+                f"{[m.name for m in self.members]}"
+            )
         return sum(v.n_last_dim for v in self.members)
 
 

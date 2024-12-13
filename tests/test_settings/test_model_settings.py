@@ -165,3 +165,14 @@ def test__raise_error_when_omitting_inputs_in_the_head_modules(file_name: str):
         setting.resolve()
 
     assert "only one input is allowed" in str(ex.value)
+
+
+@pytest.mark.parametrize("file_name", ["none_is_contained_in_members.yml"])
+def test__raise_error_when_dimensions_contain_none(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+
+    with pytest.raises(ValueError) as ex:
+        setting.resolve()
+
+    assert "Feature dimensions cannot be calculated" in str(ex.value)
