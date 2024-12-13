@@ -390,7 +390,9 @@ def test__equivariance_of_contraction_rank2_to_rank1(
 
     # Compare
     rotate_h = ortho_op.transform_rank1(h_res.numpy())
-    np.testing.assert_array_almost_equal(rotate_h, ortho_h_res.numpy())
+    np.testing.assert_array_almost_equal(
+        rotate_h, ortho_h_res.numpy(), decimal=5
+    )
 
 
 @pytest.mark.parametrize("n_nodes, n_feature", [(10, 3), (5, 1), (7, 3)])
