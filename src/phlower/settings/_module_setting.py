@@ -80,18 +80,21 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         *resolved_outputs: dict[str, int],
         parent: IReadOnlyReferenceGroupSetting | None = None,
     ) -> None:
-        self._check_keys(*resolved_outputs)
+        try:
+            self._check_keys(*resolved_outputs)
 
-        if self.nn_parameters.need_reference:
-            self.nn_parameters.get_reference(parent)
+            if self.nn_parameters.need_reference:
+                self.nn_parameters.get_reference(parent)
 
-        _resolved_nodes = self._resolve_nodes(*resolved_outputs)
-        # NOTE: overwrite nodes
-        self.nn_parameters.overwrite_nodes(_resolved_nodes)
+            _resolved_nodes = self._resolve_nodes(*resolved_outputs)
+            # NOTE: overwrite nodes
+            self.nn_parameters.overwrite_nodes(_resolved_nodes)
 
-        if len(self.output_key) == 0:
-            self.output_key = f"OUT_{self.name}"
-        self.nn_parameters.confirm(self)
+            if len(self.output_key) == 0:
+                self.output_key = f"OUT_{self.name}"
+            self.nn_parameters.confirm(self)
+        except ValueError as ex:
+            raise ValueError(f"Error is occurred at {self.name}") from ex
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)

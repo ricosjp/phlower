@@ -20,8 +20,7 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def gather_input_dims(self, *input_dims: int) -> int:
         assert len(input_dims) > 0
-        sum_dim = sum(v for v in input_dims)
-        return sum_dim
+        return sum(v for v in input_dims)
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         n_dim = self.gather_input_dims(*input_dims)
