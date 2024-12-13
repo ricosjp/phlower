@@ -12,7 +12,7 @@ from phlower.settings._group_setting import GroupModuleSetting
 
 class _MemberSetting(pydantic.BaseModel):
     name: str
-    n_last_dim: int | None = None
+    n_last_dim: int = 1
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
