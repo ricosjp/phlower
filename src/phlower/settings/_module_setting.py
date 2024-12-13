@@ -93,10 +93,17 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
             if len(self.output_key) == 0:
                 self.output_key = f"OUT_{self.name}"
             self.nn_parameters.confirm(self)
+        except (
+            PhlowerModuleDuplicateKeyError,
+            PhlowerModuleKeyError,
+            PhlowerModuleNodeDimSizeError,
+        ) as ex:
+            raise ex
         except ValueError as ex:
             raise ValueError(
                 "Resolving relationship between precedents failed "
-                f"at {self.name}."
+                f"at {self.name}. \n"
+                f"Error Details: {str(ex)}"
             ) from ex
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
