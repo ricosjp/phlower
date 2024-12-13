@@ -16,6 +16,7 @@ from phlower.settings._module_settings import ReducerSetting
 
 class Reducer(IPhlowerCoreModule, torch.nn.Module):
     """Reducer"""
+    _REGISTERED_OPERATORS = {"add": torch.add, "mul": torch.mul}
 
     @classmethod
     def from_setting(cls, setting: ReducerSetting) -> Self:
@@ -49,9 +50,7 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
         self._activation_func = _utils.ActivationSelector.select(activation)
         self._operator_name = operator
 
-        _REGISTERED_OPERATORS = {"add": torch.add, "mul": torch.mul}
-
-        self._operator = _REGISTERED_OPERATORS[self._operator_name]
+        self._operator = self._REGISTERED_OPERATORS[self._operator_name]
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
