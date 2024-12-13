@@ -15,7 +15,6 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
     nodes: list[int]
     equation: str = Field(frozen=True)
     activation: str = Field("identity", frozen=True)
-    input_orders: list[str] = Field(default_factory=list)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -29,19 +28,7 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
         sum_dim = self.gather_input_dims(*input_dims)
         return (sum_dim, self.nodes[1])
 
-    def confirm(self, self_module: IModuleSetting) -> None:
-        input_keys = self_module.get_input_keys()
-        if not self.input_orders:
-            self.input_orders = input_keys
-
-        if len(self.input_orders) != len(input_keys):
-            raise ValueError(
-                "the number of nodes isn't equal to that of input_orders."
-            )
-
-        for order in self.input_orders:
-            if order not in input_keys:
-                raise ValueError(f"{order} is not defined in input_keys")
+    def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.model_validator(mode="after")
     def check_n_nodes(self) -> list[int]:
@@ -57,7 +44,7 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
                 continue
 
             raise ValueError(
-                "nodes in Rearrange is inconsistent. "
+                "nodes in Einsum is inconsistent. "
                 f"value {v} in {i}-th of nodes is not allowed."
             )
 

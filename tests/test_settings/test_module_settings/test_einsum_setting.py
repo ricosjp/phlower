@@ -68,31 +68,4 @@ def test__nodes_after_resolve(yaml_file: str):
         assert target.get_n_nodes() == value
 
 
-@pytest.mark.parametrize(
-    "yaml_file, desired_msg",
-    [
-        (
-            "invalid_input_orders.yml",
-            "mlp1_missing is not defined in input_keys",
-        ),
-        (
-            "invalid_toomany_input_orders.yml",
-            "the number of nodes isn't equal to that of input_orders.",
-        ),
-    ],
-)
-def test__raise_error_when_invalid_input_orders(
-    yaml_file: str, desired_msg: str
-):
-    with open(_TEST_DATA_DIR / yaml_file) as fr:
-        content = yaml.load(fr, Loader=yaml.SafeLoader)
-
-    setting = PhlowerModelSetting(**content["model"])
-
-    with pytest.raises(ValueError) as ex:
-        setting.network.resolve(is_first=True)
-
-    assert desired_msg in str(ex.value)
-
-
 # endregion

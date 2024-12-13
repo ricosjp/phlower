@@ -61,9 +61,6 @@ model:
         destinations:
           - MLP2
         nn_parameters:
-          input_orders:
-            - mlp0
-            - mlp1
           equation: "ij,ik->ijk"
           nodes: [-1, 25]
 
