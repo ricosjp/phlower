@@ -43,13 +43,13 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         return False
 
     def __init__(
-        self, activation: str, equation: str, nodes: list[int] = None
+        self, activation: str, equation: str, input_orders: list[str], **kwards
     ) -> None:
         super().__init__()
-        self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
         self._equation = equation
+        self._input_orders = input_orders
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -76,6 +76,8 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
+
+        _inputs = [data[name] for name in self._input_orders]
         return self._activation_func(
-            _functions.einsum(self._equation, *data.values())
+            _functions.einsum(self._equation, *_inputs)
         )
