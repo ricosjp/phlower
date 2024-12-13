@@ -9,7 +9,8 @@ from phlower.settings._module_settings._concatenator_setting import (
 from phlower.settings._module_settings._contraction_setting import (
     ContractionSetting,
 )
-from phlower.settings._module_settings._deepsets_setting import DeepSetsSetting
+
+# from phlower.settings._module_settings._deepsets_setting import DeepSetsSetting  # noqa
 from phlower.settings._module_settings._dirichlet_setting import (
     DirichletSetting,
 )

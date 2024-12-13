@@ -94,7 +94,10 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
                 self.output_key = f"OUT_{self.name}"
             self.nn_parameters.confirm(self)
         except ValueError as ex:
-            raise ValueError(f"Error is occurred at {self.name}") from ex
+            raise ValueError(
+                "Resolving relationship between precedents failed "
+                f"at {self.name}."
+            ) from ex
 
     def _check_keys(self, *resolved_outputs: dict[str, int]) -> None:
         _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)

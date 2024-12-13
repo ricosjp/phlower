@@ -1,7 +1,8 @@
 from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._contraction import Contraction
-from phlower.nn._core_modules._deepsets import DeepSets
+
+# from phlower.nn._core_modules._deepsets import DeepSets
 from phlower.nn._core_modules._dirichlet import Dirichlet
 from phlower.nn._core_modules._einsum import Einsum
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
