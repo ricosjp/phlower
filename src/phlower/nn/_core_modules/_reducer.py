@@ -16,6 +16,7 @@ from phlower.settings._module_settings import ReducerSetting
 
 class Reducer(IPhlowerCoreModule, torch.nn.Module):
     """Reducer"""
+
     _REGISTERED_OPERATORS = {"add": torch.add, "mul": torch.mul}
 
     @classmethod

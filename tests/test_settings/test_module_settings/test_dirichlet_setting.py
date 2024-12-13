@@ -2,6 +2,7 @@ import pathlib
 from collections.abc import Callable
 
 import hypothesis.strategies as st
+import pydantic
 import pytest
 import yaml
 from hypothesis import assume, given, settings
@@ -16,8 +17,10 @@ def test__can_accept_valid_n_nodes(nodes: list[int] | None):
 
 @pytest.mark.parametrize("nodes", [([5]), ([10, 10, 10])])
 def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
-    with pytest.raises(ValueError):
+    with pytest.raises(pydantic.ValidationError) as ex:
         _ = DirichletSetting(nodes=nodes, dirichlet_name="")
+
+    assert "Size of nodes must be 2" in str(ex.value)
 
 
 @pytest.mark.parametrize(
@@ -81,6 +84,23 @@ def test__nodes_after_resolve(yaml_file: str):
     for key, value in content["misc"]["tests"].items():
         target = setting.network.search_module_setting(key)
         assert target.get_n_nodes() == value
+
+
+@pytest.mark.parametrize(
+    "yaml_file, missing_name",
+    [("not_found_dirichlet_name.yml", "mlp1_missing")],
+)
+def test__raise_error_when_dirichlet_name_is_missing(
+    yaml_file: str, missing_name: str
+):
+    with open(_TEST_DATA_DIR / yaml_file) as fr:
+        content = yaml.load(fr, Loader=yaml.SafeLoader)
+
+    setting = PhlowerModelSetting(**content["model"])
+
+    with pytest.raises(ValueError) as ex:
+        setting.network.resolve(is_first=True)
+    assert f"{missing_name} is not found in input_keys" in str(ex.value)
 
 
 # endregion

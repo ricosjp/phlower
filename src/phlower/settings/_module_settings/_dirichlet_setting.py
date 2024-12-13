@@ -30,7 +30,13 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         out_dim = max(input_dims)
         return [n_dim, out_dim]
 
-    def confirm(self, self_module: IModuleSetting) -> None: ...
+    def confirm(self, self_module: IModuleSetting) -> None:
+        input_keys = self_module.get_input_keys()
+        if self.dirichlet_name not in input_keys:
+            raise ValueError(
+                f"{self.dirichlet_name} is not found in input_keys. "
+                "Please check predecessors."
+            )
 
     @pydantic.field_validator("nodes")
     @classmethod
@@ -40,7 +46,7 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         if len(vals) != 2:
             raise ValueError(
-                "size of nodes must be 2 in DirichletSettings."
+                "Size of nodes must be 2 in DirichletSettings."
                 f" input: {vals}"
             )
         return vals
