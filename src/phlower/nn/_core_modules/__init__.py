@@ -1,5 +1,8 @@
 from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
+from phlower.nn._core_modules._contraction import Contraction
+from phlower.nn._core_modules._dirichlet import Dirichlet
+from phlower.nn._core_modules._einsum import Einsum
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._gcn import GCN
 from phlower.nn._core_modules._identity import Identity
@@ -22,7 +25,10 @@ from phlower.nn._interface_module import IPhlowerCoreModule
 _all_models: list[type[IPhlowerCoreModule]] = [
     Accessor,
     Concatenator,
+    Dirichlet,
+    Contraction,
     EnEquivariantMLP,
+    Einsum,
     GCN,
     Identity,
     IsoGCN,

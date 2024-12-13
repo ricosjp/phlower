@@ -6,6 +6,13 @@ from phlower.settings._module_settings._accessor_setting import AccessorSetting
 from phlower.settings._module_settings._concatenator_setting import (
     ConcatenatorSetting,
 )
+from phlower.settings._module_settings._contraction_setting import (
+    ContractionSetting,
+)
+from phlower.settings._module_settings._dirichlet_setting import (
+    DirichletSetting,
+)
+from phlower.settings._module_settings._einsum_setting import EinsumSetting
 from phlower.settings._module_settings._en_equivariant_mlp_setting import (
     EnEquivariantMLPSetting,
 )
@@ -32,7 +39,10 @@ from phlower.settings._module_settings._time_series_to_features_setting import (
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Accessor": AccessorSetting,
     "Concatenator": ConcatenatorSetting,
+    "Dirichlet": DirichletSetting,
+    "Contraction": ContractionSetting,
     "EnEquivariantMLP": EnEquivariantMLPSetting,
+    "Einsum": EinsumSetting,
     "GCN": GCNSetting,
     "Identity": IdentitySetting,
     "IsoGCN": IsoGCNSetting,
