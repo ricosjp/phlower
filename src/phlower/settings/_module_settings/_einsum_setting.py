@@ -80,10 +80,7 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
             )
 
         if nodes[1] != self.nodes[1]:
-            raise ValueError(
-                "the value of n_last_feature and "
-                "the last item of nodes are not consistent."
-            )
+            raise ValueError("the last value of nodes is not consistent.")
         if nodes[0] <= 0:
             raise ValueError("Resolved nodes must be positive.")
 
