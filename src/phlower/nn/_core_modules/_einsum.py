@@ -42,11 +42,8 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(
-        self, activation: str, equation: str, nodes: list[int] = None
-    ) -> None:
+    def __init__(self, activation: str, equation: str, **kwards) -> None:
         super().__init__()
-        self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
         self._equation = equation
@@ -76,6 +73,7 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
+
         return self._activation_func(
             _functions.einsum(self._equation, *data.values())
         )

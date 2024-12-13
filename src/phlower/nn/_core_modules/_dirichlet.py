@@ -77,9 +77,16 @@ class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor: Tensor object
         """
         dirichlet = data[self._dirichlet_name]
-        value_name = list(
+        value_names = list(
             filter(lambda name: name != self._dirichlet_name, data.keys())
-        )[0]
+        )
+        if len(value_names) != 1:
+            raise ValueError(
+                "Dirichlet value cannot be detected. "
+                f"Candidates: {value_names}"
+            )
+
+        value_name = value_names[0]
         dirichlet_filter = torch.isnan(dirichlet)
         ans = torch.where(dirichlet_filter, data[value_name], dirichlet)
         return self._activation_func(ans)

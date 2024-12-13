@@ -45,15 +45,16 @@ def test__can_accept_valid_n_nodes(
 
 
 @pytest.mark.parametrize(
-    "nodes",
+    "nodes, desired_msg",
     [
-        ([10, 20, 30]),
-        ([-1, -1]),
+        ([10, 20, 30], "length of nodes must be 2."),
+        ([-1, -1], "value -1 is not allowed except the head node."),
     ],
 )
-def test__raise_error_when_invalid_n_nodes(nodes: list[int]):
-    with pytest.raises(ValueError):
+def test__raise_error_when_invalid_n_nodes(nodes: list[int], desired_msg: str):
+    with pytest.raises(ValueError) as ex:
         _ = RearrangeSetting(nodes=nodes)
+    assert desired_msg in str(ex.value)
 
 
 @pytest.mark.parametrize("input_dims", [([30]), ([40]), ([100])])

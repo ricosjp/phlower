@@ -3,7 +3,7 @@ misc:
   tests:
     MLP0: [10, 20, 25]
     MLP1: [12, 20, 25]
-    Einsum0: [50, 25]
+    Dirichlet0: [50, 25]
     MLP2:  [25, 20, 5]
 
 
@@ -39,7 +39,7 @@ model:
           - feature0
         output_key: mlp0
         destinations:
-          - Einsum0
+          - Dirichlet0
         nn_parameters:
           nodes: [-1, 20, 25]
           activations: ["Identity", "identity"]
@@ -50,27 +50,26 @@ model:
           - feature1
         output_key: mlp1
         destinations:
-          - Einsum0
+          - Dirichlet0
         nn_parameters:
           nodes: [-1, 20, 25]
           activations: ["Identity", "identity"]
 
-      - nn_type: Einsum
-        name: Einsum0
-        output_key: einsum0
+      - nn_type: Dirichlet
+        name: Dirichlet0
         input_keys:
           - mlp0
           - mlp1
+        output_key: dirichlet0
         destinations:
           - MLP2
         nn_parameters:
-          equation: "ij,ik->ijk"
-          nodes: [-1, 25]
+          dirichlet_name: "mlp1_missing"
 
       - nn_type: MLP
         name: MLP2
         input_keys:
-          - einsum0
+          - dirichlet0
         output_key: out_feature0
         nn_parameters:
           nodes: [-1, 20, 5]
