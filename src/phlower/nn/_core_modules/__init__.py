@@ -16,6 +16,7 @@ from phlower.nn._core_modules._share import Share
 from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
 )
+from phlower.nn._core_modules._spmm import SPMM
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
@@ -40,6 +41,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     Share,
     SimilarityEquivariantMLP,
     TimeSeriesToFeatures,
+    SPMM,
 ]
 
 _name2model = {cls.get_nn_name(): cls for cls in _all_models}
