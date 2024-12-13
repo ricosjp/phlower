@@ -49,6 +49,9 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if vals is None:
             return vals
 
+        if len(vals) != 2:
+            raise ValueError(f"length of nodes must be 2. input: {vals}")
+
         for i, v in enumerate(vals):
             if v > 0:
                 continue
@@ -58,7 +61,7 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
             raise ValueError(
                 "nodes in Rearrange is inconsistent. "
-                f"value {v} in {i}-th of nodes is not allowed."
+                f"value {v} is not allowed except the head node."
             )
 
         return vals

@@ -58,9 +58,6 @@ model:
       - nn_type: Einsum
         name: Einsum0
         output_key: einsum0
-        input_keys:
-          - mlp0
-          - mlp1
         destinations:
           - MLP2
         nn_parameters:
