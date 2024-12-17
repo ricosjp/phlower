@@ -1,6 +1,7 @@
 from phlower.nn._core_modules import (
     GCN,
     MLP,
+    SPMM,
     Accessor,
     ActivationSelector,
     Concatenator,
