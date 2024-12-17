@@ -58,6 +58,11 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     Allowed items depend on `nn_type`.
     """
 
+    coeff: float = Field(1.0, frozen=True)
+    """
+    coefficient to be applied to the module.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
         extra="forbid", arbitrary_types_allowed=True

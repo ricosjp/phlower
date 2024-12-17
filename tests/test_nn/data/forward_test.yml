@@ -1,0 +1,21 @@
+model:
+  inputs:
+    - name: sample_input
+
+  network:
+    nn_type: GROUP
+    name: model
+    inputs:
+      - name: sample_input
+        n_last_dim: 3
+
+    outputs:
+      - name: sample_output
+        n_last_dim: 3
+
+    modules:
+      - nn_type: Identity
+        name: IDENTITY
+        input_keys:
+          - sample_input
+        output_key: sample_output
