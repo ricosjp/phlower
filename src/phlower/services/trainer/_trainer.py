@@ -83,6 +83,7 @@ class PhlowerTrainer:
         validation_directories: list[pathlib.Path] | None = None,
         disable_dimensions: bool = False,
         encrypt_key: bytes | None = None,
+        decrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
         record_io = LogRecordIO(file_path=output_directory / "log.csv")
         if self._start_epoch == 0:
@@ -95,12 +96,14 @@ class PhlowerTrainer:
             label_settings=self._model_setting.labels,
             field_settings=self._model_setting.fields,
             directories=train_directories,
+            decrypt_key=decrypt_key,
         )
         validation_dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
             field_settings=self._model_setting.fields,
             directories=validation_directories,
+            decrypt_key=decrypt_key,
         )
 
         builder = DataLoaderBuilder.from_setting(self._trainer_setting)
