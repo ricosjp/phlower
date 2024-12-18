@@ -247,7 +247,7 @@ class GroupModuleSetting(
 
         if len(_flatten_dict) != _n_keys:
             raise PhlowerModuleDuplicateKeyError(
-                "Duplicate key name is detected in input keys "
+                "Duplicate key name is detected in output keys "
                 f"for {self.name}. Please check precedents"
             )
 
