@@ -17,13 +17,21 @@ def test__can_call_parameters():
 
 
 @pytest.mark.parametrize("support_name", ["aaa", "support1"])
-@given(st.floats(width=32, allow_nan=False, allow_infinity=False))
-def test__can_pass_parameters_via_setting(support_name: str, factor: float):
-    setting = SPMMSetting(support_name=support_name, factor=factor)
+@given(
+    factor=st.floats(width=32, allow_nan=False, allow_infinity=False),
+    tranpose=st.booleans(),
+)
+def test__can_pass_parameters_via_setting(
+    support_name: str, factor: float, tranpose: bool
+):
+    setting = SPMMSetting(
+        support_name=support_name, factor=factor, transpose=tranpose
+    )
     model = SPMM.from_setting(setting)
 
     assert model._factor == factor
     assert model._support_name == support_name
+    assert model._transpose is tranpose
 
 
 @pytest.mark.parametrize(
@@ -86,6 +94,37 @@ def test__spmm_when_identity_support(
     assert actual.is_time_series == is_time_series
 
     desired = factor * input_tensor
+
+    np.testing.assert_array_almost_equal(
+        actual.to_tensor(), desired.to_tensor()
+    )
+
+
+@pytest.mark.parametrize(
+    "size, factor",
+    [
+        ((10, 1), 1.0),
+        ((10, 16), 2.0),
+    ],
+)
+def test__spmm_vertexwise_tensor_when_transpose(
+    size: tuple[int], factor: float
+):
+    input_tensor = phlower_tensor(torch.rand(*size), is_time_series=False)
+    _n = input_tensor.n_vertices()
+    support_tensor = phlower_tensor(torch.rand(_n, _n).to_sparse())
+
+    inputs = phlower_tensor_collection({"tensor": input_tensor})
+    dict_supports = {"support": support_tensor}
+    model = SPMM(support_name="support", factor=factor, transpose=True)
+    assert model._transpose
+
+    actual = model.forward(inputs, field_data=dict_supports)
+    assert actual.shape == size
+
+    desired = factor * torch.sparse.mm(
+        torch.transpose(support_tensor, 0, 1), input_tensor
+    )
 
     np.testing.assert_array_almost_equal(
         actual.to_tensor(), desired.to_tensor()
