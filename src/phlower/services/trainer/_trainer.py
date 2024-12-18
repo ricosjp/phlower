@@ -82,8 +82,8 @@ class PhlowerTrainer:
         train_directories: list[pathlib.Path],
         validation_directories: list[pathlib.Path] | None = None,
         disable_dimensions: bool = False,
-        encrypt_key: bytes | None = None,
         decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
         record_io = LogRecordIO(file_path=output_directory / "log.csv")
         if self._start_epoch == 0:
