@@ -247,7 +247,7 @@ class GroupModuleSetting(
 
         if len(_flatten_dict) != _n_keys:
             raise PhlowerModuleDuplicateKeyError(
-                "Duplicate key name is detected in input keys "
+                "Duplicate key name is detected in output keys "
                 f"for {self.name}. Please check precedents"
             )
 
@@ -279,11 +279,11 @@ class GroupModuleSetting(
         for key in self.solver_parameters.get_target_keys():
             if key not in input_keys:
                 raise PhlowerIterationSolverSettingError(
-                    f"{key} is missing in inputs."
+                    f"{key} is missing in inputs. Group: {self.name}"
                 )
             if key not in output_keys:
                 raise PhlowerIterationSolverSettingError(
-                    f"{key} is missing in outputs."
+                    f"{key} is missing in outputs. Group: {self.name}"
                 )
 
         return
