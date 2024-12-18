@@ -24,11 +24,11 @@ class SimpleIterationSolver(IFIterationSolver):
     def __init__(
         self,
         max_iterations: int,
-        divergence_threshold: float,
+        convergence_threshold: float,
         target_keys: list[str],
     ) -> None:
         self._max_iterations = max_iterations
-        self._divergence_threshold: float = divergence_threshold
+        self._convergence_threshold = convergence_threshold
         self._targets = target_keys
         self._is_converged = False
 
@@ -53,7 +53,7 @@ class SimpleIterationSolver(IFIterationSolver):
             )
             h.update(h_next.mask(self._targets), overwrite=True)
 
-            if diff_h < self._divergence_threshold:
+            if diff_h < self._convergence_threshold:
                 self._is_converged = True
                 break
 
