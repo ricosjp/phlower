@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pydantic
 from pydantic import Field
+from typing_extensions import Self
 
 from phlower.settings._interface import (
     IModuleSetting,
@@ -31,7 +32,7 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.model_validator(mode="after")
-    def check_n_nodes(self) -> list[int]:
+    def check_n_nodes(self) -> Self:
         vals = self.nodes
         if len(vals) != 2:
             raise ValueError(f"length of nodes must be 2. input: {vals}.")
@@ -48,7 +49,7 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
                 f"value {v} in {i}-th of nodes is not allowed."
             )
 
-        return vals
+        return self
 
     @property
     def need_reference(self) -> bool:

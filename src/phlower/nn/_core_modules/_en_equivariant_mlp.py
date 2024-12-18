@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -19,7 +18,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     """E(n)-equivariant Multi Layer Perceptron"""
 
     @classmethod
-    def from_setting(cls, setting: EnEquivariantMLPSetting) -> Self:
+    def from_setting(cls, setting: EnEquivariantMLPSetting) -> EnEquivariantMLP:
         """Generate model from setting object
 
         Args:
@@ -28,7 +27,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             Self: EnEquivariantMLP object
         """
-        return cls(**setting.__dict__)
+        return EnEquivariantMLP(**setting.__dict__)
 
     @classmethod
     def get_nn_name(cls) -> str:

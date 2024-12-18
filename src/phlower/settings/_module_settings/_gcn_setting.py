@@ -13,8 +13,8 @@ from phlower.settings._interface import (
 
 class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int] = Field(...)
-    support_name: str = Field(..., frozen=True)
+    nodes: list[int]
+    support_name: str = Field(frozen=True)
     repeat: int = Field(1, frozen=True)
     factor: float = Field(1.0, frozen=True)
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
@@ -22,7 +22,7 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     bias: bool = Field(False, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 

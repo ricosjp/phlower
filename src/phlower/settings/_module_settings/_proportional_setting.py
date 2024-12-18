@@ -54,7 +54,7 @@ class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     @pydantic.model_validator(mode="after")
     def check_nodes_size(self) -> Self:
-        pass
+        return self
 
     def get_n_nodes(self) -> list[int] | None:
         return self.nodes
