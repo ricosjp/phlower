@@ -30,6 +30,11 @@ class ReducerSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
+        if sum_dim % len(input_dims) != 0:
+            raise ValueError(
+                f"sum_dim({sum_dim}) is not divisible "
+                f"by len(input_dims)({len(input_dims)})."
+            )
         return [sum_dim, sum_dim // len(input_dims)]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
