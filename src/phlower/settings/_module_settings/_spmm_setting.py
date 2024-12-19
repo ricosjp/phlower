@@ -13,6 +13,7 @@ from phlower.settings._interface import (
 class SPMMSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     support_name: str
     factor: float = Field(1.0, frozen=True)
+    transpose: bool = Field(False, frozen=True)
 
     nodes: list[int] | None = Field(None)
     # special keyward to forbid extra fields in pydantic

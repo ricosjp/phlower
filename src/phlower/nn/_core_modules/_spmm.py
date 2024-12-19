@@ -41,11 +41,18 @@ class SPMM(torch.nn.Module, IPhlowerCoreModule):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(self, factor: float, support_name: str, **kwards) -> None:
+    def __init__(
+        self,
+        factor: float,
+        support_name: str,
+        transpose: bool = False,
+        **kwards,
+    ) -> None:
         super().__init__()
 
         self._factor = factor
         self._support_name = support_name
+        self._transpose = transpose
         self._repeat = 1
 
     def resolve(
@@ -81,5 +88,7 @@ class SPMM(torch.nn.Module, IPhlowerCoreModule):
     def _propagate(
         self, x: PhlowerTensor, support: PhlowerTensor
     ) -> PhlowerTensor:
+        if self._transpose:
+            support = torch.transpose(support, 0, 1)
         h = _functions.spmm(support * self._factor, x, repeat=self._repeat)
         return h

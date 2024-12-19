@@ -30,13 +30,13 @@ class EmptySolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
 
 class SimpleSolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
     target_keys: list[str] = pydantic.Field(default_factory=list)
-    divergence_threshold: float = 100
+    convergence_threshold: float = 100
     max_iterations: int = 100
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
-    @pydantic.field_validator("divergence_threshold", "max_iterations")
+    @pydantic.field_validator("convergence_threshold", "max_iterations")
     @classmethod
     def must_be_positive_value(
         cls, value: float | int, info: pydantic.ValidationInfo
