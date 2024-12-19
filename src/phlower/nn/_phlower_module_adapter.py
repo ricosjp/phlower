@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import numpy as np
+import torch
 
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
@@ -16,8 +16,10 @@ from phlower.nn._interface_module import (
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
+from phlower.settings._debug_parameter_setting import (
+    PhlowerModuleDebugParameters,
+)
 from phlower.settings._group_setting import ModuleSetting
-from phlower.settings._debug_parameter_setting import PhlowerModuleDebugParameters
 
 
 class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
@@ -116,21 +118,30 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
             )
 
         if self._debug_parameters.output_tensor_shape:
-            if len(self._debug_parameters.output_tensor_shape) != len(result.shape):
+            if len(self._debug_parameters.output_tensor_shape) != len(
+                result.shape
+            ):
                 raise ValueError(
-                        f"In {self._name}, result tensor shape {result.shape} is different"
-                        f"from desired shape {self._debug_parameters.output_tensor_shape}"
-                        )
-            output_tensor_shape = np.array(self._debug_parameters.output_tensor_shape)
+                    f"In {self._name}, result tensor shape "
+                    f"{result.shape} is different from desired shape "
+                    f"{self._debug_parameters.output_tensor_shape} "
+                    "in yaml file"
+                )
+            output_tensor_shape = np.array(
+                self._debug_parameters.output_tensor_shape
+            )
             positive_flag = output_tensor_shape > 0
-            output_tensor_shape = np.where(positive_flag, output_tensor_shape, result.shape)
+            output_tensor_shape = np.where(
+                positive_flag, output_tensor_shape, result.shape
+            )
             if not all(output_tensor_shape == result.shape):
                 ind = np.where(output_tensor_shape != result.shape)[0][0]
 
                 raise ValueError(
-                        f"In {self._name}, {ind}-th result tensor shape {result.shape} is different"
-                        f"from desired shape {output_tensor_shape}"
-                        )
+                    f"In {self._name}, {ind}-th result tensor shape "
+                    f"{result.shape} is different from desired shape "
+                    f"{output_tensor_shape} in yaml file"
+                )
 
         return phlower_tensor_collection({self._output_key: result})
 
