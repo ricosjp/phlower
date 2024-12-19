@@ -9,8 +9,10 @@ from phlower.settings._interface import (
     IModuleSetting,
     IReadOnlyReferenceGroupSetting,
 )
-from phlower.settings._module_parameter_setting import PhlowerModuleParameters
-from phlower.settings._module_parameter_setting import PhlowerModuleDebugParameters
+from phlower.settings._module_parameter_setting import (
+    PhlowerModuleDebugParameters,
+    PhlowerModuleParameters,
+)
 from phlower.utils.exceptions import (
     PhlowerModuleDuplicateKeyError,
     PhlowerModuleKeyError,
@@ -65,7 +67,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     """
 
     debug_parameters: PhlowerModuleDebugParameters = Field(
-            default_factory=dict, validate_default=True
+        default_factory=dict, validate_default=True
     )
     """
     parameters to debug networks.

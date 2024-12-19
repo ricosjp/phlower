@@ -13,8 +13,6 @@ from phlower.settings._module_settings import (
     _name_to_setting,
 )
 
-from phlower.settings._debug_parameter_setting import PhlowerModuleDebugParameters
-
 
 def _validate(vals: dict, info: ValidationInfo) -> IPhlowerLayerParameters:
     if "nn_type" not in info.data:
