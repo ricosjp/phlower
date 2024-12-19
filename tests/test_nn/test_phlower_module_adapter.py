@@ -1,35 +1,23 @@
-import pathlib
-
 import numpy as np
 import pytest
 import torch
-from phlower import PhlowerTensor
+from phlower import phlower_tensor
 from phlower.collections import phlower_tensor_collection
-from phlower.nn import PhlowerGroupModule
-from phlower.settings import PhlowerSetting
-
-_SAMPLE_SETTING_DIR = pathlib.Path("tests/test_nn/data")
+from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
+from phlower.settings import ModuleSetting
 
 
-@pytest.mark.parametrize(
-    "yaml_file, coeff", [("forward_test.yml", 1.0), ("coeff_test.yml", -1.0)]
-)
-def test_forward(
-    yaml_file: str,
-    coeff: float,
-):
-    setting_file = _SAMPLE_SETTING_DIR / yaml_file
-    setting = PhlowerSetting.read_yaml(setting_file)
-
-    setting.model.network.resolve(is_first=True)
-    adapter = PhlowerGroupModule.from_setting(setting.model.network)
-
-    phlower_tensor = PhlowerTensor(torch.rand(2, 3))
-    phlower_tensors = phlower_tensor_collection(
-        {"sample_input": phlower_tensor}
+@pytest.mark.parametrize("coeff", [1.0, 2.0, -3.2])
+def test__coeff_factor_with_identity_module(coeff: float):
+    setting = ModuleSetting(
+        nn_type="Identity", name="aa", input_keys=["sample"], coeff=coeff
     )
+    sample_input = phlower_tensor(torch.rand(2, 3))
+    inputs = phlower_tensor_collection({"sample": sample_input})
 
-    actual = adapter.forward(phlower_tensors, field_data=None)
-    np.testing.assert_almost_equal(
-        actual["sample_output"].to_numpy(), coeff * phlower_tensor.to_numpy()
+    model = PhlowerModuleAdapter.from_setting(setting)
+    actual = model.forward(inputs).unique_item()
+
+    np.testing.assert_array_almost_equal(
+        actual.to_tensor(), sample_input.to_tensor() * coeff
     )

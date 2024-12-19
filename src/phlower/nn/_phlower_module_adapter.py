@@ -95,7 +95,7 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        field_data: ISimulationField,
+        field_data: ISimulationField | None = None,
     ) -> IPhlowerTensorCollections:
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}

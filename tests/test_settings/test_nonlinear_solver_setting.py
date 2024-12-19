@@ -13,16 +13,16 @@ def test__empty_setting():
 
 
 @pytest.mark.parametrize(
-    "divergence_threshold, max_iterations",
+    "convergence_threshold, max_iterations",
     [(-0.001, 100), (100, -123), (-100, -20)],
 )
 def test__raise_error_for_invalid_args_in_simple_setting(
-    divergence_threshold: float, max_iterations: int
+    convergence_threshold: float, max_iterations: int
 ):
     with pytest.raises(pydantic.ValidationError) as ex:
         _ = SimpleSolverSetting(
             target_keys=["sample"],
-            divergence_threshold=divergence_threshold,
+            convergence_threshold=convergence_threshold,
             max_iterations=max_iterations,
         )
 

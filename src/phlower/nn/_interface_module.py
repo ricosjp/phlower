@@ -34,7 +34,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         self,
         data: IPhlowerTensorCollections,
         *,
-        field_data: ISimulationField = None,
+        field_data: ISimulationField | None = None,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod
