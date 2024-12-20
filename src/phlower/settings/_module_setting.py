@@ -5,12 +5,14 @@ import functools
 import pydantic
 from pydantic import Field
 
+from phlower.settings._debug_parameter_setting import (
+    PhlowerModuleDebugParameters,
+)
 from phlower.settings._interface import (
     IModuleSetting,
     IReadOnlyReferenceGroupSetting,
 )
 from phlower.settings._module_parameter_setting import (
-    PhlowerModuleDebugParameters,
     PhlowerModuleParameters,
 )
 from phlower.utils.exceptions import (
