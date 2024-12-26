@@ -87,7 +87,7 @@ def test_sameas_scaler_name(same_as: str, desired: str):
 )
 def test__missing_parent_scaler(scalers: dict):
     with pytest.raises(ValueError):
-        _ = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+        _ = PhlowerScalingSetting(variable_name_to_scalers=scalers)
 
 
 def test__read_yml():
@@ -120,7 +120,7 @@ def test__read_yml():
 def test__get_variable_names(
     scalers: dict[str, dict[str, str]], desired: list[str]
 ):
-    scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+    scaler = PhlowerScalingSetting(variable_name_to_scalers=scalers)
 
     actual = scaler.get_variable_names()
     assert sorted(actual) == sorted(desired)
@@ -152,7 +152,7 @@ def test__is_scaler_exist(
     existed: list[str],
     not_existed: list[str],
 ):
-    scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+    scaler = PhlowerScalingSetting(variable_name_to_scalers=scalers)
 
     for name in existed:
         assert scaler.is_scaler_exist(name)
@@ -182,7 +182,7 @@ def test__is_scaler_exist(
 def test__get_scaler_name(
     scalers: dict[str, dict[str, str]], desired: list[tuple[str]]
 ):
-    scaler = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+    scaler = PhlowerScalingSetting(variable_name_to_scalers=scalers)
 
     for key, ans in desired:
         assert ans == scaler.get_scaler_name(key)
@@ -206,7 +206,7 @@ def create_sample_setting() -> PhlowerScalingSetting:
             "parameters": {"user_std_": 10.0},
         },
     }
-    return PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+    return PhlowerScalingSetting(variable_name_to_scalers=scalers)
 
 
 def test__n_resolved_settings(create_sample_setting: PhlowerScalingSetting):
@@ -384,6 +384,6 @@ def test__collect_transform_files(
     ],
 )
 def test__validate_isoam(scalers: dict):
-    setting = PhlowerScalingSetting(varaible_name_to_scalers=scalers)
+    setting = PhlowerScalingSetting(variable_name_to_scalers=scalers)
     with pytest.raises(ValueError):
         _ = setting.resolve_scalers()[0]

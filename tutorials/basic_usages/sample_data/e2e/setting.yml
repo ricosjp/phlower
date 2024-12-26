@@ -1,5 +1,5 @@
 scaling:
-  varaible_name_to_scalers:
+  variable_name_to_scalers:
 
     nodal_nadj:
       method: identity
