@@ -36,12 +36,14 @@ class PhlowerPredictor:
         self,
         preprocessed_directories: list[pathlib.Path],
         disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
     ) -> Iterator[IPhlowerTensorCollections]:
         dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
             field_settings=self._model_setting.fields,
             directories=preprocessed_directories,
+            decrypt_key=decrypt_key,
         )
 
         builder = DataLoaderBuilder.from_setting(self._predict_setting)
