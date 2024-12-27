@@ -252,7 +252,7 @@ class PhlowerScalingService:
 
         _dumped_scalers: dict = {}
         for name in self._scaling_setting.get_variable_names():
-            _setting = self._scaling_setting.varaible_name_to_scalers[name]
+            _setting = self._scaling_setting.variable_name_to_scalers[name]
             if _setting.is_parent_scaler:
                 _dumped_scalers[name] = scalers_data[
                     _setting.get_scaler_name(name)
@@ -261,7 +261,7 @@ class PhlowerScalingService:
                 _dumped_scalers[name] = _setting
 
         dump_setting = PhlowerScalingSetting(
-            varaible_name_to_scalers=_dumped_scalers
+            variable_name_to_scalers=_dumped_scalers
         )
 
         PhlowerYamlFile.save(
