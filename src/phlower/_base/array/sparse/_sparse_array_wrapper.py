@@ -137,7 +137,9 @@ def batch(
     concat_sizes = [arr.size for arr in arrays]
 
     info = GraphBatchInfo(
-        sizes=concat_sizes, shapes=concat_shapes, n_nodes=tuple(arr.shape[0] for arr in arrays)
+        sizes=concat_sizes,
+        shapes=concat_shapes,
+        n_nodes=tuple(arr.shape[0] for arr in arrays),
     )
     return SparseArrayWrapper(concat_arr), info
 

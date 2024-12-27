@@ -42,21 +42,28 @@ def create_sparse_tensors() -> (
 @pytest.fixture
 def create_dense_tensors() -> (
     Callable[
-        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+        [list[tuple[int]], list[dict[str, float]] | None, bool],
+        list[IPhlowerTensor],
     ]
 ):
     def _create(
-        shapes: list[tuple], dimensions: list[dict] | None = None
+        shapes: list[tuple],
+        dimensions: list[dict] | None = None,
+        is_time_series: bool = False,
     ) -> list[IPhlowerTensor]:
         if dimensions is None:
             return [
-                phlower_array(np.random.rand(*shape)).to_phlower_tensor()
+                phlower_array(
+                    np.random.rand(*shape), is_time_series=is_time_series
+                ).to_phlower_tensor()
                 for shape in shapes
             ]
 
         return [
             phlower_array(
-                np.random.rand(*shape), dimensions=dims
+                np.random.rand(*shape),
+                dimensions=dims,
+                is_time_series=is_time_series,
             ).to_phlower_tensor()
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]
