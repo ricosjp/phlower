@@ -45,14 +45,14 @@ class GroupModuleSetting(
         default_factory=list, validate_default=True
     )
     """
-    definition of input varaibles
+    definition of input variables
     """
 
     outputs: list[GroupIOSetting] = Field(
         default_factory=list, validate_default=True
     )
     """
-    definition of output varaibles
+    definition of output variables
     """
 
     modules: list[ModuleSetting | GroupModuleSetting] = Field(
