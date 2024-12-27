@@ -1,3 +1,5 @@
+from typing import overload
+
 import torch
 
 from phlower._base import phlower_tensor
@@ -5,14 +7,41 @@ from phlower._base._batch import GraphBatchInfo
 from phlower._base.tensors._interface import IPhlowerTensor
 
 
+@overload
+def unbatch(
+    tensor: IPhlowerTensor, n_nodes: list[int]
+) -> list[IPhlowerTensor]: ...
+
+
+@overload
 def unbatch(
     tensor: IPhlowerTensor, batch_info: GraphBatchInfo
-) -> list[IPhlowerTensor]:
-    if tensor.is_sparse:
-        results = _sparse_unbatch(tensor.to_tensor(), batch_info)
-    else:
-        results = _dense_unbatch(tensor.to_tensor(), batch_info)
+) -> list[IPhlowerTensor]: ...
 
+
+def unbatch(
+    tensor: IPhlowerTensor,
+    batch_info: GraphBatchInfo | None = None,
+    n_nodes: list[int] | None = None,
+) -> list[IPhlowerTensor]:
+    if (not batch_info) and (not n_nodes):
+        raise ValueError(
+            "Parameters are missing. batch_info or n_nodes is necessary."
+        )
+
+    if tensor.is_sparse:
+        if batch_info is None:
+            raise ValueError(
+                "batch_info is necessary when unbatching sparse tensor."
+            )
+        results = _sparse_unbatch(tensor.to_tensor(), batch_info)
+        return [phlower_tensor(v, tensor.dimension) for v in results]
+
+    if batch_info:
+        n_nodes = batch_info.n_nodes
+    results = _dense_unbatch(
+        tensor.to_tensor(), n_nodes, tensor.shape_pattern.nodes_dim
+    )
     return [phlower_tensor(v, tensor.dimension) for v in results]
 
 
@@ -49,28 +78,6 @@ def _sparse_unbatch(
 
 
 def _dense_unbatch(
-    tensor: torch.Tensor, batch_info: GraphBatchInfo
+    tensor: torch.Tensor, n_nodes: tuple[int], node_dim: int
 ) -> list[torch.Tensor]:
-    n_nodes = batch_info.total_n_nodes
-
-    index_dim = _get_n_node_dim(tensor, n_nodes)
-    n_rows = [v[index_dim] for v in batch_info.shapes]
-    return tensor.split(n_rows, dim=index_dim)
-
-
-def _get_n_node_dim(tensor: torch.Tensor, n_nodes: int) -> int:
-    _index = [i for i, v in enumerate(tensor.shape) if v == n_nodes]
-
-    if len(_index) == 0:
-        raise ValueError(
-            f"concatenated dimension is not found. shape: {tensor.shape}"
-            f", n_nodes: {n_nodes}"
-        )
-
-    if len(_index) > 1:
-        raise ValueError(
-            f"multiple concatenated dimensions are found. shape: {tensor.shape}"
-            f", n_nodes: {n_nodes}"
-        )
-
-    return _index[0]
+    return tensor.split(n_nodes, dim=node_dim)

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Callable
+from typing import Any, NamedTuple
 
 import torch
 
@@ -8,7 +11,26 @@ from phlower.utils.enums import ActivationType
 from phlower.utils.exceptions import PhlowerInvalidActivationError
 
 
+class MLPConfiguration(NamedTuple):
+    nodes: list[int]
+    activations: list[str]
+    dropouts: list[float]
+    bias: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "nodes": self.nodes,
+            "activations": self.activations,
+            "dropouts": self.dropouts,
+            "bias": self.bias,
+        }
+
+
 class ExtendedLinearList(torch.nn.Module):
+    @classmethod
+    def from_config(cls, config: MLPConfiguration) -> ExtendedLinearList:
+        return ExtendedLinearList(**config.to_dict())
+
     def __init__(
         self,
         nodes: list[int],

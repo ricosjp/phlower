@@ -66,7 +66,7 @@ def phlower_tensor(
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
     pattern: str | None = None,
-):
+) -> PhlowerTensor:
     if isinstance(tensor, PhlowerTensor):
         if dimension is not None:
             logger.warning("Input dimension_tensor are ignored.")

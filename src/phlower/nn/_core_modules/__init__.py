@@ -1,6 +1,7 @@
 from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._contraction import Contraction
+from phlower.nn._core_modules._deepsets import DeepSets
 
 # from phlower.nn._core_modules._deepsets import DeepSets
 from phlower.nn._core_modules._dirichlet import Dirichlet
@@ -44,7 +45,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     SimilarityEquivariantMLP,
     TimeSeriesToFeatures,
     SPMM,
-    # DeepSets,
+    DeepSets,
 ]
 
 _name2model = {cls.get_nn_name(): cls for cls in _all_models}

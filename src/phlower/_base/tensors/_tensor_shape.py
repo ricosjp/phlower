@@ -105,6 +105,16 @@ class PhlowerShapePattern:
         return "t" if self._is_time_series else ""
 
     @property
+    def nodes_dim(self) -> int:
+        """
+        Return the location index of nodes in shape list
+        """
+        if self._is_voxel:
+            raise ValueError("n_nodes dimension does not exist.")
+
+        return 1 if self._is_time_series else 0
+
+    @property
     def feature_start_dim(self) -> int:
         offset_time = 1 if self._is_time_series else 0
         offset_space = 3 if self._is_voxel else 1

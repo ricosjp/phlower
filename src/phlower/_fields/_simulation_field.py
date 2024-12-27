@@ -12,6 +12,12 @@ class ISimulationField(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def keys(self): ...
 
+    @abc.abstractmethod
+    def get_batch_info(self, name: str) -> GraphBatchInfo: ...
+
+    @abc.abstractmethod
+    def get_batched_n_nodes(self) -> list[int]: ...
+
 
 class SimulationField(ISimulationField):
     def __init__(
@@ -34,9 +40,17 @@ class SimulationField(ISimulationField):
         return self._field_tensors[name]
 
     def get_batch_info(self, name: str) -> GraphBatchInfo:
-        if name not in self._field_tensors:
+        if name not in self._batch_info:
             raise KeyError(f"{name} is not found in simulation field.")
         return self._batch_info[name]
+
+    def get_batched_n_nodes(self) -> list[int]:
+        if not self._batch_info:
+            raise ValueError("Information about batch is not found.")
+
+        # NOTE: Assume that batch information is same among features.
+        key = list(self._batch_info.keys())[0]
+        return self._batch_info[key].n_nodes
 
     # HACK: Under construction
     # def calculate_laplacians(self, target: PhlowerTensor):
