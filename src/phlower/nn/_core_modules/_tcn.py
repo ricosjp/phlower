@@ -94,9 +94,7 @@ class TCN(torch.nn.Module, IPhlowerCoreModule):
 
         target = data.unique_item()
         if not target.is_time_series:
-            raise ValueError(
-                "Input tensor in TCN Module is not time-series tensor."
-            )
+            raise ValueError("Input tensor to TCN is not time-series tensor.")
 
         pattern = target.shape_pattern
         original_pattern = pattern.get_pattern()
