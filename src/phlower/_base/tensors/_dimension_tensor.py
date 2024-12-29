@@ -477,3 +477,22 @@ def torch_le(
     if inputs != others:
         raise DimensionIncompatibleError()
     return inputs
+
+
+@dimension_wrap_implements(torch.nn.functional.pad)
+def _torch_pad(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.conv1d)
+def _torch_conv1d(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.relu)
+def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    return inputs

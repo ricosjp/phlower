@@ -20,6 +20,7 @@ from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
 )
 from phlower.nn._core_modules._spmm import SPMM
+from phlower.nn._core_modules._tcn import TCN
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
@@ -46,6 +47,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     TimeSeriesToFeatures,
     SPMM,
     DeepSets,
+    TCN,
 ]
 
 _name2model = {cls.get_nn_name(): cls for cls in _all_models}
