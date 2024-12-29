@@ -111,14 +111,19 @@ def test__can_pass_parameters_via_setting(
         ((4, 10, 10, 10, 3, 16), True),
     ],
 )
+@pytest.mark.parametrize("dimension", [{"Theta": 1}, {"M": 1, "T": -1}, None])
 def test__en_equivariance(
     nodes: list[int],
     kernel_sizes: list[int],
     dilations: list[int],
     shape: tuple[int],
     is_voxel: bool,
+    dimension: dict | None,
 ):
-    orthogonal_tensor = phlower_tensor(ortho_group.rvs(3).astype(np.float32))
+    ortho_dimension = {} if dimension else None
+    orthogonal_tensor = phlower_tensor(
+        ortho_group.rvs(3).astype(np.float32), dimension=ortho_dimension
+    )
     nodes[0] = shape[-1]
     create_linear_weight = nodes[0] != nodes[-1]
     model = EnEquivariantTCN(
@@ -130,13 +135,16 @@ def test__en_equivariance(
     )
 
     input_tensor = phlower_tensor(
-        torch.rand(*shape), is_time_series=True, is_voxel=is_voxel
+        torch.rand(*shape),
+        is_time_series=True,
+        is_voxel=is_voxel,
+        dimension=dimension,
     )
 
     phlower_tensors = phlower_tensor_collection({"tensor": input_tensor})
     actual = _functions.apply_orthogonal_group(
         orthogonal_tensor, model.forward(phlower_tensors)
-    ).to_numpy()
+    )
 
     rotated_phlower_tensors = phlower_tensor_collection(
         {
@@ -145,9 +153,14 @@ def test__en_equivariance(
             )
         }
     )
-    desired = model.forward(rotated_phlower_tensors).to_numpy()
+    desired = model.forward(rotated_phlower_tensors)
 
-    np.testing.assert_almost_equal(actual, desired, decimal=6)
+    if dimension:
+        assert actual.dimension == desired.dimension
+
+    np.testing.assert_array_almost_equal(
+        actual.to_numpy(), desired.to_numpy(), decimal=6
+    )
 
 
 @pytest.mark.parametrize(
