@@ -9,8 +9,6 @@ from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import DeepSetsSetting
 from phlower.utils.enums import ActivationType
 
-_TEST_DATA_DIR = pathlib.Path(__file__).parent / "data/share_settings"
-
 
 @pytest.mark.parametrize(
     "nodes, activations, dropouts",

@@ -69,9 +69,16 @@ class PhlowerShapePattern:
         new_pattern = " ".join([p for p in patterns if len(p) != 0])
         return new_pattern
 
-    def get_feature_pattern(self) -> str:
+    def get_rank_dims_pattern(self) -> str:
+        return " ".join([f"r{i}" for i in range(self.rank_size)])
+
+    def get_feature_pattern(self, drop_last: bool = False) -> str:
         start = self.feature_start_dim
-        return " ".join([f"a{i}" for i in range(len(self._shape[start:]))])
+        # dimension ranks
+        _items = [f"d{i}" for i in range(len(self._shape[start:-1]))]
+        if not drop_last:
+            _items.append(self.feature_pattern_symbol)
+        return " ".join(_items)
 
     def __str__(self):
         return f"ShapePattern: {self.get_pattern()}"
@@ -103,6 +110,10 @@ class PhlowerShapePattern:
     @property
     def time_series_pattern(self) -> str:
         return "t" if self._is_time_series else ""
+
+    @property
+    def feature_pattern_symbol(self) -> str:
+        return "f"
 
     @property
     def nodes_dim(self) -> int:

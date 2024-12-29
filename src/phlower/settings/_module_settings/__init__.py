@@ -34,6 +34,7 @@ from phlower.settings._module_settings._similarity_equivariant_mlp_setting impor
     SimilarityEquivariantMLPSetting,
 )
 from phlower.settings._module_settings._spmm_setting import SPMMSetting
+from phlower.settings._module_settings._tcn_setting import TCNSetting
 from phlower.settings._module_settings._time_series_to_features_setting import (
     TimeSeriesToFeaturesSetting,
 )
@@ -58,6 +59,7 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
     "SPMM": SPMMSetting,
     "DeepSets": DeepSetsSetting,
+    "TCN": TCNSetting,
 }
 
 
