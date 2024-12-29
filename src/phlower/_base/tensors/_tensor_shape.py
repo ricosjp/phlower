@@ -74,6 +74,9 @@ class PhlowerShapePattern:
 
     def get_feature_pattern(self, drop_last: bool = False) -> str:
         start = self.feature_start_dim
+        if start >= len(self._shape):
+            return ""
+
         # dimension ranks
         _items = [f"d{i}" for i in range(len(self._shape[start:-1]))]
         if not drop_last:

@@ -45,7 +45,7 @@ def test__raise_error_for_invalid_pattern(shape: tuple[int], pattern: str):
 
 @pytest.mark.parametrize(
     "shapes, desired",
-    [((5, 6, 7, 9, 10), "n a0 a1 a2 a3"), ((5, 10), "n a0"), ((5,), "n")],
+    [((5, 6, 7, 9, 10), "n d0 d1 d2 f"), ((5, 10), "n f"), ((5,), "n")],
 )
 def test__detect_not_time_series_vertexwise_pattern(
     shapes: tuple[int], desired: str
@@ -60,9 +60,9 @@ def test__detect_not_time_series_vertexwise_pattern(
 @pytest.mark.parametrize(
     "shapes, desired",
     [
-        ((5, 6, 7, 9, 10), "t n a0 a1 a2"),
+        ((5, 6, 7, 9, 10), "t n d0 d1 f"),
         ((5, 10), "t n"),
-        ((100, 5, 23), "t n a0"),
+        ((100, 5, 23), "t n f"),
     ],
 )
 def test__detect_time_series_vertexwise_pattern(
@@ -78,9 +78,9 @@ def test__detect_time_series_vertexwise_pattern(
 @pytest.mark.parametrize(
     "shapes, desired",
     [
-        ((5, 6, 7, 9, 10), "x y z a0 a1"),
-        ((12, 6, 7, 9), "x y z a0"),
-        ((5, 6, 7, 9, 10, 78, 100), "x y z a0 a1 a2 a3"),
+        ((5, 6, 7, 9, 10), "x y z d0 f"),
+        ((12, 6, 7, 9), "x y z f"),
+        ((5, 6, 7, 9, 10, 78, 100), "x y z d0 d1 d2 f"),
     ],
 )
 def test__detect_not_time_series_voxel_pattern(
@@ -96,9 +96,9 @@ def test__detect_not_time_series_voxel_pattern(
 @pytest.mark.parametrize(
     "shapes, desired",
     [
-        ((5, 6, 7, 9, 10), "t x y z a0"),
+        ((5, 6, 7, 9, 10), "t x y z f"),
         ((12, 6, 7, 9), "t x y z"),
-        ((5, 6, 7, 9, 10, 78, 100), "t x y z a0 a1 a2"),
+        ((5, 6, 7, 9, 10, 78, 100), "t x y z d0 d1 f"),
     ],
 )
 def test__detect_time_series_voxel_pattern(shapes: tuple[int], desired: str):
