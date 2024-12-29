@@ -185,7 +185,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             return h
 
         coeff = self._forward_coefficient_network(x)
-        _functions.einsum(
+        return _functions.einsum(
             "i...f,if->i...f",
             h,
             coeff,
@@ -193,7 +193,6 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             is_time_series=h.is_time_series,
             is_voxel=h.is_voxel,
         )
-        return h
 
     def _forward_self_network(
         self, x: PhlowerTensor, supports: list[PhlowerTensor]
