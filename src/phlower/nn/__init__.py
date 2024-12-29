@@ -11,6 +11,7 @@ from phlower.nn._core_modules import (
     Dirichlet,
     Einsum,
     EnEquivariantMLP,
+    EnEquivariantTCN,
     Identity,
     IsoGCN,
     PInvMLP,

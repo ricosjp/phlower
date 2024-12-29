@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from collections.abc import Callable
 
+import numpy as np
 import torch
 
 from phlower._base.tensors import PhlowerDimensionTensor
@@ -79,6 +80,9 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def to_vertexwise(self) -> tuple[IPhlowerTensor, str]: ...
+
+    @abc.abstractmethod
+    def to_numpy(self) -> np.ndarray: ...
 
     @abc.abstractmethod
     def rearrange(

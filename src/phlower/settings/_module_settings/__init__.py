@@ -17,6 +17,9 @@ from phlower.settings._module_settings._einsum_setting import EinsumSetting
 from phlower.settings._module_settings._en_equivariant_mlp_setting import (
     EnEquivariantMLPSetting,
 )
+from phlower.settings._module_settings._en_equivariant_tcn_setting import (
+    EnEquivariantTCNSetting,
+)
 from phlower.settings._module_settings._gcn_setting import GCNSetting
 from phlower.settings._module_settings._identity_setting import IdentitySetting
 from phlower.settings._module_settings._isogcn_setting import IsoGCNSetting
@@ -42,8 +45,10 @@ from phlower.settings._module_settings._time_series_to_features_setting import (
 _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Accessor": AccessorSetting,
     "Concatenator": ConcatenatorSetting,
+    "DeepSets": DeepSetsSetting,
     "Dirichlet": DirichletSetting,
     "Contraction": ContractionSetting,
+    "EnEquivariantTCN": EnEquivariantTCNSetting,
     "EnEquivariantMLP": EnEquivariantMLPSetting,
     "Einsum": EinsumSetting,
     "GCN": GCNSetting,
@@ -56,10 +61,9 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "Reducer": ReducerSetting,
     "Share": ShareSetting,
     "SimilarityEquivariantMLP": SimilarityEquivariantMLPSetting,
-    "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
     "SPMM": SPMMSetting,
-    "DeepSets": DeepSetsSetting,
     "TCN": TCNSetting,
+    "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
 }
 
 
