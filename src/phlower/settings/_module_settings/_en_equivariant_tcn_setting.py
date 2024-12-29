@@ -11,7 +11,7 @@ from phlower.settings._interface import (
 )
 
 
-class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
+class EnEquivariantTCNSetting(pydantic.BaseModel, IPhlowerLayerParameters):
     # This property only overwritten when resolving.
     nodes: list[int]
     kernel_sizes: list[int]
@@ -19,16 +19,24 @@ class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(True, frozen=True)
+    create_linear_weight: bool = Field(True, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def confirm(self, self_module: IModuleSetting) -> None:
+        if not self.create_linear_weight:
+            if self.nodes[0] != self.nodes[-1]:
+                raise ValueError(
+                    "create_linear_weight must be True "
+                    "when first node and last node have differnt values. "
+                    f"Input nodes: {self.nodes}"
+                )
         return
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
-            raise ValueError("only one input is allowed in TCN.")
+            raise ValueError("only one input is allowed in EnEquivariantTCN.")
         return input_dims[0]
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
@@ -40,7 +48,7 @@ class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
         if len(vals) < 2:
             raise ValueError(
-                "size of nodes must be larger than 1 in TCNSettings."
+                "size of nodes must be larger than 1 in EnEquivariantTCN."
                 f" input: {vals}"
             )
 
@@ -52,7 +60,7 @@ class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 continue
 
             raise ValueError(
-                "nodes in TCN is inconsistent. "
+                "nodes in EnEquivariantTCN is inconsistent. "
                 f"value {v} in {i}-th of nodes is not allowed."
             )
 
@@ -82,14 +90,14 @@ class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if len(self.nodes) - 1 != len(self.kernel_sizes):
             raise ValueError(
                 "Size of nodes and kernel_sizes is not compatible "
-                "in TCNSettings."
+                "in EnEquivariantTCN."
                 " len(nodes) must be equal to 1 + len(kernel_sizes)."
             )
 
         if len(self.nodes) - 1 != len(self.dilations):
             raise ValueError(
                 "Size of nodes and dilations is not compatible "
-                "in TCNSettings."
+                "in EnEquivariantTCN."
                 " len(nodes) must be equal to 1 + len(dilations)."
             )
 
@@ -103,7 +111,7 @@ class TCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if len(self.nodes) - 1 != len(self.dropouts):
             raise ValueError(
                 "Size of nodes and dropouts is not compatible "
-                "in TCNSettings."
+                "in EnEquivariantTCN."
                 " len(nodes) must be equal to 1 + len(dropouts)."
             )
 
