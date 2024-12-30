@@ -1,5 +1,4 @@
 from phlower.nn._core_modules._accessor import Accessor
-from phlower.nn._core_modules._activations import ActivationSelector
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._contraction import Contraction
 from phlower.nn._core_modules._deepsets import DeepSets
@@ -26,6 +25,7 @@ from phlower.nn._core_modules._tcn import TCN
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
+from phlower.nn._functionals._activations import ActivationSelector
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[type[IPhlowerCoreModule]] = [

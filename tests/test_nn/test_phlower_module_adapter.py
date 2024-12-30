@@ -44,8 +44,10 @@ def test__taise_error_invalid_output_tensor_shape(
     input_tensor = phlower_tensor(torch.rand(2, 3, 4))
     input_tensors = phlower_tensor_collection({"sample": input_tensor})
     model = PhlowerModuleAdapter.from_setting(setting)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as ex:
         _ = model.forward(input_tensors)
+
+    assert "is different from desired shape" in str(ex.value)
 
 
 @pytest.mark.parametrize(

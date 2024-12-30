@@ -10,11 +10,11 @@ from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.nn._core_modules import _functions
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._proportional import Proportional
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,

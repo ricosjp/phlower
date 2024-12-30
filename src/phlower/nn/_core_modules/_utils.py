@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from phlower._base.tensors import PhlowerTensor
-from phlower.nn._core_modules._activations import ActivationSelector
+from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
 
 T = TypeVar("T")

@@ -33,7 +33,7 @@ def test__spmm(size: tuple[int], is_time_series: bool, repeat: bool):
     sparse = PhlowerTensor(torch.rand(n, n).to_sparse())
 
     actual_spmm = (
-        phlower.nn.functions.spmm(sparse, phlower_tensor, repeat=repeat)
+        phlower.nn.functional.spmm(sparse, phlower_tensor, repeat=repeat)
         .to_tensor()
         .numpy()
     )
@@ -61,27 +61,6 @@ def test__spmm(size: tuple[int], is_time_series: bool, repeat: bool):
             assert_correct(actual_spmm[t], np_dense[t])
     else:
         assert_correct(actual_spmm, np_dense)
-
-
-def test_leaky_relu0p5_inverse_leaky_relu0p5():
-    x = PhlowerTensor(torch.rand(100)) * 4 - 2.0
-    y = phlower.nn.functions.inversed_leaky_relu0p5(
-        phlower.nn.functions.leaky_relu0p5(x)
-    )
-    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
-
-
-def test_tanh_truncated_atanh():
-    x = PhlowerTensor(torch.rand(100)) * 4 - 2
-    y = phlower.nn.functions.truncated_atanh(torch.tanh(x))
-    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=6)
-
-
-def test_smooth_leaky_relu_inverse():
-    x = PhlowerTensor(torch.rand(100)) * 4 - 2
-    f = phlower.nn.functions.SmoothLeakyReLU()
-    y = f.inverse(f(x))
-    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)
 
 
 @pytest.mark.parametrize(
@@ -128,7 +107,7 @@ def test_contraction_one_argument(
         is_time_series=is_time_series,
         is_voxel=is_voxel,
     )
-    actual = phlower.nn.functions.contraction(x)
+    actual = phlower.nn.functional.contraction(x)
     desired = torch.einsum(desired_pattern, torch_tensor, torch_tensor).numpy()
     np.testing.assert_almost_equal(actual.to_tensor().numpy(), desired)
 
@@ -427,7 +406,7 @@ def test_contraction_two_arguments(
         is_voxel=is_voxel,
     )
 
-    actual = phlower.nn.functions.contraction(x, y)
+    actual = phlower.nn.functional.contraction(x, y)
     desired = torch.einsum(desired_pattern, t_x, t_y).numpy()
     np.testing.assert_almost_equal(actual.to_tensor().numpy(), desired)
 
@@ -447,7 +426,7 @@ def test_contraction_raises_phlower_incompatible_tensor_error():
     x = phlower_tensor(torch.rand(10, 10, 10, 3, 16), is_voxel=True)
     y = phlower_tensor(torch.rand(10 * 10 * 10, 3, 16), is_voxel=False)
     with pytest.raises(PhlowerIncompatibleTensorError):
-        phlower.nn.functions.contraction(x, y)
+        phlower.nn.functional.contraction(x, y)
 
 
 @pytest.mark.parametrize(
@@ -695,7 +674,7 @@ def test_tensor_product(
         is_voxel=is_voxel,
     )
 
-    actual = phlower.nn.functions.tensor_product(x, y)
+    actual = phlower.nn.functional.tensor_product(x, y)
     desired = torch.einsum(desired_pattern, t_x, t_y).numpy()
     np.testing.assert_almost_equal(actual.to_numpy(), desired)
 
@@ -758,7 +737,7 @@ def test_apply_orthogonal_group(
         is_time_series=is_time_series,
         is_voxel=is_voxel,
     )
-    actual = phlower.nn.functions.apply_orthogonal_group(orthogonal_tensor, x)
+    actual = phlower.nn.functional.apply_orthogonal_group(orthogonal_tensor, x)
 
     if desired_pattern is None:
         desired = torch_tensor.numpy()
@@ -823,7 +802,7 @@ def test_spatial_mean(
         is_time_series=is_time_series,
         is_voxel=is_voxel,
     )
-    actual = phlower.nn.functions.spatial_mean(x)
+    actual = phlower.nn.functional.spatial_mean(x)
 
     desired = torch_tensor
     for dim in mean_dims:

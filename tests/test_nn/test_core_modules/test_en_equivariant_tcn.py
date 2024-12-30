@@ -8,7 +8,7 @@ from hypothesis import given
 from phlower import phlower_tensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import EnEquivariantTCN
-from phlower.nn._core_modules import _functions
+from phlower.nn._functionals import _functions
 from phlower.settings._module_settings import EnEquivariantTCNSetting
 from phlower.utils.enums import ActivationType
 from scipy.stats import ortho_group

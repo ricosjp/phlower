@@ -8,7 +8,8 @@ import torch
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules import _utils
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,

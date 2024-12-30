@@ -1,9 +1,11 @@
 import hypothesis.strategies as st
 import numpy as np
+import phlower
 import pytest
+import torch
 from hypothesis import given
 from phlower import phlower_tensor
-from phlower.nn._core_modules._activations import ActivationSelector
+from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
 
 
@@ -40,3 +42,24 @@ def test__forward_and_inverse(name: str, input_shape: tuple[int]):
     result = inverse_activation(activation(tensor))
 
     np.testing.assert_array_almost_equal(tensor.to_numpy(), result.to_numpy())
+
+
+def test_leaky_relu0p5_inverse_leaky_relu0p5():
+    x = phlower_tensor(np.random.rand(100)) * 4 - 2.0
+    y = phlower.nn.functional.inversed_leaky_relu0p5(
+        phlower.nn.functional.leaky_relu0p5(x)
+    )
+    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy())
+
+
+def test_tanh_truncated_atanh():
+    x = phlower_tensor(np.random.rand(100)) * 4 - 2
+    y = phlower.nn.functional.truncated_atanh(torch.tanh(x))
+    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=6)
+
+
+def test_smooth_leaky_relu_inverse():
+    x = phlower_tensor(np.random.rand(100)) * 4 - 2
+    f = phlower.nn.functional.SmoothLeakyReLU()
+    y = f.inverse(f(x))
+    np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)

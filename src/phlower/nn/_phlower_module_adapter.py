@@ -166,7 +166,7 @@ class _DebugHelper:
             ind = np.where(output_tensor_shape != result.shape)[0][0]
 
             raise ValueError(
-                f"In {self._name}, {ind}-th result tensor shape "
+                f"In {name}, {ind}-th result tensor shape "
                 f"{result.shape} is different from desired shape "
                 f"{output_tensor_shape} in yaml file"
             )
