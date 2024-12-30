@@ -3,10 +3,12 @@ from __future__ import annotations
 import torch
 
 from phlower._base.tensors import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules import _utils
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._proportional import Proportional
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -93,7 +95,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] | None = None,
+        field_data: ISimulationField | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
@@ -101,8 +103,8 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None.
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

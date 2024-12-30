@@ -407,9 +407,14 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def detach(self) -> PhlowerTensor:
+        if self.has_dimension:
+            new_dimension = self._dimension_tensor.detach()
+        else:
+            new_dimension = None
+
         return PhlowerTensor(
             self._tensor.detach(),
-            dimension_tensor=self._dimension_tensor.detach(),
+            dimension_tensor=new_dimension,
             is_time_series=self.is_time_series,
             is_voxel=self.is_voxel,
         )
@@ -425,13 +430,15 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def clone(self) -> PhlowerTensor:
+        if self.has_dimension:
+            new_dimension = self._dimension_tensor.clone()
+        else:
+            new_dimension = None
+
         tensor = self._tensor.clone()
-        dimension = PhlowerDimensionTensor(
-            self._dimension_tensor._tensor.clone()
-        )
         return PhlowerTensor(
             tensor,
-            dimension_tensor=dimension,
+            dimension_tensor=new_dimension,
             is_time_series=self.is_time_series,
             is_voxel=self.is_voxel,
         )

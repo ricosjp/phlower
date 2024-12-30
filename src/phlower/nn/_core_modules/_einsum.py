@@ -6,7 +6,8 @@ from typing_extensions import Self
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules import _utils
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -67,8 +68,8 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None. Einsum will not use it.
+            field_data (ISimulationField, optional):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

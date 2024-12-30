@@ -10,7 +10,7 @@ from phlower.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.nn._core_modules import _functions as functions
+from phlower.nn._functionals import _functions as functions
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,

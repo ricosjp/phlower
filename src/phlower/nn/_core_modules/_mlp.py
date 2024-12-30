@@ -74,7 +74,6 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField | None = None,
-        supports: dict[str, PhlowerTensor] | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
@@ -82,8 +81,8 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None.
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

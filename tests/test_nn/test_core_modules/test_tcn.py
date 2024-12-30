@@ -115,24 +115,32 @@ def test__default_values():
     ],
 )
 @pytest.mark.parametrize(
-    "input_shape, dimension",
+    "input_shape, is_voxel",
     [
-        ((10, 3, 1), None),
-        ((1, 20, 8), {"T": -1, "M": 1}),
-        ((5, 20, 2, 1), {"Theta": 2}),
+        ((4, 10, 1), False),
+        ((5, 10, 16), False),
+        ((6, 10, 3, 16), False),
+        ((1, 10, 10, 10, 1), True),
+        ((3, 10, 10, 10, 16), True),
+        ((2, 10, 10, 10, 3, 16), True),
     ],
 )
+@pytest.mark.parametrize("dimension", [{"Theta": 1}, {"M": 1, "T": -1}, None])
 def test__output_tensor_shape(
     nodes: list[int],
     activations: list[str],
     kernel_sizes: list[int],
     dilations: list[int],
     input_shape: tuple[int],
+    is_voxel: bool,
     dimension: dict | None,
 ):
     nodes[0] = input_shape[-1]
     _tensor = phlower_tensor(
-        np.random.rand(*input_shape), is_time_series=True, dimension=dimension
+        np.random.rand(*input_shape),
+        is_time_series=True,
+        dimension=dimension,
+        is_voxel=is_voxel,
     )
 
     model = TCN(
@@ -142,17 +150,39 @@ def test__output_tensor_shape(
         activations=activations,
     )
 
-    result = model.forward(phlower_tensor_collection({"input": _tensor}))
+    actual = model.forward(phlower_tensor_collection({"input": _tensor}))
 
-    assert result.is_time_series
+    assert actual.is_time_series
 
     desired_shape = [*input_shape[:-1], nodes[-1]]
-    assert tuple(result.shape) == tuple(desired_shape)
+    assert tuple(actual.shape) == tuple(desired_shape)
 
-    result_dimension = result.dimension
     if _tensor.dimension:
-        assert result_dimension.to_physics_dimension() == PhysicalDimensions(
+        assert actual.dimension.to_physics_dimension() == PhysicalDimensions(
             dimension
         )
     else:
-        assert result_dimension is None
+        assert actual.dimension is None
+
+
+@pytest.mark.parametrize(
+    "shape, is_voxel", [((10, 1), False), ((5, 5, 5, 8), True)]
+)
+def test__raise_error_when_input_is_not_time_series(
+    shape: tuple[int], is_voxel: bool
+):
+    model = TCN(
+        nodes=[10, 10],
+        kernel_sizes=[2],
+        activations=[],
+        dilations=[],
+    )
+
+    inputs = phlower_tensor_collection(
+        {"inputs": phlower_tensor(np.random.rand(*shape), is_voxel=is_voxel)}
+    )
+
+    with pytest.raises(ValueError) as ex:
+        model.forward(inputs)
+
+    assert "Input tensor to TCN is not time-series tensor" in str(ex.value)

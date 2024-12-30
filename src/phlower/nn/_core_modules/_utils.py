@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any, NamedTuple, TypeVar
 
 import numpy as np
 import torch
 
 from phlower._base.tensors import PhlowerTensor
-from phlower.nn._core_modules import _functions
+from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
-from phlower.utils.exceptions import PhlowerInvalidActivationError
 
 T = TypeVar("T")
 
@@ -195,59 +193,3 @@ class ExtendedConv1DList(torch.nn.Module):
             values = [default for _ in range(len(self._nodes) - 1)]
         assert len(self._nodes) == len(values) + 1, f"{values} is too many."
         return values
-
-
-class ActivationSelector:
-    _SMOOTH_LEAKY_RELU = _functions.SmoothLeakyReLU()
-
-    _REGISTERED_ACTIVATIONS = {
-        "identity": _functions.identity,
-        "inversed_leaky_relu0p5": _functions.inversed_leaky_relu0p5,
-        "inversed_smooth_leaky_relu": _SMOOTH_LEAKY_RELU.inverse,
-        "leaky_relu0p5": _functions.leaky_relu0p5,
-        "relu": torch.relu,
-        "sigmoid": torch.sigmoid,
-        "smooth_leaky_relu": _SMOOTH_LEAKY_RELU,
-        "sqrt": torch.sqrt,
-        "tanh": torch.tanh,
-        "truncated_atanh": _functions.truncated_atanh,
-    }
-
-    @staticmethod
-    def select(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
-        type_name = ActivationType[name]
-        return ActivationSelector._REGISTERED_ACTIVATIONS[type_name.value]
-
-    @staticmethod
-    def select_inverse(
-        name: str,
-    ) -> Callable[[torch.Tensor], torch.Tensor]:
-        type_name = ActivationType[name]
-        return ActivationSelector._REGISTERED_ACTIVATIONS[
-            ActivationSelector._inverse_activation_name(type_name).value
-        ]
-
-    @staticmethod
-    def _inverse_activation_name(
-        activation_name: ActivationType,
-    ) -> ActivationType:
-        _to_inverse: dict[ActivationType, ActivationType] = {
-            ActivationType.identity: ActivationType.identity,
-            ActivationType.leaky_relu0p5: ActivationType.inversed_leaky_relu0p5,
-            ActivationType.smooth_leaky_relu: (
-                ActivationType.inversed_smooth_leaky_relu
-            ),
-            ActivationType.tanh: ActivationType.truncated_atanh,
-        }
-
-        inverse_type = _to_inverse.get(activation_name)
-
-        if inverse_type is None:
-            raise PhlowerInvalidActivationError(
-                f"Cannot inverse for {activation_name}"
-            )
-        return inverse_type
-
-    @staticmethod
-    def is_exists(name: str) -> bool:
-        return name in ActivationSelector._REGISTERED_ACTIVATIONS
