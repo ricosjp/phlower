@@ -7,50 +7,6 @@ from phlower._base.tensors._phlower_tensor import PhysicDimensionLikeObject
 from phlower.utils.exceptions import PhlowerIncompatibleTensorError
 
 
-def identity(x: torch.Tensor) -> torch.Tensor:
-    return x
-
-
-def leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
-    """Leaky ReLU with the negative slope = 0.5."""
-    return torch.nn.functional.leaky_relu(x, negative_slope=0.5)
-
-
-def inversed_leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
-    """Inverse of leaky_relu0p5."""
-    return torch.nn.functional.leaky_relu(x, negative_slope=2)
-
-
-def truncated_atanh(x: torch.Tensor, epsilon: float = 1e-8) -> torch.Tensor:
-    """Inverse tanh with truncating values >=1 or <=-1."""
-    x[x >= 1.0 - epsilon] = 1.0 - epsilon
-    x[x <= -1.0 + epsilon] = -1.0 + epsilon
-    return torch.atanh(x)
-
-
-class SmoothLeakyReLU:
-    """Smooth leaky ReLU"""
-
-    def __init__(self, a: float = 0.75, b: float = 1 / 100):
-        self.a = a
-        self.b = b
-
-    def __call__(self, x: torch.Tensor):
-        # a x + (1 - a) sqrt(x**2 + b)
-        return self.a * x + (1 - self.a) * torch.sqrt(x**2 + self.b)
-
-    def inverse(self, x: torch.Tensor) -> torch.Tensor:
-        return (
-            self.a * x
-            - torch.sqrt(
-                (self.a - 1) ** 2 * (2 * self.a * self.b - self.b + x**2)
-            )
-        ) / (2 * self.a - 1)
-
-    def derivative(self, x: torch.Tensor) -> torch.Tensor:
-        return self.a - ((self.a - 1) * x) / torch.sqrt(self.b + x**2)
-
-
 def spmm(
     sparse: IPhlowerTensor, x: IPhlowerTensor, repeat: int = 1
 ) -> IPhlowerTensor:
