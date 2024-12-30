@@ -37,6 +37,17 @@ class PhlowerShapePattern:
         self._is_voxel = is_voxel
 
     def get_pattern_to_size(self, drop_last: bool = False) -> dict[str, int]:
+        """Return mapping of which key is pattern symbol and
+          value is its dimension value.
+
+        Args:
+            drop_last (bool, optional): If True, drop information
+              on last pattern.
+              Defaults to False.
+
+        Returns:
+            dict[str, int]: _description_
+        """
         chars = self.get_pattern().split(" ")
         if drop_last:
             chars.pop()
@@ -44,6 +55,11 @@ class PhlowerShapePattern:
         return {c: self._shape[i] for i, c in enumerate(chars)}
 
     def get_n_vertices(self) -> int:
+        """Get the number of nodes
+
+        Returns:
+            int: the number of nodes
+        """
         start = 1 if self._is_time_series else 0
 
         if self._is_voxel:
@@ -51,6 +67,16 @@ class PhlowerShapePattern:
         return self._shape[start]
 
     def get_space_pattern(self, omit_space: bool = False) -> str:
+        """Get space pattern.
+
+        Args:
+            omit_space (bool, optional): If True, omit space between symbols.
+              Defaults to False.
+
+        Returns:
+            str: pattern which corresponds to space information.
+        """
+
         if not self._is_voxel:
             return "n"
 
@@ -60,6 +86,11 @@ class PhlowerShapePattern:
         return "x y z"
 
     def get_pattern(self) -> str:
+        """Return pattern string of tensor shape
+
+        Returns:
+            str: pattern of tensor shape
+        """
         patterns = [
             self.time_series_pattern,
             self.get_space_pattern(),
@@ -69,10 +100,18 @@ class PhlowerShapePattern:
         new_pattern = " ".join([p for p in patterns if len(p) != 0])
         return new_pattern
 
-    def get_rank_dims_pattern(self) -> str:
-        return " ".join([f"r{i}" for i in range(self.rank_size)])
-
     def get_feature_pattern(self, drop_last: bool = False) -> str:
+        """Return pattern related only with features.
+        Ex. time node d0 d1 ... f
+                      ^^^^^^^^^^^
+
+        Args:
+            drop_last (bool, optional): If True, drop last index of shape.
+              Defaults to False.
+
+        Returns:
+            str: Pattern related only with features.
+        """
         start = self.feature_start_dim
         if start >= len(self._shape):
             return ""
