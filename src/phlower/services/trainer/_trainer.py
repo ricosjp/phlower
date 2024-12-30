@@ -42,7 +42,7 @@ class PhlowerTrainer:
         if (setting.model is None) or (setting.training is None):
             raise ValueError("setting content about scaling is not found.")
 
-        setting.model.network.resolve(is_first=True)
+        setting.model.resolve()
         return cls(setting.model, setting.training)
 
     def __init__(
