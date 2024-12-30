@@ -130,7 +130,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
                 continue
 
             if member.n_last_dim == 1:
-                _arr = _arr[:, np.newaxis]
+                _arr = _arr[..., np.newaxis]
                 arrs.append(_arr)
                 continue
 
@@ -145,4 +145,4 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         if len(arrs) == 1:
             return arrs[0]
 
-        return np.concatenate(arrs)
+        return np.concatenate(arrs, axis=-1)
