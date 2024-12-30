@@ -16,10 +16,16 @@ model:
   inputs:
     - name: nodal_initial_u
       physical_dimension: {"L": 1, "T": -1}
+      members:
+        - name: nodal_initial_u
+          n_last_dim: 1
     
   labels:
     - name: nodal_last_u
       physical_dimension: {"L": 1, "T": -1}
+      members:
+        - name: nodal_last_u
+          n_last_dim: 1
   
   fields:
     - name: "nodal_nadj"
