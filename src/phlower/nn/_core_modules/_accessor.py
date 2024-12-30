@@ -73,8 +73,8 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None. Accessor will not use it.
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

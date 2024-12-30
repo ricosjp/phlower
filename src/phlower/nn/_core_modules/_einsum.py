@@ -67,8 +67,8 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None. Einsum will not use it.
+            field_data (ISimulationField, optional):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

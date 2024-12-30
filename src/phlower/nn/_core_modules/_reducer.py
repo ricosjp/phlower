@@ -72,8 +72,8 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None. Reducer will not use it.
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

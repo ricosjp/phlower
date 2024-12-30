@@ -65,8 +65,8 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor]):
-                sparse tensor objects
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor:
