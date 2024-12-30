@@ -153,6 +153,9 @@ class PhlowerDimensionTensor:
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
 
+    def clone(self) -> PhlowerDimensionTensor:
+        return PhlowerDimensionTensor(tensor=self._tensor.clone())
+
     @property
     def dtype(self) -> torch.dtype:
         return self._tensor.dtype

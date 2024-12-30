@@ -1,3 +1,4 @@
+import phlower._base._functionals as functionals
 from phlower import nn
 from phlower._base import (
     PhlowerDimensionTensor,
