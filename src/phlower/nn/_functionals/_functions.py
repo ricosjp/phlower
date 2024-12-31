@@ -27,6 +27,10 @@ def spmm(
     h, resultant_pattern = x.to_vertexwise()
     restore_pattern = f"{resultant_pattern} -> {x.shape_pattern.get_pattern()}"
     restore_axes_length = x.shape_pattern.get_pattern_to_size(drop_last=True)
+    if (
+        symbol := x.shape_pattern.n_nodes_pattern_symbol
+    ) in restore_axes_length:
+        restore_axes_length[symbol] = sparse.shape[0]
 
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)

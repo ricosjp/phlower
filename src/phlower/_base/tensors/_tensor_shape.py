@@ -78,7 +78,7 @@ class PhlowerShapePattern:
         """
 
         if not self._is_voxel:
-            return "n"
+            return self.n_nodes_pattern_symbol
 
         if omit_space:
             return "xyz"
@@ -156,6 +156,10 @@ class PhlowerShapePattern:
     @property
     def feature_pattern_symbol(self) -> str:
         return "f"
+
+    @property
+    def n_nodes_pattern_symbol(self) -> str:
+        return "n"
 
     @property
     def nodes_dim(self) -> int:
