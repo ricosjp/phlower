@@ -386,7 +386,7 @@ def _validate_rank0_before_applying_nonlinear(
             "Set bias and actications to "
             "apply linear operation for rank > 0 tensor."
             f"Layer info: {layer.has_bias()=}, {layer.has_dropout()=}, "
-            f"{layer.has_nonlinear_activations()=}"
+            f"activations={layer.get_activation_names()}"
         )
 
     return

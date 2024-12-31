@@ -86,6 +86,9 @@ class ExtendedLinearList(torch.nn.Module):
     def has_bias(self) -> bool:
         return self._is_bias
 
+    def get_activation_names(self) -> list[str]:
+        return self._activations
+
     def has_nonlinear_activations(self) -> bool:
         n_nonlinear = sum(
             1 for v in self._activations if v != ActivationType.identity
