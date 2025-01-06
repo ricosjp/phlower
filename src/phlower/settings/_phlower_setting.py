@@ -129,6 +129,11 @@ class PhlowerPredictorSetting:
     random seed. Defaults to 0
     """
 
+    target_epoch: int = 0
+    """
+    target_epoch specifies the number of snapshot. Defaults to 0.
+    """
+
     @pydantic.field_validator("selection_mode")
     @classmethod
     def check_valid_selection_mode(cls, name: str) -> str:
