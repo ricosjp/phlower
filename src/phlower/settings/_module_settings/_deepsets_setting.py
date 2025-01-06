@@ -16,7 +16,8 @@ from phlower.utils.enums import ActivationType
 
 class DeepSetsSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int] = Field(...)
+    nodes: list[int]
+    unbatch_key: str = Field(frozen=True)
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(True, frozen=True)

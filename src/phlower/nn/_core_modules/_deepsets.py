@@ -74,6 +74,7 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
             gamma_config=config,
             last_activation_name=setting.last_activation,
             pool_operator_name=setting.pool_operator,
+            unbatch_key=setting.unbatch_key,
         )
 
     @classmethod
@@ -95,6 +96,7 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
         gamma_config: _utils.MLPConfiguration,
         last_activation_name: str,
         pool_operator_name: str,
+        unbatch_key: str | None = None,
     ):
         super().__init__()
 
@@ -107,6 +109,7 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
             last_activation_name
         )
         self._pool_operator = self._select_pool_operator(pool_operator_name)
+        self._reference_batch_name = unbatch_key
 
     def _select_pool_operator(self, name: str) -> _PoolOperator:
         if name not in self._REGISTERED_POOL_OP:
@@ -172,11 +175,14 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
     def _unbatch(
         self, target: PhlowerTensor, field_data: ISimulationField | None
     ) -> list[PhlowerTensor]:
-        if field_data is None:
+        if (field_data is None) or (self._reference_batch_name is None):
             _logger.info(
                 "batch info is not passed to DeepSets. "
                 "Unbatch operation is skipped."
             )
             return [target]
 
-        return unbatch(target, n_nodes=field_data.get_batched_n_nodes())
+        return unbatch(
+            target,
+            n_nodes=field_data.get_batched_n_nodes(self._reference_batch_name),
+        )
