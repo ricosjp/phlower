@@ -99,45 +99,35 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __lt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] < __value[k] for k in self.keys())
 
         return all(self._x[k] < __value for k in self.keys())
 
     def __le__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] <= __value[k] for k in self.keys())
 
         return all(self._x[k] <= __value for k in self.keys())
 
     def __gt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] > __value[k] for k in self.keys())
 
         return all(self._x[k] > __value for k in self.keys())
 
     def __ge__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] >= __value[k] for k in self.keys())
 
         return all(self._x[k] >= __value for k in self.keys())
 
     def __add__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to add other which has different keys"
+            _check_same_keys("add", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] + __value[k] for k in self.keys()}
             )
@@ -148,9 +138,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __sub__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to substract other which has different keys"
+            _check_same_keys("substract", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] - __value[k] for k in self.keys()}
             )
@@ -160,9 +148,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __mul__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to multple other which has different keys"
+            _check_same_keys("multiple", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] * __value[k] for k in self.keys()}
             )
@@ -172,9 +158,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __truediv__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to divide by other which has different keys"
+            _check_same_keys("divide", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] / __value[k] for k in self.keys()}
             )
@@ -281,3 +265,15 @@ def reduce_collections(
     for v in values:
         result.update(v)
     return result
+
+
+def _check_same_keys(
+    operation_name: str, keys1: KeysView[str], keys2: KeysView[str]
+) -> None:
+    if keys1 == keys2:
+        return
+
+    raise AssertionError(
+        f"Not allowed to {operation_name} other which has different keys"
+        f"{list(keys1)}, {list(keys2)}"
+    )
