@@ -106,7 +106,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         if io_setting.time_slice is None:
             return _array
 
-        return _array.slice_along_time_axis(io_setting.time_slice)
+        return _array.slice_along_time_axis(io_setting.time_slice_object)
 
     def _load_ndarray_data(
         self,

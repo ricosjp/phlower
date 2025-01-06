@@ -176,3 +176,25 @@ def test__raise_error_when_dimensions_contain_none(file_name: str):
         setting.resolve()
 
     assert "Feature dimensions cannot be calculated" in str(ex.value)
+
+
+@pytest.mark.parametrize("file_name", ["simple_module_time_slice.yml"])
+def test__input_time_series(file_name: str):
+    data = parse_file(file_name)
+    setting = PhlowerModelSetting(**data["model"])
+
+    desired_inputs_slice = data["misc"]["tests"]["inputs"]
+    for item in setting.inputs:
+        if desired_inputs_slice[item.name] is None:
+            assert item.time_slice is None
+            continue
+
+        assert item.time_slice_object == slice(*desired_inputs_slice[item.name])
+
+    desired_labels_slice = data["misc"]["tests"]["labels"]
+    for item in setting.labels:
+        if desired_labels_slice[item.name] is None:
+            assert item.time_slice is None
+            continue
+
+        assert item.time_slice_object == slice(*desired_labels_slice[item.name])

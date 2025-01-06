@@ -1,0 +1,41 @@
+misc:
+
+  tests:
+    inputs:
+      feature0: null
+      feature1: [0, 20, 2]
+    labels:
+      answer0: [0, 10, null]
+
+model:
+
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      is_time_series: true
+      time_slice:
+        - 0
+        - 20
+        - 2
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+      is_time_series: false
+
+  labels:
+    - name: answer0
+      is_time_series: true
+      time_slice:
+        - 0
+        - 10
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL

@@ -108,6 +108,7 @@ class PhlowerGroupModule(
             destinations=setting.destinations,
             is_steady_problem=setting.is_steady_problem,
             iteration_solver=solver_cls.from_setting(setting.solver_parameters),
+            time_series_length=setting.time_series_length,
         )
 
     def __init__(

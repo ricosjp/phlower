@@ -31,7 +31,7 @@ class ModelIOSetting(pydantic.BaseModel):
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
 
-    time_slice: slice | None = pydantic.Field(default_factory=list)
+    time_slice: tuple[int, ...] | None = pydantic.Field(None, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -43,6 +43,25 @@ class ModelIOSetting(pydantic.BaseModel):
             values["members"] = [{"name": values.get("name")}]
 
         return values
+
+    @pydantic.field_validator("time_slice")
+    def check_valid_time_slice(
+        cls, value: tuple[int, ...] | None
+    ) -> slice[int, int, int] | None:
+        if value is None:
+            return value
+
+        try:
+            _ = slice(*value)
+
+            # HACK: In Python3.10 and pydantic 2.8.2,
+            #  typing definition 'slice[int, int, int]'
+            #  is not allowed. Thus, this roundabout way is applied.
+            return value
+        except Exception as ex:
+            raise ValueError(
+                f"{value} cannot be converted to valid slice object."
+            ) from ex
 
     @pydantic.model_validator(mode="after")
     def check_time_series(self) -> Self:
@@ -57,6 +76,11 @@ class ModelIOSetting(pydantic.BaseModel):
     def _contain_none(self) -> bool:
         dims = [m.n_last_dim for m in self.members]
         return None in dims
+
+    @property
+    def time_slice_object(self) -> tuple[int, int, int]:
+        # NOTE: check comment in 'check_valid_time_slice'
+        return slice(*self.time_slice)
 
     @property
     def n_last_dim(self) -> int:
