@@ -83,8 +83,7 @@ class NdArrayWrapper(IPhlowerArray):
             is_time_series=self._is_time_series,
             is_voxel=self._is_voxel,
         )
-        _tensor.to(device=device, non_blocking=non_blocking)
-        return _tensor
+        return _tensor.to(device=device, non_blocking=non_blocking)
 
     def to_numpy(self) -> DenseArrayType:
         return self.data

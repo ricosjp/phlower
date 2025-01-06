@@ -121,8 +121,7 @@ class SparseArrayWrapper(IPhlowerArray):
             is_voxel=False,
         )
         _tensor = _tensor.coalesce()
-        _tensor.to(device=device, non_blocking=non_blocking)
-        return _tensor
+        return _tensor.to(device=device, non_blocking=non_blocking)
 
     def to_numpy(self) -> SparseArrayType:
         return self._sparse_data
