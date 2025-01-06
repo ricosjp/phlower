@@ -83,7 +83,9 @@ def _load_model(
 ) -> PhlowerGroupModule:
     _model = PhlowerGroupModule.from_setting(model_setting.network)
     _model.load_checkpoint_file(
-        checkpoint_file=select_snapshot_file(model_directory, selection_mode, target_epoch=target_epoch),
+        checkpoint_file=select_snapshot_file(
+            model_directory, selection_mode, target_epoch=target_epoch
+        ),
         device=device,
     )
     return _model
