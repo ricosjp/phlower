@@ -99,6 +99,11 @@ class GroupModuleSetting(
     Parameters to pass iteration solver.  Contents depends on solver_type
     """
 
+    time_series_length: int = Field(None, frozen=True)
+    """
+    If feed integer value, do iteration to output time series tensor.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 

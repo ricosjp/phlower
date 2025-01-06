@@ -12,7 +12,8 @@ from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
-    reduce_collections,
+    reduce_stack,
+    reduce_update,
 )
 from phlower.io._files import IPhlowerCheckpointFile
 from phlower.nn._interface_iteration_solver import (
@@ -115,6 +116,7 @@ class PhlowerGroupModule(
         output_keys: list[str],
         is_steady_problem: bool = False,
         iteration_solver: IFIterationSolver | None = None,
+        time_series_length: int | None = None,
     ) -> None:
         super().__init__()
         if iteration_solver is None:
@@ -128,6 +130,7 @@ class PhlowerGroupModule(
         self._output_keys = output_keys
         self._is_steady_problem = is_steady_problem
         self._iteration_solver = iteration_solver
+        self._time_series_length = time_series_length
 
         self._stream = self.resolve()
         for _module in self._phlower_modules:
@@ -136,6 +139,10 @@ class PhlowerGroupModule(
     @property
     def name(self) -> str:
         return self._name
+
+    @property
+    def do_time_series_iteration(self) -> int:
+        return bool(self._time_series_length)
 
     def get_display_info(self) -> str:
         return (
@@ -193,6 +200,39 @@ class PhlowerGroupModule(
         field_data: ISimulationField,
         **kwards,
     ) -> IPhlowerTensorCollections:
+        if self.do_time_series_iteration:
+            return self._forward_time_series(
+                data, field_data=field_data, **kwards
+            )
+
+        return self._forward(data, field_data=field_data, **kwards)
+
+    def _forward_time_series(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+        results: list[IPhlowerTensorCollections] = []
+
+        assert isinstance(self._time_series_length, int)
+
+        for time_index in range(self._time_series_length):
+            if time_index != 0:
+                last_result = results[-1].clone()
+                data.update(last_result, overwrite=True)
+            results.append(self._forward(data, field_data=field_data, **kwards))
+
+        return reduce_stack(results)
+
+    def _forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
         step_forward = partial(
             self.step_forward, field_data=field_data, **kwards
         )
@@ -227,7 +267,7 @@ class PhlowerGroupModule(
                     )
                     node.receive_args(inputs)
 
-                args = reduce_collections(node.get_received_args())
+                args = reduce_update(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
                 _result = _module.forward(args, field_data=field_data, **kwards)
 

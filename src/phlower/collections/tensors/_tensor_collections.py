@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections import defaultdict
 from collections.abc import Callable, ItemsView, Iterable, KeysView, Sequence
 from typing import Any
 
@@ -59,6 +60,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def values(self): ...
 
     @abc.abstractmethod
+    def items(self) -> ItemsView[str, PhlowerTensor]: ...
+
+    @abc.abstractmethod
     def pop(self, key: str, default: PhlowerTensor | None = None): ...
 
     @abc.abstractmethod
@@ -80,6 +84,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def apply(self, function: Callable) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def clone(self) -> IPhlowerTensorCollections: ...
 
 
 def phlower_tensor_collection(
@@ -257,14 +264,29 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             {k: function(self._x[k]) for k in self.keys()}
         )
 
+    def clone(self) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors({k: v.clone() for k, v in self.items()})
 
-def reduce_collections(
+
+def reduce_update(
     values: list[IPhlowerTensorCollections],
 ) -> IPhlowerTensorCollections:
     result = phlower_tensor_collection({})
     for v in values:
         result.update(v)
     return result
+
+
+def reduce_stack(
+    values: list[IPhlowerTensorCollections],
+) -> IPhlowerTensorCollections:
+    _results: dict[str, list[PhlowerTensor]] = defaultdict(list)
+    for collection in values:
+        for k, v in collection.items():
+            _results[k].append(v)
+
+    result = {k: torch.stack(v) for k, v in _results.items()}
+    return phlower_tensor_collection(result)
 
 
 def _check_same_keys(
