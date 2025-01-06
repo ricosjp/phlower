@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
-from phlower._base.array.sparse import (
-    SparseArrayWrapper,
-    batch,
-    unbatch,
+from phlower._base.array.sparse import SparseArrayWrapper
+from phlower._base.array.sparse._sparse_array_wrapper import (
+    _sparse_array_batch,
+    _sparse_array_unbatch,
 )
 
 
@@ -24,7 +24,7 @@ def test__batch(shapes: tuple[int], expected_shape: tuple[int]):
         for arr_shape in shapes
     ]
 
-    concat_arr, batch_info = batch(sparse_arrays)
+    concat_arr, batch_info = _sparse_array_batch(sparse_arrays)
 
     assert concat_arr.shape == expected_shape
     assert batch_info.shapes == shapes
@@ -42,8 +42,8 @@ def test__unbatch(shapes: list[tuple[int]]):
         for arr_shape in shapes
     ]
 
-    concat_arr, batch_info = batch(sparse_arrays)
-    results = unbatch(concat_arr, batch_info)
+    concat_arr, batch_info = _sparse_array_batch(sparse_arrays)
+    results = _sparse_array_unbatch(concat_arr, batch_info)
 
     assert len(results) == len(shapes)
 

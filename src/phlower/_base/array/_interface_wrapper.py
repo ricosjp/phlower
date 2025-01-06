@@ -82,3 +82,6 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def to_numpy(self) -> ArrayDataType: ...
+
+    @abc.abstractmethod
+    def slice_along_time_axis(self, time_slice: slice) -> ArrayDataType: ...

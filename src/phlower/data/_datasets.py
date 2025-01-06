@@ -97,12 +97,16 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         if arr is None:
             return None
 
-        return phlower_array(
+        _array = phlower_array(
             arr,
             is_time_series=io_setting.is_time_series,
             is_voxel=io_setting.is_voxel,
             dimensions=io_setting.physical_dimension,
         )
+        if io_setting.time_slice is None:
+            return _array
+
+        return _array.slice_along_time_axis(io_setting.time_slice)
 
     def _load_ndarray_data(
         self,

@@ -127,8 +127,13 @@ class SparseArrayWrapper(IPhlowerArray):
     def to_numpy(self) -> SparseArrayType:
         return self._sparse_data
 
+    def slice_along_time_axis(self, time_slice: slice):
+        raise ValueError(
+            "slice_along_time_axis is not allowed for sparse array."
+        )
 
-def batch(
+
+def _sparse_array_batch(
     arrays: Sequence[SparseArrayWrapper],
 ) -> tuple[SparseArrayWrapper, GraphBatchInfo]:
     concat_arr = _sparse_concatenate(arrays)
@@ -144,7 +149,7 @@ def batch(
     return SparseArrayWrapper(concat_arr), info
 
 
-def unbatch(
+def _sparse_array_unbatch(
     array: SparseArrayWrapper, batch_info: GraphBatchInfo
 ) -> list[SparseArrayWrapper]:
     results = _sparse_decompose(array.to_numpy(), batch_info)

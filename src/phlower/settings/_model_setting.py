@@ -31,6 +31,8 @@ class ModelIOSetting(pydantic.BaseModel):
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
 
+    time_slice: slice | None = pydantic.Field(default_factory=list)
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
@@ -41,6 +43,15 @@ class ModelIOSetting(pydantic.BaseModel):
             values["members"] = [{"name": values.get("name")}]
 
         return values
+
+    @pydantic.model_validator(mode="after")
+    def check_time_series(self) -> Self:
+        if (self.time_slice is not None) and (not self.is_time_series):
+            raise ValueError(
+                "When using time_slice in inputs, set is_time_series as True"
+            )
+
+        return self
 
     @cached_property
     def _contain_none(self) -> bool:
