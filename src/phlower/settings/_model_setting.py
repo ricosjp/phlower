@@ -83,14 +83,12 @@ class ModelIOSetting(pydantic.BaseModel):
         return slice(*self.time_slice)
 
     @property
-    def n_last_dim(self) -> int:
+    def n_last_dim(self) -> int | None:
         if self._contain_none:
-            raise ValueError(
-                "Feature dimensions cannot be calculated "
-                "because n_last_dim set to be None "
-                "among these members. "
-                f"{[m.name for m in self.members]}"
-            )
+            # Feature dimensions cannot be calculated
+            #  because n_last_dim set to be None
+            #  among these members.
+            return None
         return sum(v.n_last_dim for v in self.members)
 
 

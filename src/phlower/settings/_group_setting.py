@@ -239,6 +239,9 @@ class GroupModuleSetting(
                     "Please check precedents."
                 )
 
+            if _flatten_dict[input_v.name] is None:
+                continue
+
             if _flatten_dict[input_v.name] != input_v.n_last_dim:
                 raise PhlowerModuleNodeDimSizeError(
                     f"n_dim of {input_v.name} in {self.name} "

@@ -129,6 +129,9 @@ class PhlowerPredictorSetting:
     random seed. Defaults to 0
     """
 
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
     @pydantic.field_validator("selection_mode")
     @classmethod
     def check_valid_selection_mode(cls, name: str) -> str:
