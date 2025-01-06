@@ -138,3 +138,31 @@ def test__predict(simple_training: PhlowerTensor):
     for result in predictor.predict(preprocessed_directories):
         for k in result.keys():
             print(f"{k}: {result[k].dimension}")
+
+
+@pytest.mark.e2e_test
+def test__predict_specified(simple_training: PhlowerTensor):
+    setting = PhlowerSetting.read_yaml(
+        "tests/e2e_tests/data/predict_specified.yml"
+    )
+    model_directory = _OUTPUT_DIR / "model"
+
+    predictor = PhlowerPredictor(
+        model_directory=model_directory, predict_setting=setting.prediction
+    )
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    assert (
+        predictor._predict_setting.target_epoch
+        == setting.prediction.target_epoch
+    )
+
+    for result in predictor.predict(preprocessed_directories):
+        for k in result.keys():
+            print(f"{k}: {result[k].dimension}")
