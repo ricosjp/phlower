@@ -54,7 +54,7 @@ class DataLoaderBuilder:
             disable_dimensions=disable_dimensions,
         )
 
-        random_generator = torch.Generator(device=self._device)
+        random_generator = torch.Generator()
         random_generator.manual_seed(self._random_seed)
         data_loader = DataLoader(
             dataset,
