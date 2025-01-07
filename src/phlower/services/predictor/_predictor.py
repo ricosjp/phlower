@@ -30,6 +30,7 @@ class PhlowerPredictor:
             model_setting=self._model_setting,
             selection_mode=self._predict_setting.selection_mode,
             device=self._predict_setting.device,
+            target_epoch=self._predict_setting.target_epoch,
         )
 
     def predict(
@@ -78,10 +79,13 @@ def _load_model(
     model_directory: PhlowerDirectory,
     selection_mode: str,
     device: str | None = None,
+    target_epoch: int | None = None,
 ) -> PhlowerGroupModule:
     _model = PhlowerGroupModule.from_setting(model_setting.network)
     _model.load_checkpoint_file(
-        checkpoint_file=select_snapshot_file(model_directory, selection_mode),
+        checkpoint_file=select_snapshot_file(
+            model_directory, selection_mode, target_epoch=target_epoch
+        ),
         device=device,
     )
     return _model

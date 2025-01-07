@@ -132,6 +132,11 @@ class PhlowerPredictorSetting:
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
+    target_epoch: int = -1
+    """
+    target_epoch specifies the number of snapshot. Defaults to -1.
+    """
+
     @pydantic.field_validator("selection_mode")
     @classmethod
     def check_valid_selection_mode(cls, name: str) -> str:
@@ -139,6 +144,28 @@ class PhlowerPredictorSetting:
         if name not in names:
             raise ValueError(f"{name} selection mode does not exist.")
         return name
+
+    @pydantic.field_validator("target_epoch")
+    @classmethod
+    def check_valid_target_epoch(
+        cls,
+        val: int,
+        values: pydantic.pydantic_core._pydantic_core.ValidationInfo,
+    ) -> int:
+        selection_mode = values.data["selection_mode"]
+        if selection_mode != "specified":
+            if val >= 0:
+                raise ValueError(
+                    "target_epoch should be None or negative"
+                    f"if selection_mode is not specified but {val}"
+                )
+        else:
+            if val < 0:
+                raise ValueError(
+                    f"target_epoch should be non negative value but {val}"
+                )
+
+        return val
 
 
 def _format_errors(errors: list[ErrorDetails]) -> str:
