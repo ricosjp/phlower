@@ -129,6 +129,10 @@ class SpecifiedModelSelector(IModelSelector):
             raise ValueError(
                 "Specify target_epoch when using specified selection mode."
             )
+        if target_epoch < 0:
+            raise ValueError(
+                f"Specified target_epoch must be non-negative but {target_epoch}."
+            )
 
         target_snapshots: IPhlowerCheckpointFile = [
             p for p in snapshots if p.epoch == target_epoch
