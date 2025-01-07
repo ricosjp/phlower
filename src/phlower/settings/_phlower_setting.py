@@ -142,6 +142,24 @@ class PhlowerPredictorSetting:
             raise ValueError(f"{name} selection mode does not exist.")
         return name
 
+    @pydantic.field_validator("target_epoch")
+    @classmethod
+    def check_valid_target_epoch(cls, val: int) -> int:
+        if cls.selection_mode != "specified":
+            if val >= 0:
+                raise ValueError(
+                    "target_epoch should be None or negative"
+                    f"if selection_mode is not specified but {val}"
+                )
+        else:
+            if val < 0:
+                raise ValueError(
+                    f"target_epoch should be non negative value "
+                    f"but {val}"
+                )
+
+        return val
+
 
 def _format_errors(errors: list[ErrorDetails]) -> str:
     data = {"errors": []}

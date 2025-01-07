@@ -131,7 +131,8 @@ class SpecifiedModelSelector(IModelSelector):
             )
         if target_epoch < 0:
             raise ValueError(
-                f"Specified target_epoch must be non-negative but {target_epoch}."
+                f"Specified target_epoch must be non-negative "
+                f"but {target_epoch}."
             )
 
         target_snapshots: IPhlowerCheckpointFile = [
