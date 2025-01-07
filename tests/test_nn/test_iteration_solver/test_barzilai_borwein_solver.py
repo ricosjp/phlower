@@ -45,7 +45,7 @@ class QuadraticProblem(IOptimizeProblem):
         return phlower_tensor_collection({"x": h})
 
     def gradient(
-        self, value: IPhlowerTensorCollections
+        self, value: IPhlowerTensorCollections, target_keys: list[str]
     ) -> IPhlowerTensorCollections:
         x = value["x"]
         h = self._A @ x - self._b

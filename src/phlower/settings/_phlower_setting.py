@@ -5,16 +5,15 @@ import pathlib
 
 import pydantic
 from packaging.version import Version
-from pydantic import dataclasses as dc
 from pydantic_core import ErrorDetails
 from typing_extensions import Self
 
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_setting import PhlowerModelSetting
+from phlower.settings._predictor_setting import PhlowerPredictorSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
 from phlower.utils import get_logger
-from phlower.utils.enums import ModelSelectionType
 from phlower.version import __version__
 
 _logger = get_logger(__name__)
@@ -87,82 +86,6 @@ class PhlowerSetting(pydantic.BaseModel):
                 "Details are shown below. \n"
                 f"{_format_errors(ex.errors())}"
             ) from ex
-
-
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class PhlowerPredictorSetting:
-    selection_mode: str
-    """
-    Define method to select checkpoint file.
-    Choose from "best", "latest", "train_best", "specified"
-    """
-
-    device: str = "cpu"
-    """
-    device name. Defaults to cpu
-    """
-
-    log_file_name: str = "log"
-    """
-    name of log file. Defaults to "log"
-    """
-
-    saved_setting_filename: str = "model"
-    """
-    file name of pretrained model setting. Defaults to "model"
-    """
-
-    batch_size: int = 1
-    """
-    batch size. Defaults to 1
-    """
-
-    num_workers: int = 1
-    """
-    the number of cores. Defaults to 1.
-    """
-
-    non_blocking: bool = False
-
-    random_seed: int = 0
-    """
-    random seed. Defaults to 0
-    """
-
-    target_epoch: int = -1
-    """
-    target_epoch specifies the number of snapshot. Defaults to -1.
-    """
-
-    @pydantic.field_validator("selection_mode")
-    @classmethod
-    def check_valid_selection_mode(cls, name: str) -> str:
-        names = [v.value for v in ModelSelectionType]
-        if name not in names:
-            raise ValueError(f"{name} selection mode does not exist.")
-        return name
-
-    @pydantic.field_validator("target_epoch")
-    @classmethod
-    def check_valid_target_epoch(
-        cls,
-        val: int,
-        values: pydantic.pydantic_core._pydantic_core.ValidationInfo,
-    ) -> int:
-        selection_mode = values.data["selection_mode"]
-        if selection_mode != "specified":
-            if val >= 0:
-                raise ValueError(
-                    "target_epoch should be None or negative"
-                    f"if selection_mode is not specified but {val}"
-                )
-        else:
-            if val < 0:
-                raise ValueError(
-                    f"target_epoch should be non negative value but {val}"
-                )
-
-        return val
 
 
 def _format_errors(errors: list[ErrorDetails]) -> str:

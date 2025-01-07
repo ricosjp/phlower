@@ -125,7 +125,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
                 # NOTE: update only considered variables
                 h_inputs.update(v_next, overwrite=True)
 
-            gradient = problem.gradient(h_inputs).mask(self._keys)
+            gradient = problem.gradient(h_inputs, self._keys)
 
             v_history.append(v_next)
             gradients_history.append(gradient)

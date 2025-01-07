@@ -31,6 +31,8 @@ class ModelIOSetting(pydantic.BaseModel):
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
 
+    time_slice: tuple[int, ...] | None = pydantic.Field(None, frozen=True)
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
@@ -42,20 +44,50 @@ class ModelIOSetting(pydantic.BaseModel):
 
         return values
 
+    @pydantic.field_validator("time_slice")
+    def check_valid_time_slice(
+        cls, value: tuple[int, ...] | None
+    ) -> slice[int, int, int] | None:
+        if value is None:
+            return value
+
+        try:
+            _ = slice(*value)
+
+            # HACK: In Python3.10 and pydantic 2.8.2,
+            #  typing definition 'slice[int, int, int]'
+            #  is not allowed. Thus, this roundabout way is applied.
+            return value
+        except Exception as ex:
+            raise ValueError(
+                f"{value} cannot be converted to valid slice object."
+            ) from ex
+
+    @pydantic.model_validator(mode="after")
+    def check_time_series(self) -> Self:
+        if (self.time_slice is not None) and (not self.is_time_series):
+            raise ValueError(
+                "When using time_slice in inputs, set is_time_series as True"
+            )
+
+        return self
+
     @cached_property
     def _contain_none(self) -> bool:
         dims = [m.n_last_dim for m in self.members]
         return None in dims
 
     @property
-    def n_last_dim(self) -> int:
+    def time_slice_object(self) -> tuple[int, int, int]:
+        # NOTE: check comment in 'check_valid_time_slice'
+        return slice(*self.time_slice)
+
+    def get_n_last_dim(self) -> int | None:
         if self._contain_none:
-            raise ValueError(
-                "Feature dimensions cannot be calculated "
-                "because n_last_dim set to be None "
-                "among these members. "
-                f"{[m.name for m in self.members]}"
-            )
+            # "Feature dimensions cannot be calculated"
+            # " because n_last_dim set to be None"
+            # " among these members."
+            return None
         return sum(v.n_last_dim for v in self.members)
 
 
@@ -126,5 +158,5 @@ class PhlowerModelSetting(pydantic.BaseModel):
         * set positive integer value to the value
           which is defined as -1 in nodes.
         """
-        _inputs = [{v.name: v.n_last_dim} for v in self.inputs]
+        _inputs = [{v.name: v.get_n_last_dim()} for v in self.inputs]
         self.network.resolve(*_inputs)

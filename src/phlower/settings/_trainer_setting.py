@@ -134,9 +134,9 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     batch size. Defaults to 1
     """
 
-    num_workers: int = 1
+    num_workers: int = 0
     """
-    the number of cores. Defaults to 1.
+    the number of cores. Defaults to 0.
     """
 
     device: str = "cpu"

@@ -83,8 +83,20 @@ class NdArrayWrapper(IPhlowerArray):
             is_time_series=self._is_time_series,
             is_voxel=self._is_voxel,
         )
-        _tensor.to(device=device, non_blocking=non_blocking)
-        return _tensor
+        return _tensor.to(device=device, non_blocking=non_blocking)
 
     def to_numpy(self) -> DenseArrayType:
         return self.data
+
+    def slice_along_time_axis(self, time_slice: slice) -> DenseArrayType:
+        if not self._is_time_series:
+            raise ValueError(
+                "slice_along_time_axis operation is not allowed "
+                "for not time_series array."
+            )
+        return NdArrayWrapper(
+            self.data[time_slice, ...],
+            is_time_series=self._is_time_series,
+            is_voxel=self._is_voxel,
+            dimensions=self._dimensions,
+        )

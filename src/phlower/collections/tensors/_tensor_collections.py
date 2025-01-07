@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections import defaultdict
 from collections.abc import Callable, ItemsView, Iterable, KeysView, Sequence
 from typing import Any
 
@@ -59,6 +60,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def values(self): ...
 
     @abc.abstractmethod
+    def items(self) -> ItemsView[str, PhlowerTensor]: ...
+
+    @abc.abstractmethod
     def pop(self, key: str, default: PhlowerTensor | None = None): ...
 
     @abc.abstractmethod
@@ -81,6 +85,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def apply(self, function: Callable) -> IPhlowerTensorCollections: ...
 
+    @abc.abstractmethod
+    def clone(self) -> IPhlowerTensorCollections: ...
+
 
 def phlower_tensor_collection(
     values: dict[str, torch.Tensor | PhlowerTensor],
@@ -99,45 +106,35 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __lt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] < __value[k] for k in self.keys())
 
         return all(self._x[k] < __value for k in self.keys())
 
     def __le__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] <= __value[k] for k in self.keys())
 
         return all(self._x[k] <= __value for k in self.keys())
 
     def __gt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] > __value[k] for k in self.keys())
 
         return all(self._x[k] > __value for k in self.keys())
 
     def __ge__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to compare other which has different keys"
+            _check_same_keys("compare", self.keys(), __value.keys())
             return all(self._x[k] >= __value[k] for k in self.keys())
 
         return all(self._x[k] >= __value for k in self.keys())
 
     def __add__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to add other which has different keys"
+            _check_same_keys("add", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] + __value[k] for k in self.keys()}
             )
@@ -148,9 +145,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __sub__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to substract other which has different keys"
+            _check_same_keys("substract", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] - __value[k] for k in self.keys()}
             )
@@ -160,9 +155,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __mul__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to multple other which has different keys"
+            _check_same_keys("multiple", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] * __value[k] for k in self.keys()}
             )
@@ -172,9 +165,7 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def __truediv__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
-            assert (
-                self.keys() == __value.keys()
-            ), "Not allowed to divide by other which has different keys"
+            _check_same_keys("divide", self.keys(), __value.keys())
             return PhlowerDictTensors(
                 {k: self._x[k] / __value[k] for k in self.keys()}
             )
@@ -273,11 +264,38 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             {k: function(self._x[k]) for k in self.keys()}
         )
 
+    def clone(self) -> IPhlowerTensorCollections:
+        return PhlowerDictTensors({k: v.clone() for k, v in self.items()})
 
-def reduce_collections(
+
+def reduce_update(
     values: list[IPhlowerTensorCollections],
 ) -> IPhlowerTensorCollections:
     result = phlower_tensor_collection({})
     for v in values:
         result.update(v)
     return result
+
+
+def reduce_stack(
+    values: list[IPhlowerTensorCollections],
+) -> IPhlowerTensorCollections:
+    _results: dict[str, list[PhlowerTensor]] = defaultdict(list)
+    for collection in values:
+        for k, v in collection.items():
+            _results[k].append(v)
+
+    result = {k: torch.stack(v) for k, v in _results.items()}
+    return phlower_tensor_collection(result)
+
+
+def _check_same_keys(
+    operation_name: str, keys1: KeysView[str], keys2: KeysView[str]
+) -> None:
+    if keys1 == keys2:
+        return
+
+    raise AssertionError(
+        f"Not allowed to {operation_name} other which has different keys"
+        f"{list(keys1)}, {list(keys2)}"
+    )
