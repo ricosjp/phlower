@@ -175,7 +175,7 @@ def test__raise_error_when_dimensions_contain_none(file_name: str):
     with pytest.raises(ValueError) as ex:
         setting.resolve()
 
-    assert "Feature dimensions cannot be calculated" in str(ex.value)
+    assert "n_last_dim of feature0 cannot be determined" in str(ex.value)
 
 
 @pytest.mark.parametrize("file_name", ["simple_module_time_slice.yml"])

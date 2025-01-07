@@ -51,7 +51,7 @@ e2e_test:
   script:
     - make e2e_test
   tags:
-    - no-gpu
+    - gpu
     - GenuineIntel
 
 pages_test:

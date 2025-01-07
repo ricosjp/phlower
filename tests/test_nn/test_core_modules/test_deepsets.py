@@ -300,6 +300,7 @@ def test__permutation_equivariance_for_batched_tensor(
         gamma_config=config,
         last_activation_name=last_activation_name,
         pool_operator_name=pool_operator_name,
+        unbatch_key="sample",
     )
 
     result1 = model.forward(
@@ -366,6 +367,7 @@ def test__permutation_NOT_equivariance_over_different_batch_tensor(
         gamma_config=config,
         last_activation_name=last_activation_name,
         pool_operator_name=pool_operator_name,
+        unbatch_key="sample",
     )
 
     result1 = model.forward(

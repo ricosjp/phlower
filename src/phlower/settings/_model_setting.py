@@ -82,12 +82,11 @@ class ModelIOSetting(pydantic.BaseModel):
         # NOTE: check comment in 'check_valid_time_slice'
         return slice(*self.time_slice)
 
-    @property
-    def n_last_dim(self) -> int | None:
+    def get_n_last_dim(self) -> int | None:
         if self._contain_none:
-            # Feature dimensions cannot be calculated
-            #  because n_last_dim set to be None
-            #  among these members.
+            # "Feature dimensions cannot be calculated"
+            # " because n_last_dim set to be None"
+            # " among these members."
             return None
         return sum(v.n_last_dim for v in self.members)
 
@@ -159,5 +158,5 @@ class PhlowerModelSetting(pydantic.BaseModel):
         * set positive integer value to the value
           which is defined as -1 in nodes.
         """
-        _inputs = [{v.name: v.n_last_dim} for v in self.inputs]
+        _inputs = [{v.name: v.get_n_last_dim()} for v in self.inputs]
         self.network.resolve(*_inputs)

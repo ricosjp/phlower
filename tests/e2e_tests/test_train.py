@@ -143,6 +143,7 @@ def test__training_with_multiple_batch_size_with_gpu(
     assert not torch.isnan(loss.to_tensor())
 
 
+@pytest.mark.e2e_test
 def test__same_loss_value_when_traing_data_and_validation_data_is_same(
     prepare_sample_preprocessed_files: None,
 ):

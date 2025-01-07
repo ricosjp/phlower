@@ -30,7 +30,7 @@ from phlower.utils.exceptions import (
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
 class GroupIOSetting:
     name: str
-    n_last_dim: int
+    n_last_dim: int | None = None
 
 
 class GroupModuleSetting(
@@ -99,7 +99,7 @@ class GroupModuleSetting(
     Parameters to pass iteration solver.  Contents depends on solver_type
     """
 
-    time_series_length: int = Field(None, frozen=True)
+    time_series_length: int | None = Field(None, frozen=True)
     """
     If feed integer value, do iteration to output time series tensor.
     """
@@ -215,7 +215,7 @@ class GroupModuleSetting(
 
         return None
 
-    def _check_inputs(self, *resolved_outputs: dict[str, int]) -> None:
+    def _check_inputs(self, *resolved_outputs: dict[str, int | None]) -> None:
         _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
         _n_keys = sum(len(v.keys()) for v in resolved_outputs)
 
@@ -226,6 +226,13 @@ class GroupModuleSetting(
             )
 
         if len(self.inputs) == 0:
+            # check None
+            for k, v in _flatten_dict.items():
+                if v is None:
+                    raise ValueError(
+                        f"n_last_dim of {k} cannot be determined."
+                        f" Please check precedent modules of {self.name}."
+                    )
             # set automatically
             self.inputs = [
                 GroupIOSetting(name=k, n_last_dim=v)
