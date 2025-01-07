@@ -144,8 +144,13 @@ class PhlowerPredictorSetting:
 
     @pydantic.field_validator("target_epoch")
     @classmethod
-    def check_valid_target_epoch(cls, val: int) -> int:
-        if cls.selection_mode != "specified":
+    def check_valid_target_epoch(
+        cls,
+        val: int,
+        values: pydantic.pydantic_core._pydantic_core.ValidationInfo,
+    ) -> int:
+        selection_mode = values.data["selection_mode"]
+        if selection_mode != "specified":
             if val >= 0:
                 raise ValueError(
                     "target_epoch should be None or negative"
@@ -154,8 +159,7 @@ class PhlowerPredictorSetting:
         else:
             if val < 0:
                 raise ValueError(
-                    f"target_epoch should be non negative value "
-                    f"but {val}"
+                    f"target_epoch should be non negative value but {val}"
                 )
 
         return val
