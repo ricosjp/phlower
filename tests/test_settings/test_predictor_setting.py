@@ -18,7 +18,9 @@ def test__selection_mode_from_valid_names(selection_type: ModelSelectionType):
     assert setting.selection_mode == selection_type.value
 
 
-@pytest.mark.parametrize("mode_name", ["none", "my_method"])
+@pytest.mark.parametrize(
+    "mode_name", ["none", "my_method", "other", "best_of_best"]
+)
 def test__raise_error_not_existing_selection_mode(mode_name: str):
     with pytest.raises(ValueError) as ex:
         _ = PhlowerPredictorSetting(selection_mode=mode_name)

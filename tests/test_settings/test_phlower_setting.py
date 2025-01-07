@@ -2,12 +2,10 @@ import logging
 import pathlib
 import shutil
 
-import pydantic
 import pytest
 from phlower.io import PhlowerYamlFile
 from phlower.settings import (
     PhlowerModelSetting,
-    PhlowerPredictorSetting,
     PhlowerSetting,
 )
 
@@ -27,19 +25,6 @@ def test__invalid_dimension_model_setting(variable_dimensions: dict):
                 "modules": [],
             },
         )
-
-
-@pytest.mark.parametrize(
-    "selection_mode", ["best", "latest", "train_best", "specified"]
-)
-def test__valid_selection_mode(selection_mode: str):
-    _ = PhlowerPredictorSetting(selection_mode=selection_mode)
-
-
-@pytest.mark.parametrize("selection_mode", ["other", "best_of_best"])
-def test__invalid_selection_mode(selection_mode: str):
-    with pytest.raises(pydantic.ValidationError):
-        _ = PhlowerPredictorSetting(selection_mode=selection_mode)
 
 
 def test__model_dump():

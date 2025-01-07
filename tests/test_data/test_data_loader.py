@@ -33,12 +33,19 @@ def trainer_setting(draw: Callable) -> PhlowerTrainerSetting:
 
 @st.composite
 def predictor_setting(draw: Callable) -> PhlowerPredictorSetting:
+    selection_type = draw(st.sampled_from(ModelSelectionType))
+    target_epoch = (
+        draw(st.integers(min_value=0))
+        if selection_type == ModelSelectionType.SPECIFIED
+        else None
+    )
     setting = PhlowerPredictorSetting(
-        selection_mode=draw(st.sampled_from(ModelSelectionType)),
+        selection_mode=selection_type.value,
         non_blocking=draw(st.booleans()),
         device=draw(st.text()),
         batch_size=draw(st.integers(min_value=1)),
         num_workers=draw(st.integers(min_value=1)),
+        target_epoch=target_epoch,
     )
     return setting
 
