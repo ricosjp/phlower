@@ -88,4 +88,6 @@ def _load_model(
         ),
         device=device,
     )
+    if device is not None:
+        _model.to(device)
     return _model
