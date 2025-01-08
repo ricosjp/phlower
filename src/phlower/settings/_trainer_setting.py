@@ -16,7 +16,7 @@ class LossSetting:
     Dictionary which maps name of target variable to name of loss function.
     """
 
-    name2weight: dict[str, str] | None = None
+    name2weight: dict[str, float] | None = None
     """
     Dictionary which maps weight value to name of output variable.
     Defaults to None. If None, total loss value is calculated
