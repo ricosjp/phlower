@@ -25,6 +25,11 @@ class PhlowerPredictor:
             model_directory=self._model_directory,
             file_basename=predict_setting.saved_setting_filename,
         )
+        # NOTE: it is necessary to resolve information of modules
+        #  which need reference module.
+        # Resolving cost is O(N). N is the number of modules
+        self._model_setting.resolve()
+
         self._model = _load_model(
             model_directory=self._model_directory,
             model_setting=self._model_setting,
@@ -88,4 +93,6 @@ def _load_model(
         ),
         device=device,
     )
+    if device is not None:
+        _model.to(device)
     return _model
