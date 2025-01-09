@@ -188,6 +188,25 @@ def test__get_scaler_name(
         assert ans == scaler.get_scaler_name(key)
 
 
+@pytest.mark.parametrize(
+    "scalers",
+    [
+        (
+            {
+                "nodal": "std_scale",
+                "nodal_missing": "standarize",
+            }
+        ),
+        ({"nodal_1": "identity"}),
+    ],
+)
+def test__can_read_when_abberviation_style(scalers: dict):
+    _setting = PhlowerScalingSetting(variable_name_to_scalers=scalers)
+
+    for k, v in _setting.variable_name_to_scalers.items():
+        assert v.method == scalers[k]
+
+
 # endregion
 
 # region test for ScalerResolvedParameter
