@@ -128,6 +128,7 @@ def test__permutation_equivariance_for_vertexwise_tensor(
         np.random.rand(*input_shape),
         is_time_series=is_time_series,
         dimension=dimension,
+        dtype=torch.float32,
     )
 
     config = MLPConfiguration(
@@ -166,6 +167,7 @@ def test__permutation_equivariance_for_vertexwise_tensor(
         _random_permutation(_tensor, permute_idxes),
         dimension=dimension,
         is_time_series=is_time_series,
+        dtype=torch.float32,
     )
     result2 = model.forward(
         phlower_tensor_collection({"input": _permuted_tensor})
@@ -213,6 +215,7 @@ def test__permutation_equivariance_with_non_dimension(
         np.random.rand(*input_shape),
         is_time_series=is_time_series,
         dimension=dimension,
+        dtype=torch.float32,
     )
 
     config = MLPConfiguration(
@@ -251,6 +254,7 @@ def test__permutation_equivariance_with_non_dimension(
         _random_permutation(_tensor, permute_idxes),
         dimension=dimension,
         is_time_series=is_time_series,
+        dtype=torch.float32,
     )
     result2 = model.forward(
         phlower_tensor_collection({"input": _permuted_tensor})
@@ -287,7 +291,8 @@ def test__permutation_equivariance_for_batched_tensor(
     nodes[0] = input_shapes[0][-1]
 
     _tensors: list[PhlowerTensor] = [
-        phlower_tensor(np.random.rand(*shape)) for shape in input_shapes
+        phlower_tensor(np.random.rand(*shape), dtype=torch.float32)
+        for shape in input_shapes
     ]
     _tensor, batch_info = to_batch(_tensors)
     field = SimulationField({}, {"sample": batch_info})
@@ -315,7 +320,7 @@ def test__permutation_equivariance_for_batched_tensor(
         for t in _tensors
     ]
     _permuted_tensors = [
-        phlower_tensor(t[_permuted_indexes[i], ...])
+        phlower_tensor(t[_permuted_indexes[i], ...], dtype=torch.float32)
         for i, t in enumerate(_tensors)
     ]
     _permuted, _ = to_batch(_permuted_tensors)
@@ -354,7 +359,8 @@ def test__permutation_NOT_equivariance_over_different_batch_tensor(
     nodes[0] = input_shapes[0][-1]
 
     _tensors: list[PhlowerTensor] = [
-        phlower_tensor(np.random.rand(*shape)) for shape in input_shapes
+        phlower_tensor(np.random.rand(*shape), dtype=torch.float32)
+        for shape in input_shapes
     ]
     _tensor, batch_info = to_batch(_tensors)
     field = SimulationField({}, {"sample": batch_info})

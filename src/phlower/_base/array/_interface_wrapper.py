@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import abc
 from collections.abc import Callable
 
 import torch
 
 from phlower._base import PhysicalDimensions
-from phlower._base.tensors import PhlowerTensor
 from phlower.utils.typing import ArrayDataType
 
 
@@ -16,7 +17,15 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def is_time_series(self) -> int | None: ...
+    def dimension(self) -> PhysicalDimensions | None: ...
+
+    @property
+    @abc.abstractmethod
+    def size(self) -> int: ...
+
+    @property
+    @abc.abstractmethod
+    def is_time_series(self) -> bool: ...
 
     @property
     @abc.abstractmethod
@@ -39,7 +48,7 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         skip_nan: bool = False,
         use_diagonal: bool = False,
         **kwards,
-    ) -> ArrayDataType:
+    ) -> IPhlowerArray:
         """Apply user defined function
 
         Parameters
@@ -70,15 +79,14 @@ class IPhlowerArray(metaclass=abc.ABCMeta):
         skip_nan: bool = False,
         use_diagonal: bool = False,
         **kwrds,
-    ) -> ArrayDataType: ...
+    ) -> IPhlowerArray: ...
 
     @abc.abstractmethod
-    def to_phlower_tensor(
+    def to_tensor(
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        disable_dimensions: bool = False,
-    ) -> PhlowerTensor: ...
+    ) -> torch.Tensor: ...
 
     @abc.abstractmethod
     def to_numpy(self) -> ArrayDataType: ...

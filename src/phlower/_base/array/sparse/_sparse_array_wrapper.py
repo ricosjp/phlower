@@ -7,7 +7,6 @@ import torch
 
 from phlower._base._dimension import PhysicalDimensions
 from phlower._base.array._interface_wrapper import IPhlowerArray
-from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils import get_logger
 from phlower.utils.typing import SparseArrayType
 
@@ -20,6 +19,10 @@ class SparseArrayWrapper(IPhlowerArray):
     ) -> None:
         self._sparse_data = arr
         self._dimensions = dimensions
+
+    @property
+    def dimension(self) -> PhysicalDimensions | None:
+        return self._dimensions
 
     @property
     def is_sparse(self) -> bool:
@@ -72,12 +75,20 @@ class SparseArrayWrapper(IPhlowerArray):
 
         reshaped_array = self.reshape(
             componentwise=componentwise, use_diagonal=use_diagonal
-        )
+        ).to_numpy()
 
-        result = apply_function(reshaped_array)
-        return result.reshape(self.shape).tocoo()
+        result = apply_function(reshaped_array).reshape(self.shape).tocoo()
+        return SparseArrayWrapper(result, dimensions=self._dimensions)
 
     def reshape(
+        self, componentwise: bool, *, use_diagonal: bool = False, **kwards
+    ) -> IPhlowerArray:
+        result = self._reshape(
+            componentwise=componentwise, use_diagonal=use_diagonal, **kwards
+        )
+        return SparseArrayWrapper(result, dimensions=self._dimensions)
+
+    def _reshape(
         self, componentwise: bool, *, use_diagonal: bool = False, **kwards
     ) -> SparseArrayType:
         if componentwise and use_diagonal:
@@ -96,12 +107,11 @@ class SparseArrayWrapper(IPhlowerArray):
         reshaped = self._sparse_data.reshape((self.shape[0] * self.shape[1], 1))
         return reshaped
 
-    def to_phlower_tensor(
+    def to_tensor(
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        disable_dimensions: bool = False,
-    ) -> PhlowerTensor:
+    ) -> torch.Tensor:
         sparse_tensor = torch.sparse_coo_tensor(
             torch.stack(
                 [
@@ -112,13 +122,7 @@ class SparseArrayWrapper(IPhlowerArray):
             torch.from_numpy(self._sparse_data.data),
             self._sparse_data.shape,
         )
-        _tensor = phlower_tensor(
-            tensor=sparse_tensor,
-            dimension=None if disable_dimensions else self._dimensions,
-            is_time_series=False,
-            is_voxel=False,
-        )
-        _tensor = _tensor.coalesce()
+        _tensor = sparse_tensor.coalesce()
         return _tensor.to(device=device, non_blocking=non_blocking)
 
     def to_numpy(self) -> SparseArrayType:

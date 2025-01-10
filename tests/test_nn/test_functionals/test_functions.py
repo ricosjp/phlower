@@ -78,7 +78,7 @@ def test__spmm_with_not_squared_sparse_matrix(
     sparse_array = phlower_array(
         sp.random(*sparse_size, density=0.4, dtype=np.float32)
     )
-    sparse_tensor = sparse_array.to_phlower_tensor()
+    sparse_tensor = phlower_tensor(sparse_array.to_tensor())
 
     actual_spmm = phlower.nn.functional.spmm(sparse_tensor, _tensor, repeat=1)
 

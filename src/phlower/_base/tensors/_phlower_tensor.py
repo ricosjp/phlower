@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 import einops
 import numpy as np
@@ -11,6 +11,7 @@ from pipe import select
 from typing_extensions import Self
 
 from phlower._base._dimension import PhysicalDimensions
+from phlower._base.array import phlower_array
 from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
@@ -24,6 +25,10 @@ from phlower.utils.exceptions import (
     PhlowerTypeError,
     PhlowerUnsupportedTorchFunctionError,
 )
+
+if TYPE_CHECKING:
+    from phlower._base.array import IPhlowerArray
+
 
 PhysicDimensionLikeObject: TypeAlias = (
     PhysicalDimensions
@@ -43,12 +48,18 @@ _UNSUPPORTED_FUNCTION_NAMES = [
 logger = get_logger(__name__)
 
 
+def _is_all_none(*args: Any) -> bool:
+    return all(arg is None for arg in args)
+
+
 @overload
 def phlower_tensor(
     tensor: list | float | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     is_time_series: bool = False,
     is_voxel: bool = False,
+    dtype: torch.dtype | None = None,
+    device: torch.device | str | None = None,
 ) -> PhlowerTensor: ...
 
 
@@ -57,6 +68,8 @@ def phlower_tensor(
     tensor: list | float | np.ndarray | torch.Tensor | PhlowerTensor,
     dimension: PhysicDimensionLikeObject | None = None,
     pattern: str = "n...",
+    dtype: torch.dtype | None = None,
+    device: torch.device | str | None = None,
 ) -> PhlowerTensor: ...
 
 
@@ -66,19 +79,25 @@ def phlower_tensor(
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
     pattern: str | None = None,
+    dtype: torch.dtype | None = None,
+    device: torch.device | str | None = None,
 ) -> PhlowerTensor:
     if isinstance(tensor, PhlowerTensor):
-        if dimension is not None:
-            logger.warning("Input dimension_tensor are ignored.")
+        if not _is_all_none(dimension, is_time_series, is_voxel):
+            logger.warning(
+                "dimensions, is_time_series and is_voxel are ignored."
+            )
         return tensor
 
     if isinstance(tensor, float | list | np.ndarray):
-        tensor = torch.tensor(tensor, dtype=torch.float32)
+        tensor = torch.tensor(tensor, dtype=dtype, device=device)
 
-    dimension_tensor = _resolve_dimension_arg(dimension)
+    dimension_tensor = _resolve_dimension_arg(
+        dimension, dtype=dtype, device=device
+    )
 
     if pattern is not None:
-        if (is_time_series is not None) or (is_voxel is not None):
+        if not _is_all_none(is_time_series, is_voxel):
             raise ValueError(
                 "pattern is not allowed to be used "
                 "with is_time_series and is_voxel "
@@ -103,6 +122,8 @@ def _resolve_dimension_arg(
     | list[float]
     | tuple[float]
     | None,
+    dtype: torch.dtype | None = None,
+    device: torch.device | str | None = None,
 ) -> PhlowerDimensionTensor | None:
     if inputs is None:
         return None
@@ -114,10 +135,12 @@ def _resolve_dimension_arg(
         return PhlowerDimensionTensor(inputs)
 
     if isinstance(inputs, dict | PhysicalDimensions):
-        return phlower_dimension_tensor(inputs)
+        return phlower_dimension_tensor(inputs, dtype=dtype, device=device)
 
     if isinstance(inputs, list | tuple):
-        return PhlowerDimensionTensor.from_list(inputs)
+        return PhlowerDimensionTensor.from_list(
+            inputs, dtype=dtype, device=device
+        )
 
     raise NotImplementedError(
         f"{type(inputs)} is not implemented "
@@ -274,6 +297,17 @@ class PhlowerTensor(IPhlowerTensor):
 
     def __len__(self) -> int:
         return len(self._tensor)
+
+    def to_phlower_array(self) -> IPhlowerArray:
+        dimensions = (
+            self.dimension.to_physics_dimension() if self.dimension else None
+        )
+        return phlower_array(
+            data=self.to_numpy(),
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
+            dimensions=dimensions,
+        )
 
     def to_tensor(self) -> torch.Tensor:
         return self._tensor

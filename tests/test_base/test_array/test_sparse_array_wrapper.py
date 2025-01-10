@@ -84,10 +84,9 @@ def test__sparse_array_to_phlower_tensor(
     arr: sp.coo_array, dimensions: PhysicalDimensions
 ):
     phlower_arr = phlower_array(arr, dimensions=dimensions)
-    phlower_tensor = phlower_arr.to_phlower_tensor()
+    phlower_tensor = phlower_arr.to_tensor()
 
     assert phlower_tensor.is_sparse
-    assert phlower_tensor.dimension.to_physics_dimension() == dimensions
 
 
 T = TypeVar("T")
@@ -110,7 +109,7 @@ def test__sparse_array_apply(arr: sp.coo_array):
     results = phlower_arr.apply(dummy_apply_function, componentwise=True)
 
     np.testing.assert_array_almost_equal(
-        results.todense(), dummy_apply_function(arr).todense()
+        results.to_numpy().todense(), dummy_apply_function(arr).todense()
     )
 
 

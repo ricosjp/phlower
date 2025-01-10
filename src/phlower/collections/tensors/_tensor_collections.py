@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from phlower._base import PhlowerTensor, phlower_tensor
+from phlower._base import IPhlowerArray, PhlowerTensor, phlower_tensor
 from phlower.utils.typing import ArrayDataType
 
 
@@ -87,6 +87,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def clone(self) -> IPhlowerTensorCollections: ...
+
+    @abc.abstractmethod
+    def to_phlower_arrays_dict(self) -> dict[str, IPhlowerArray]: ...
 
 
 def phlower_tensor_collection(
@@ -266,6 +269,9 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def clone(self) -> IPhlowerTensorCollections:
         return PhlowerDictTensors({k: v.clone() for k, v in self.items()})
+
+    def to_phlower_arrays_dict(self) -> dict[str, IPhlowerArray]:
+        return {k: v.to_phlower_array() for k, v in self.items()}
 
 
 def reduce_update(

@@ -74,10 +74,10 @@ def test__forward_and_backward(
         {
             "feature0": phlower_array(
                 np.random.rand(n_nodes, input_n_feature).astype(np.float32)
-            ).to_phlower_tensor(),
+            ).to_tensor(),
             "feature1": phlower_array(
                 np.random.rand(n_nodes, input_n_feature).astype(np.float32)
-            ).to_phlower_tensor(),
+            ).to_tensor(),
         }
     )
 
@@ -87,7 +87,7 @@ def test__forward_and_backward(
             n_nodes, n_nodes, density=0.1, random_state=rng, dtype=np.float32
         )
     )
-    nodal_nadj = sparse_adj.to_phlower_tensor()
+    nodal_nadj = phlower_tensor(sparse_adj.to_tensor())
     field_data = SimulationField(field_tensors={"support1": nodal_nadj})
 
     output = group.forward(data=phlower_tensors, field_data=field_data)
