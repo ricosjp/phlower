@@ -82,6 +82,28 @@ def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
     return loss
 
 
+def test__simple_training_without_validation_dataset():
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_wo_validation"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+
 def test__training_with_multiple_batch_size(
     prepare_sample_preprocessed_files: None,
 ):

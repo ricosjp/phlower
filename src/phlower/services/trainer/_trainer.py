@@ -87,6 +87,8 @@ class PhlowerTrainer:
         encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
         record_io = LogRecordIO(file_path=output_directory / "log.csv")
+        validation_directories = validation_directories or []
+
         if self._start_epoch == 0:
             # start_epoch > 0 means that this training is restarted.
             self._save_setting(output_directory, encrypt_key=encrypt_key)
@@ -112,10 +114,11 @@ class PhlowerTrainer:
             train_dataset,
             disable_dimensions=disable_dimensions,
         )
-        validation_loader = builder.create(
-            validation_dataset,
-            disable_dimensions=disable_dimensions,
-        )
+        if len(validation_dataset) != 0:
+            validation_loader = builder.create(
+                validation_dataset,
+                disable_dimensions=disable_dimensions,
+            )
 
         loss_function = LossCalculator.from_setting(self._trainer_setting)
         loss: PhlowerTensor | None = None
@@ -128,6 +131,8 @@ class PhlowerTrainer:
 
         for epoch in range(self._start_epoch, self._trainer_setting.n_epoch):
             self._model.train()
+            train_losses: list[float] = []
+
             for tr_batch in train_loader:
                 tr_batch: LumpedTensorData
                 self._scheduled_optimizer.zero_grad()
@@ -148,24 +153,30 @@ class PhlowerTrainer:
                     trick=self._trainer_setting.batch_size,
                     desc=f"training loss: {_last_loss:.3f}",
                 )
+                train_losses.append(_last_loss)
+
             self._scheduled_optimizer.step_scheduler()
 
-            train_evaluated_losses = self._evaluation(
-                train_loader,
-                loss_function=loss_function,
-                pbar=_train_batch_pbar,
-                pbar_title="batch train loss",
-            )
+            if self._trainer_setting.evaluation_for_training:
+                train_loss = self._evaluation(
+                    train_loader,
+                    loss_function=loss_function,
+                    pbar=_train_batch_pbar,
+                    pbar_title="batch train loss",
+                )
+            else:
+                train_loss = np.average(train_losses)
 
-            val_evaluated_losses = self._evaluation(
-                validation_loader,
-                loss_function=loss_function,
-                pbar=_val_batch_pbar,
-                pbar_title="batch val loss",
-            )
+            if len(validation_dataset) != 0:
+                validation_loss = self._evaluation(
+                    validation_loader,
+                    loss_function=loss_function,
+                    pbar=_val_batch_pbar,
+                    pbar_title="batch val loss",
+                )
+            else:
+                validation_loss = None
 
-            train_loss = np.average(train_evaluated_losses)
-            validation_loss = np.average(val_evaluated_losses)
             elapsed_time = _timer.watch()
 
             log_record = LogRecord(
@@ -176,9 +187,14 @@ class PhlowerTrainer:
             )
             tqdm.write(record_io.to_str(log_record))
 
-            self._progress_bar.update(
-                trick=1, desc=f"val loss {validation_loss:.3f}"
-            )
+            if validation_loss is not None:
+                self._progress_bar.update(
+                    trick=1, desc=f"val loss {validation_loss:.3f}"
+                )
+            else:
+                self._progress_bar.update(
+                    trick=1, desc=f"train loss {train_loss:.3f}"
+                )
 
             record_io.write(log_record)
             self._save_checkpoint(
@@ -195,7 +211,7 @@ class PhlowerTrainer:
         loss_function: LossCalculator,
         pbar: PhlowerProgressBar,
         pbar_title: str,
-    ) -> list[float]:
+    ) -> float:
         results: list[float] = []
 
         self._model.eval()
@@ -216,7 +232,7 @@ class PhlowerTrainer:
                 trick=self._trainer_setting.batch_size,
                 desc=f"{pbar_title}: {results[-1]}",
             )
-        return results
+        return np.average(results)
 
     def _save_setting(
         self, output_directory: pathlib.Path, encrypt_key: bytes | None = None

@@ -18,7 +18,7 @@ def create_logitems(
     if isinstance(value, str):
         return LoggingStrItem(val=value)
 
-    if isinstance(value, float):
+    if isinstance(value, float | None):
         return LoggingFloatItem(val=value, title=title)
 
     if isinstance(value, int):

@@ -144,6 +144,11 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     device name. Defaults to cpu
     """
 
+    evaluation_for_training: bool = True
+    """
+    If True, evaluation for training dataset is performed
+    """
+
     non_blocking: bool = False
 
     # special keyward to forbid extra fields in pydantic
