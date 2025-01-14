@@ -3,6 +3,7 @@ from collections.abc import Callable
 import hypothesis.strategies as st
 import numpy as np
 import pytest
+import torch
 from hypothesis import given
 from phlower import phlower_tensor
 from phlower._base import PhysicalDimensions
@@ -141,6 +142,7 @@ def test__output_tensor_shape(
         is_time_series=True,
         dimension=dimension,
         is_voxel=is_voxel,
+        dtype=torch.float32,
     )
 
     model = TCN(
@@ -179,7 +181,11 @@ def test__raise_error_when_input_is_not_time_series(
     )
 
     inputs = phlower_tensor_collection(
-        {"inputs": phlower_tensor(np.random.rand(*shape), is_voxel=is_voxel)}
+        {
+            "inputs": phlower_tensor(
+                np.random.rand(*shape), is_voxel=is_voxel, dtype=torch.float32
+            )
+        }
     )
 
     with pytest.raises(ValueError) as ex:

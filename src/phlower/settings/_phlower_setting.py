@@ -6,7 +6,6 @@ import pathlib
 import pydantic
 from packaging.version import Version
 from pydantic_core import ErrorDetails
-from typing_extensions import Self
 
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_setting import PhlowerModelSetting
@@ -64,7 +63,7 @@ class PhlowerSetting(pydantic.BaseModel):
         cls,
         file_path: pathlib.Path | str | PhlowerYamlFile,
         decrypt_key: bytes | None = None,
-    ) -> Self:
+    ) -> PhlowerSetting:
         """Read yaml file and parse to PhlowerSetting object.
 
         Args:

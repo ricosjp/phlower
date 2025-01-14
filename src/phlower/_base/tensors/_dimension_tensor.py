@@ -48,6 +48,7 @@ class PhlowerDimensionTensor:
         cls,
         values: list[float] | tuple[float],
         dtype: torch.dtype = torch.float32,
+        device: str | torch.device | None = None,
     ) -> PhlowerDimensionTensor:
         """
         Parse from list object
@@ -65,8 +66,10 @@ class PhlowerDimensionTensor:
                 "length of values is not equal to the number of "
                 f"registered dimension types. input: {len(values)}"
             )
-        _tensor = torch.tensor(values, dtype=dtype).reshape(
-            len(PhysicalDimensionSymbolType), 1
+        _tensor = (
+            torch.tensor(values, dtype=dtype)
+            .reshape(len(PhysicalDimensionSymbolType), 1)
+            .to(device=device)
         )
         return PhlowerDimensionTensor(_tensor)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 
 import numpy as np
@@ -5,7 +7,6 @@ import torch
 
 from phlower._base._dimension import PhysicalDimensions
 from phlower._base.array._interface_wrapper import IPhlowerArray
-from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower.utils.typing import DenseArrayType
 
 
@@ -23,6 +24,10 @@ class NdArrayWrapper(IPhlowerArray):
         self._dimensions = dimensions
 
     @property
+    def dimension(self) -> PhysicalDimensions | None:
+        return self._dimensions
+
+    @property
     def shape(self) -> tuple[int]:
         return self.data.shape
 
@@ -35,6 +40,10 @@ class NdArrayWrapper(IPhlowerArray):
         return self._is_voxel
 
     @property
+    def size(self) -> bool:
+        return self.data.size
+
+    @property
     def is_sparse(self) -> bool:
         return False
 
@@ -45,12 +54,32 @@ class NdArrayWrapper(IPhlowerArray):
         *,
         skip_nan: bool = False,
         **kwards,
-    ) -> np.ndarray:
-        reshaped = self.reshape(componentwise=componentwise, skip_nan=skip_nan)
-        result = function(reshaped)
-        return np.reshape(result, self.shape)
+    ) -> IPhlowerArray:
+        reshaped = self.reshape(
+            componentwise=componentwise, skip_nan=skip_nan
+        ).to_numpy()
+        result = np.reshape(function(reshaped), self.shape)
+        return NdArrayWrapper(
+            result,
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
+            dimensions=self._dimensions,
+        )
 
     def reshape(
+        self, componentwise: bool, *, skip_nan: bool = False, **kwards
+    ) -> IPhlowerArray:
+        result = self._reshape(
+            componentwise=componentwise, skip_nan=skip_nan, **kwards
+        )
+        return NdArrayWrapper(
+            result,
+            is_time_series=self.is_time_series,
+            is_voxel=self.is_voxel,
+            dimensions=self._dimensions,
+        )
+
+    def _reshape(
         self, componentwise: bool, *, skip_nan: bool = False, **kwards
     ) -> np.ndarray:
         if componentwise:
@@ -71,19 +100,14 @@ class NdArrayWrapper(IPhlowerArray):
             reshaped_wo_nan = reshaped[~np.isnan(reshaped)][:, None]
             return reshaped_wo_nan
 
-    def to_phlower_tensor(
+    def to_tensor(
         self,
         device: str | torch.device | None = None,
         non_blocking: bool = False,
-        disable_dimensions: bool = False,
-    ) -> PhlowerTensor:
-        _tensor = phlower_tensor(
-            tensor=torch.from_numpy(self.data),
-            dimension=None if disable_dimensions else self._dimensions,
-            is_time_series=self._is_time_series,
-            is_voxel=self._is_voxel,
+    ) -> torch.Tensor:
+        return torch.from_numpy(self.data).to(
+            device=device, non_blocking=non_blocking
         )
-        return _tensor.to(device=device, non_blocking=non_blocking)
 
     def to_numpy(self) -> DenseArrayType:
         return self.data

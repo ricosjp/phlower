@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
-from phlower._base import PhysicalDimensions
+from phlower._base import PhysicalDimensions, phlower_tensor
 from phlower._base.array import phlower_array
 from phlower._base.tensors._interface import IPhlowerTensor
 from scipy import sparse as sp
@@ -20,19 +20,25 @@ def create_sparse_tensors() -> (
         rng = np.random.default_rng()
         if dimensions is None:
             return [
-                phlower_array(
-                    sp.random(
-                        shape[0], shape[1], density=0.1, random_state=rng
-                    ),
-                ).to_phlower_tensor()
+                phlower_tensor(
+                    phlower_array(
+                        sp.random(
+                            shape[0], shape[1], density=0.1, random_state=rng
+                        ),
+                    ).to_tensor()
+                )
                 for shape in shapes
             ]
 
         return [
-            phlower_array(
-                sp.random(shape[0], shape[1], density=0.1, random_state=rng),
-                dimensions=PhysicalDimensions(dims),
-            ).to_phlower_tensor()
+            phlower_tensor(
+                phlower_array(
+                    sp.random(
+                        shape[0], shape[1], density=0.1, random_state=rng
+                    ),
+                ).to_tensor(),
+                dimension=PhysicalDimensions(dims),
+            )
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]
 
@@ -53,18 +59,18 @@ def create_dense_tensors() -> (
     ) -> list[IPhlowerTensor]:
         if dimensions is None:
             return [
-                phlower_array(
+                phlower_tensor(
                     np.random.rand(*shape), is_time_series=is_time_series
-                ).to_phlower_tensor()
+                )
                 for shape in shapes
             ]
 
         return [
-            phlower_array(
+            phlower_tensor(
                 np.random.rand(*shape),
-                dimensions=dims,
+                dimension=dims,
                 is_time_series=is_time_series,
-            ).to_phlower_tensor()
+            )
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]
 

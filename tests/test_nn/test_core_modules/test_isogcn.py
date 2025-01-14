@@ -3,6 +3,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import torch
 from phlower import PhlowerTensor, phlower_tensor
 from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
@@ -46,7 +47,9 @@ def generate_isoam_like_matrix(
     assert n_axis == len(key_names)
 
     for i in range(n_axis):
-        dict_data[key_names[i]] = phlower_tensor(g_tilde[..., i])
+        dict_data[key_names[i]] = phlower_tensor(
+            g_tilde[..., i], dtype=torch.float32
+        )
 
     return dict_data
 
@@ -85,7 +88,9 @@ def forward_isogcn_with_no_weight(
         use_self_network=False,
     )
     return isogcn.forward(
-        phlower_tensor_collection({"h": phlower_tensor(feature)}),
+        phlower_tensor_collection(
+            {"h": phlower_tensor(feature, dtype=torch.float32)}
+        ),
         field_data=field,
     )
 
@@ -477,7 +482,9 @@ def test__forbid_operation_for_tensor_with_a_hw(
 
     with pytest.raises(ValueError) as ex:
         _ = isogcn.forward(
-            phlower_tensor_collection({"h": phlower_tensor(h)}),
+            phlower_tensor_collection(
+                {"h": phlower_tensor(h, dtype=torch.float32)}
+            ),
             field_data=field,
         )
 
@@ -526,7 +533,9 @@ def test__forbid_operation_for_tensor_with_ah_w(
 
     with pytest.raises(ValueError) as ex:
         _ = isogcn.forward(
-            phlower_tensor_collection({"h": phlower_tensor(h)}),
+            phlower_tensor_collection(
+                {"h": phlower_tensor(h, dtype=torch.float32)}
+            ),
             field_data=field,
         )
 
@@ -553,7 +562,11 @@ def test__can_forward_with_neumann_condition(n_nodes: int, n_feature: int):
     dict_data = generate_isoam_like_matrix(location, support_names)
     # NOTE: This inverse moment is dummy data
     dict_data.update(
-        {inversed_moment_name: phlower_tensor(np.random.rand(n_nodes, 3, 3))}
+        {
+            inversed_moment_name: phlower_tensor(
+                np.random.rand(n_nodes, 3, 3), dtype=torch.float32
+            )
+        }
     )
     field = SimulationField(field_tensors=phlower_tensor_collection(dict_data))
 
@@ -572,7 +585,10 @@ def test__can_forward_with_neumann_condition(n_nodes: int, n_feature: int):
 
     h_res = isogcn.forward(
         phlower_tensor_collection(
-            {"h": phlower_tensor(h), "neumann": phlower_tensor(neumann)}
+            {
+                "h": phlower_tensor(h, dtype=torch.float32),
+                "neumann": phlower_tensor(neumann, dtype=torch.float32),
+            }
         ),
         field_data=field,
     )
@@ -625,7 +641,9 @@ def test__can_forward_with_coefficient_network(n_nodes: int, n_feature: int):
         coefficient_activations=["tanh", "tanh"],
     )
     h_res = isogcn.forward(
-        phlower_tensor_collection({"h": phlower_tensor(h)}),
+        phlower_tensor_collection(
+            {"h": phlower_tensor(h, dtype=torch.float32)}
+        ),
         field_data=field,
     )
 

@@ -85,14 +85,20 @@ InputParameterSetting = ScalerInputParameters | SameAsInputParameters
 
 class PhlowerScalingSetting(pydantic.BaseModel):
     variable_name_to_scalers: dict[
-        str, ScalerInputParameters | SameAsInputParameters
+        str, ScalerInputParameters | SameAsInputParameters | str
     ] = pydantic.Field(default_factory=lambda: {})
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     @pydantic.model_validator(mode="after")
-    def _check_same_as(self) -> Self:
+    def validate_scalers(self) -> Self:
+        for k, v in self.variable_name_to_scalers.items():
+            if isinstance(v, str):
+                self.variable_name_to_scalers[k] = ScalerInputParameters(
+                    method=v
+                )
+
         for k, v in self.variable_name_to_scalers.items():
             if v.is_parent_scaler:
                 continue

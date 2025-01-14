@@ -4,7 +4,12 @@ from collections.abc import Sequence
 import numpy as np
 import torch
 
-from phlower._base import GraphBatchInfo, IPhlowerArray, IPhlowerTensor
+from phlower._base import (
+    GraphBatchInfo,
+    IPhlowerArray,
+    IPhlowerTensor,
+    phlower_tensor,
+)
 from phlower._base._functionals import to_batch
 
 
@@ -42,10 +47,14 @@ class _PhlowerSequenceArray:
         disable_dimensions: bool,
     ) -> tuple[IPhlowerTensor, GraphBatchInfo]:
         tensors = [
-            v.to_phlower_tensor(
-                device=device,
-                non_blocking=non_blocking,
-                disable_dimensions=disable_dimensions,
+            phlower_tensor(
+                v.to_tensor(
+                    device=device,
+                    non_blocking=non_blocking,
+                ),
+                dimension=None if disable_dimensions else v.dimension,
+                is_time_series=v.is_time_series,
+                is_voxel=v.is_voxel,
             )
             for v in self._data
         ]

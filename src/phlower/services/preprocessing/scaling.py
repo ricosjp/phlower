@@ -4,8 +4,8 @@ import pathlib
 from functools import partial
 
 from pipe import chain, select, where
-from typing_extensions import Self
 
+from phlower._base.array import IPhlowerArray
 from phlower.io._files import (
     IPhlowerNumpyFile,
     PhlowerNumpyFile,
@@ -31,7 +31,13 @@ class PhlowerScalingService:
     """
 
     @classmethod
-    def from_setting(cls, setting: PhlowerSetting) -> Self:
+    def from_yaml(cls, yaml_file: str | pathlib.Path) -> PhlowerScalingService:
+        setting = PhlowerSetting.read_yaml(yaml_file)
+
+        return PhlowerScalingService.from_setting(setting)
+
+    @classmethod
+    def from_setting(cls, setting: PhlowerSetting) -> PhlowerScalingService:
         if setting.scaling is None:
             raise ValueError("setting content about scaling is not found.")
 
@@ -128,7 +134,7 @@ class PhlowerScalingService:
         variable_name: str,
         file_path: pathlib.Path | IPhlowerNumpyFile,
         decrypt_key: bytes | None = None,
-    ) -> ArrayDataType:
+    ) -> IPhlowerArray:
         scaler_name = self._scaling_setting.get_scaler_name(variable_name)
         return self._scalers.transform_file(
             scaler_name, file_path, decrypt_key=decrypt_key
@@ -202,18 +208,21 @@ class PhlowerScalingService:
             PhlowerNumpyFile.save(
                 output_directory=output_directory,
                 file_basename=numpy_file.get_variable_name(),
-                data=transformed_data,
+                data=transformed_data.to_numpy(),
                 encrypt_key=encrypt_key,
                 allow_overwrite=allow_overwrite,
             )
 
+        for data_directory in data_directories:
+            (data_directory / "preprocessed").touch()
+
     def inverse_transform(
         self,
-        dict_data: dict[str, ArrayDataType],
+        dict_data: dict[str, ArrayDataType | IPhlowerArray],
         raise_missing_message: bool = False,
-    ) -> dict[str, ArrayDataType]:
+    ) -> dict[str, IPhlowerArray]:
         _filtered = self._filter_scalable_variables(
-            dict_data.keys(), raise_missing_message=raise_missing_message
+            list(dict_data.keys()), raise_missing_message=raise_missing_message
         )
         return {
             name: self._scalers.inverse_transform(scaler_name, dict_data[name])
@@ -260,8 +269,10 @@ class PhlowerScalingService:
             else:
                 _dumped_scalers[name] = _setting
 
-        dump_setting = PhlowerScalingSetting(
-            variable_name_to_scalers=_dumped_scalers
+        dump_setting = PhlowerSetting(
+            scaling=PhlowerScalingSetting(
+                variable_name_to_scalers=_dumped_scalers
+            )
         )
 
         PhlowerYamlFile.save(
