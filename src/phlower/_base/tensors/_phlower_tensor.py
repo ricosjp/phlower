@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Any, TypeAlias, overload
+from typing import Any, TypeAlias, overload
 
 import einops
 import numpy as np
@@ -11,7 +11,7 @@ from pipe import select
 from typing_extensions import Self
 
 from phlower._base._dimension import PhysicalDimensions
-from phlower._base.array import phlower_array
+from phlower._base.array import IPhlowerArray, phlower_array
 from phlower._base.tensors._dimension_tensor import (
     PhlowerDimensionTensor,
     phlower_dimension_tensor,
@@ -25,10 +25,6 @@ from phlower.utils.exceptions import (
     PhlowerTypeError,
     PhlowerUnsupportedTorchFunctionError,
 )
-
-if TYPE_CHECKING:
-    from phlower._base.array import IPhlowerArray
-
 
 PhysicDimensionLikeObject: TypeAlias = (
     PhysicalDimensions
