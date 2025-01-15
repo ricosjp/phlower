@@ -51,8 +51,7 @@ class LoggingIntItem(ILoggingItem):
 
 class LoggingFloatItem(ILoggingItem):
     def __init__(self, val: float | None, title: str) -> None:
-        if val is not None:
-            assert isinstance(val, float)
+        assert isinstance(val, float | None)
         assert title is not None
 
         self._val = val

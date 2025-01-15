@@ -82,7 +82,9 @@ def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
     return loss
 
 
-def test__simple_training_without_validation_dataset():
+def test__simple_training_without_validation_dataset(
+    prepare_sample_preprocessed_files: None,
+):
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
