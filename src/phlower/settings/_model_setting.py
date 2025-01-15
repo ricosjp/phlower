@@ -31,7 +31,7 @@ class ModelIOSetting(pydantic.BaseModel):
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
 
-    time_slice: list[int] | None = pydantic.Field(None, frozen=True)
+    time_slice: list[int | None] | None = pydantic.Field(None, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -46,8 +46,8 @@ class ModelIOSetting(pydantic.BaseModel):
 
     @pydantic.field_validator("time_slice")
     def check_valid_time_slice(
-        cls, value: list[int] | None
-    ) -> slice[int, int, int] | None:
+        cls, value: list[int | None] | None
+    ) -> slice[int | None, int | None, int | None] | None:
         if value is None:
             return value
 
