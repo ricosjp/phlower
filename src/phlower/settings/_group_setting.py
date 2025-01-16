@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import functools
-from typing import Literal
+from enum import Enum
+from typing import Annotated, Literal
 
 import pydantic
 from dagstream.utils.errors import DagStreamCycleError
-from pydantic import Field
+from pydantic import Discriminator, Field, Tag
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
@@ -33,6 +34,28 @@ class GroupIOSetting:
     n_last_dim: int | None = None
 
 
+class _DiscriminatorTag(str, Enum):
+    GROUP = "GROUP"
+    MODULE = "MODULE"
+
+
+def _custom_discriminator(value: object) -> str:
+    if isinstance(value, dict):
+        nn_type = value.get("nn_type", None)
+    else:
+        nn_type = getattr(value, "nn_type", None)
+
+    if not isinstance(nn_type, str):
+        raise ValueError(
+            f"Invalid type value is set as a nn_type. Input: {nn_type}"
+        )
+
+    if nn_type.upper() == _DiscriminatorTag.GROUP:
+        return _DiscriminatorTag.GROUP.name
+    else:
+        return _DiscriminatorTag.MODULE.name
+
+
 class GroupModuleSetting(
     pydantic.BaseModel, IModuleSetting, IReadOnlyReferenceGroupSetting
 ):
@@ -55,9 +78,18 @@ class GroupModuleSetting(
     definition of output variables
     """
 
-    modules: list[ModuleSetting | GroupModuleSetting] = Field(
-        default_factory=list
-    )
+    modules: list[
+        Annotated[
+            Annotated[GroupModuleSetting, Tag(_DiscriminatorTag.GROUP.name)]
+            | Annotated[ModuleSetting, Tag(_DiscriminatorTag.MODULE.name)],
+            Discriminator(
+                _custom_discriminator,
+                custom_error_type="invalid_union_member",
+                custom_error_message="Invalid union member",
+                custom_error_context={"discriminator": "group_or_module"},
+            ),
+        ]
+    ] = Field(default_factory=list)
     """
     modules which belongs to this group
     """
@@ -106,28 +138,6 @@ class GroupModuleSetting(
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
-
-    @pydantic.field_validator("modules", mode="before")
-    @classmethod
-    def validate_annotate_modules(
-        cls, vals: list
-    ) -> list[ModuleSetting | GroupModuleSetting]:
-        if not isinstance(vals, list):
-            raise ValueError(f"'modules' expected to be List. actual: {vals}")
-
-        parsed_items: list[ModuleSetting | GroupModuleSetting] = []
-        for v in vals:
-            if isinstance(v, dict):
-                type_v = v.get("nn_type")
-            else:
-                type_v = getattr(v, "nn_type", None)
-
-            if (type_v == "GROUP") or (type_v == "Group"):
-                parsed_items.append(GroupModuleSetting(**v))
-            else:
-                parsed_items.append(ModuleSetting(**v))
-
-        return parsed_items
 
     @pydantic.field_validator("inputs", "outputs")
     @classmethod
