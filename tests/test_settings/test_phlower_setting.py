@@ -59,3 +59,38 @@ def test__raise_warnings_when_version_is_not_compatible(
     for record in caplog.records:
         assert record.levelname == "WARNING"
     assert "Version number of input setting file is higher" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "yaml_file, expected_location, expected_msg",
+    [
+        (
+            "tests/test_settings/data/e2e/invalid_model_1.yml",
+            "1st item",
+            "Input should be a valid string",
+        ),
+        (
+            "tests/test_settings/data/e2e/invalid_model_2.yml",
+            "2nd item",
+            "nn_type=MLP_ERROR is not implemented",
+        ),
+        (
+            "tests/test_settings/data/e2e/invalid_model_3.yml",
+            "3rd item",
+            "Extra inputs are not permitted",
+        ),
+        (
+            "tests/test_settings/data/e2e/invalid_model_4.yml",
+            "4th item",
+            "Field required",
+        ),
+    ],
+)
+def test__raise_user_firendly_error_messages(
+    yaml_file: str, expected_location: str, expected_msg: str
+):
+    with pytest.raises(ValueError) as ex:
+        _ = PhlowerSetting.read_yaml(yaml_file)
+
+    assert expected_location in str(ex.value)
+    assert expected_msg in str(ex.value)

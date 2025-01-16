@@ -83,8 +83,32 @@ class PhlowerSetting(pydantic.BaseModel):
             raise ValueError(
                 "Invalid contents are found in the input setting file. "
                 "Details are shown below. \n"
-                f"{_format_errors(ex.errors())}"
+                f"{_format_errors(ex.errors())} \n"
+                f"{ex.error_count()} errors are "
+                f"found in {file_path}."
             ) from ex
+
+
+def _format_loc(location: list[str]) -> str:
+    _msg = [
+        loc if not isinstance(loc, int) else f"{_to_order(loc)} item"
+        for loc in location
+    ]
+    return " -> ".join(_msg)
+
+
+def _to_order(value: int) -> str:
+    value += 1
+    if value == 1:
+        return "1st"
+
+    if value == 2:
+        return "2nd"
+
+    if value == 3:
+        return "3rd"
+
+    return f"{value}th"
 
 
 def _format_errors(errors: list[ErrorDetails]) -> str:
@@ -92,8 +116,8 @@ def _format_errors(errors: list[ErrorDetails]) -> str:
 
     for error in errors:
         _data = {
-            "type": error["type"],
-            "location": error["loc"],
+            "error_type": error["type"],
+            "error_location": _format_loc(error["loc"]),
             "message": error["msg"],
             "your input": error["input"],
         }
