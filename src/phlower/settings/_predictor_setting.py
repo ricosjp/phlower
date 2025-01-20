@@ -50,6 +50,11 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     target_epoch specifies the number of snapshot. Defaults to None.
     """
 
+    inverse_scaling: bool = True
+    """
+    target_epoch specifies the number of snapshot. Defaults to None.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 

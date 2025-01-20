@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from typing import overload
 from collections.abc import Iterator
 
 from torch.utils.data import DataLoader
@@ -77,13 +78,36 @@ class PhlowerPredictor:
             target_epoch=self._predict_setting.target_epoch,
         )
 
+    @overload
     def predict(
         self,
         preprocessed_directories: list[pathlib.Path],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-        perform_inverse_scaling: bool = False,
     ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
+        ...
+
+    @overload
+    def predict(
+        self,
+        preprocessed_directories: list[pathlib.Path],
+        perform_inverse_scaling: bool,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
+        ...
+
+    def predict(
+        self,
+        preprocessed_directories: list[pathlib.Path],
+        perform_inverse_scaling: bool | None = None,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
+
+        if perform_inverse_scaling is None:
+            perform_inverse_scaling = self._predict_setting.inverse_scaling
+
         dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
@@ -133,7 +157,9 @@ class PhlowerPredictor:
 
             h = self._model.forward(batch.x_data, field_data=batch.field_data)
 
-            yield self._scalers.inverse_transform(h.to_phlower_arrays_dict())
+            yield self._scalers.inverse_transform(
+                h.to_phlower_arrays_dict(), raise_missing_message=True
+            )
 
 
 def _load_model_setting(
