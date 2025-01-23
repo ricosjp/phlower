@@ -61,7 +61,7 @@ def test__transform_sparse_data(
     transformed_data = scaler.transform(sample_sparse_data)
 
     assert transformed_data.shape == sample_sparse_data.shape
-    assert isinstance(transformed_data, sp.coo_matrix)
+    assert isinstance(transformed_data.to_numpy(), sp.coo_matrix)
 
 
 @pytest.mark.parametrize("scaler_name", ["std_scale", "standardize", "min_max"])

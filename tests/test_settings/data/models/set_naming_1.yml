@@ -1,0 +1,59 @@
+misc:
+
+  tests:
+
+
+    CYCLE_MODEL:
+      inputs:
+        feature0: 10
+        feature1: 12
+      outputs:
+        OUT_GCN0: 5
+        
+    MLP0:
+      input_keys:
+        - feature0
+      output_key: OUT_MLP0
+    GCN0:
+      input_keys:
+        -  OUT_MLP0
+      output_key: OUT_GCN0
+
+model:
+
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+      is_time_series: false
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        destinations:
+          - GCN0
+        nn_parameters:
+          nodes: [-1, 20, 100]
+          activations: ["Identity", "identity"]
+
+      - nn_type: GCN
+        name: GCN0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
+from phlower._base import IPhlowerArray
 from phlower.io import PhlowerFileBuilder
 from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
@@ -67,7 +68,7 @@ class ScalersComposition:
             raise ValueError(f"Scaler named {scaler_name} is not found.")
         return scaler
 
-    def transform(self, scaler_name: str, data: ArrayDataType) -> ArrayDataType:
+    def transform(self, scaler_name: str, data: ArrayDataType) -> IPhlowerArray:
         scaler = self.get_scaler(scaler_name)
         transformed_data = scaler.transform(data)
         return transformed_data
@@ -77,7 +78,7 @@ class ScalersComposition:
         scaler_name: str,
         numpy_file: PhlowerNumpyFile | pathlib.Path,
         decrypt_key: bytes | None = None,
-    ) -> ArrayDataType:
+    ) -> IPhlowerArray:
         numpy_file = PhlowerFileBuilder.numpy_file(numpy_file)
         loaded_data = numpy_file.load(decrypt_key=decrypt_key)
         scaler = self.get_scaler(scaler_name)
@@ -86,7 +87,7 @@ class ScalersComposition:
 
     def inverse_transform(
         self, scaler_name: str, data: ArrayDataType
-    ) -> ArrayDataType:
+    ) -> IPhlowerArray:
         scaler = self.get_scaler(scaler_name)
         return scaler.inverse_transform(data)
 

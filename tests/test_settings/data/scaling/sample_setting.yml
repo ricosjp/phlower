@@ -1,4 +1,4 @@
-varaible_name_to_scalers:
+variable_name_to_scalers:
   node:
     method: standardize
   normal:

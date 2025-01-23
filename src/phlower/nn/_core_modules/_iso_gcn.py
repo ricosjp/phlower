@@ -8,7 +8,8 @@ import torch
 from phlower._base.tensors import PhlowerTensor, phlower_tensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._core_modules import _functions, _utils
+from phlower.nn._core_modules import _utils
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -153,8 +154,8 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor]):
-                sparse tensor objects
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor:
@@ -185,7 +186,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             return h
 
         coeff = self._forward_coefficient_network(x)
-        _functions.einsum(
+        return _functions.einsum(
             "i...f,if->i...f",
             h,
             coeff,
@@ -193,7 +194,6 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             is_time_series=h.is_time_series,
             is_voxel=h.is_voxel,
         )
-        return h
 
     def _forward_self_network(
         self, x: PhlowerTensor, supports: list[PhlowerTensor]
@@ -244,9 +244,6 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         inversed_moment: PhlowerTensor,
     ) -> PhlowerTensor:
         neumann_tensor = torch.nan_to_num(neumann_tensor, nan=0.0)
-        print(f"{neumann_tensor=}")
-        print(f"{neumann_tensor.is_time_series=}")
-        print(f"{neumann_tensor.is_voxel=}")
         # NOTE: Shape of inversed_moment is Shape(N, 3, 3)
         neumann = (
             _functions.einsum(
@@ -389,7 +386,7 @@ def _validate_rank0_before_applying_nonlinear(
             "Set bias and actications to "
             "apply linear operation for rank > 0 tensor."
             f"Layer info: {layer.has_bias()=}, {layer.has_dropout()=}, "
-            f"{layer.has_nonlinear_activations()=}"
+            f"activations={layer.get_activation_names()}"
         )
 
     return

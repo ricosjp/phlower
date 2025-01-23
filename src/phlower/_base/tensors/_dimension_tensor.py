@@ -48,6 +48,7 @@ class PhlowerDimensionTensor:
         cls,
         values: list[float] | tuple[float],
         dtype: torch.dtype = torch.float32,
+        device: str | torch.device | None = None,
     ) -> PhlowerDimensionTensor:
         """
         Parse from list object
@@ -65,8 +66,10 @@ class PhlowerDimensionTensor:
                 "length of values is not equal to the number of "
                 f"registered dimension types. input: {len(values)}"
             )
-        _tensor = torch.tensor(values, dtype=dtype).reshape(
-            len(PhysicalDimensionSymbolType), 1
+        _tensor = (
+            torch.tensor(values, dtype=dtype)
+            .reshape(len(PhysicalDimensionSymbolType), 1)
+            .to(device=device)
         )
         return PhlowerDimensionTensor(_tensor)
 
@@ -152,6 +155,9 @@ class PhlowerDimensionTensor:
 
     def detach(self) -> PhlowerDimensionTensor:
         return PhlowerDimensionTensor(tensor=self._tensor.detach())
+
+    def clone(self) -> PhlowerDimensionTensor:
+        return PhlowerDimensionTensor(tensor=self._tensor.clone())
 
     @property
     def dtype(self) -> torch.dtype:
@@ -419,6 +425,80 @@ def leaky_relu(
 
 @dimension_wrap_implements(torch.unsqueeze)
 def unsqueeze(
-    input: PhlowerDimensionTensor, dim: int
+    inputs: PhlowerDimensionTensor, dim: int
 ) -> PhlowerDimensionTensor:
-    return input
+    return inputs
+
+
+@dimension_wrap_implements(torch.abs)
+def torch_abs(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.gt)
+def torch_gt(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
+    if inputs != others:
+        raise DimensionIncompatibleError()
+    return inputs
+
+
+@dimension_wrap_implements(torch.ge)
+def torch_ge(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
+    if inputs != others:
+        raise DimensionIncompatibleError()
+    return inputs
+
+
+@dimension_wrap_implements(torch.lt)
+def torch_lt(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
+    if inputs != others:
+        raise DimensionIncompatibleError()
+    return inputs
+
+
+@dimension_wrap_implements(torch.le)
+def torch_le(
+    inputs: PhlowerDimensionTensor,
+    others: PhlowerDimensionTensor,
+    *args: Any,
+    **kwards: Any,
+) -> PhlowerDimensionTensor:
+    if inputs != others:
+        raise DimensionIncompatibleError()
+    return inputs
+
+
+@dimension_wrap_implements(torch.nn.functional.pad)
+def _torch_pad(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.conv1d)
+def _torch_conv1d(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.relu)
+def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    return inputs

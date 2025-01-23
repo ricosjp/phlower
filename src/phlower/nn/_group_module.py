@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
+from functools import partial
 
 import dagstream
 import torch
@@ -10,22 +12,74 @@ from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
-    reduce_collections,
+    reduce_stack,
+    reduce_update,
 )
 from phlower.io._files import IPhlowerCheckpointFile
+from phlower.nn._interface_iteration_solver import (
+    IFIterationSolver,
+    IOptimizeProblem,
+)
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
+    IPhlowerGroup,
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
-from phlower.nn._phlower_module_adpter import PhlowerModuleAdapter
+from phlower.nn._iteration_solvers import EmptySolver, get_iteration_solver
+from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
 from phlower.services.drawers import MermaidDrawer
-from phlower.settings._group_settings import GroupModuleSetting, ModuleSetting
+from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
+
+TargetFunctionType = Callable[
+    [IPhlowerTensorCollections], IPhlowerTensorCollections
+]
+
+
+class _GroupOptimizeProblem(IOptimizeProblem):
+    def __init__(
+        self,
+        initials: IPhlowerTensorCollections,
+        step_forward: TargetFunctionType,
+        steady_mode: bool = False,
+    ):
+        self._step_forward = step_forward
+
+        # Copy not to update during optimizing
+        self._fixed_initials = phlower_tensor_collection(
+            {k: initials[k] for k in initials.keys()}
+        )
+        self._steady_mode = steady_mode
+
+    def step_forward(
+        self, h: IPhlowerTensorCollections
+    ) -> IPhlowerTensorCollections:
+        return self._step_forward(h)
+
+    def gradient(
+        self, h: IPhlowerTensorCollections, target_keys: list[str]
+    ) -> IPhlowerTensorCollections:
+        operator_value = self._step_forward(h)
+        if self._steady_mode:
+            # R(u) = - D[u] dt
+            residuals = -1.0 * operator_value.mask(target_keys)
+        else:
+            # R(u) = v - u(t) - D[u] dt
+            residuals = (
+                h.mask(target_keys)
+                - self._fixed_initials.mask(target_keys)
+                - operator_value.mask(target_keys)
+            )
+
+        return residuals
 
 
 class PhlowerGroupModule(
-    IPhlowerModuleAdapter, IReadonlyReferenceGroup, torch.nn.Module
+    IPhlowerModuleAdapter,
+    IReadonlyReferenceGroup,
+    IPhlowerGroup,
+    torch.nn.Module,
 ):
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> Self:
@@ -43,6 +97,8 @@ class PhlowerGroupModule(
 
             raise NotImplementedError()
 
+        solver_cls = get_iteration_solver(setting.solver_type)
+
         return PhlowerGroupModule(
             modules=_modules,
             name=setting.name,
@@ -50,6 +106,9 @@ class PhlowerGroupModule(
             input_keys=setting.get_input_keys(),
             output_keys=setting.get_output_keys(),
             destinations=setting.destinations,
+            is_steady_problem=setting.is_steady_problem,
+            iteration_solver=solver_cls.from_setting(setting.solver_parameters),
+            time_series_length=setting.time_series_length,
         )
 
     def __init__(
@@ -60,14 +119,23 @@ class PhlowerGroupModule(
         input_keys: list[str],
         destinations: list[str],
         output_keys: list[str],
+        is_steady_problem: bool = False,
+        iteration_solver: IFIterationSolver | None = None,
+        time_series_length: int | None = None,
     ) -> None:
         super().__init__()
+        if iteration_solver is None:
+            iteration_solver = EmptySolver()
+
         self._phlower_modules = modules
         self._name = name
         self._no_grad = no_grad
         self._input_keys = input_keys
         self._destinations = destinations
         self._output_keys = output_keys
+        self._is_steady_problem = is_steady_problem
+        self._iteration_solver = iteration_solver
+        self._time_series_length = time_series_length
 
         self._stream = self.resolve()
         for _module in self._phlower_modules:
@@ -77,6 +145,10 @@ class PhlowerGroupModule(
     def name(self) -> str:
         return self._name
 
+    @property
+    def do_time_series_iteration(self) -> int:
+        return bool(self._time_series_length)
+
     def get_display_info(self) -> str:
         return (
             f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
@@ -85,7 +157,9 @@ class PhlowerGroupModule(
     def get_n_nodes(self) -> list[int]:
         return None
 
-    def resolve(self) -> dagstream.DagStream:
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> dagstream.DagStream:
         for module in self._phlower_modules:
             module.resolve(parent=self)
 
@@ -131,6 +205,59 @@ class PhlowerGroupModule(
         field_data: ISimulationField,
         **kwards,
     ) -> IPhlowerTensorCollections:
+        if self.do_time_series_iteration:
+            return self._forward_time_series(
+                data, field_data=field_data, **kwards
+            )
+
+        return self._forward(data, field_data=field_data, **kwards)
+
+    def _forward_time_series(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+        results: list[IPhlowerTensorCollections] = []
+
+        assert isinstance(self._time_series_length, int)
+
+        for time_index in range(self._time_series_length):
+            if time_index != 0:
+                last_result = results[-1].clone()
+                data.update(last_result, overwrite=True)
+            results.append(self._forward(data, field_data=field_data, **kwards))
+
+        return reduce_stack(results)
+
+    def _forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+        step_forward = partial(
+            self.step_forward, field_data=field_data, **kwards
+        )
+        problem = _GroupOptimizeProblem(
+            initials=data,
+            step_forward=step_forward,
+            steady_mode=self._is_steady_problem,
+        )
+
+        self._iteration_solver.zero_residuals()
+
+        return self._iteration_solver.run(initial_values=data, problem=problem)
+
+    def step_forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
         results = phlower_tensor_collection({})
 
         # construct (and check dags)
@@ -145,7 +272,7 @@ class PhlowerGroupModule(
                     )
                     node.receive_args(inputs)
 
-                args = reduce_collections(node.get_received_args())
+                args = reduce_update(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
                 _result = _module.forward(args, field_data=field_data, **kwards)
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phlower._base.array import phlower_array
+from phlower._base.array import IPhlowerArray, phlower_array
 from phlower.io._files import IPhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
     scale_functions,
@@ -58,10 +58,10 @@ class PhlowerScalerWrapper:
             )
             return
 
-        self._scaler.partial_fit(reshaped_data)
+        self._scaler.partial_fit(reshaped_data.to_numpy())
         return
 
-    def transform(self, data: ArrayDataType) -> ArrayDataType:
+    def transform(self, data: ArrayDataType) -> IPhlowerArray:
         wrapped_data = phlower_array(data)
         result = wrapped_data.apply(
             self._scaler.transform,

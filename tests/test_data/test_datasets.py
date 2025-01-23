@@ -1,134 +1,126 @@
 import pathlib
+import shutil
+from collections import defaultdict
 
 import numpy as np
 import pytest
+import scipy.sparse as sp
+import yaml
 from phlower.data import LazyPhlowerDataset
-from phlower.settings import ModelIOSetting
+from phlower.io import PhlowerNumpyFile
+from phlower.settings import PhlowerModelSetting
 from phlower.utils.typing import ArrayDataType
 
+_output_base_directory = pathlib.Path(__file__).parent / "tmp/datasets"
 
-def _to_modelIO_settings(
-    names: list[tuple[str, int]] | None,
-) -> list[ModelIOSetting] | None:
-    if names is None:
-        return None
-    return [
-        ModelIOSetting(name=v, members=[{"name": v, "n_last_dim": n_dim}])
-        for v, n_dim in names
+
+@pytest.fixture(scope="module")
+def create_dataset() -> list[pathlib.Path]:
+    if _output_base_directory.exists():
+        shutil.rmtree(_output_base_directory)
+    _output_base_directory.mkdir(parents=True)
+
+    directory_names = ["data0", "data1", "data2"]
+    name2dense_shape: dict[str, tuple[int, ...]] = {
+        "x0": (1, 3, 4),
+        "x1": (10, 5),
+        "x2": (11, 3, 1),
+        "x3": (11, 3),
+        "y0": (1, 3, 4, 1),
+        "y1": (1, 3, 4),
+    }
+    name2sparse_shape: dict[str, tuple[int, ...]] = {
+        "s0": (5, 5),
+        "s1": (10, 5),
+    }
+
+    results: dict[str, dict[str, ArrayDataType]] = defaultdict(dict)
+    for name in directory_names:
+        _output_directory = _output_base_directory / name
+        _output_directory.mkdir()
+
+        for v_name, v_shape in name2dense_shape.items():
+            arr = np.random.rand(*v_shape)
+            PhlowerNumpyFile.save(_output_directory, v_name, arr)
+            results[name][v_name] = arr
+
+        for v_name, v_shape in name2sparse_shape.items():
+            arr = sp.random(*v_shape, density=0.1)
+            PhlowerNumpyFile.save(_output_directory, v_name, arr)
+            results[name][v_name] = arr
+
+
+@pytest.mark.parametrize("yaml_file", ["sample1.yml", "sample2.yml"])
+@pytest.mark.parametrize(
+    "directories",
+    [(["data0", "data1"]), (["data0", "data1", "data2"]), (["data0"])],
+)
+def test__lazy_dataset_array_shape(
+    yaml_file: str, directories: list[str], create_dataset: None
+):
+    yaml_path = pathlib.Path(__file__).parent / f"data/{yaml_file}"
+    with open(yaml_path) as fr:
+        content = yaml.safe_load(fr)
+
+    setting = PhlowerModelSetting(**content["model"])
+    dataset = LazyPhlowerDataset(
+        input_settings=setting.inputs,
+        label_settings=setting.labels,
+        directories=[_output_base_directory / name for name in directories],
+        field_settings=setting.fields,
+    )
+
+    desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
+        "desired_shapes"
     ]
 
-
-@pytest.mark.parametrize(
-    "directories, desired",
-    [(["data0", "data1"], 2), (["data0", "data1", "data2"], 3)],
-)
-def test__lazy_dataset_length(
-    directories: list[str],
-    desired: int,
-    create_tmp_dataset: None,
-    output_base_directory: pathlib.Path,
-):
-    directories = [output_base_directory / v for v in directories]
-    dataset = LazyPhlowerDataset(
-        input_settings=_to_modelIO_settings([("x0", 1), ("x1", 1)]),
-        label_settings=_to_modelIO_settings([("y0", 1)]),
-        directories=directories,
-        field_settings=_to_modelIO_settings([("s0", 1)]),
-    )
-    assert len(dataset) == desired
-
-
-@pytest.mark.parametrize(
-    "x_variables, y_variables, field_names, directory_names",
-    [
-        (
-            [("x0", 1), ("x1", 1), ("x2", 1)],
-            [("y0", 1)],
-            [("s0", None), ("s1", None)],
-            ["data0", "data1", "data2"],
-        )
-    ],
-)
-def test__lazy_dataset_getitem(
-    x_variables: list[str],
-    y_variables: list[str],
-    field_names: list[str],
-    directory_names: list[str],
-    create_tmp_dataset: None,
-    output_base_directory: pathlib.Path,
-):
-    directories = [output_base_directory / v for v in directory_names]
-    dataset = LazyPhlowerDataset(
-        input_settings=_to_modelIO_settings(x_variables),
-        label_settings=_to_modelIO_settings(y_variables),
-        directories=directories,
-        field_settings=_to_modelIO_settings(field_names),
-    )
-
-    assert len(dataset) > 1
-    desired: dict[str, dict[str, ArrayDataType]] = create_tmp_dataset
+    assert len(dataset) == len(directories)
     for i in range(len(dataset)):
         item = dataset[i]
-        data_name = item.data_directory.path.name
 
-        assert data_name in desired
+        for name, actual in item.x_data.items():
+            assert actual.shape == tuple(desired_shapes["inputs"][name])
 
-        for v_name, _ in x_variables:
-            desired_shape = desired[data_name][v_name].shape
-            np.testing.assert_array_almost_equal(
-                item.x_data[v_name].to_numpy().reshape(desired_shape),
-                desired[data_name][v_name],
-            )
+        for name, actual in item.y_data.items():
+            assert actual.shape == tuple(desired_shapes["labels"][name])
 
-        for v_name, _ in y_variables:
-            desired_shape = desired[data_name][v_name].shape
-            np.testing.assert_array_almost_equal(
-                item.y_data[v_name].to_numpy().reshape(desired_shape),
-                desired[data_name][v_name],
-            )
-
-        for v_name, _ in field_names:
-            np.testing.assert_array_almost_equal(
-                item.field_data[v_name].to_numpy().todense(),
-                desired[data_name][v_name].todense(),
-            )
+        for name, actual in item.field_data.items():
+            assert actual.shape == tuple(desired_shapes["fields"][name])
 
 
+@pytest.mark.parametrize("yaml_file", ["sample_with_no_labels.yml"])
 @pytest.mark.parametrize(
-    "x_variables, y_variables, field_names, directory_names",
-    [
-        (
-            [("x0", 1), ("x1", 1), ("x2", 1)],
-            None,
-            [("s0", None), ("s1", None)],
-            ["data0", "data1", "data2"],
-        ),
-        (
-            [("x0", 1), ("x1", 1), ("x2", 1)],
-            [("y3", 1)],
-            [("s0", None), ("s1", None)],
-            ["data0", "data1", "data2"],
-        ),
-    ],
+    "directories",
+    [(["data0", "data1"]), (["data0", "data1", "data2"]), (["data0"])],
 )
-def test__lazy_dataset_getitem_when_no_ydata(
-    x_variables: list[str],
-    y_variables: list[str],
-    field_names: list[str],
-    directory_names: list[str],
-    create_tmp_dataset: None,
-    output_base_directory: pathlib.Path,
+def test__lazy_dataset_array_shape_when_no_ydata(
+    yaml_file: str, directories: list[str], create_dataset: None
 ):
-    directories = [output_base_directory / v for v in directory_names]
+    yaml_path = pathlib.Path(__file__).parent / f"data/{yaml_file}"
+    with open(yaml_path) as fr:
+        content = yaml.safe_load(fr)
+
+    setting = PhlowerModelSetting(**content["model"])
     dataset = LazyPhlowerDataset(
-        input_settings=_to_modelIO_settings(x_variables),
-        label_settings=_to_modelIO_settings(y_variables),
-        directories=directories,
-        field_settings=_to_modelIO_settings(field_names),
+        input_settings=setting.inputs,
+        label_settings=setting.labels,
+        directories=[_output_base_directory / name for name in directories],
+        field_settings=setting.fields,
         allow_no_y_data=True,
     )
-    assert len(dataset) > 1
 
+    desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
+        "desired_shapes"
+    ]
+
+    assert len(dataset) == len(directories)
     for i in range(len(dataset)):
         item = dataset[i]
+
+        for name, actual in item.x_data.items():
+            assert actual.shape == tuple(desired_shapes["inputs"][name])
+
         assert len(item.y_data) == 0
+
+        for name, actual in item.field_data.items():
+            assert actual.shape == tuple(desired_shapes["fields"][name])

@@ -84,20 +84,26 @@ InputParameterSetting = ScalerInputParameters | SameAsInputParameters
 
 
 class PhlowerScalingSetting(pydantic.BaseModel):
-    varaible_name_to_scalers: dict[
-        str, ScalerInputParameters | SameAsInputParameters
+    variable_name_to_scalers: dict[
+        str, ScalerInputParameters | SameAsInputParameters | str
     ] = pydantic.Field(default_factory=lambda: {})
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     @pydantic.model_validator(mode="after")
-    def _check_same_as(self) -> Self:
-        for k, v in self.varaible_name_to_scalers.items():
+    def validate_scalers(self) -> Self:
+        for k, v in self.variable_name_to_scalers.items():
+            if isinstance(v, str):
+                self.variable_name_to_scalers[k] = ScalerInputParameters(
+                    method=v
+                )
+
+        for k, v in self.variable_name_to_scalers.items():
             if v.is_parent_scaler:
                 continue
 
-            if v.same_as not in self.varaible_name_to_scalers:
+            if v.same_as not in self.variable_name_to_scalers:
                 raise ValueError(
                     f"'same_as' item; '{v.same_as}' in {k} "
                     "does not exist in preprocess settings."
@@ -113,16 +119,16 @@ class PhlowerScalingSetting(pydantic.BaseModel):
         return PhlowerScalingSetting(**data)
 
     def resolve_scalers(self) -> list[ScalerResolvedParameter]:
-        return _resolve(self.varaible_name_to_scalers)
+        return _resolve(self.variable_name_to_scalers)
 
     def get_variable_names(self) -> list[str]:
-        return list(self.varaible_name_to_scalers.keys())
+        return list(self.variable_name_to_scalers.keys())
 
     def is_scaler_exist(self, variable_name: str) -> bool:
-        return variable_name in self.varaible_name_to_scalers
+        return variable_name in self.variable_name_to_scalers
 
     def get_scaler_name(self, variable_name: str) -> str | None:
-        scaler_setting = self.varaible_name_to_scalers.get(variable_name)
+        scaler_setting = self.variable_name_to_scalers.get(variable_name)
         if scaler_setting is None:
             return None
 
@@ -214,7 +220,7 @@ def _validate_isoam(setting: ScalerResolvedParameter):
     if len(other_components) + 1 != len(setting.fitting_members):
         raise ValueError(
             "In IsoAMScaler, other components does not match fitting variables."
-            "Please check join_fitting is correctly set in the varaibles "
+            "Please check join_fitting is correctly set in the variables "
             "in other_components"
         )
     return

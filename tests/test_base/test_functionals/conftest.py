@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
-from phlower._base import PhysicalDimensions
+from phlower._base import PhysicalDimensions, phlower_tensor
 from phlower._base.array import phlower_array
 from phlower._base.tensors._interface import IPhlowerTensor
 from scipy import sparse as sp
@@ -20,19 +20,25 @@ def create_sparse_tensors() -> (
         rng = np.random.default_rng()
         if dimensions is None:
             return [
-                phlower_array(
-                    sp.random(
-                        shape[0], shape[1], density=0.1, random_state=rng
-                    ),
-                ).to_phlower_tensor()
+                phlower_tensor(
+                    phlower_array(
+                        sp.random(
+                            shape[0], shape[1], density=0.1, random_state=rng
+                        ),
+                    ).to_tensor()
+                )
                 for shape in shapes
             ]
 
         return [
-            phlower_array(
-                sp.random(shape[0], shape[1], density=0.1, random_state=rng),
-                dimensions=PhysicalDimensions(dims),
-            ).to_phlower_tensor()
+            phlower_tensor(
+                phlower_array(
+                    sp.random(
+                        shape[0], shape[1], density=0.1, random_state=rng
+                    ),
+                ).to_tensor(),
+                dimension=PhysicalDimensions(dims),
+            )
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]
 
@@ -42,22 +48,29 @@ def create_sparse_tensors() -> (
 @pytest.fixture
 def create_dense_tensors() -> (
     Callable[
-        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+        [list[tuple[int]], list[dict[str, float]] | None, bool],
+        list[IPhlowerTensor],
     ]
 ):
     def _create(
-        shapes: list[tuple], dimensions: list[dict] | None = None
+        shapes: list[tuple],
+        dimensions: list[dict] | None = None,
+        is_time_series: bool = False,
     ) -> list[IPhlowerTensor]:
         if dimensions is None:
             return [
-                phlower_array(np.random.rand(*shape)).to_phlower_tensor()
+                phlower_tensor(
+                    np.random.rand(*shape), is_time_series=is_time_series
+                )
                 for shape in shapes
             ]
 
         return [
-            phlower_array(
-                np.random.rand(*shape), dimensions=dims
-            ).to_phlower_tensor()
+            phlower_tensor(
+                np.random.rand(*shape),
+                dimension=dims,
+                is_time_series=is_time_series,
+            )
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]
 
