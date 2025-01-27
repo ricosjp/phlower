@@ -24,3 +24,5 @@ COPY --from=builder /usr/bin/make /usr/bin/
 COPY --from=builder /opt/conda/bin/poetry /opt/conda/bin
 COPY --from=builder /opt/conda/lib/python${USE_PYTHON_VERSION}/site-packages /opt/conda/lib/python${USE_PYTHON_VERSION}/site-packages
 COPY --from=builder /workspace /workspace
+
+RUN chmod +x ./.venv/bin/activate
