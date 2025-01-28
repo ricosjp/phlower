@@ -24,8 +24,8 @@ mypy:
 
 .PHONY: format
 format:
-	poetry run python3 -m ruff format
-	poetry run python3 -m ruff check --fix
+	poetry run ruff format
+	poetry run ruff check --fix
 
 .PHONY: test
 test:
@@ -44,8 +44,8 @@ gpu_test:
 
 .PHONY: lint
 lint:
-	poetry run python3 -m ruff check --output-format=full
-	poetry run python3 -m ruff format --diff
+	poetry run ruff check --output-format=full
+	poetry run ruff format --diff
 	# $(MAKE) mypy
 
 
