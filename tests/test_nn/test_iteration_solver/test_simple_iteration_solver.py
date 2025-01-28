@@ -46,7 +46,7 @@ class ConvergedProblem(IOptimizeProblem):
 )
 def test__can_converged(values: list[float]):
     solver = SimpleIterationSolver(
-        max_iterations=10000, convergence_threshold=0.00001, target_keys=["x"]
+        max_iterations=100000, convergence_threshold=0.000001, target_keys=["x"]
     )
     problem = ConvergedProblem()
 
