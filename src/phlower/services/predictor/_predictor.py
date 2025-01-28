@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pathlib
-from typing import overload
 from collections.abc import Iterator
+from typing import overload
 
 from torch.utils.data import DataLoader
 
@@ -84,8 +84,7 @@ class PhlowerPredictor:
         preprocessed_directories: list[pathlib.Path],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
-        ...
+    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]: ...
 
     @overload
     def predict(
@@ -94,8 +93,7 @@ class PhlowerPredictor:
         perform_inverse_scaling: bool,
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
-        ...
+    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]: ...
 
     def predict(
         self,
@@ -104,7 +102,6 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
     ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
-
         if perform_inverse_scaling is None:
             perform_inverse_scaling = self._predict_setting.inverse_scaling
 
