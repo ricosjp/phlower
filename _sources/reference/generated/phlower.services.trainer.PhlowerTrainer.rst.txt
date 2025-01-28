@@ -1,0 +1,37 @@
+﻿:orphan:
+
+phlower.services.trainer.PhlowerTrainer
+=======================================
+
+.. currentmodule:: phlower.services.trainer
+
+.. autoclass:: PhlowerTrainer
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerTrainer.__init__
+   
+   
+      ~PhlowerTrainer.from_setting
+   
+   
+      ~PhlowerTrainer.load_state
+   
+   
+      ~PhlowerTrainer.reinit_for_restart
+   
+   
+      ~PhlowerTrainer.train
+   
+   
+
+
+
+   
+   
+   

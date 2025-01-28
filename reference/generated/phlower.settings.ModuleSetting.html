@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phlower.settings.ModuleSetting &mdash; phlower 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="phlower.settings.PhlowerScalingSetting" href="phlower.settings.PhlowerScalingSetting.html" />
+    <link rel="prev" title="phlower.settings.GroupModuleSetting" href="phlower.settings.GroupModuleSetting.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            phlower
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Module Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../nn.html">nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tensors.html">PhlowerTensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services.html">service</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../settings.html">settings</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerSetting.html">phlower.settings.PhlowerSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerTrainerSetting.html">phlower.settings.PhlowerTrainerSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerPredictorSetting.html">phlower.settings.PhlowerPredictorSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerModelSetting.html">phlower.settings.PhlowerModelSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.GroupModuleSetting.html">phlower.settings.GroupModuleSetting</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">phlower.settings.ModuleSetting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#phlower.settings.ModuleSetting"><code class="docutils literal notranslate"><span class="pre">ModuleSetting</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerScalingSetting.html">phlower.settings.PhlowerScalingSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.ScalerInputParameters.html">phlower.settings.ScalerInputParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.ScalerResolvedParameter.html">phlower.settings.ScalerResolvedParameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorial</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">phlower</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module Reference</a></li>
+          <li class="breadcrumb-item"><a href="../settings.html">settings</a></li>
+      <li class="breadcrumb-item active">phlower.settings.ModuleSetting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/reference/generated/phlower.settings.ModuleSetting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phlower-settings-modulesetting">
+<h1>phlower.settings.ModuleSetting<a class="headerlink" href="#phlower-settings-modulesetting" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">phlower.settings.</span></span><span class="sig-name descname"><span class="pre">ModuleSetting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_keys=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_key=''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destinations=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_grad=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_parameters=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeff=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_parameters=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/settings/_module_setting.html#ModuleSetting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.settings.ModuleSetting" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IModuleSetting</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_destinations</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_input_keys</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_name</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_output_info</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve</span></code>(*resolved_outputs[, parent])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_computed_fields</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.model_config" title="phlower.settings.ModuleSetting.model_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_config</span></code></a></p></td>
+<td><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_extra</span></code></p></td>
+<td><p>Get extra fields set during validation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_fields</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_fields_set</span></code></p></td>
+<td><p>Returns the set of fields that have been explicitly set on this model instance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.nn_type" title="phlower.settings.ModuleSetting.nn_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_type</span></code></a></p></td>
+<td><p>name of neural network type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.name" title="phlower.settings.ModuleSetting.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>name of group</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.input_keys" title="phlower.settings.ModuleSetting.input_keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_keys</span></code></a></p></td>
+<td><p>key names of input variables</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.output_key" title="phlower.settings.ModuleSetting.output_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_key</span></code></a></p></td>
+<td><p>key names of output variables</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.destinations" title="phlower.settings.ModuleSetting.destinations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">destinations</span></code></a></p></td>
+<td><p>name of destination modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.no_grad" title="phlower.settings.ModuleSetting.no_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_grad</span></code></a></p></td>
+<td><p>A Flag not to calculate gradient.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.nn_parameters" title="phlower.settings.ModuleSetting.nn_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_parameters</span></code></a></p></td>
+<td><p>parameters for neural networks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.coeff" title="phlower.settings.ModuleSetting.coeff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coeff</span></code></a></p></td>
+<td><p>coefficient to be applied to the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.settings.ModuleSetting.debug_parameters" title="phlower.settings.ModuleSetting.debug_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">debug_parameters</span></code></a></p></td>
+<td><p>parameters to debug networks.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nn_type</strong> (<em>str</em>)</p></li>
+<li><p><strong>name</strong> (<em>str</em>)</p></li>
+<li><p><strong>input_keys</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>output_key</strong> (<em>str</em>)</p></li>
+<li><p><strong>destinations</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>no_grad</strong> (<em>bool</em>)</p></li>
+<li><p><strong>nn_parameters</strong> (<em>Annotated</em><em>[</em><em>IPhlowerLayerParameters</em><em>, </em><em>PlainValidator</em><em>(</em><em>func=~phlower.settings._module_parameter_setting._validate</em><em>, </em><em>json_schema_input_type=~typing.Any</em><em>)</em><em>, </em><em>PlainSerializer</em><em>(</em><em>func=~phlower.settings._module_parameter_setting._serialize</em><em>, </em><em>return_type=PydanticUndefined</em><em>, </em><em>when_used=always</em><em>)</em><em>]</em>)</p></li>
+<li><p><strong>coeff</strong> (<em>float</em>)</p></li>
+<li><p><strong>debug_parameters</strong> (<em>PhlowerModuleDebugParameters</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.coeff">
+<span class="sig-name descname"><span class="pre">coeff</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.coeff" title="Link to this definition">¶</a></dt>
+<dd><p>coefficient to be applied to the module.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.debug_parameters">
+<span class="sig-name descname"><span class="pre">debug_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PhlowerModuleDebugParameters</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.debug_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>parameters to debug networks.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.destinations">
+<span class="sig-name descname"><span class="pre">destinations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.destinations" title="Link to this definition">¶</a></dt>
+<dd><p>name of destination modules.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.input_keys">
+<span class="sig-name descname"><span class="pre">input_keys</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.input_keys" title="Link to this definition">¶</a></dt>
+<dd><p>key names of input variables</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid'}</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.name" title="Link to this definition">¶</a></dt>
+<dd><p>name of group</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.nn_parameters">
+<span class="sig-name descname"><span class="pre">nn_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PhlowerModuleParameters</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.nn_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>parameters for neural networks.
+Allowed items depend on <cite>nn_type</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.nn_type">
+<span class="sig-name descname"><span class="pre">nn_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.nn_type" title="Link to this definition">¶</a></dt>
+<dd><p>name of neural network type. For example, GCN, MLP.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.no_grad">
+<span class="sig-name descname"><span class="pre">no_grad</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.no_grad" title="Link to this definition">¶</a></dt>
+<dd><p>A Flag not to calculate gradient. Defauls to False.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="phlower.settings.ModuleSetting.output_key">
+<span class="sig-name descname"><span class="pre">output_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#phlower.settings.ModuleSetting.output_key" title="Link to this definition">¶</a></dt>
+<dd><p>key names of output variables</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phlower.settings.GroupModuleSetting.html" class="btn btn-neutral float-left" title="phlower.settings.GroupModuleSetting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phlower.settings.PhlowerScalingSetting.html" class="btn btn-neutral float-right" title="phlower.settings.PhlowerScalingSetting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, RICOS.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

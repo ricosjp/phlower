@@ -1,0 +1,102 @@
+﻿:orphan:
+
+phlower.PhlowerTensor
+=====================
+
+.. currentmodule:: phlower
+
+.. autoclass:: PhlowerTensor
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerTensor.__init__
+   
+   
+      ~PhlowerTensor.as_pattern
+   
+   
+      ~PhlowerTensor.backward
+   
+   
+      ~PhlowerTensor.clone
+   
+   
+      ~PhlowerTensor.coalesce
+   
+   
+      ~PhlowerTensor.detach
+   
+   
+      ~PhlowerTensor.from_pattern
+   
+   
+      ~PhlowerTensor.indices
+   
+   
+      ~PhlowerTensor.n_vertices
+   
+   
+      ~PhlowerTensor.numel
+   
+   
+      ~PhlowerTensor.numpy
+   
+   
+      ~PhlowerTensor.rank
+   
+   
+      ~PhlowerTensor.rearrange
+   
+   
+      ~PhlowerTensor.reshape
+   
+   
+      ~PhlowerTensor.size
+   
+   
+      ~PhlowerTensor.to
+   
+   
+      ~PhlowerTensor.to_numpy
+   
+   
+      ~PhlowerTensor.to_phlower_array
+   
+   
+      ~PhlowerTensor.to_tensor
+   
+   
+      ~PhlowerTensor.to_vertexwise
+   
+   
+      ~PhlowerTensor.transpose
+   
+   
+      ~PhlowerTensor.values
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerTensor.device
+      ~PhlowerTensor.dimension
+      ~PhlowerTensor.dtype
+      ~PhlowerTensor.has_dimension
+      ~PhlowerTensor.is_sparse
+      ~PhlowerTensor.is_time_series
+      ~PhlowerTensor.is_voxel
+      ~PhlowerTensor.shape
+      ~PhlowerTensor.shape_pattern
+   
+   
