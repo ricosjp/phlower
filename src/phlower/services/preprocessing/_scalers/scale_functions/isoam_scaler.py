@@ -41,6 +41,7 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @property
     def component_dim(self) -> int:
+        # num. of others + self
         return len(self.other_components) + 1
 
     @property

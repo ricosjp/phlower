@@ -92,3 +92,26 @@ def test__retrieve_from_dumped_data(
             continue
 
         assert v == new_state[k]
+
+
+@pytest.mark.parametrize(
+    "n_data_list, other_components",
+    [
+        ([300, 300], ["a"]),
+        ([400, 40, 4], ["a", "b"]),
+    ],
+)
+@pytest.mark.parametrize("shape", [100, 5, 23])
+def test__inverse_transform(
+    n_data_list: list[int], other_components: list[str], shape: int
+):
+    scaler = IsoAMScaler(other_components=other_components)
+
+    data_list = [np.random.rand(n_data) for n_data in n_data_list]
+    for data in data_list:
+        scaler.partial_fit(data)
+
+    sample = np.random.rand(shape)
+    retrieved = scaler.inverse_transform(scaler.transform(sample))
+
+    np.testing.assert_array_almost_equal(sample, retrieved)
