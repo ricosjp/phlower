@@ -34,7 +34,7 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         self,
         data: IPhlowerTensorCollections,
         *,
-        field_data: ISimulationField = None,
+        field_data: ISimulationField | None = None,
     ) -> PhlowerTensor: ...
 
     @abc.abstractmethod
@@ -46,6 +46,17 @@ class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
     def search_module(self, name: str) -> IPhlowerCoreModule: ...
 
 
+class IPhlowerGroup(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def step_forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField,
+        **kwards,
+    ) -> IPhlowerTensorCollections: ...
+
+
 class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
@@ -53,7 +64,7 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def resolve(
-        cls, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> None: ...
 
     @abc.abstractmethod

@@ -1,0 +1,127 @@
+misc:
+
+  tests:
+
+
+    CYCLE_MODEL:
+      inputs:
+        feature0: 20
+        feature1: 22
+      outputs:
+        OUT_GCN_LAST: 5
+        
+    ENCODER0:
+      input_keys:
+        - feature0
+      output_key: OUT_ENCODER0
+    ENCODER1:
+      input_keys:
+        - feature1
+      output_key: OUT_ENCODER1
+
+    GCN_LAST:
+      input_keys:
+        - OUT_CONCAT
+      output_key: OUT_GCN_LAST
+
+    SUB_GROUP:
+      inputs:
+        OUT_ENCODER0: 100
+        OUT_ENCODER1: 200
+      outputs:
+        OUT_CONCAT: 400
+
+    MLP0:
+      input_keys:
+        - OUT_ENCODER0
+      output_key: OUT_MLP0
+    
+    MLP1:
+      input_keys:
+        - OUT_ENCODER1
+      output_key: OUT_MLP1
+    
+    CONCAT:
+      input_keys:
+        - OUT_MLP0
+        - OUT_MLP1
+      output_key: OUT_CONCAT
+
+
+model:
+
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 20
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 22
+
+  fields:
+    - name: support1
+      is_time_series: false
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    
+    modules:
+      - nn_type: MLP
+        name: ENCODER0
+        input_keys:
+          - feature0
+        destinations:
+          - SUB_GROUP
+        nn_parameters:
+          nodes: [-1, 20, 100]
+          activations: ["relu", "relu"]
+
+      - nn_type: MLP
+        name: ENCODER1
+        input_keys:
+          - feature1
+        destinations:
+          - SUB_GROUP
+        nn_parameters:
+          nodes: [-1, 20, 200]
+          activations: ["relu", "relu"]
+
+      - nn_type: GROUP
+        name: SUB_GROUP
+        destinations:
+          - GCN_LAST
+        modules:
+          - nn_type: MLP
+            name: MLP0
+            input_keys:
+              - OUT_ENCODER0
+            destinations:
+              - CONCAT
+            nn_parameters:
+              nodes: [-1, 20, 200]
+              activations: ["relu", "relu"]
+
+          - nn_type: MLP
+            name: MLP1
+            input_keys:
+              - OUT_ENCODER1
+            destinations:
+              - CONCAT
+            nn_parameters:
+              nodes: [-1, 20, 200]
+              activations: ["relu", "relu"]
+
+          - nn_type: Concatenator
+            name: CONCAT
+
+      - nn_type: GCN
+        name: GCN_LAST
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1
+

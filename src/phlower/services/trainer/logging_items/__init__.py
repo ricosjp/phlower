@@ -27,9 +27,12 @@ def create_logitems(
     if isinstance(value, dict):
         return LoggingDictItem(val=value, title=title)
 
-    if (value is None) and (default_factory is not None):
-        val = default_factory()
-        return create_logitems(val, title)
+    if value is None:
+        if default_factory is None:
+            return LoggingFloatItem(val=value, title=title)
+        else:
+            val = default_factory()
+            return create_logitems(val, title)
 
     raise NotImplementedError(
         f"{type(value)} is not implemented as a logging item."

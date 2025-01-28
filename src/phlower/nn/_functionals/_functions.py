@@ -1,53 +1,10 @@
+import einops
 import torch
 
 from phlower._base.tensors import phlower_tensor
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower._base.tensors._phlower_tensor import PhysicDimensionLikeObject
 from phlower.utils.exceptions import PhlowerIncompatibleTensorError
-
-
-def identity(x: torch.Tensor) -> torch.Tensor:
-    return x
-
-
-def leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
-    """Leaky ReLU with the negative slope = 0.5."""
-    return torch.nn.functional.leaky_relu(x, negative_slope=0.5)
-
-
-def inversed_leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
-    """Inverse of leaky_relu0p5."""
-    return torch.nn.functional.leaky_relu(x, negative_slope=2)
-
-
-def truncated_atanh(x: torch.Tensor, epsilon: float = 1e-8) -> torch.Tensor:
-    """Inverse tanh with truncating values >=1 or <=-1."""
-    x[x >= 1.0 - epsilon] = 1.0 - epsilon
-    x[x <= -1.0 + epsilon] = -1.0 + epsilon
-    return torch.atanh(x)
-
-
-class SmoothLeakyReLU:
-    """Smooth leaky ReLU"""
-
-    def __init__(self, a: float = 0.75, b: float = 1 / 100):
-        self.a = a
-        self.b = b
-
-    def __call__(self, x: torch.Tensor):
-        # a x + (1 - a) sqrt(x**2 + b)
-        return self.a * x + (1 - self.a) * torch.sqrt(x**2 + self.b)
-
-    def inverse(self, x: torch.Tensor) -> torch.Tensor:
-        return (
-            self.a * x
-            - torch.sqrt(
-                (self.a - 1) ** 2 * (2 * self.a * self.b - self.b + x**2)
-            )
-        ) / (2 * self.a - 1)
-
-    def derivative(self, x: torch.Tensor) -> torch.Tensor:
-        return self.a - ((self.a - 1) * x) / torch.sqrt(self.b + x**2)
 
 
 def spmm(
@@ -70,10 +27,56 @@ def spmm(
     h, resultant_pattern = x.to_vertexwise()
     restore_pattern = f"{resultant_pattern} -> {x.shape_pattern.get_pattern()}"
     restore_axes_length = x.shape_pattern.get_pattern_to_size(drop_last=True)
+    if (
+        symbol := x.shape_pattern.n_nodes_pattern_symbol
+    ) in restore_axes_length:
+        restore_axes_length[symbol] = sparse.shape[0]
 
     for _ in range(repeat):
         h = torch.sparse.mm(sparse, h)
     return h.rearrange(restore_pattern, **restore_axes_length)
+
+
+def time_series_to_features(arg: IPhlowerTensor) -> IPhlowerTensor:
+    """
+    Compute time_series_to_features for phlower tensors.
+
+    Args:
+        args: list[IPhlowerTensor]
+            List of IPhlowerTensor objects.
+        dimension:
+                PhlowerDimensions | PhlowerDimensionTensor | torch.Tensor
+                | dict[str, float] | list[float] | tuple[float] | None
+            Dimension for the resultant tensor.
+        is_time_series: bool, optional
+            Flag for time series. The default is False.
+        is_voxel: bool, optional
+            Flag for voxel. The default is False.
+
+    Returns:
+        IPhlowerTensor:
+            Resultant tensor
+    """
+
+    if not arg.is_time_series:
+        raise ValueError(
+            "input tensor is not timeseries tensor. "
+            "time_series_to_features cannot be computed."
+        )
+
+    original_pattern = arg.shape_pattern.get_pattern()
+    patterns = original_pattern.split(" ")
+    resultant_pattern = " ".join(
+        patterns[1:-1] + [f"({patterns[-1]} {patterns[0]})"]
+    )
+
+    _to_tensor = einops.rearrange(
+        arg.to_tensor(), f"{original_pattern} -> {resultant_pattern}"
+    )
+
+    return phlower_tensor(
+        _to_tensor, dimension=arg.dimension, pattern=resultant_pattern
+    )
 
 
 def einsum(

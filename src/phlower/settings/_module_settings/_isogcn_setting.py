@@ -85,7 +85,7 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     )
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def confirm(self, self_module: IModuleSetting) -> None:
         input_keys = self_module.get_input_keys()
@@ -118,6 +118,10 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         if (len(input_dims) == 0) or (len(input_dims) >= 3):
             raise ValueError("one or two inputs are allowed in IsoGCN.")
         return input_dims[0]
+
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        n_dim = self.gather_input_dims(*input_dims)
+        return [n_dim, n_dim]
 
     @pydantic.field_validator("nodes")
     @classmethod

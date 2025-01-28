@@ -50,8 +50,8 @@ class LoggingIntItem(ILoggingItem):
 
 
 class LoggingFloatItem(ILoggingItem):
-    def __init__(self, val: float, title: str) -> None:
-        assert isinstance(val, float)
+    def __init__(self, val: float | None, title: str) -> None:
+        assert isinstance(val, float | None)
         assert title is not None
 
         self._val = val
@@ -77,6 +77,8 @@ class LoggingFloatItem(ILoggingItem):
             )
 
     def _format_digit(self, formatter: str) -> str:
+        if self._val is None:
+            return "None"
         return f"{self._val:{formatter}}"
 
     def _format_padding(
@@ -84,7 +86,7 @@ class LoggingFloatItem(ILoggingItem):
     ) -> str:
         if title is None:
             title = self._title
-        val = f"{self._val:{formatter}}"
+        val = "None" if self._val is None else f"{self._val:{formatter}}"
         str_size = len(self._title) + padding_margin
         return val.ljust(str_size, " ")
 

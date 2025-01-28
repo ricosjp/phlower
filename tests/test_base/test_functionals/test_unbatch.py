@@ -52,10 +52,16 @@ def test__unbatch_for_sparse(
 
 
 @pytest.mark.parametrize(
-    "shapes, concat_dim, dimensions, expected_shape",
+    "shapes, concat_dim, dimensions, is_time_series, expected_shape",
     [
-        ([(3, 5), (4, 5), (10, 5)], 0, None, (17, 5)),
-        ([(5, 3), (5, 4), (5, 10)], 1, None, (5, 17)),
+        ([(3, 5), (4, 5), (10, 5)], 0, None, False, (17, 5)),
+        (
+            [(5, 3, 1), (5, 4, 1), (5, 10, 1)],
+            1,
+            None,
+            True,
+            (5, 17, 1),
+        ),  # time-series
         (
             [(6, 2), (5, 2), (11, 2)],
             0,
@@ -64,6 +70,7 @@ def test__unbatch_for_sparse(
                 {"T": 3, "I": -1, "J": 2},
                 {"T": 3, "I": -1, "J": 2},
             ],
+            False,
             (22, 2),
         ),
     ],
@@ -72,12 +79,14 @@ def test__unbatch_for_dense(
     shapes: list[tuple[int]],
     concat_dim: int,
     dimensions: dict | None,
+    is_time_series: bool,
     expected_shape: tuple[int],
     create_dense_tensors: Callable[
-        [list[tuple[int]], list[dict[str, float]] | None], list[IPhlowerTensor]
+        [list[tuple[int]], list[dict[str, float]] | None, bool],
+        list[IPhlowerTensor],
     ],
 ):
-    dense_tensors = create_dense_tensors(shapes, dimensions)
+    dense_tensors = create_dense_tensors(shapes, dimensions, is_time_series)
 
     concat_tensor, batch_info = to_batch(dense_tensors, concat_dim)
     assert concat_tensor.shape == expected_shape

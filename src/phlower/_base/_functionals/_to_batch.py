@@ -28,13 +28,14 @@ def _create_batch_info(
     tensors: Sequence[IPhlowerTensor], dense_concat_dim: int
 ) -> GraphBatchInfo:
     _shapes = list(tensors | select(lambda x: x.shape))
+    _head = tensors[0]
 
-    if tensors[0].is_sparse:
+    if _head.is_sparse:
         _sizes = list(tensors | select(lambda x: x.values().size()[0]))
         # NOTE: Assume dim=0 corresponds to n_nodes When sparse
-        total_n_nodes = sum(v[0] for v in _shapes)
+        n_nodes = tuple(v[0] for v in _shapes)
     else:
         _sizes = list(tensors | select(lambda x: x.size()))
-        total_n_nodes = sum(v[dense_concat_dim] for v in _shapes)
+        n_nodes = tuple(v[dense_concat_dim] for v in _shapes)
 
-    return GraphBatchInfo(_sizes, _shapes, total_n_nodes)
+    return GraphBatchInfo(_sizes, _shapes, n_nodes=n_nodes)

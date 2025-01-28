@@ -1,0 +1,77 @@
+misc:
+
+  tests:
+    MLP0: [10, 20, 25]
+    MLP1: [12, 20, 25]
+    Einsum0: [50, 25]
+    MLP2:  [25, 20, 5]
+
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - Einsum0
+        nn_parameters:
+          nodes: [-1, 20, 25]
+          activations: ["Identity", "identity"]
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - feature1
+        output_key: mlp1
+        destinations:
+          - Einsum0
+        nn_parameters:
+          nodes: [-1, 20, 25]
+          activations: ["Identity", "identity"]
+
+      - nn_type: Einsum
+        name: Einsum0
+        output_key: einsum0
+        input_keys:
+          - mlp0
+          - mlp1
+        destinations:
+          - MLP2
+        nn_parameters:
+          equation: "ij,ik->ijk"
+          nodes: [-1, 25]
+
+      - nn_type: MLP
+        name: MLP2
+        input_keys:
+          - einsum0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 20, 5]
+          activations: ["Identity", "identity"]

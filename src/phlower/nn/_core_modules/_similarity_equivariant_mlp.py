@@ -5,15 +5,16 @@ import torch
 from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
+from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.nn._core_modules import _functions
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._proportional import Proportional
+from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -118,7 +119,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        supports: dict[str, PhlowerTensor] | None = None,
+        field_data: ISimulationField | None = None,
         dict_scales: dict[str, PhlowerTensor | float] | None = None,
         **kwards,
     ) -> PhlowerTensor:
@@ -127,8 +128,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Args:
             data (IPhlowerTensorCollections):
                 Data which receives from predecessors.
-            supports (dict[str, PhlowerTensor], optional):
-                Graph object. Defaults to None.
+            field_data (ISimulationField):
+                Constant information through training or prediction
 
         Returns:
             PhlowerTensor: Tensor object

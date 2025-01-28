@@ -38,6 +38,13 @@ class PhysicalDimensions:
         }
         self._dimensions |= dimensions
 
+    def __eq__(self, other: PhysicalDimensions) -> bool:
+        for k in PhysicalDimensionSymbolType.__members__.keys():
+            if self._dimensions[k] != other[k]:
+                return False
+
+        return True
+
     def _check(self, dimensions: dict[str, float]):
         for name in dimensions:
             if not PhysicalDimensionSymbolType.is_exist(name):
@@ -57,13 +64,6 @@ class PhysicalDimensions:
         if not PhysicalDimensionSymbolType.is_exist(name):
             raise InvalidDimensionError(f"{name} is not valid dimension name.")
         return self._dimensions[name]
-
-    def __eq__(self, other: PhysicalDimensions):
-        for k in PhysicalDimensionSymbolType.__members__.keys():
-            if self._dimensions[k] != other[k]:
-                return False
-
-        return True
 
     def to_list(self) -> list[float]:
         _list: list[float] = [0 for _ in PhysicalDimensionSymbolType]

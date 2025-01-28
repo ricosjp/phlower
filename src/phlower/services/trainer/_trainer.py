@@ -3,6 +3,7 @@ import random
 
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing_extensions import Self
 
@@ -42,7 +43,7 @@ class PhlowerTrainer:
         if (setting.model is None) or (setting.training is None):
             raise ValueError("setting content about scaling is not found.")
 
-        setting.model.network.resolve(is_first=True)
+        setting.model.resolve()
         return cls(setting.model, setting.training)
 
     def __init__(
@@ -82,9 +83,12 @@ class PhlowerTrainer:
         train_directories: list[pathlib.Path],
         validation_directories: list[pathlib.Path] | None = None,
         disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
         record_io = LogRecordIO(file_path=output_directory / "log.csv")
+        validation_directories = validation_directories or []
+
         if self._start_epoch == 0:
             # start_epoch > 0 means that this training is restarted.
             self._save_setting(output_directory, encrypt_key=encrypt_key)
@@ -95,12 +99,14 @@ class PhlowerTrainer:
             label_settings=self._model_setting.labels,
             field_settings=self._model_setting.fields,
             directories=train_directories,
+            decrypt_key=decrypt_key,
         )
         validation_dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
             field_settings=self._model_setting.fields,
             directories=validation_directories,
+            decrypt_key=decrypt_key,
         )
 
         builder = DataLoaderBuilder.from_setting(self._trainer_setting)
@@ -108,10 +114,11 @@ class PhlowerTrainer:
             train_dataset,
             disable_dimensions=disable_dimensions,
         )
-        validation_loader = builder.create(
-            validation_dataset,
-            disable_dimensions=disable_dimensions,
-        )
+        if len(validation_dataset) != 0:
+            validation_loader = builder.create(
+                validation_dataset,
+                disable_dimensions=disable_dimensions,
+            )
 
         loss_function = LossCalculator.from_setting(self._trainer_setting)
         loss: PhlowerTensor | None = None
@@ -123,10 +130,9 @@ class PhlowerTrainer:
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_dataset))
 
         for epoch in range(self._start_epoch, self._trainer_setting.n_epoch):
-            train_losses: list[float] = []
-            validation_losses: list[float] = []
-
             self._model.train()
+            train_losses: list[float] = []
+
             for tr_batch in train_loader:
                 tr_batch: LumpedTensorData
                 self._scheduled_optimizer.zero_grad()
@@ -139,39 +145,38 @@ class PhlowerTrainer:
                     h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
                 )
                 loss = loss_function.aggregate(losses)
-                train_losses.append(loss.detach().to_tensor().float().item())
                 loss.backward()
                 self._scheduled_optimizer.step_optimizer()
 
+                _last_loss = loss.detach().to_tensor().float().item()
                 _train_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
-                    desc=f"batch train loss: {train_losses[-1]:.3f}",
+                    desc=f"training loss: {_last_loss:.3f}",
                 )
+                train_losses.append(_last_loss)
+
             self._scheduled_optimizer.step_scheduler()
 
-            self._model.eval()
-            for val_batch in validation_loader:
-                with torch.no_grad():
-                    val_batch: LumpedTensorData
-                    h = self._model.forward(
-                        val_batch.x_data, field_data=val_batch.field_data
-                    )
-                    val_losses = loss_function.calculate(
-                        h,
-                        val_batch.y_data,
-                        batch_info_dict=val_batch.y_batch_info,
-                    )
-                    val_loss = loss_function.aggregate(val_losses)
-                    validation_losses.append(
-                        val_loss.detach().to_tensor().float().item()
-                    )
-                _val_batch_pbar.update(
-                    trick=self._trainer_setting.batch_size,
-                    desc=f"batch val loss: {validation_losses[-1]}",
+            if self._trainer_setting.evaluation_for_training:
+                train_loss = self._evaluation(
+                    train_loader,
+                    loss_function=loss_function,
+                    pbar=_train_batch_pbar,
+                    pbar_title="batch train loss",
                 )
+            else:
+                train_loss = np.average(train_losses)
 
-            train_loss = np.average(train_losses)
-            validation_loss = np.average(validation_losses)
+            if len(validation_dataset) != 0:
+                validation_loss = self._evaluation(
+                    validation_loader,
+                    loss_function=loss_function,
+                    pbar=_val_batch_pbar,
+                    pbar_title="batch val loss",
+                )
+            else:
+                validation_loss = None
+
             elapsed_time = _timer.watch()
 
             log_record = LogRecord(
@@ -182,9 +187,14 @@ class PhlowerTrainer:
             )
             tqdm.write(record_io.to_str(log_record))
 
-            self._progress_bar.update(
-                trick=1, desc=f"val loss {validation_loss:.3f}"
-            )
+            if validation_loss is not None:
+                self._progress_bar.update(
+                    trick=1, desc=f"val loss {validation_loss:.3f}"
+                )
+            else:
+                self._progress_bar.update(
+                    trick=1, desc=f"train loss {train_loss:.3f}"
+                )
 
             record_io.write(log_record)
             self._save_checkpoint(
@@ -194,6 +204,35 @@ class PhlowerTrainer:
                 elapsed_time=elapsed_time,
             )
         return loss.detach()
+
+    def _evaluation(
+        self,
+        data_loader: DataLoader,
+        loss_function: LossCalculator,
+        pbar: PhlowerProgressBar,
+        pbar_title: str,
+    ) -> float:
+        results: list[float] = []
+
+        self._model.eval()
+        for _batch in data_loader:
+            with torch.no_grad():
+                _batch: LumpedTensorData
+                h = self._model.forward(
+                    _batch.x_data, field_data=_batch.field_data
+                )
+                val_losses = loss_function.calculate(
+                    h,
+                    _batch.y_data,
+                    batch_info_dict=_batch.y_batch_info,
+                )
+                val_loss = loss_function.aggregate(val_losses)
+                results.append(val_loss.detach().to_tensor().float().item())
+            pbar.update(
+                trick=self._trainer_setting.batch_size,
+                desc=f"{pbar_title}: {results[-1]}",
+            )
+        return np.average(results)
 
     def _save_setting(
         self, output_directory: pathlib.Path, encrypt_key: bytes | None = None

@@ -1,0 +1,4 @@
+
+prediction:
+  selection_mode: best
+  device: "cuda:0"

@@ -4,7 +4,7 @@ import torch
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import EnEquivariantMLP
-from phlower.nn._core_modules import _functions
+from phlower.nn._functionals import _functions
 from scipy.stats import ortho_group
 
 

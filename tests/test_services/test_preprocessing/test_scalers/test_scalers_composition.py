@@ -82,7 +82,7 @@ def test__retrieve_from_dumped_data(
 
     # fit to sample data
     setting = PhlowerSetting(
-        scaling=PhlowerScalingSetting(varaible_name_to_scalers=name2scaler)
+        scaling=PhlowerScalingSetting(variable_name_to_scalers=name2scaler)
     )
     composition = ScalersComposition.from_setting(setting)
     scaler_names = composition.get_scaler_names()
