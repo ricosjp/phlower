@@ -1,0 +1,3 @@
+dist/*.toml
+dist/Makefile
+dist/README.md
