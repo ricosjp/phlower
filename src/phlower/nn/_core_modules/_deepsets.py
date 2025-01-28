@@ -158,7 +158,7 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
             dim=node_dim,
         )
 
-        return results
+        return self._last_activation(results)
 
     def _pooling(self, target: PhlowerTensor) -> PhlowerTensor:
         _value = self._pool_operator(

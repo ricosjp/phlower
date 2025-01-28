@@ -10,7 +10,7 @@ from phlower._base import phlower_dimension_tensor
 from phlower._base._functionals import is_same_dimensions, to_batch, unbatch
 from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
-from phlower.nn import DeepSets, MLPConfiguration
+from phlower.nn import ActivationSelector, DeepSets, MLPConfiguration
 from phlower.settings._module_settings import DeepSetsSetting
 from phlower.utils.enums import ActivationType
 
@@ -95,8 +95,8 @@ def test__can_pass_parameters_via_setting(
 @pytest.mark.parametrize(
     "nodes, activations, bias, last_activation_name, pool_operator_name",
     [
-        ([-1, 10, 5], ["relu", "relu"], True, "relu", "max"),
-        ([-1, 10, 20], ["relu", "identity"], True, "tanh", "mean"),
+        ([-1, 10, 5], ["relu", "relu"], True, "identity", "max"),
+        ([-1, 10, 20], ["relu", "identity"], True, "identity", "mean"),
     ],
 )
 @pytest.mark.parametrize(
@@ -395,6 +395,64 @@ def test__permutation_NOT_equivariance_over_different_batch_tensor(
     with pytest.raises(AssertionError) as ex:
         np.testing.assert_array_almost_equal(
             result1[_permuted_indexes, ...].detach().numpy(),
+            result2.to_tensor().detach().numpy(),
+        )
+
+    assert "Arrays are not almost equal to 6 decimals" in str(ex.value)
+
+
+@pytest.mark.parametrize(
+    "nodes, activations, bias, last_activation_name, pool_operator_name",
+    [
+        ([-1, 10, 5], ["tanh", "tanh"], True, "relu", "max"),
+        ([-1, 10, 20], ["relu", "identity"], True, "tanh", "mean"),
+    ],
+)
+@pytest.mark.parametrize(
+    "input_shapes",
+    [([(10, 3, 1), (20, 3, 1)])],
+)
+def test__check_last_activation_apply(
+    nodes: list[int],
+    activations: list[str],
+    bias: bool,
+    last_activation_name: str,
+    pool_operator_name: str,
+    input_shapes: list[tuple[int]],
+):
+    assert last_activation_name != "identity"
+    nodes[0] = input_shapes[0][-1]
+
+    _tensors: list[PhlowerTensor] = [
+        phlower_tensor(np.random.rand(*shape), dtype=torch.float32)
+        for shape in input_shapes
+    ]
+    _tensor, batch_info = to_batch(_tensors)
+    field = SimulationField({}, {"sample": batch_info})
+
+    config = MLPConfiguration(
+        nodes=nodes, activations=activations, dropouts=[], bias=bias
+    )
+    model1 = DeepSets(
+        lambda_config=config,
+        gamma_config=config,
+        last_activation_name=last_activation_name,
+        pool_operator_name=pool_operator_name,
+        unbatch_key="sample",
+    )
+    result1 = model1.forward(
+        phlower_tensor_collection({"input": _tensor}), field_data=field
+    )
+
+    # NOTE: Forced to change activation to identity
+    model1._last_activation = ActivationSelector.select("identity")
+    result2 = model1.forward(
+        phlower_tensor_collection({"input": _tensor}), field_data=field
+    )
+
+    with pytest.raises(AssertionError) as ex:
+        np.testing.assert_array_almost_equal(
+            result1.to_tensor().detach().numpy(),
             result2.to_tensor().detach().numpy(),
         )
 
