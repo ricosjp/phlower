@@ -170,8 +170,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
             h = h - mean
 
-        h = self._mlp(
-            phlower_tensor_collection({"h": h * self._coeff_amplify}))
+        h = self._mlp(phlower_tensor_collection({"h": h * self._coeff_amplify}))
         assert h.dimension.is_dimensionless
 
         if self._centering:
