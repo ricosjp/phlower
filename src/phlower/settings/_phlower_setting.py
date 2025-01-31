@@ -1,19 +1,26 @@
 from __future__ import annotations
 
+import json
 import pathlib
 
 import pydantic
-from pydantic import dataclasses as dc
-from typing_extensions import Self
+from packaging.version import Version
+from pydantic_core import ErrorDetails
 
 from phlower.io import PhlowerYamlFile
 from phlower.settings._model_setting import PhlowerModelSetting
+from phlower.settings._predictor_setting import PhlowerPredictorSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
-from phlower.utils.enums import ModelSelectionType
+from phlower.utils import get_logger
+from phlower.version import __version__
+
+_logger = get_logger(__name__)
 
 
 class PhlowerSetting(pydantic.BaseModel):
+    version: str = __version__
+
     training: PhlowerTrainerSetting | None = None
     """
     training setting. Defaults to None.
@@ -36,15 +43,27 @@ class PhlowerSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
-        frozen=True, extra="forbid", arbitrary_types_allowed=True
+        frozen=True, arbitrary_types_allowed=True
     )
+
+    @pydantic.field_validator("version")
+    @classmethod
+    def check_version(cls, version: str) -> str:
+        if Version(version) > Version(__version__):
+            # When version number in yaml file is larger than program.
+            _logger.warning(
+                "Version number of input setting file is "
+                "higher than program version."
+                f"File version: {version}, program: {__version__}"
+            )
+        return version
 
     @classmethod
     def read_yaml(
         cls,
         file_path: pathlib.Path | str | PhlowerYamlFile,
         decrypt_key: bytes | None = None,
-    ) -> Self:
+    ) -> PhlowerSetting:
         """Read yaml file and parse to PhlowerSetting object.
 
         Args:
@@ -58,53 +77,50 @@ class PhlowerSetting(pydantic.BaseModel):
         """
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
-        return PhlowerSetting(**data)
+        try:
+            return PhlowerSetting(**data)
+        except pydantic.ValidationError as ex:
+            raise ValueError(
+                "Invalid contents are found in the input setting file. "
+                "Details are shown below. \n"
+                f"{_format_errors(ex.errors())} \n"
+                f"{ex.error_count()} errors are "
+                f"found in {file_path}."
+            ) from ex
 
 
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class PhlowerPredictorSetting:
-    selection_mode: str
-    """
-    Define method to select checkpoint file.
-    Choose from "best", "latest", "train_best", "specified"
-    """
+def _format_loc(location: list[str]) -> str:
+    _msg = [
+        loc if not isinstance(loc, int) else f"{_to_order(loc)} item"
+        for loc in location
+    ]
+    return " -> ".join(_msg)
 
-    device: str = "cpu"
-    """
-    device name. Defaults to cpu
-    """
 
-    log_file_name: str = "log"
-    """
-    name of log file. Defaults to "log"
-    """
+def _to_order(value: int) -> str:
+    value += 1
+    if value == 1:
+        return "1st"
 
-    saved_setting_filename: str = "model"
-    """
-    file name of pretrained model setting. Defaults to "model"
-    """
+    if value == 2:
+        return "2nd"
 
-    batch_size: int = 1
-    """
-    batch size. Defaults to 1
-    """
+    if value == 3:
+        return "3rd"
 
-    num_workers: int = 1
-    """
-    the number of cores. Defaults to 1.
-    """
+    return f"{value}th"
 
-    non_blocking: bool = False
 
-    random_seed: int = 0
-    """
-    random seed. Defaults to 0
-    """
+def _format_errors(errors: list[ErrorDetails]) -> str:
+    data = {"errors": []}
 
-    @pydantic.field_validator("selection_mode")
-    @classmethod
-    def check_valid_selection_mode(cls, name: str) -> str:
-        names = [v.value for v in ModelSelectionType]
-        if name not in names:
-            raise ValueError(f"{name} selection mode does not exist.")
-        return name
+    for error in errors:
+        _data = {
+            "error_type": error["type"],
+            "error_location": _format_loc(error["loc"]),
+            "message": error["msg"],
+            "your input": error["input"],
+        }
+        data["errors"].append(_data)
+
+    return json.dumps(data, indent=4)

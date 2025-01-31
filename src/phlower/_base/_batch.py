@@ -1,10 +1,15 @@
+from functools import cached_property
 from typing import NamedTuple
 
 
 class GraphBatchInfo(NamedTuple):
     sizes: list[int]
     shapes: list[tuple[int]]
-    total_n_nodes: int
+    n_nodes: tuple[int]
+
+    @cached_property
+    def total_n_nodes(self) -> int:
+        return sum(self.n_nodes)
 
     @property
     def is_concatenated(self) -> bool:

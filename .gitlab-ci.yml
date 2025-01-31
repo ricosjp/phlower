@@ -1,16 +1,17 @@
+variables:
+  PHLOWER_VERSION: 0.2.0
+  PHLOWER_IMAGE_REGISTRY: registry.ritc.jp/ricos/machine_learning/phlower
+
 stages:
   - test
   - document_test
   - deploy
 
 default:
-  image: python:3.10-slim
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py312-cpu
   before_script:
-    - apt update
-    - apt install -y make
-    - pip install poetry
-    - poetry config virtualenvs.in-project false
-    - make dev-install
+    - source /workspace/.venv/bin/activate
+    - poetry run python3 -m pip install -e .
 
 lint:
   stage: test
@@ -18,8 +19,9 @@ lint:
     - make lint
   tags:
     - no-gpu
+  dependencies: []
 
-pytest:
+pytest_with_py312:
   stage: test
   script:
     - make test
@@ -37,8 +39,25 @@ pytest:
   tags:
     - no-gpu
     - GenuineIntel
+  dependencies: []
+
+
+pytest_with_py311:
+  stage: test
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cpu
+  script:
+    - make test
+  dependencies: []
+
+pytest_with_py310:
+  stage: test
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py310-cpu
+  script:
+    - make test
+  dependencies: []
 
 gpu_test:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
   stage: test
   script:
     - make gpu_test
@@ -46,11 +65,12 @@ gpu_test:
     - gpu
 
 e2e_test:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
   stage: test
   script:
     - make e2e_test
   tags:
-    - no-gpu
+    - gpu
     - GenuineIntel
 
 pages_test:
@@ -97,3 +117,13 @@ deploy:wheel:tags:
     - export VERSION=$CI_COMMIT_REF_NAME
   only:
     - tags
+
+# docker:
+#   stage: deploy
+#   services:
+#     - docker:dind
+#   script:
+#     - make push
+#   only:
+#     - main
+

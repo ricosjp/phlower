@@ -6,7 +6,7 @@ import pytest
 import scipy.sparse as sp
 from phlower.io import PhlowerDirectory, PhlowerFileBuilder
 from phlower.services.preprocessing import PhlowerScalingService
-from phlower.settings import PhlowerScalingSetting, PhlowerSetting
+from phlower.settings import PhlowerSetting
 from pipe import select, where
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp_preprocess"
@@ -101,10 +101,10 @@ def test__saved_array_is_same_as_saved_scalers_transformed(
     )
     assert len(variable_names) > 0
 
-    saved_setting = PhlowerScalingSetting.read_yaml(
+    saved_setting = PhlowerSetting.read_yaml(
         scaling_base_directory / "preprocess.yml"
     )
-    restored_scaler = PhlowerScalingService(saved_setting)
+    restored_scaler = PhlowerScalingService.from_setting(saved_setting)
 
     for interim_dir in interim_directories:
         path = PhlowerDirectory(interim_dir)
@@ -120,9 +120,10 @@ def test__saved_array_is_same_as_saved_scalers_transformed(
 
             if saved_arr.is_sparse:
                 np.testing.assert_array_almost_equal(
-                    transformed.todense(), saved_arr.to_numpy().todense()
+                    transformed.to_numpy().todense(),
+                    saved_arr.to_numpy().todense(),
                 )
             else:
                 np.testing.assert_array_almost_equal(
-                    transformed, saved_arr.to_numpy()
+                    transformed.to_numpy(), saved_arr.to_numpy()
                 )

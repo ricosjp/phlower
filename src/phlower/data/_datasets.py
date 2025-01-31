@@ -97,12 +97,16 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         if arr is None:
             return None
 
-        return phlower_array(
+        _array = phlower_array(
             arr,
             is_time_series=io_setting.is_time_series,
             is_voxel=io_setting.is_voxel,
             dimensions=io_setting.physical_dimension,
         )
+        if io_setting.time_slice is None:
+            return _array
+
+        return _array.slice_along_time_axis(io_setting.time_slice_object)
 
     def _load_ndarray_data(
         self,
@@ -130,7 +134,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
                 continue
 
             if member.n_last_dim == 1:
-                _arr = _arr[:, np.newaxis]
+                _arr = _arr[..., np.newaxis]
                 arrs.append(_arr)
                 continue
 
@@ -145,4 +149,4 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         if len(arrs) == 1:
             return arrs[0]
 
-        return np.concatenate(arrs)
+        return np.concatenate(arrs, axis=-1)

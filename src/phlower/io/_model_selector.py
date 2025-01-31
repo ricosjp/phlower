@@ -17,6 +17,7 @@ _logger = get_logger(__name__)
 def select_snapshot_file(
     directory: os.PathLike | PhlowerDirectory,
     selection_mode: Literal["best", "latest", "train_best", "specified"],
+    target_epoch: int | None = None,
     **kwards,
 ) -> IPhlowerCheckpointFile:
     selector = ModelSelectorBuilder.create(selection_mode)
@@ -29,7 +30,7 @@ def select_snapshot_file(
 
     log_file_path = ph_dir.find_csv_file("log", allow_missing=True)
     file_path = selector.select_model(
-        snapshots=snapshots, log_file=log_file_path, **kwards
+        snapshots=snapshots, log_file=log_file_path, target_epoch=target_epoch
     )
 
     _logger.info(f"{file_path.file_path} is selected.")
@@ -127,6 +128,11 @@ class SpecifiedModelSelector(IModelSelector):
         if target_epoch is None:
             raise ValueError(
                 "Specify target_epoch when using specified selection mode."
+            )
+        if target_epoch < 0:
+            raise ValueError(
+                f"Specified target_epoch must be non-negative "
+                f"but {target_epoch}."
             )
 
         target_snapshots: IPhlowerCheckpointFile = [

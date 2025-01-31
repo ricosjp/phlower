@@ -48,6 +48,19 @@ class PhlowerScalerName(Enum):
     STD_SCALE = "std_scale"
 
 
+class ActivationType(str, Enum):
+    identity = "identity"
+    inversed_leaky_relu0p5 = "inversed_leaky_relu0p5"
+    inversed_smooth_leaky_relu = "inversed_smooth_leaky_relu"
+    leaky_relu0p5 = "leaky_relu0p5"
+    relu = "relu"
+    sigmoid = "sigmoid"
+    smooth_leaky_relu = "smooth_leaky_relu"
+    sqrt = "sqrt"
+    tanh = "tanh"
+    truncated_atanh = "truncated_atanh"
+
+
 class PhysicalDimensionSymbolType(Enum):
     T = 0  # time
     L = 1  # length
@@ -77,3 +90,9 @@ _symbol2quntityname = {
     PhysicalDimensionSymbolType.N.name: "amount of substance",
     PhysicalDimensionSymbolType.J.name: "luminous intensity",
 }
+
+
+class PhlowerIterationSolverType(str, Enum):
+    none = "none"
+    simple = "simple"
+    bb = "bb"  # barzilai_borwein

@@ -13,6 +13,9 @@ class IModuleSetting(metaclass=abc.ABCMeta):
     def get_name(self) -> str: ...
 
     @abc.abstractmethod
+    def get_input_keys(self) -> list[str]: ...
+
+    @abc.abstractmethod
     def get_destinations(self) -> list[str]: ...
 
     @abc.abstractmethod
@@ -36,6 +39,14 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
 
         Returns:
             int: resolved dimension of input tensors
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_default_nodes(self, *input_dims: int) -> list[str]:
+        """Return desired nodes when nodes is None
+        Returns:
+            list[str]: default nodes
         """
         ...
 
@@ -76,5 +87,17 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
         Args:
             parent (IReadOnlyReferenceGroupSetting):
                 Reference to group setting of its parent
+        """
+        ...
+
+    @abc.abstractmethod
+    def confirm(self, self_module: IModuleSetting) -> None:
+        """Chenck and confirm parameters. This functions is
+         called after all values of parameters are established.
+         Write scripts to check its state at last.
+
+        Args:
+            input_keys (list[str]): keys to input this parameters
+            **kwards: information of parent module
         """
         ...

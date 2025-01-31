@@ -95,6 +95,18 @@ def test__spcified_model_selector(epoch: int, prepare_snapshots: None):
     assert actual_path.epoch == epoch
 
 
+@pytest.mark.parametrize("epoch", [-1, None])
+def test__spcified_model_selector_value_error(
+    epoch: int, prepare_snapshots: None
+):
+    with pytest.raises(ValueError):
+        _ = select_snapshot_file(
+            TEST_DATA_DIR,
+            selection_mode=ModelSelectionType.SPECIFIED.value,
+            target_epoch=epoch,
+        )
+
+
 @pytest.mark.parametrize("epoch", [100, 200])
 def test__spcified_model_selector_not_existed(
     epoch: int, prepare_snapshots: None

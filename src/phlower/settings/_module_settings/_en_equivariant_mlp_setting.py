@@ -5,15 +5,14 @@ from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
 
 
 class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    nodes: list[int] = Field(
-        ...
-    )  # This property only overwritten when resolving.
+    nodes: list[int]
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
@@ -22,10 +21,19 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         default_factory=lambda: "identity", frozen=True
     )
 
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
+
+    def confirm(self, self_module: IModuleSetting) -> None: ...
+
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
             raise ValueError("Only one input is allowed in EnEquivariantMLP.")
         return input_dims[0]
+
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        n_dim = self.gather_input_dims(*input_dims)
+        return [n_dim, self.nodes[-1]]
 
     @pydantic.field_validator("nodes")
     @classmethod

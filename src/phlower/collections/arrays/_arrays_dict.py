@@ -7,7 +7,8 @@ import torch
 from phlower._base import (
     GraphBatchInfo,
     IPhlowerArray,
-    PhlowerTensor,
+    IPhlowerTensor,
+    phlower_tensor,
 )
 from phlower._base._functionals import to_batch
 
@@ -44,12 +45,16 @@ class _PhlowerSequenceArray:
         device: str | torch.device,
         non_blocking: bool,
         disable_dimensions: bool,
-    ) -> PhlowerTensor:
+    ) -> tuple[IPhlowerTensor, GraphBatchInfo]:
         tensors = [
-            v.to_phlower_tensor(
-                device=device,
-                non_blocking=non_blocking,
-                disable_dimensions=disable_dimensions,
+            phlower_tensor(
+                v.to_tensor(
+                    device=device,
+                    non_blocking=non_blocking,
+                ),
+                dimension=None if disable_dimensions else v.dimension,
+                is_time_series=v.is_time_series,
+                is_voxel=v.is_voxel,
             )
             for v in self._data
         ]
@@ -88,7 +93,7 @@ class SequencedDictArray:
 
     def to_batched_tensor(
         self, device: str, non_blocking: bool, disable_dimensions: bool = False
-    ) -> tuple[dict[str, PhlowerTensor], dict[str, GraphBatchInfo]]:
+    ) -> tuple[dict[str, IPhlowerTensor], dict[str, GraphBatchInfo]]:
         _batched = [
             (
                 name,

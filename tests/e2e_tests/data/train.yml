@@ -39,9 +39,23 @@ model:
         name: MLP0
         input_keys:
           - nodal_initial_u
-        output_key: nodal_last_u
+        destinations:
+          - Reducer0
         nn_parameters:
           nodes: [-1, 16, 1]
           activations: ["identity", "identity"]
           bias: False
+
+      - name: Share0
+        nn_type: Share
+        destinations:
+          - Reducer0
+        nn_parameters:
+          reference_name: MLP0
+      
+      - name: Reducer0
+        nn_type: Reducer
+        output_key: nodal_last_u
+        nn_parameters:
+          operator: add
 

@@ -24,10 +24,10 @@ def create_tmp_dataset() -> dict[str, dict[str, ArrayDataType]]:
 
     directory_names = ["data0", "data1", "data2"]
     name2dense_shape: dict[str, tuple[int, ...]] = {
-        "x0": (1, 3, 4),
-        "x1": (10, 5),
-        "x2": (11, 3),
-        "y0": (1, 3, 4),
+        "x0": (1, 3, 4, 1),
+        "x1": (10, 5, 1),
+        "x2": (11, 3, 1),
+        "y0": (1, 3, 4, 1),
     }
     name2sparse_shape: dict[str, tuple[int, ...]] = {
         "s0": (5, 5),

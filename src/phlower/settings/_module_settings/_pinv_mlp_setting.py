@@ -4,6 +4,7 @@ import pydantic
 from pydantic import Field
 
 from phlower.settings._interface import (
+    IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
@@ -19,8 +20,14 @@ class PInvMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         extra="forbid", arbitrary_types_allowed=True
     )
 
+    def confirm(self, self_module: IModuleSetting) -> None:
+        return
+
     def gather_input_dims(self, *input_dims: int) -> int:
         return self.reference.gather_input_dims(*input_dims)
+
+    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        return self.reference.get_n_nodes()
 
     def get_n_nodes(self) -> list[int] | None:
         return self.reference.get_n_nodes()[::-1]

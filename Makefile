@@ -1,11 +1,21 @@
 IN_PROJECT?=true
+VERSION=`poetry version --short`
 
-
-.PHONY: init
-init:
+.PHONY: reset
+reset:
 	rm -r ./.venv || true
+	rm poetry.lock || true
 	poetry config virtualenvs.in-project ${IN_PROJECT}
-	poetry install
+
+
+.PHONY: install_cu124
+install_cu124:
+	poetry sync --no-root -E cu124 --with cu124 
+
+
+.PHONY: install_cpu
+install_cpu:
+	poetry sync --no-root -E cpu --with cpu
 
 
 .PHONY: mypy
@@ -14,8 +24,8 @@ mypy:
 
 .PHONY: format
 format:
-	poetry run python3 -m ruff format
-	poetry run python3 -m ruff check --fix
+	poetry run ruff format
+	poetry run ruff check --fix
 
 .PHONY: test
 test:
@@ -34,13 +44,9 @@ gpu_test:
 
 .PHONY: lint
 lint:
-	poetry run python3 -m ruff check --output-format=full
-	poetry run python3 -m ruff format --diff
+	poetry run ruff check --output-format=full
+	poetry run ruff format --diff
 	# $(MAKE) mypy
-
-.PHONY: dev-install
-dev-install: init
-	poetry run python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 
 .PHONY: document
@@ -49,3 +55,8 @@ document:
 	rm -rf docs/source/reference/generated || true
 	rm -rf docs/source/tutorials/basic_usages || true
 	poetry run sphinx-build -M html docs/source docs/build
+
+
+.PHONY: push_docker_images
+push_docker_images: 
+	make -C docker push VERSION=${VERSION}

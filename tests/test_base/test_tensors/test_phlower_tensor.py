@@ -1,13 +1,25 @@
+from collections.abc import Callable
 from unittest import mock
 
 import numpy as np
 import pytest
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra import numpy as extra_np
 from phlower import PhlowerTensor, phlower_dimension_tensor, phlower_tensor
+from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import (
     DimensionIncompatibleError,
     PhlowerSparseUnsupportedError,
 )
+
+
+@given(st.lists(st.floats(width=32), min_size=1, max_size=100))
+def test__create_default_phlower_tensor(values: list[float]):
+    pht = phlower_tensor(values)
+    assert pht.is_time_series is False
+    assert pht.is_voxel is False
 
 
 def test__create_same_initialized_object_from_list_and_tensor():
@@ -82,54 +94,93 @@ def test__from_pattern():
     )
 
 
-def test__add():
-    a = torch.eye(5)
-    b = torch.eye(5)
-    c = (a + b).numpy()
+@st.composite
+def random_phlower_tensors_with_same_dimension_and_shape(
+    draw: Callable, shape: tuple[int] | st.SearchStrategy[int]
+) -> tuple[PhlowerTensor, PhlowerTensor]:
+    _shape = draw(shape)
 
-    ap = PhlowerTensor(a)
-    bp = PhlowerTensor(b)
-    cp = ap + bp
-    cp = cp.to_tensor().numpy()
+    array1 = draw(
+        extra_np.arrays(
+            dtype=np.dtypes.Float32DType(),
+            shape=_shape,
+        )
+    )
+    array2 = draw(
+        extra_np.arrays(
+            dtype=np.dtypes.Float32DType(),
+            shape=_shape,
+        )
+    )
 
-    np.testing.assert_array_almost_equal(cp, c)
+    dimensions = draw(
+        st.lists(
+            elements=st.floats(allow_nan=False, allow_infinity=False),
+            min_size=len(PhysicalDimensionSymbolType),
+            max_size=len(PhysicalDimensionSymbolType),
+        )
+    )
 
-
-def test__add_with_unit():
-    units = phlower_dimension_tensor({"L": 2, "T": -2})
-    a = np.random.rand(3, 10)
-    b = np.random.rand(3, 10)
-    c = a + b
-
-    ap = PhlowerTensor(torch.tensor(a), units)
-    bp = PhlowerTensor(torch.tensor(b), units)
-    cp = ap + bp
-
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
-
-
-def test__sub_with_unit():
-    units = phlower_dimension_tensor({"L": 2, "T": -2})
-    a = np.random.rand(3, 10)
-    b = np.random.rand(3, 10)
-    c = a - b
-
-    ap = PhlowerTensor(torch.tensor(a), units)
-    bp = PhlowerTensor(torch.tensor(b), units)
-    cp = ap - bp
-
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c)
+    return (
+        phlower_tensor(torch.from_numpy(array1), dimension=dimensions),
+        phlower_tensor(torch.from_numpy(array2), dimension=dimensions),
+    )
 
 
-def test__neg_with_unit():
-    units = phlower_dimension_tensor({"L": 2, "T": -2})
-    a = np.random.rand(3, 10)
-    c = -a
+@given(
+    random_phlower_tensors_with_same_dimension_and_shape(
+        shape=st.lists(
+            st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+        )
+    )
+)
+def test__add_tensor_content_with_dimension(
+    tensors: tuple[PhlowerTensor, PhlowerTensor],
+):
+    a, b = tensors
+    c = a.to_numpy() + b.to_numpy()
 
-    ap = PhlowerTensor(torch.tensor(a), units)
-    cp = -ap
+    cp = a + b
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
 
-    np.testing.assert_array_almost_equal(cp.numpy(), c)
+    assert cp.dimension == a.dimension
+
+
+@given(
+    random_phlower_tensors_with_same_dimension_and_shape(
+        shape=st.lists(
+            st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+        )
+    )
+)
+def test__sub_tensor_content_with_dimension(
+    tensors: tuple[PhlowerTensor, PhlowerTensor],
+):
+    a, b = tensors
+
+    c = a.to_numpy() - b.to_numpy()
+    cp = a - b
+
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
+
+    assert cp.dimension == a.dimension
+
+
+@given(
+    random_phlower_tensors_with_same_dimension_and_shape(
+        shape=st.lists(
+            st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+        )
+    )
+)
+def test__neg_with_unit(tensors: tuple[PhlowerTensor, PhlowerTensor]):
+    a, _ = tensors
+
+    c = -a.to_numpy()
+    cp = -a
+
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
+    assert cp.dimension == a.dimension
 
 
 @pytest.mark.parametrize(
@@ -157,69 +208,99 @@ def test__add_with_unit_incompatible():
         _ = ap + bp
 
 
-def test__mul_with_unit():
-    dims_1 = phlower_dimension_tensor({"L": 2, "T": -2})
-    dims_2 = phlower_dimension_tensor({"M": 1, "T": -2})
-    dims_3 = phlower_dimension_tensor({"L": 2, "M": 1, "T": -4})
+@pytest.mark.parametrize(
+    "dim_1, dim_2, desired_dim",
+    [({"L": 2, "T": -2}, {"M": 1, "T": -2}, {"L": 2, "M": 1, "T": -4})],
+)
+@given(
+    input_shape=st.lists(
+        st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+    )
+)
+def test__mul_with_unit(
+    dim_1: dict, dim_2: dict, desired_dim: dict, input_shape: list[int]
+):
+    ap = phlower_tensor(
+        torch.tensor(np.random.rand(*input_shape)), dimension=dim_1
+    )
+    bp = phlower_tensor(
+        torch.tensor(np.random.rand(*input_shape)), dimension=dim_2
+    )
 
-    a = torch.tensor(np.random.rand(3, 10))
-    b = torch.tensor(np.random.rand(3, 10))
-    c = a * b
-
-    ap = PhlowerTensor(a, dims_1)
-    bp = PhlowerTensor(b, dims_2)
+    c = ap.to_numpy() * bp.to_numpy()
     cp = ap * bp
 
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
 
-    assert cp._dimension_tensor == dims_3
+    assert cp._dimension_tensor == phlower_dimension_tensor(desired_dim)
 
 
-def test__div_with_unit():
-    dims_1 = phlower_dimension_tensor({"L": 2, "T": -2})
-    dims_2 = phlower_dimension_tensor({"M": 1, "T": -2})
-    dims_3 = phlower_dimension_tensor({"L": 2, "M": -1, "T": 0})
+@pytest.mark.parametrize(
+    "dim_1, dim_2, desired_dim",
+    [({"L": 2, "T": 2}, {"M": 1, "T": 2}, {"L": 2, "M": -1, "T": 0})],
+)
+@given(
+    input_shape=st.lists(
+        st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+    )
+)
+def test__div_with_unit(
+    dim_1: dict, dim_2: dict, desired_dim: dict, input_shape: list[int]
+):
+    ap = phlower_tensor(
+        torch.tensor(np.random.rand(*input_shape)), dimension=dim_1
+    )
+    bp = phlower_tensor(
+        1.0 + torch.tensor(np.random.rand(*input_shape)), dimension=dim_2
+    )
 
-    a = torch.tensor(np.random.rand(3, 10))
-    b = torch.tensor(np.random.rand(3, 10))
-    c = a / b
-
-    ap = PhlowerTensor(a, dims_1)
-    bp = PhlowerTensor(b, dims_2)
+    c = ap.to_numpy() / bp.to_numpy()
     cp = ap / bp
 
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
 
-    assert cp._dimension_tensor == dims_3
-
-
-def test__tensor_div_scalar():
-    dims = phlower_dimension_tensor({"L": 2, "T": -2})
-
-    a = torch.tensor(np.random.rand(3, 10))
-    c = a / 3.0
-
-    ap = PhlowerTensor(a, dims)
-    cp = ap / 3.0
-
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
-
-    assert cp._dimension_tensor == dims
+    assert cp._dimension_tensor == phlower_dimension_tensor(desired_dim)
 
 
-def test__scalar_div_tensor():
-    dims = phlower_dimension_tensor({"L": 2, "T": -2})
-    desired_dims = phlower_dimension_tensor({"L": -2, "T": 2})
+@given(
+    random_phlower_tensors_with_same_dimension_and_shape(
+        shape=st.lists(
+            st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+        )
+    )
+)
+def test__tensor_div_scalar(tensors: tuple[PhlowerTensor, PhlowerTensor]):
+    a, _ = tensors
 
-    a = torch.tensor(np.random.rand(3, 10))
-    c = 3.0 / a
+    c = a.to_numpy() / 3.0
+    cp: PhlowerTensor = a / 3.0
 
-    ap = PhlowerTensor(a, dims)
-    cp: PhlowerTensor = 3.0 / ap
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
 
-    np.testing.assert_array_almost_equal(cp.to_tensor().numpy(), c.numpy())
+    assert cp.dimension == a.dimension
 
-    assert cp.dimension == desired_dims
+
+@pytest.mark.parametrize(
+    "dim_1, desired_dim",
+    [({"L": 2, "T": 2}, {"L": -2, "T": -2}), ({"Theta": 5}, {"Theta": -5})],
+)
+@given(
+    input_shape=st.lists(
+        st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+    )
+)
+def test__scalar_div_tensor(
+    dim_1: dict, desired_dim: dict, input_shape: list[int]
+):
+    ap = phlower_tensor(
+        (1.0 + torch.tensor(np.random.rand(*input_shape))), dimension=dim_1
+    )
+
+    c = 3.0 / ap.to_numpy()
+    cp = 3.0 / ap
+    np.testing.assert_array_almost_equal(cp.to_numpy(), c)
+
+    assert cp.dimension == phlower_dimension_tensor(desired_dim)
 
 
 def test__tanh():
@@ -396,3 +477,20 @@ def test__clone():
     for k, v in original_dimension_dict.items():
         assert cloned.dimension.to_dict()[k] == v
         assert pht.dimension.to_dict()[k] == 2 * v
+
+
+@pytest.mark.parametrize(
+    "inputs, nan",
+    [
+        ([0.1, 0.2, float("nan")], 0.0),
+        ([float("nan"), 0.2, float("nan")], 10.0),
+    ],
+)
+def test__nan_to_num(inputs: list[float], nan: float):
+    tensor = phlower_tensor(inputs)
+    new_tensor: PhlowerTensor = torch.nan_to_num(tensor, nan=nan)
+    tensor[torch.isnan(tensor)] = nan
+
+    assert not torch.any(torch.isnan(new_tensor.to_tensor()))
+
+    np.testing.assert_array_almost_equal(new_tensor.numpy(), tensor.numpy())

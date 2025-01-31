@@ -1,5 +1,7 @@
 import pytest
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
 from phlower import PhlowerDimensionTensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
@@ -65,3 +67,48 @@ def test__cat_raise_dimension_incompatible(unit1: list[int], unit2: list[int]):
 
     with pytest.raises(DimensionIncompatibleError):
         torch.cat([unit1, unit2], dim=0)
+
+
+@given(st.floats(width=32))
+def test__add_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+
+    calculated = dimension + x
+    assert calculated == dimension
+
+    calculated = x + dimension
+    assert calculated == dimension
+
+
+@given(st.floats(width=32))
+def test__sub_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+
+    calculated = dimension - x
+    assert calculated == dimension
+
+    calculated = x - dimension
+    assert calculated == dimension
+
+
+@given(st.floats(width=32))
+def test__mul_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+
+    calculated = dimension * x
+    assert calculated == dimension
+
+    calculated = x * dimension
+    assert calculated == dimension
+
+
+@given(st.floats(width=32))
+def test__div_with_float_and_non_dimensions(x: float):
+    dimension = PhlowerDimensionTensor()
+    eps = 1e-5
+
+    calculated = dimension / (x + eps)
+    assert calculated == dimension
+
+    calculated = x / dimension
+    assert calculated == dimension

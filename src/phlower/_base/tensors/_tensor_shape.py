@@ -37,6 +37,17 @@ class PhlowerShapePattern:
         self._is_voxel = is_voxel
 
     def get_pattern_to_size(self, drop_last: bool = False) -> dict[str, int]:
+        """Return mapping of which key is pattern symbol and
+          value is its dimension value.
+
+        Args:
+            drop_last (bool, optional): If True, drop information
+              on last pattern.
+              Defaults to False.
+
+        Returns:
+            dict[str, int]: _description_
+        """
         chars = self.get_pattern().split(" ")
         if drop_last:
             chars.pop()
@@ -44,6 +55,11 @@ class PhlowerShapePattern:
         return {c: self._shape[i] for i, c in enumerate(chars)}
 
     def get_n_vertices(self) -> int:
+        """Get the number of nodes
+
+        Returns:
+            int: the number of nodes
+        """
         start = 1 if self._is_time_series else 0
 
         if self._is_voxel:
@@ -51,8 +67,18 @@ class PhlowerShapePattern:
         return self._shape[start]
 
     def get_space_pattern(self, omit_space: bool = False) -> str:
+        """Get space pattern.
+
+        Args:
+            omit_space (bool, optional): If True, omit space between symbols.
+              Defaults to False.
+
+        Returns:
+            str: pattern which corresponds to space information.
+        """
+
         if not self._is_voxel:
-            return "n"
+            return self.n_nodes_pattern_symbol
 
         if omit_space:
             return "xyz"
@@ -60,6 +86,11 @@ class PhlowerShapePattern:
         return "x y z"
 
     def get_pattern(self) -> str:
+        """Return pattern string of tensor shape
+
+        Returns:
+            str: pattern of tensor shape
+        """
         patterns = [
             self.time_series_pattern,
             self.get_space_pattern(),
@@ -69,9 +100,27 @@ class PhlowerShapePattern:
         new_pattern = " ".join([p for p in patterns if len(p) != 0])
         return new_pattern
 
-    def get_feature_pattern(self) -> str:
+    def get_feature_pattern(self, drop_last: bool = False) -> str:
+        """Return pattern related only with features.
+        Ex. time node d0 d1 ... f
+                      ^^^^^^^^^^^
+
+        Args:
+            drop_last (bool, optional): If True, drop last index of shape.
+              Defaults to False.
+
+        Returns:
+            str: Pattern related only with features.
+        """
         start = self.feature_start_dim
-        return " ".join([f"a{i}" for i in range(len(self._shape[start:]))])
+        if start >= len(self._shape):
+            return ""
+
+        # dimension ranks
+        _items = [f"d{i}" for i in range(len(self._shape[start:-1]))]
+        if not drop_last:
+            _items.append(self.feature_pattern_symbol)
+        return " ".join(_items)
 
     def __str__(self):
         return f"ShapePattern: {self.get_pattern()}"
@@ -105,6 +154,24 @@ class PhlowerShapePattern:
         return "t" if self._is_time_series else ""
 
     @property
+    def feature_pattern_symbol(self) -> str:
+        return "f"
+
+    @property
+    def n_nodes_pattern_symbol(self) -> str:
+        return "n"
+
+    @property
+    def nodes_dim(self) -> int:
+        """
+        Return the location index of nodes in shape list
+        """
+        if self._is_voxel:
+            raise ValueError("n_nodes dimension does not exist.")
+
+        return 1 if self._is_time_series else 0
+
+    @property
     def feature_start_dim(self) -> int:
         offset_time = 1 if self._is_time_series else 0
         offset_space = 3 if self._is_voxel else 1
@@ -127,6 +194,8 @@ def _check_shape_and_pattern(shape: torch.Size, patterns: list[str]) -> bool:
 
 
 def _check_is_time_series(patterns: list[str]) -> bool:
+    if not patterns:
+        return False
     return _match_to_one_word(patterns[0], "t")
 
 

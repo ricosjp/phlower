@@ -1,0 +1,39 @@
+model:
+  inputs: []
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+
+    modules:
+      # 1st invalid
+      - nn_type: MLP
+        name: IN_GEO
+        input_keys:
+          - geo
+        output_key: ggeo
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          nodes:
+            - -1
+            - 10
+            - 20
+          activations: ["tanh", "identity"]
+          bias: true
+
+      # ERROR
+      - nn_type: MLP_ERROR
+        name: IN_GEO_2
+        input_keys:
+          - geo
+        output_key: ggeo
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          nodes:
+            - -1
+            - 10
+            - 20
+          activations: ["tanh", "identity"]
+          bias: true
