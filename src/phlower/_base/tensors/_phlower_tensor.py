@@ -78,7 +78,6 @@ def phlower_tensor(
     dtype: torch.dtype | None = None,
     device: torch.device | str | None = None,
 ) -> PhlowerTensor:
-
     dimension_tensor = _resolve_dimension_arg(
         dimension, dtype=dtype, device=device
     )
