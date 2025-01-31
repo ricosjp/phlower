@@ -211,10 +211,66 @@ def test__add_with_unit_incompatible():
 def test__add_scalar_and_timeseries():
     a = phlower_tensor([1], is_time_series=False, is_voxel=False)
     b = phlower_tensor(
-        np.random.rand(10, 100, 3, 1), is_time_series=True, is_voxel=False
+        np.random.rand(10, 20, 3, 1), is_time_series=True, is_voxel=False
     )
+    assert not a.is_time_series
+    assert b.is_time_series
     assert (a + b).is_time_series
     assert (b + a).is_time_series
+
+
+def test__change_time_series():
+    a = phlower_tensor(
+        np.random.rand(20, 3, 1),
+        is_time_series=False,
+        is_voxel=False,
+        dimension={"T": 1, "L": -2},
+    )
+    b = phlower_tensor(torch.stack([a, a, a]), is_time_series=True)
+    assert b.is_time_series
+    assert a.dimension == b.dimension
+
+
+def test__slice_time_int():
+    a = phlower_tensor(
+        np.random.rand(20, 3, 1),
+        is_time_series=True,
+        is_voxel=False,
+        dimension={"T": 1, "L": -2},
+    )
+    index = 3
+    b = a.slice_time(index)
+    assert not b.is_time_series
+    assert b.dimension == a.dimension
+    np.testing.assert_almost_equal(b.numpy(), a.numpy()[index])
+
+
+def test__slice_time_slice():
+    a = phlower_tensor(
+        np.random.rand(20, 3, 1),
+        is_time_series=True,
+        is_voxel=False,
+        dimension={"T": 1, "L": -2},
+    )
+    slice_ = slice(2, 15, 3)
+    b = a.slice_time(slice_)
+    assert b.is_time_series
+    assert b.dimension == a.dimension
+    np.testing.assert_almost_equal(b.numpy(), a.numpy()[slice_])
+
+
+def test__slice_time_indices():
+    a = phlower_tensor(
+        np.random.rand(20, 3, 1),
+        is_time_series=True,
+        is_voxel=False,
+        dimension={"T": 1, "L": -2},
+    )
+    indices = [2, 5, 8]
+    b = a.slice_time(indices)
+    assert b.is_time_series
+    assert b.dimension == a.dimension
+    np.testing.assert_almost_equal(b.numpy(), a.numpy()[indices])
 
 
 @pytest.mark.parametrize(
