@@ -208,6 +208,15 @@ def test__add_with_unit_incompatible():
         _ = ap + bp
 
 
+def test__add_scalar_and_timeseries():
+    a = phlower_tensor([1], is_time_series=False, is_voxel=False)
+    b = phlower_tensor(
+        np.random.rand(10, 100, 3, 1), is_time_series=True, is_voxel=False
+    )
+    assert (a + b).is_time_series
+    assert (b + a).is_time_series
+
+
 @pytest.mark.parametrize(
     "dim_1, dim_2, desired_dim",
     [({"L": 2, "T": -2}, {"M": 1, "T": -2}, {"L": 2, "M": 1, "T": -4})],
