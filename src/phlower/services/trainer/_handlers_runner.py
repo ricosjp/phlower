@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from phlower.services.trainer._pass_items import AfterEpochRunnerOutput
+from phlower.services.trainer._pass_items import AfterEvaluationOutput
 from phlower.services.trainer.handlers import IHandlerCall, create_handler
 from phlower.settings import PhlowerTrainerSetting
 
@@ -25,7 +25,7 @@ class HandlersRunner(IHandlerCall):
     def name(cls) -> str:
         return "HandlersRunner"
 
-    def __call__(self, output: AfterEpochRunnerOutput):
+    def __call__(self, output: AfterEvaluationOutput):
         for func in self._handlers.values():
             result = func(output)
             if result.get("TERMINATE"):

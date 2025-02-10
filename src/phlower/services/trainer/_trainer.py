@@ -1,7 +1,5 @@
-import abc
 import pathlib
 import random
-from typing import Any
 
 import numpy as np
 import torch
@@ -21,8 +19,8 @@ from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._handlers_runner import HandlersRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.services.trainer._pass_items import (
-    AfterEpochInfo,
-    AfterEpochRunnerOutput,
+    AfterEpochTrainingInfo,
+    AfterEvaluationOutput,
 )
 from phlower.services.trainer._trainer_logger import LogRecord, LogRecordIO
 from phlower.settings import (
@@ -38,33 +36,25 @@ from phlower.utils.typing import LossFunctionType
 _logger = get_logger(__name__)
 
 
-class IUserAfterEpochFunction(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def run(info: AfterEpochInfo) -> Any:  # noqa: ANN401
-        ...
-
-
-class _AfterEpochRunner:
+class _EvaluationRunner:
     def __init__(
         self,
         trainer_setting: PhlowerTrainerSetting,
         loss_calculator: LossCalculator,
-        user_functions: dict[str, IUserAfterEpochFunction],
     ):
         self._trainer_setting = trainer_setting
         self._loss_calculator = loss_calculator
-        self._user_functions = user_functions
 
     def run(
         self,
-        info: AfterEpochInfo,
+        info: AfterEpochTrainingInfo,
         *,
         model: PhlowerGroupModule,
         train_loader: DataLoader,
         validation_loader: DataLoader,
         train_pbar: PhlowerProgressBar,
         validation_pbar: PhlowerProgressBar,
-    ) -> AfterEpochRunnerOutput:
+    ) -> AfterEvaluationOutput:
         train_eval_loss = self._evaluate_training(
             info, model=model, train_loader=train_loader, train_pbar=train_pbar
         )
@@ -76,20 +66,14 @@ class _AfterEpochRunner:
             validation_pbar=validation_pbar,
         )
 
-        user_outputs = {
-            name: func.run(info=info)
-            for name, func in self._user_functions.items()
-        }
-
-        return AfterEpochRunnerOutput(
+        return AfterEvaluationOutput(
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
-            user_outputs=user_outputs,
         )
 
     def _evaluate_training(
         self,
-        info: AfterEpochInfo,
+        info: AfterEpochTrainingInfo,
         model: PhlowerGroupModule,
         train_loader: DataLoader,
         train_pbar: PhlowerProgressBar,
@@ -107,7 +91,7 @@ class _AfterEpochRunner:
 
     def _evaluate_validation(
         self,
-        info: AfterEpochInfo,
+        info: AfterEpochTrainingInfo,
         model: PhlowerGroupModule,
         validation_loader: DataLoader | None = None,
         validation_pbar: PhlowerProgressBar | None = None,
@@ -171,7 +155,7 @@ class PhlowerTrainer:
         self._loss_calculator = LossCalculator.from_setting(
             self._trainer_setting, user_loss_functions=user_loss_functions
         )
-        self._after_epoch_runner = _AfterEpochRunner(
+        self._after_epoch_runner = _EvaluationRunner(
             trainer_setting=trainer_setting,
             loss_calculator=self._loss_calculator,
         )
@@ -286,7 +270,9 @@ class PhlowerTrainer:
                 train_losses.append(_last_loss)
 
             self._scheduled_optimizer.step_scheduler()
-            info = AfterEpochInfo(epoch=epoch, train_losses=train_losses)
+            info = AfterEpochTrainingInfo(
+                epoch=epoch, train_losses=train_losses
+            )
 
             output = self._after_epoch_runner.run(
                 info=info,
@@ -322,7 +308,7 @@ class PhlowerTrainer:
 
     def _show_record(
         self,
-        info: AfterEpochInfo,
+        info: AfterEpochTrainingInfo,
         train_eval_loss: float,
         validation_eval_loss: float,
         elapsed_time: float,

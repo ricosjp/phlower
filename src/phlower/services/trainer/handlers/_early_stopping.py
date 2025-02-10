@@ -8,7 +8,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from typing import cast
 
-from phlower.services.trainer._pass_items import AfterEpochRunnerOutput
+from phlower.services.trainer._pass_items import AfterEvaluationOutput
 from phlower.services.trainer.handlers import IHandlerCall
 from phlower.utils import get_logger
 
@@ -66,7 +66,7 @@ class EarlyStopping(IHandlerCall):
         self.best_score: float | None = None
         self.logger = get_logger(__name__ + "." + self.__class__.__name__)
 
-    def __call__(self, output: AfterEpochRunnerOutput) -> dict[str, bool]:
+    def __call__(self, output: AfterEvaluationOutput) -> dict[str, bool]:
         score = output.validation_eval_loss
         if score is None:
             self.logger.info(
