@@ -1,7 +1,7 @@
 import abc
 import pathlib
 import random
-from typing import Any, NamedTuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -18,7 +18,12 @@ from phlower.io import (
 )
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
+from phlower.services.trainer._handlers_runner import HandlersRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
+from phlower.services.trainer._pass_items import (
+    AfterEpochInfo,
+    AfterEpochRunnerOutput,
+)
 from phlower.services.trainer._trainer_logger import LogRecord, LogRecordIO
 from phlower.settings import (
     PhlowerModelSetting,
@@ -26,24 +31,11 @@ from phlower.settings import (
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
-from phlower.utils.enums import ModelSelectionType
+from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import LossFunctionType
 
 _logger = get_logger(__name__)
-
-
-class AfterEpochInfo(NamedTuple):
-    """output data after training for one epoch is finished"""
-
-    epoch: int
-    train_losses: list[float]
-
-
-class AfterEpochRunnerOutput(NamedTuple):
-    train_eval_loss: float
-    validation_eval_loss: float
-    user_defined: dict[str, Any] | None
 
 
 class IUserAfterEpochFunction(metaclass=abc.ABCMeta):
@@ -184,6 +176,9 @@ class PhlowerTrainer:
             loss_calculator=self._loss_calculator,
         )
 
+        # initialize handler
+        self._handlers = HandlersRunner.from_setting(trainer_setting)
+
         # Internal state
         self._start_epoch = 0
         self._offset_time = 0.0
@@ -316,6 +311,7 @@ class PhlowerTrainer:
                 validation_loss=output.validation_eval_loss,
                 elapsed_time=elapsed_time,
             )
+
         return output.train_eval_loss
 
     def _show_record(
@@ -374,6 +370,7 @@ class PhlowerTrainer:
             "model_state_dict": self._model.state_dict(),
             "scheduled_optimizer": self._scheduled_optimizer.state_dict(),
             "elapsed_time": elapsed_time,
+            "handler_runners": self._handlers.state_dict(),
         }
         prefix = PhlowerCheckpointFile.get_fixed_prefix()
         file_basename = f"{prefix}{epoch}"
@@ -418,10 +415,13 @@ class PhlowerTrainer:
         # Restore model and optimizer and tqdm
         checkpoint = snapshot_file.load(device=device, decrypt_key=decrypt_key)
 
-        self._model.load_state_dict(checkpoint["model_state_dict"])
-        self._scheduled_optimizer.load_state_dict(
-            checkpoint["scheduled_optimizer"]
+        self._model.load_state_dict(
+            checkpoint[TrainerSavedKeyType.model_state_dict.value]
         )
+        self._scheduled_optimizer.load_state_dict(
+            checkpoint[TrainerSavedKeyType.scheduled_optimizer.value]
+        )
+        self._handlers.load_state_dict(checkpoint["handler_runners"])
 
         self._start_epoch = int(checkpoint["epoch"]) + 1
         self._offset_time = checkpoint["elapsed_time"]

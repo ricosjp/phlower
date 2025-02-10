@@ -24,8 +24,9 @@ class ModelSelectionType(Enum):
     SPECIFIED = "specified"
 
 
-class TrainerSavedKeyType(Enum):
-    MODEL_STATE_DICT = "model_state_dict"
+class TrainerSavedKeyType(str, Enum):
+    model_state_dict = "model_state_dict"
+    scheduled_optimizer = "scheduled_optimizer"
 
 
 class LossType(Enum):

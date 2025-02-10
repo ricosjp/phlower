@@ -101,6 +101,24 @@ class SchedulerSetting(pydantic.BaseModel):
         return name
 
 
+class HandlerSetting(pydantic.BaseModel):
+    handler: str
+    """
+    handler Class name defined in phlower.services.trainer.handlers.
+    """
+
+    parameters: dict[str, int | float | bool | str] = Field(
+        default_factory=dict
+    )
+    """
+    Parameters to pass when handler class is initialized.
+    Allowed parameters depend on the handler you choose.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+
 class PhlowerTrainerSetting(pydantic.BaseModel):
     loss_setting: LossSetting
     """
@@ -117,6 +135,11 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     scheduler_setting: list[SchedulerSetting] = Field(default_factory=list)
     """
     setting for schedulers
+    """
+
+    handler_setting: list[HandlerSetting] = Field(default_factory=list)
+    """
+    setting for handlers
     """
 
     n_epoch: int = 10
