@@ -143,7 +143,9 @@ class PhlowerTrainer:
     @classmethod
     def from_setting(cls, setting: PhlowerSetting) -> Self:
         if (setting.model is None) or (setting.training is None):
-            raise ValueError("setting content about scaling is not found.")
+            raise ValueError(
+                "setting content for training or model is not found."
+            )
 
         setting.model.resolve()
         return cls(setting.model, setting.training)
@@ -160,7 +162,7 @@ class PhlowerTrainer:
         self._model_setting = model_setting
         self._trainer_setting = trainer_setting
 
-        self._progress_bar = PhlowerProgressBar(
+        self._epoch_progress_bar = PhlowerProgressBar(
             total=self._trainer_setting.n_epoch
         )
 
@@ -182,6 +184,7 @@ class PhlowerTrainer:
             loss_calculator=self._loss_calculator,
         )
 
+        # Internal state
         self._start_epoch = 0
         self._offset_time = 0.0
 
@@ -189,6 +192,10 @@ class PhlowerTrainer:
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
+
+    def _initialize_model(self) -> PhlowerGroupModule:
+        _model = PhlowerGroupModule.from_setting(self._model_setting.network)
+        _model.to(self._trainer_setting.device)
 
     def _prepare_dataloader(
         self,
@@ -238,8 +245,6 @@ class PhlowerTrainer:
         loss = self._loss_calculator.aggregate(losses)
         loss.backward()
         return loss
-
-    def _after_training_batch(self): ...
 
     def train(
         self,
@@ -332,11 +337,11 @@ class PhlowerTrainer:
 
         # Dumo to file
         if validation_eval_loss is not None:
-            self._progress_bar.update(
+            self._epoch_progress_bar.update(
                 trick=1, desc=f"val loss {validation_eval_loss:.3f}"
             )
         else:
-            self._progress_bar.update(
+            self._epoch_progress_bar.update(
                 trick=1, desc=f"train loss {train_eval_loss:.3f}"
             )
         record_io.write(log_record)
@@ -390,8 +395,32 @@ class PhlowerTrainer:
         snapshot_file = select_snapshot_file(
             restart_directory, selection_mode=ModelSelectionType.LATEST.value
         )
-        checkpoint = self.load_state(
+        self._load_state(
             snapshot_file=snapshot_file, device=device, decrypt_key=decrypt_key
+        )
+
+    def load_pretrained(
+        self,
+        checkpoint_file: pathlib.Path,
+        device: str | None = None,
+        decrypt_key: bytes | None = None,
+    ):
+        self._model.load_checkpoint_file(
+            checkpoint_file, device=device, decrypt_key=decrypt_key
+        )
+
+    def _load_state(
+        self,
+        snapshot_file: PhlowerCheckpointFile,
+        device: str | None = None,
+        decrypt_key: bytes | None = None,
+    ) -> None:
+        # Restore model and optimizer and tqdm
+        checkpoint = snapshot_file.load(device=device, decrypt_key=decrypt_key)
+
+        self._model.load_state_dict(checkpoint["model_state_dict"])
+        self._scheduled_optimizer.load_state_dict(
+            checkpoint["scheduled_optimizer"]
         )
 
         self._start_epoch = int(checkpoint["epoch"]) + 1
@@ -403,25 +432,10 @@ class PhlowerTrainer:
                 "Model to restart has already finished"
             )
 
-    def load_state(
-        self,
-        snapshot_file: PhlowerCheckpointFile,
-        device: str | None = None,
-        decrypt_key: bytes | None = None,
-    ) -> dict:
-        # Restore model and optimizer and tqdm
-        checkpoint = snapshot_file.load(device=device, decrypt_key=decrypt_key)
-
-        self._model.load_state_dict(checkpoint["model_state_dict"])
-        self._scheduled_optimizer.load_state_dict(
-            checkpoint["scheduled_optimizer"]
-        )
-
         # self.loss = checkpoint['loss']
         _logger.info(
             f"{snapshot_file.file_path} is successfully " "loaded for restart."
         )
-        return checkpoint
 
 
 def _evaluation(
