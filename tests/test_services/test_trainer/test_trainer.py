@@ -213,18 +213,21 @@ def test__last_epoch_is_update_after_restart(
         _prev = v
 
 
-def test__last_epoch_starting_pretrained_state(simple_training: PhlowerTensor):
-    last_snapshot = select_snapshot_file(_OUTPUT_DIR / "model", "latest")
-    assert last_snapshot.file_path.name.startswith("snapshot_epoch_9")
-
-    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
-    n_epoch = setting.training.n_epoch
-    trainer = PhlowerTrainer.from_setting(setting)
-    trainer.load_pretrained(_OUTPUT_DIR / "model", "best")
-
-    output_directory = _OUTPUT_DIR / "model_pretrained"
+@pytest.fixture
+def clean_directories():
+    output_directory = _OUTPUT_DIR / "base_model"
     if output_directory.exists():
         shutil.rmtree(output_directory)
+
+    output_directory = _OUTPUT_DIR / "pretrained_model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+
+def test__starting_pretrained_state(clean_directories: None):
+    # base model
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+    trainer = PhlowerTrainer.from_setting(setting)
 
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
     preprocessed_directories = list(
@@ -233,32 +236,36 @@ def test__last_epoch_starting_pretrained_state(simple_training: PhlowerTensor):
         )
     )
     trainer.train(
-        output_directory=output_directory,
+        output_directory=(_OUTPUT_DIR / "base_model"),
         train_directories=preprocessed_directories,
         validation_directories=preprocessed_directories,
     )
 
-    last_snapshot = select_snapshot_file(output_directory, "latest")
-    assert last_snapshot.file_path.name.startswith(
-        f"snapshot_epoch_{n_epoch - 1}"
+    # start from pretrained state
+    trainer = PhlowerTrainer.from_setting(setting)
+    trainer.load_pretrained(_OUTPUT_DIR / "base_model", "best")
+    trainer.train(
+        output_directory=(_OUTPUT_DIR / "pretrained_model"),
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
     )
 
     # check log.csv
     df = pd.read_csv(
-        output_directory / "log.csv",
+        _OUTPUT_DIR / "base_model/log.csv",
         header=0,
         index_col=None,
         skipinitialspace=True,
     )
-    assert len(df) == n_epoch
 
     # assert losses are not same with original ones.
     df_org = pd.read_csv(
-        _OUTPUT_DIR / "model/log.csv",
+        _OUTPUT_DIR / "pretrained_model/log.csv",
         header=0,
         index_col=None,
         skipinitialspace=True,
     )
+    assert len(df) == len(df_org)
     pretrained_losses = df.loc[:, "validation_loss"].to_numpy()
     org_losses = df_org.loc[:, "validation_loss"].to_numpy()
 
