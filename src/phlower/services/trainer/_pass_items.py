@@ -1,4 +1,4 @@
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 
 class AfterEpochTrainingInfo(NamedTuple):
@@ -12,5 +12,4 @@ class AfterEvaluationOutput(NamedTuple):
     """output data after evaluation for one epoch"""
 
     train_eval_loss: float
-    validation_eval_loss: float
-    user_defined: dict[str, Any] | None
+    validation_eval_loss: float | None

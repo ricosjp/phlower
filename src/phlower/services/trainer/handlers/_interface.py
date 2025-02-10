@@ -7,8 +7,8 @@ from phlower.services.trainer._pass_items import AfterEvaluationOutput
 
 
 class IHandlerCall(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
     @classmethod
+    @abc.abstractmethod
     def name(cls) -> str: ...
 
     @abc.abstractmethod

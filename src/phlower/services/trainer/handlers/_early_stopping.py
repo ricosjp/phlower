@@ -5,11 +5,11 @@ See. https://pytorch.org/ignite/_modules/ignite/handlers/early_stopping.html#Ear
 """
 
 from collections import OrderedDict
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from typing import cast
 
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
-from phlower.services.trainer.handlers import IHandlerCall
+from phlower.services.trainer.handlers._interface import IHandlerCall
 from phlower.utils import get_logger
 
 __all__ = ["EarlyStopping"]
@@ -43,13 +43,9 @@ class EarlyStopping(IHandlerCall):
     def __init__(
         self,
         patience: int,
-        score_function: Callable,
         min_delta: float = 0.0,
         cumulative_delta: bool = False,
     ):
-        if not callable(score_function):
-            raise TypeError("Argument score_function should be a function.")
-
         if patience < 1:
             raise ValueError("Argument patience should be positive integer.")
 
@@ -58,7 +54,6 @@ class EarlyStopping(IHandlerCall):
                 "Argument min_delta should not be a negative number."
             )
 
-        self.score_function = score_function
         self.patience = patience
         self.min_delta = min_delta
         self.cumulative_delta = cumulative_delta
@@ -67,13 +62,14 @@ class EarlyStopping(IHandlerCall):
         self.logger = get_logger(__name__ + "." + self.__class__.__name__)
 
     def __call__(self, output: AfterEvaluationOutput) -> dict[str, bool]:
-        score = output.validation_eval_loss
-        if score is None:
+        if output.validation_eval_loss is None:
             self.logger.info(
                 "Evaluation for validation dataset is missing. "
                 "Evaluation for training dataset is used."
             )
-            score = output.train_eval_loss
+            score = -1.0 * output.train_eval_loss
+        else:
+            score = -1.0 * output.validation_eval_loss
 
         if self.best_score is None:
             self.best_score = score
