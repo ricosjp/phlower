@@ -2,7 +2,7 @@ from ._early_stopping import EarlyStopping
 from ._interface import IHandlerCall
 
 _REGISTERED: dict[str, type[IHandlerCall]] = {
-    EarlyStopping.name(): IHandlerCall
+    EarlyStopping.name(): EarlyStopping
 }
 
 

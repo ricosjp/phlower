@@ -11,7 +11,7 @@ class HandlersRunner(IHandlerCall):
     @classmethod
     def from_setting(cls, setting: PhlowerTrainerSetting) -> HandlersRunner:
         return HandlersRunner(
-            handlers={v.handler: v.parameters for v in setting.handler_setting}
+            handlers={v.handler: v.parameters for v in setting.handler_settings}
         )
 
     def __init__(self, handlers: dict[str, dict]):
@@ -20,6 +20,10 @@ class HandlersRunner(IHandlerCall):
             name: create_handler(name, params)
             for name, params in handlers.items()
         }
+
+    @property
+    def n_handlers(self) -> int:
+        return len(self._handlers)
 
     @classmethod
     def name(cls) -> str:
@@ -43,5 +47,11 @@ class HandlersRunner(IHandlerCall):
         return {"handlers": items}
 
     def load_state_dict(self, state_dict: Mapping) -> None:
-        for k, v in state_dict["handlers"]:
-            self._handlers[k].load_state_dict(v[k])
+        assert isinstance(state_dict["handlers"], dict)
+        for k, v in state_dict["handlers"].items():
+            if k not in self._handlers:
+                raise ValueError(
+                    f"Handler named {k} is not initialized. "
+                    "Please check handler setting in trainer."
+                )
+            self._handlers[k].load_state_dict(v)

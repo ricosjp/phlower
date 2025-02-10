@@ -168,6 +168,9 @@ class PhlowerTrainer:
         self._start_epoch = 0
         self._offset_time = 0.0
 
+    def get_n_handlers(self) -> int:
+        return self._handlers.n_handlers
+
     def _fix_seed(self, seed: int):
         random.seed(seed)
         np.random.seed(seed)
@@ -234,7 +237,7 @@ class PhlowerTrainer:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> float:
+    ) -> PhlowerTensor:
         record_io = LogRecordIO(file_path=output_directory / "log.csv")
         validation_directories = validation_directories or []
 

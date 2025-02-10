@@ -137,7 +137,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for schedulers
     """
 
-    handler_setting: list[HandlerSetting] = Field(default_factory=list)
+    handler_settings: list[HandlerSetting] = Field(default_factory=list)
     """
     setting for handlers
     """
