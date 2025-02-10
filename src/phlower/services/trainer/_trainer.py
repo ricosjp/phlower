@@ -312,6 +312,12 @@ class PhlowerTrainer:
                 elapsed_time=elapsed_time,
             )
 
+            # Call handlers
+            self._handlers(output)
+            if self._handlers.terminate_training:
+                _logger.info("Training process is killed by handler.")
+                break
+
         return output.train_eval_loss
 
     def _show_record(
