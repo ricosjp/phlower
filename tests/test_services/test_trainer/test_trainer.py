@@ -211,3 +211,56 @@ def test__last_epoch_is_update_after_restart(
     for v in df.loc[:, "elapsed_time"]:
         assert v > _prev
         _prev = v
+
+
+def test__last_epoch_starting_pretrained_state(simple_training: PhlowerTensor):
+    last_snapshot = select_snapshot_file(_OUTPUT_DIR / "model", "latest")
+    assert last_snapshot.file_path.name.startswith("snapshot_epoch_9")
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+    n_epoch = setting.training.n_epoch
+    trainer = PhlowerTrainer.from_setting(setting)
+    trainer.load_pretrained(_OUTPUT_DIR / "model", "best")
+
+    output_directory = _OUTPUT_DIR / "model_pretrained"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+    trainer.train(
+        output_directory=output_directory,
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+    )
+
+    last_snapshot = select_snapshot_file(output_directory, "latest")
+    assert last_snapshot.file_path.name.startswith(
+        f"snapshot_epoch_{n_epoch - 1}"
+    )
+
+    # check log.csv
+    df = pd.read_csv(
+        output_directory / "log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+    assert len(df) == n_epoch
+
+    # assert losses are not same with original ones.
+    df_org = pd.read_csv(
+        _OUTPUT_DIR / "model/log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+    pretrained_losses = df.loc[:, "validation_loss"].to_numpy()
+    org_losses = df_org.loc[:, "validation_loss"].to_numpy()
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_array_almost_equal(pretrained_losses, org_losses)

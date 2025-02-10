@@ -1,5 +1,6 @@
 import pathlib
 import random
+from typing import Literal
 
 import numpy as np
 import torch
@@ -249,6 +250,8 @@ class PhlowerTrainer:
             decrypt_key=decrypt_key,
         )
 
+        train_last_loss: PhlowerTensor | None = None
+
         tqdm.write(record_io.get_header())
         _timer = StopWatch(offset=self._offset_time)
         _timer.start()
@@ -260,9 +263,9 @@ class PhlowerTrainer:
             train_losses: list[float] = []
 
             for tr_batch in train_loader:
-                _train_loss = self._training_batch_step(tr_batch)
+                train_last_loss = self._training_batch_step(tr_batch)
                 self._scheduled_optimizer.step_optimizer()
-                _last_loss = _train_loss.detach().to_tensor().float().item()
+                _last_loss = train_last_loss.detach().to_tensor().float().item()
                 _train_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
                     desc=f"training loss: {_last_loss:.3f}",
@@ -289,7 +292,7 @@ class PhlowerTrainer:
                 train_eval_loss=output.train_eval_loss,
                 validation_eval_loss=output.validation_eval_loss,
                 elapsed_time=elapsed_time,
-                recore_io=record_io,
+                record_io=record_io,
             )
             self._save_checkpoint(
                 output_directory=output_directory,
@@ -304,7 +307,7 @@ class PhlowerTrainer:
                 _logger.info("Training process is killed by handler.")
                 break
 
-        return output.train_eval_loss
+        return train_last_loss
 
     def _show_record(
         self,
@@ -390,10 +393,17 @@ class PhlowerTrainer:
 
     def load_pretrained(
         self,
-        checkpoint_file: pathlib.Path,
+        model_directory: pathlib.Path,
+        selection_mode: Literal["best", "latest", "train_best", "specified"],
+        target_epoch: int | None = None,
         device: str | None = None,
         decrypt_key: bytes | None = None,
-    ):
+    ) -> None:
+        checkpoint_file = select_snapshot_file(
+            directory=model_directory,
+            selection_mode=selection_mode,
+            target_epoch=target_epoch,
+        )
         self._model.load_checkpoint_file(
             checkpoint_file, device=device, decrypt_key=decrypt_key
         )
