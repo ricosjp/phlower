@@ -28,6 +28,7 @@ from phlower.settings import (
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 from phlower.utils.enums import ModelSelectionType
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
+from phlower.utils.typing import LossFunctionType
 
 _logger = get_logger(__name__)
 
@@ -151,6 +152,7 @@ class PhlowerTrainer:
         self,
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
+        user_loss_functions: dict[str, LossFunctionType] | None = None,
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
@@ -171,8 +173,9 @@ class PhlowerTrainer:
             self._trainer_setting, model=self._model
         )
 
+        # initialize loss calculator
         self._loss_calculator = LossCalculator.from_setting(
-            self._trainer_setting
+            self._trainer_setting, user_loss_functions=user_loss_functions
         )
         self._after_epoch_runner = _AfterEpochRunner(
             trainer_setting=trainer_setting,
