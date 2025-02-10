@@ -229,7 +229,9 @@ class PhlowerGroupModule(
                 last_result = results[-1].clone()
                 inputs = data.clone()
                 inputs.update(last_result, overwrite=True)
-            results.append(self._forward(inputs, field_data=field_data, **kwards))
+            results.append(
+                self._forward(inputs, field_data=field_data, **kwards)
+            )
 
         return reduce_stack(results)
 
