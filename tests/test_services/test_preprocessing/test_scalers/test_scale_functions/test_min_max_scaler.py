@@ -55,3 +55,21 @@ def test__retrieve_from_dumped_data(name: str, n_nodes: int, n_feature: int):
             continue
 
         assert v == new_state[k]
+
+
+@pytest.mark.parametrize(
+    "n_nodes, n_feature",
+    [
+        (100000, 5),
+        (100000, 3),
+    ],
+)
+def test__inverse_scaling(n_nodes: int, n_feature: int):
+    interim_value = np.random.randn(n_nodes, n_feature)
+    scaler = MinMaxScaler()
+    scaler.fit(interim_value)
+
+    _input = np.random.randn(n_nodes, n_feature)
+    _retrieved = scaler.inverse_transform(scaler.transform(_input))
+
+    np.testing.assert_array_almost_equal(_input, _retrieved)
