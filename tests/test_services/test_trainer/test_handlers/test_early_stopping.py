@@ -1,6 +1,6 @@
 import pytest
+from phlower.services.trainer._handler_functions import EarlyStopping
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
-from phlower.services.trainer.handlers import EarlyStopping
 
 
 @pytest.mark.parametrize(

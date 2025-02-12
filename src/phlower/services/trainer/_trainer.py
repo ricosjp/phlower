@@ -17,7 +17,7 @@ from phlower.io import (
 )
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
-from phlower.services.trainer._handlers_runner import HandlersRunner
+from phlower.services.trainer._handlers import HandlersRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.services.trainer._pass_items import (
     AfterEpochTrainingInfo,

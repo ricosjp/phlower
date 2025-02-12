@@ -2,24 +2,42 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from phlower.services.trainer._handler_functions import create_handler
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
-from phlower.services.trainer.handlers import IHandlerCall, create_handler
 from phlower.settings import PhlowerTrainerSetting
+from phlower.utils.typing import PhlowerHandlerType
 
 
-class HandlersRunner(IHandlerCall):
+class HandlersRunner(PhlowerHandlerType):
     @classmethod
-    def from_setting(cls, setting: PhlowerTrainerSetting) -> HandlersRunner:
+    def from_setting(
+        cls,
+        setting: PhlowerTrainerSetting,
+        user_defined_handlers: dict[str, PhlowerHandlerType] | None = None,
+    ) -> HandlersRunner:
         return HandlersRunner(
-            handlers={v.handler: v.parameters for v in setting.handler_settings}
+            handlers_params={
+                v.handler: v.parameters for v in setting.handler_settings
+            },
+            user_defined_handlers=user_defined_handlers,
         )
 
-    def __init__(self, handlers: dict[str, dict]):
+    def __init__(
+        self,
+        handlers_params: dict[str, dict],
+        user_defined_handlers: dict[str, PhlowerHandlerType] | None = None,
+    ):
         self._terminate = False
         self._handlers = {
             name: create_handler(name, params)
-            for name, params in handlers.items()
+            for name, params in handlers_params.items()
         }
+
+        user_defined_handlers = user_defined_handlers or {}
+        for name, u_handler in user_defined_handlers.items():
+            if name in self._handlers:
+                raise ValueError(f"{name} has already been registered.")
+            self._handlers[name] = u_handler
 
     @property
     def n_handlers(self) -> int:

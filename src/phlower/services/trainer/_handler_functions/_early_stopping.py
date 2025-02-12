@@ -9,13 +9,13 @@ from collections.abc import Mapping
 from typing import cast
 
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
-from phlower.services.trainer.handlers._interface import IHandlerCall
 from phlower.utils import get_logger
+from phlower.utils.typing import PhlowerHandlerType
 
 __all__ = ["EarlyStopping"]
 
 
-class EarlyStopping(IHandlerCall):
+class EarlyStopping(PhlowerHandlerType):
     """EarlyStopping handler can be used to stop the training
       if no improvement after a given number of events.
 
