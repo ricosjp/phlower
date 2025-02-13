@@ -11,6 +11,8 @@ from typing import cast
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
 from phlower.utils import get_logger
 from phlower.utils.typing import PhlowerHandlerType
+from phlower.utils.enums import PhlowerHandlerRegisteredKey
+
 
 __all__ = ["EarlyStopping"]
 
@@ -83,7 +85,7 @@ class EarlyStopping(PhlowerHandlerType):
             )
             if self.counter >= self.patience:
                 self.logger.info("EarlyStopping: Stop training")
-                return {"TERMINATE": True}
+                return {PhlowerHandlerRegisteredKey.TERMINATE: True}
 
         else:
             self.best_score = score

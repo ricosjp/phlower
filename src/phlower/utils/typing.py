@@ -48,5 +48,6 @@ class AfterEpochTrainingInfo(NamedTuple):
 class AfterEvaluationOutput(NamedTuple):
     """output data after evaluation for one epoch"""
 
+    epoch: int
     train_eval_loss: float
     validation_eval_loss: float | None

@@ -6,6 +6,8 @@ from phlower.services.trainer._handler_functions import create_handler
 from phlower.services.trainer._pass_items import AfterEvaluationOutput
 from phlower.settings import PhlowerTrainerSetting
 from phlower.utils.typing import PhlowerHandlerType
+from phlower.utils.enums import PhlowerHandlerRegisteredKey
+
 
 
 class HandlersRunner(PhlowerHandlerType):
@@ -50,7 +52,7 @@ class HandlersRunner(PhlowerHandlerType):
     def __call__(self, output: AfterEvaluationOutput):
         for func in self._handlers.values():
             result = func(output)
-            if result.get("TERMINATE"):
+            if result.get(PhlowerHandlerRegisteredKey.TERMINATE):
                 self._terminate = True
                 break
 

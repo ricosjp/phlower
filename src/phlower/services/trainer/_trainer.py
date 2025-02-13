@@ -32,7 +32,7 @@ from phlower.settings import (
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
-from phlower.utils.typing import LossFunctionType
+from phlower.utils.typing import LossFunctionType, PhlowerHandlerType
 
 _logger = get_logger(__name__)
 
@@ -68,6 +68,7 @@ class _EvaluationRunner:
         )
 
         return AfterEvaluationOutput(
+            epoch=info.epoch,
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
         )
@@ -118,20 +119,31 @@ class PhlowerTrainer:
     #     return cls.from_setting(setting)
 
     @classmethod
-    def from_setting(cls, setting: PhlowerSetting) -> Self:
+    def from_setting(
+        cls,
+        setting: PhlowerSetting,
+        user_loss_functions: dict[str, LossFunctionType] | None = None,
+        user_handlers: dict[str, PhlowerHandlerType] | None = None
+    ) -> Self:
         if (setting.model is None) or (setting.training is None):
             raise ValueError(
                 "setting content for training or model is not found."
             )
 
         setting.model.resolve()
-        return cls(setting.model, setting.training)
+        return cls(
+            setting.model, 
+            setting.training, 
+            user_loss_functions=user_loss_functions, 
+            user_handlers=user_handlers
+        )
 
     def __init__(
         self,
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
         user_loss_functions: dict[str, LossFunctionType] | None = None,
+        user_handlers: dict[str, PhlowerHandlerType] | None = None
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
@@ -162,7 +174,9 @@ class PhlowerTrainer:
         )
 
         # initialize handler
-        self._handlers = HandlersRunner.from_setting(trainer_setting)
+        self._handlers = HandlersRunner.from_setting(
+            trainer_setting, user_defined_handlers=user_handlers
+        )
 
         # Internal state
         self._start_epoch = 0
