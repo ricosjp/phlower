@@ -97,3 +97,7 @@ class PhlowerIterationSolverType(str, Enum):
     none = "none"
     simple = "simple"
     bb = "bb"  # barzilai_borwein
+
+
+class PhlowerHandlerRegisteredKey(str, Enum):
+    TERMINATE = "TERMINATE"
