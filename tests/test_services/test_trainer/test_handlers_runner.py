@@ -62,7 +62,12 @@ def test__has_termination_flag(file_name: str, threshold: float):
     assert not runner.terminate_training
 
     # Trigger dummy handler
-    dummy = AfterEvaluationOutput(train_eval_loss=1.2, validation_eval_loss=3.0)
+    dummy = AfterEvaluationOutput(
+        epoch=30,
+        train_eval_loss=1.2,
+        validation_eval_loss=3.0,
+        elapsed_time=100,
+    )
     runner(dummy)
 
     assert runner.terminate_training

@@ -26,7 +26,7 @@ class LoggingRunner:
         handlers: PhlowerHandlersRunner,
         encrypt_key: bytes | None = None,
     ):
-        if output % self._log_every_n_epoch != 0:
+        if output.epoch % self._log_every_n_epoch != 0:
             return
 
         self._show_loss_to_console(output)

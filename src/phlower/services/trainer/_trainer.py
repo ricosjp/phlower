@@ -304,6 +304,7 @@ class PhlowerTrainer:
                 validation_loader=validation_loader,
                 train_pbar=_train_batch_pbar,
                 validation_pbar=_val_batch_pbar,
+                timer=_timer
             )
 
             logging_runner.run(

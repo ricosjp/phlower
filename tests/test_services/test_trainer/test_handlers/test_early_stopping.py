@@ -1,6 +1,6 @@
 import pytest
 from phlower.services.trainer._handler_functions import EarlyStopping
-from phlower.services.trainer._pass_items import AfterEvaluationOutput
+from phlower.utils.typing import AfterEvaluationOutput
 
 
 @pytest.mark.parametrize(
@@ -18,8 +18,13 @@ def test__early_stop_with_validation_loss(
     losses: list[float],
 ):
     outputs = [
-        AfterEvaluationOutput(train_eval_loss=0.0, validation_eval_loss=v)
-        for v in losses
+        AfterEvaluationOutput(
+            epoch=i,
+            train_eval_loss=0.0,
+            validation_eval_loss=v,
+            elapsed_time=10.0,
+        )
+        for i, v in enumerate(losses)
     ]
 
     handler = EarlyStopping(
@@ -50,8 +55,13 @@ def test__early_stop_with_training_loss(
     losses: list[float],
 ):
     outputs = [
-        AfterEvaluationOutput(train_eval_loss=v, validation_eval_loss=None)
-        for v in losses
+        AfterEvaluationOutput(
+            epoch=i,
+            train_eval_loss=v,
+            validation_eval_loss=None,
+            elapsed_time=10,
+        )
+        for i, v in enumerate(losses)
     ]
 
     handler = EarlyStopping(
@@ -83,8 +93,13 @@ def test__calculate_best_score(
     desired: float,
 ):
     outputs = [
-        AfterEvaluationOutput(train_eval_loss=v, validation_eval_loss=None)
-        for v in losses
+        AfterEvaluationOutput(
+            epoch=i,
+            train_eval_loss=v,
+            validation_eval_loss=None,
+            elapsed_time=10,
+        )
+        for i, v in enumerate(losses)
     ]
 
     handler = EarlyStopping(
