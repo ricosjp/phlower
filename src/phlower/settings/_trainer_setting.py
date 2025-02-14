@@ -172,6 +172,11 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     If True, evaluation for training dataset is performed
     """
 
+    log_every_n_epoch: int = 1
+    """
+    dump log items every nth epoch
+    """
+
     non_blocking: bool = False
 
     # special keyward to forbid extra fields in pydantic

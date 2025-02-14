@@ -5,7 +5,6 @@ from typing import Literal
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 from typing_extensions import Self
 
 from phlower._base import PhlowerTensor
@@ -17,13 +16,9 @@ from phlower.io import (
 )
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
-from phlower.services.trainer._handlers import HandlersRunner
+from phlower.services.trainer._handlers import PhlowerHandlersRunner
+from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
-from phlower.services.trainer._pass_items import (
-    AfterEpochTrainingInfo,
-    AfterEvaluationOutput,
-)
-from phlower.services.trainer._trainer_logger import LogRecord, LogRecordIO
 from phlower.settings import (
     PhlowerModelSetting,
     PhlowerSetting,
@@ -32,7 +27,12 @@ from phlower.settings import (
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
-from phlower.utils.typing import LossFunctionType, PhlowerHandlerType
+from phlower.utils.typing import (
+    AfterEpochTrainingInfo,
+    AfterEvaluationOutput,
+    LossFunctionType,
+    PhlowerHandlerType,
+)
 
 _logger = get_logger(__name__)
 
@@ -55,6 +55,7 @@ class _EvaluationRunner:
         validation_loader: DataLoader,
         train_pbar: PhlowerProgressBar,
         validation_pbar: PhlowerProgressBar,
+        timer: StopWatch,
     ) -> AfterEvaluationOutput:
         train_eval_loss = self._evaluate_training(
             info, model=model, train_loader=train_loader, train_pbar=train_pbar
@@ -71,6 +72,7 @@ class _EvaluationRunner:
             epoch=info.epoch,
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
+            elapsed_time=timer.watch(),
         )
 
     def _evaluate_training(
@@ -123,7 +125,7 @@ class PhlowerTrainer:
         cls,
         setting: PhlowerSetting,
         user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None
+        user_handlers: dict[str, PhlowerHandlerType] | None = None,
     ) -> Self:
         if (setting.model is None) or (setting.training is None):
             raise ValueError(
@@ -132,10 +134,10 @@ class PhlowerTrainer:
 
         setting.model.resolve()
         return cls(
-            setting.model, 
-            setting.training, 
-            user_loss_functions=user_loss_functions, 
-            user_handlers=user_handlers
+            setting.model,
+            setting.training,
+            user_loss_functions=user_loss_functions,
+            user_handlers=user_handlers,
         )
 
     def __init__(
@@ -143,7 +145,7 @@ class PhlowerTrainer:
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
         user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None
+        user_handlers: dict[str, PhlowerHandlerType] | None = None,
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
@@ -168,13 +170,13 @@ class PhlowerTrainer:
         self._loss_calculator = LossCalculator.from_setting(
             self._trainer_setting, user_loss_functions=user_loss_functions
         )
-        self._after_epoch_runner = _EvaluationRunner(
+        self._evaluation_runner = _EvaluationRunner(
             trainer_setting=trainer_setting,
             loss_calculator=self._loss_calculator,
         )
 
         # initialize handler
-        self._handlers = HandlersRunner.from_setting(
+        self._handlers = PhlowerHandlersRunner.from_setting(
             trainer_setting, user_defined_handlers=user_handlers
         )
 
@@ -252,13 +254,15 @@ class PhlowerTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
-        record_io = LogRecordIO(file_path=output_directory / "log.csv")
         validation_directories = validation_directories or []
+        logging_runner = LoggingRunner(
+            output_directory,
+            log_every_n_epoch=self._trainer_setting.log_every_n_epoch,
+        )
 
         if self._start_epoch == 0:
             # start_epoch > 0 means that this training is restarted.
             self._save_setting(output_directory, encrypt_key=encrypt_key)
-            record_io.write_header()
 
         train_loader, validation_loader = self._prepare_dataloader(
             train_directories=train_directories,
@@ -269,7 +273,6 @@ class PhlowerTrainer:
 
         train_last_loss: PhlowerTensor | None = None
 
-        tqdm.write(record_io.get_header())
         _timer = StopWatch(offset=self._offset_time)
         _timer.start()
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
@@ -294,7 +297,7 @@ class PhlowerTrainer:
                 epoch=epoch, train_losses=train_losses
             )
 
-            output = self._after_epoch_runner.run(
+            output = self._evaluation_runner.run(
                 info=info,
                 model=self._model,
                 train_loader=train_loader,
@@ -303,19 +306,12 @@ class PhlowerTrainer:
                 validation_pbar=_val_batch_pbar,
             )
 
-            elapsed_time = _timer.watch()
-            self._show_record(
-                info=info,
-                train_eval_loss=output.train_eval_loss,
-                validation_eval_loss=output.validation_eval_loss,
-                elapsed_time=elapsed_time,
-                record_io=record_io,
-            )
-            self._save_checkpoint(
-                output_directory=output_directory,
-                epoch=epoch,
-                validation_loss=output.validation_eval_loss,
-                elapsed_time=elapsed_time,
+            logging_runner.run(
+                output=output,
+                model=self._model,
+                scheduled_optimizer=self._scheduled_optimizer,
+                handlers=self._handlers,
+                encrypt_key=encrypt_key,
             )
 
             # Call handlers
@@ -324,35 +320,17 @@ class PhlowerTrainer:
                 _logger.info("Training process is killed by handler.")
                 break
 
+            # update epoch
+            if output.validation_eval_loss is not None:
+                self._epoch_progress_bar.update(
+                    trick=1, desc=f"val loss {output.validation_eval_loss:.3f}"
+                )
+            else:
+                self._epoch_progress_bar.update(
+                    trick=1, desc=f"train loss {output.train_eval_loss:.3f}"
+                )
+
         return train_last_loss
-
-    def _show_record(
-        self,
-        info: AfterEpochTrainingInfo,
-        train_eval_loss: float,
-        validation_eval_loss: float,
-        elapsed_time: float,
-        record_io: LogRecordIO,
-    ) -> None:
-        # Dump to console
-        log_record = LogRecord(
-            epoch=info.epoch,
-            train_loss=train_eval_loss,
-            validation_loss=validation_eval_loss,
-            elapsed_time=elapsed_time,
-        )
-        tqdm.write(record_io.to_str(log_record))
-
-        # Dumo to file
-        if validation_eval_loss is not None:
-            self._epoch_progress_bar.update(
-                trick=1, desc=f"val loss {validation_eval_loss:.3f}"
-            )
-        else:
-            self._epoch_progress_bar.update(
-                trick=1, desc=f"train loss {train_eval_loss:.3f}"
-            )
-        record_io.write(log_record)
 
     def _save_setting(
         self, output_directory: pathlib.Path, encrypt_key: bytes | None = None
@@ -367,32 +345,6 @@ class PhlowerTrainer:
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
-
-    def _save_checkpoint(
-        self,
-        output_directory: pathlib.Path,
-        epoch: int,
-        validation_loss: float,
-        elapsed_time: float,
-        encrypt_key: bytes | None = None,
-    ) -> None:
-        data = {
-            "epoch": epoch,
-            "validation_loss": validation_loss,
-            "model_state_dict": self._model.state_dict(),
-            "scheduled_optimizer": self._scheduled_optimizer.state_dict(),
-            "elapsed_time": elapsed_time,
-            "handler_runners": self._handlers.state_dict(),
-        }
-        prefix = PhlowerCheckpointFile.get_fixed_prefix()
-        file_basename = f"{prefix}{epoch}"
-        PhlowerCheckpointFile.save(
-            output_directory=output_directory,
-            file_basename=file_basename,
-            data=data,
-            encrypt_key=encrypt_key,
-        )
-        return
 
     def reinit_for_restart(
         self,

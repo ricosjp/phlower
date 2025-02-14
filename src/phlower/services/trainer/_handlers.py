@@ -3,21 +3,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from phlower.services.trainer._handler_functions import create_handler
-from phlower.services.trainer._pass_items import AfterEvaluationOutput
 from phlower.settings import PhlowerTrainerSetting
-from phlower.utils.typing import PhlowerHandlerType
 from phlower.utils.enums import PhlowerHandlerRegisteredKey
+from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 
-
-class HandlersRunner(PhlowerHandlerType):
+class PhlowerHandlersRunner(PhlowerHandlerType):
     @classmethod
     def from_setting(
         cls,
         setting: PhlowerTrainerSetting,
         user_defined_handlers: dict[str, PhlowerHandlerType] | None = None,
-    ) -> HandlersRunner:
-        return HandlersRunner(
+    ) -> PhlowerHandlersRunner:
+        return PhlowerHandlersRunner(
             handlers_params={
                 v.handler: v.parameters for v in setting.handler_settings
             },

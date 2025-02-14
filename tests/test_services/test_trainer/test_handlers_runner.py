@@ -1,7 +1,7 @@
 import pathlib
 
 import pytest
-from phlower.services.trainer._handlers import HandlersRunner
+from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.settings import PhlowerSetting
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
@@ -13,7 +13,7 @@ DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
 )
 def test__initialize_from_setting_file(file_name: str, desired: int):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    runner = HandlersRunner.from_setting(setting.training)
+    runner = PhlowerHandlersRunner.from_setting(setting.training)
 
     assert runner.n_handlers == desired
 
@@ -42,7 +42,7 @@ def test__initialize_from_setting_file_with_user_defined(
     file_name: str, desired: int
 ):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    runner = HandlersRunner.from_setting(
+    runner = PhlowerHandlersRunner.from_setting(
         setting.training, user_defined_handlers={"dummy": DummyCustomHanlder()}
     )
 
@@ -55,7 +55,7 @@ def test__initialize_from_setting_file_with_user_defined(
 )
 def test__has_termination_flag(file_name: str, threshold: float):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    runner = HandlersRunner.from_setting(
+    runner = PhlowerHandlersRunner.from_setting(
         setting.training,
         user_defined_handlers={"dummy": DummyCustomHanlder(threshold)},
     )
@@ -83,13 +83,13 @@ def test__dump_and_restore(file_name: str, has_user_defined: bool):
     else:
         user_defined_handlers = {}
 
-    runner = HandlersRunner.from_setting(
+    runner = PhlowerHandlersRunner.from_setting(
         setting.training, user_defined_handlers=user_defined_handlers
     )
 
     dumped = runner.state_dict()
 
-    new_runner = HandlersRunner.from_setting(
+    new_runner = PhlowerHandlersRunner.from_setting(
         setting.training, user_defined_handlers=user_defined_handlers
     )
     new_runner.load_state_dict(dumped)

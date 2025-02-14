@@ -50,4 +50,7 @@ class AfterEvaluationOutput(NamedTuple):
 
     epoch: int
     train_eval_loss: float
-    validation_eval_loss: float | None
+    elapsed_time: float
+    validation_eval_loss: float | None = None
+    train_loss_details: dict[str, float] | None = None
+    validation_loss_details: dict[str, float] | None = None
