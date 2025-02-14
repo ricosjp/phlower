@@ -39,7 +39,7 @@ class LossCalculator(ILossCalculator):
     def from_setting(
         cls,
         setting: PhlowerTrainerSetting,
-        user_loss_functions: dict[str, LossFunctionType] = None,
+        user_loss_functions: dict[str, LossFunctionType] | None = None,
     ) -> LossCalculator:
         loss_setting = setting.loss_setting
         return cls(

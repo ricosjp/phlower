@@ -302,14 +302,14 @@ class PhlowerGroupModule(
     ) -> None:
         content = checkpoint_file.load(device=device, decrypt_key=decrypt_key)
 
-        key_name = TrainerSavedKeyType.MODEL_STATE_DICT.value
+        key_name = TrainerSavedKeyType.model_state_dict.value
         if key_name not in content:
             raise KeyError(
                 f"Key named {key_name} is not found in "
                 f"{checkpoint_file.file_path}"
             )
         self.load_state_dict(
-            content[TrainerSavedKeyType.MODEL_STATE_DICT.value]
+            content[TrainerSavedKeyType.model_state_dict.value]
         )
 
     def get_core_module(self) -> IPhlowerCoreModule:

@@ -4,10 +4,27 @@ import pathlib
 
 from pipe import select, where
 
-from phlower.services.trainer.logging_items import ILoggingItem, create_logitems
+from phlower.services.trainer._loggings._log_items import (
+    ILoggingItem,
+    create_logitems,
+)
+from phlower.utils.typing import AfterEvaluationOutput
+
+__all__ = ["LogRecordIO"]
 
 
-class LogRecord:
+class _LogRecord:
+    @classmethod
+    def from_output(cls, output: AfterEvaluationOutput) -> _LogRecord:
+        return _LogRecord(
+            epoch=output.epoch,
+            train_loss=output.train_eval_loss,
+            validation_loss=output.validation_eval_loss,
+            elapsed_time=output.elapsed_time,
+            train_loss_details=output.train_loss_details,
+            validation_loss_details=output.validation_loss_details,
+        )
+
     def __init__(
         self,
         *,
@@ -73,7 +90,8 @@ class LogRecordIO:
         ]
         return "\n" + "".join(strings)
 
-    def to_str(self, log_record: LogRecord) -> str:
+    def to_str(self, output: AfterEvaluationOutput) -> str:
+        log_record = _LogRecord.from_output(output)
         strings = [
             log_record.epoch.format(padding_margin=self._display_margin),
             log_record.train_loss.format(
@@ -116,7 +134,8 @@ class LogRecordIO:
         with open(self._file_path, "w") as fw:
             fw.write(header_str + "\n")
 
-    def write(self, log_record: LogRecord) -> None:
+    def write(self, output: AfterEvaluationOutput) -> None:
+        log_record = _LogRecord.from_output(output)
         values = [
             log_record.epoch.format(),
             log_record.train_loss.format(formatter=".5e"),

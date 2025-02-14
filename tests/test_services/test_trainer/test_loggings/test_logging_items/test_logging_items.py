@@ -1,5 +1,5 @@
 import pytest
-from phlower.services.trainer.logging_items import (
+from phlower.services.trainer._loggings._log_items import (
     ILoggingItem,
     LoggingDictItem,
     LoggingFloatItem,
