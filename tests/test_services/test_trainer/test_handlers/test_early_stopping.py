@@ -3,6 +3,25 @@ from phlower.services.trainer._handler_functions import EarlyStopping
 from phlower.utils.typing import AfterEvaluationOutput
 
 
+def test__name():
+    assert EarlyStopping.name() == "EarlyStopping"
+
+
+@pytest.mark.parametrize(
+    "patience, min_delta, desired_msg",
+    [
+        (-10, 0.1, "Argument patience should be positive integer."),
+        (10, -0.1, "Argument min_delta should be positive number."),
+    ],
+)
+def test__cannot_initialize_invalid_args(
+    patience: int, min_delta: float, desired_msg: str
+):
+    with pytest.raises(ValueError) as ex:
+        _ = EarlyStopping(patience=patience, min_delta=min_delta)
+    assert desired_msg in str(ex.value)
+
+
 @pytest.mark.parametrize(
     "patience, min_delta, cumulative_delta, losses",
     [

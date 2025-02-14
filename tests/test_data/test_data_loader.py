@@ -119,6 +119,7 @@ def test__consider_batch_size(
     for item in dataloader:
         item: LumpedTensorData
         assert len(item.data_directories) == batch_size
+        assert item.n_data == batch_size
 
 
 @pytest.mark.parametrize(

@@ -1,11 +1,21 @@
 import pathlib
 
 import pytest
-from phlower.services.trainer._handlers import PhlowerHandlersRunner
+from phlower.services.trainer._handlers import (
+    PhlowerHandlersRunner,
+    create_handler,
+)
 from phlower.settings import PhlowerSetting
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
+
+
+@pytest.mark.parametrize("name", ["aaaaa", "not_exsited"])
+def test__create_handler_with_not_defined_name(name: str):
+    with pytest.raises(NotImplementedError) as ex:
+        _ = create_handler(name, {})
+    assert f"Handler {name} is not implemented." in str(ex.value)
 
 
 @pytest.mark.parametrize(

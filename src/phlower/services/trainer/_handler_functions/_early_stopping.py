@@ -50,9 +50,7 @@ class EarlyStopping(PhlowerHandlerType):
             raise ValueError("Argument patience should be positive integer.")
 
         if min_delta < 0.0:
-            raise ValueError(
-                "Argument min_delta should not be a negative number."
-            )
+            raise ValueError("Argument min_delta should be positive number.")
 
         self.patience = patience
         self.min_delta = min_delta

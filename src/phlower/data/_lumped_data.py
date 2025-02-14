@@ -43,7 +43,7 @@ class LumpedTensorData:
 
     @property
     def n_data(self) -> int:
-        if self.x_batch_info is None:
+        if self.data_directories is None:
             return 1
 
-        return len(self.x_batch_info)
+        return len(self.data_directories)
