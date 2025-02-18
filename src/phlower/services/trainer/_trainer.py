@@ -140,6 +140,9 @@ class PhlowerTrainer:
             user_handlers=user_handlers,
         )
 
+    def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
+        return self._trainer_setting
+
     def __init__(
         self,
         model_setting: PhlowerModelSetting,

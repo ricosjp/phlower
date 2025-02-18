@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from enum import Enum
+from typing import Annotated
 
 import pydantic
 import pydantic.dataclasses as dc
-from pydantic import Field
+from pydantic import Discriminator, Field, Tag
 
+from phlower.settings._handler_settings import (
+    EarlyStoppingSetting,
+)
 from phlower.utils import OptimizerSelector, SchedulerSelector
 
 
@@ -58,6 +63,9 @@ class OptimizerSetting(pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
+    def get_lr(self) -> float | None:
+        return self.parameters.get("lr")
+
     @pydantic.field_validator("optimizer")
     @classmethod
     def check_exist_scheduler(cls, name: str) -> str:
@@ -101,22 +109,22 @@ class SchedulerSetting(pydantic.BaseModel):
         return name
 
 
-class HandlerSetting(pydantic.BaseModel):
-    handler: str
-    """
-    handler Class name defined in phlower.services.trainer.handlers.
-    """
+class _DiscriminatorHandlerTag(str, Enum):
+    EarlyStopping = "EarlyStopping"
+    UserCustom = "UserCustom"
 
-    parameters: dict[str, int | float | bool | str] = Field(
-        default_factory=dict
-    )
-    """
-    Parameters to pass when handler class is initialized.
-    Allowed parameters depend on the handler you choose.
-    """
 
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+def _custom_handler_discriminator(value: object) -> str:
+    handler_type = value.get("handler", None)
+
+    if not isinstance(handler_type, str):
+        raise ValueError(
+            f"Invalid type value is set as a handler. Input: {handler_type}"
+        )
+
+    if handler_type == _DiscriminatorHandlerTag.EarlyStopping:
+        return _DiscriminatorHandlerTag.EarlyStopping.value
+    return _DiscriminatorHandlerTag.UserCustom.value
 
 
 class PhlowerTrainerSetting(pydantic.BaseModel):
@@ -137,7 +145,24 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for schedulers
     """
 
-    handler_settings: list[HandlerSetting] = Field(default_factory=list)
+    handler_setting: list[
+        Annotated[
+            Annotated[
+                EarlyStoppingSetting,
+                Tag(_DiscriminatorHandlerTag.EarlyStopping.value),
+            ]
+            | Annotated[
+                EarlyStoppingSetting,
+                Tag(_DiscriminatorHandlerTag.UserCustom.value),
+            ],
+            Discriminator(
+                _custom_handler_discriminator,
+                custom_error_type="invalid_union_member",
+                custom_error_message="Invalid union member",
+                custom_error_context={"discriminator": "handler_checkk"},
+            ),
+        ]
+    ] = Field(default_factory=list)
     """
     setting for handlers
     """

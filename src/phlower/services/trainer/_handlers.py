@@ -17,7 +17,7 @@ class PhlowerHandlersRunner(PhlowerHandlerType):
     ) -> PhlowerHandlersRunner:
         return PhlowerHandlersRunner(
             handlers_params={
-                v.handler: v.parameters for v in setting.handler_settings
+                v.handler: v.parameters for v in setting.handler_setting
             },
             user_defined_handlers=user_defined_handlers,
         )
