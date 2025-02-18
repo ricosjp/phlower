@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import cast
 
 import pydantic
 import pydantic.dataclasses as dc
 from pydantic import Field
 
 from phlower.settings._handler_settings import (
+    EarlyStoppingSetting,
     HandlerSettingType,
 )
 from phlower.utils import OptimizerSelector, SchedulerSelector
@@ -169,3 +171,13 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    def get_early_stopping_patience(self) -> float | None:
+        for setting in self.handler_settings:
+            if setting.handler != "EarlyStopping":
+                continue
+
+            setting = cast(EarlyStoppingSetting, setting)
+            return setting.get_patience()
+
+        return None
