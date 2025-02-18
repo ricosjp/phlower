@@ -1,7 +1,7 @@
 import pydantic
 
 
-class UserDefinedHandlerSetting:
+class UserDefinedHandlerSetting(pydantic.BaseModel):
     handler: str
     """
     handler Class name defined in phlower.services.trainer.handlers.

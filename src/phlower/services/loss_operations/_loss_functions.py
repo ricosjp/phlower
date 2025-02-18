@@ -2,10 +2,34 @@ import torch
 
 from phlower.utils.typing import LossFunctionType
 
-_DEFAULT_LOSS_FUNCTIONS: dict[str, LossFunctionType] = {
-    "mse": torch.nn.functional.mse_loss
-}
 
+class PhlowerLossFunctionsFactory:
+    _REGISTERED: dict[str, LossFunctionType] = {
+        "mse": torch.nn.functional.mse_loss
+    }
 
-def get_loss_function(name: str) -> LossFunctionType | None:
-    return _DEFAULT_LOSS_FUNCTIONS.get(name)
+    @classmethod
+    def register(
+        cls, name: str, loss_function: LossFunctionType, overwrite: bool = True
+    ) -> LossFunctionType:
+        if (name not in cls._REGISTERED) or overwrite:
+            cls._REGISTERED[name] = loss_function
+            return
+
+        raise ValueError(
+            f"Loss function named {name} has already existed."
+            " If you want to overwrite it, set overwrite=True"
+        )
+
+    @classmethod
+    def unregister(cls, name: str):
+        if name not in cls._REGISTERED:
+            raise KeyError(f"{name} does not exist.")
+
+        cls._REGISTERED.pop(name)
+
+    @classmethod
+    def get(cls, name: str) -> LossFunctionType:
+        if name not in cls._REGISTERED:
+            raise KeyError(f"Loss function: {name} is not registered.")
+        return cls._REGISTERED[name]

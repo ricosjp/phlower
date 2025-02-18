@@ -2,7 +2,7 @@ import pydantic
 from typing_extensions import Self
 
 
-class EarlyStoppingSetting:
+class EarlyStoppingSetting(pydantic.BaseModel):
     handler: str
     """
     handler Class name defined in phlower.services.trainer.handlers.
@@ -16,6 +16,9 @@ class EarlyStoppingSetting:
     Allowed parameters depend on the handler you choose.
     """
 
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
     def get_patience(self) -> float:
         return self.parameters["patience"]
 
@@ -27,6 +30,3 @@ class EarlyStoppingSetting:
             )
 
         return self
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
