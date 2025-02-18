@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from enum import Enum
-from typing import Annotated
 
 import pydantic
 import pydantic.dataclasses as dc
-from pydantic import Discriminator, Field, Tag
+from pydantic import Field
 
 from phlower.settings._handler_settings import (
-    EarlyStoppingSetting,
+    HandlerSettingType,
 )
 from phlower.utils import OptimizerSelector, SchedulerSelector
 
@@ -109,24 +107,6 @@ class SchedulerSetting(pydantic.BaseModel):
         return name
 
 
-class _DiscriminatorHandlerTag(str, Enum):
-    EarlyStopping = "EarlyStopping"
-    UserCustom = "UserCustom"
-
-
-def _custom_handler_discriminator(value: object) -> str:
-    handler_type = value.get("handler", None)
-
-    if not isinstance(handler_type, str):
-        raise ValueError(
-            f"Invalid type value is set as a handler. Input: {handler_type}"
-        )
-
-    if handler_type == _DiscriminatorHandlerTag.EarlyStopping:
-        return _DiscriminatorHandlerTag.EarlyStopping.value
-    return _DiscriminatorHandlerTag.UserCustom.value
-
-
 class PhlowerTrainerSetting(pydantic.BaseModel):
     loss_setting: LossSetting
     """
@@ -145,24 +125,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for schedulers
     """
 
-    handler_setting: list[
-        Annotated[
-            Annotated[
-                EarlyStoppingSetting,
-                Tag(_DiscriminatorHandlerTag.EarlyStopping.value),
-            ]
-            | Annotated[
-                EarlyStoppingSetting,
-                Tag(_DiscriminatorHandlerTag.UserCustom.value),
-            ],
-            Discriminator(
-                _custom_handler_discriminator,
-                custom_error_type="invalid_union_member",
-                custom_error_message="Invalid union member",
-                custom_error_context={"discriminator": "handler_checkk"},
-            ),
-        ]
-    ] = Field(default_factory=list)
+    handler_setting: list[HandlerSettingType] = Field(default_factory=list)
     """
     setting for handlers
     """
