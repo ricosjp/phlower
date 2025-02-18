@@ -11,6 +11,7 @@ from phlower._base import PhlowerTensor
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
 from phlower.io import (
     PhlowerCheckpointFile,
+    PhlowerDirectory,
     PhlowerYamlFile,
     select_snapshot_file,
 )
@@ -113,12 +114,16 @@ class _EvaluationRunner:
 
 
 class PhlowerTrainer:
-    # @classmethod
-    # def from_directory(cls, saved_directory: pathlib.Path) -> Self:
-    #     ph_directory = PhlowerDirectory(saved_directory)
-    #     yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
-    #     setting = PhlowerSetting.read_yaml(yaml_file)
-    #     return cls.from_setting(setting)
+    _SAVED_SETTING_NAME: str = "model"
+
+    @classmethod
+    def restart_from(cls, model_directory: pathlib.Path) -> Self:
+        ph_directory = PhlowerDirectory(model_directory)
+        yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
+        setting = PhlowerSetting.read_yaml(yaml_file)
+        trainer = cls.from_setting(setting)
+        trainer._reinit_for_restart(model_directory)
+        return trainer
 
     @classmethod
     def from_setting(
@@ -344,13 +349,13 @@ class PhlowerTrainer:
         )
         PhlowerYamlFile.save(
             output_directory=output_directory,
-            file_basename="model",
+            file_basename=self._SAVED_SETTING_NAME,
             data=dump_setting.model_dump(),
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
 
-    def reinit_for_restart(
+    def _reinit_for_restart(
         self,
         restart_directory: pathlib.Path,
         device: str | None = None,

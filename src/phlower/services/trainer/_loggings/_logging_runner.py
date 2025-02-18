@@ -17,6 +17,9 @@ class LoggingRunner:
         self._log_every_n_epoch = log_every_n_epoch
         self._exist_header = False
 
+    def get_weight_directory(self) -> pathlib.Path:
+        return self._output_directory / "weights"
+
     def run(
         self,
         output: AfterEvaluationOutput,
@@ -85,7 +88,7 @@ class LoggingRunner:
         prefix = PhlowerCheckpointFile.get_fixed_prefix()
         file_basename = f"{prefix}{info.epoch}"
         PhlowerCheckpointFile.save(
-            output_directory=self._output_directory,
+            output_directory=self.get_weight_directory(),
             file_basename=file_basename,
             data=data,
             encrypt_key=encrypt_key,

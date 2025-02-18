@@ -156,7 +156,7 @@ def perform_restart() -> Callable[[int | None], None]:
         trainer = PhlowerTrainer.from_setting(setting)
 
         restart_directory = _OUTPUT_DIR / "model"
-        trainer.reinit_for_restart(restart_directory=restart_directory)
+        trainer._reinit_for_restart(restart_directory=restart_directory)
 
         phlower_path = PhlowerDirectory(_OUTPUT_DIR)
         preprocessed_directories = list(
