@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 import random
 from typing import Literal
@@ -31,8 +33,6 @@ from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import (
     AfterEpochTrainingInfo,
     AfterEvaluationOutput,
-    LossFunctionType,
-    PhlowerHandlerType,
 )
 
 _logger = get_logger(__name__)
@@ -126,24 +126,14 @@ class PhlowerTrainer:
         return trainer
 
     @classmethod
-    def from_setting(
-        cls,
-        setting: PhlowerSetting,
-        user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None,
-    ) -> Self:
+    def from_setting(cls, setting: PhlowerSetting) -> PhlowerTrainer:
         if (setting.model is None) or (setting.training is None):
             raise ValueError(
                 "setting content for training or model is not found."
             )
 
         setting.model.resolve()
-        return cls(
-            setting.model,
-            setting.training,
-            user_loss_functions=user_loss_functions,
-            user_handlers=user_handlers,
-        )
+        return cls(setting.model, setting.training)
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         return self._trainer_setting
@@ -152,8 +142,6 @@ class PhlowerTrainer:
         self,
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
-        user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None,
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
@@ -176,7 +164,7 @@ class PhlowerTrainer:
 
         # initialize loss calculator
         self._loss_calculator = LossCalculator.from_setting(
-            self._trainer_setting, user_loss_functions=user_loss_functions
+            self._trainer_setting
         )
         self._evaluation_runner = _EvaluationRunner(
             trainer_setting=trainer_setting,
@@ -184,9 +172,7 @@ class PhlowerTrainer:
         )
 
         # initialize handler
-        self._handlers = PhlowerHandlersRunner.from_setting(
-            trainer_setting, user_defined_handlers=user_handlers
-        )
+        self._handlers = PhlowerHandlersRunner.from_setting(trainer_setting)
 
         # Internal state
         self._start_epoch = 0
