@@ -11,11 +11,40 @@ from phlower.collections.tensors import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.services.loss_operations._loss_functions import (
-    PhlowerLossFunctionsFactory,
-)
-from phlower.settings._trainer_setting import LossSetting, PhlowerTrainerSetting
+from phlower.settings._trainer_setting import PhlowerTrainerSetting
 from phlower.utils.typing import LossFunctionType
+
+
+class PhlowerLossFunctionsFactory:
+    _REGISTERED: dict[str, LossFunctionType] = {
+        "mse": torch.nn.functional.mse_loss
+    }
+
+    @classmethod
+    def register(
+        cls, name: str, loss_function: LossFunctionType, overwrite: bool = False
+    ) -> LossFunctionType:
+        if (name not in cls._REGISTERED) or overwrite:
+            cls._REGISTERED[name] = loss_function
+            return
+
+        raise ValueError(
+            f"Loss function named {name} has already existed."
+            " If you want to overwrite it, set overwrite=True"
+        )
+
+    @classmethod
+    def unregister(cls, name: str):
+        if name not in cls._REGISTERED:
+            raise KeyError(f"{name} does not exist.")
+
+        cls._REGISTERED.pop(name)
+
+    @classmethod
+    def get(cls, name: str) -> LossFunctionType:
+        if name not in cls._REGISTERED:
+            raise KeyError(f"Loss function: {name} is not registered.")
+        return cls._REGISTERED[name]
 
 
 class ILossCalculator(metaclass=abc.ABCMeta):
@@ -43,36 +72,39 @@ class LossCalculator(ILossCalculator):
         setting: PhlowerTrainerSetting,
     ) -> LossCalculator:
         loss_setting = setting.loss_setting
-        return cls(setting=loss_setting)
+        return LossCalculator(
+            name2loss=loss_setting.name2loss,
+            name2weight=loss_setting.name2weight,
+        )
 
-    @classmethod
-    def from_dict(
-        cls,
+    def __init__(
+        self,
         name2loss: dict[str, str],
-        name2weight: dict[str, float] = None,
-    ) -> LossCalculator:
-        loss_setting = LossSetting(name2loss=name2loss, name2weight=name2weight)
-
-        return cls(setting=loss_setting)
-
-    def __init__(self, setting: LossSetting):
-        self._setting = setting
+        name2weight: dict[str, float] | None = None,
+    ):
+        self._name2loss = name2loss
+        self._name2weight = name2weight
         self._check_loss_function_exists()
 
     def get_loss_function(self, variable_name: str) -> LossFunctionType:
-        loss_name = self._setting.name2loss[variable_name]
+        if variable_name not in self._name2loss:
+            raise ValueError(
+                "Loss function is missing. "
+                f"Loss function for {variable_name} is not defined."
+            )
+        loss_name = self._name2loss[variable_name]
         return PhlowerLossFunctionsFactory.get(loss_name)
 
     def _check_loss_function_exists(self) -> None:
-        for loss_name in self._setting.loss_names():
+        for loss_name in self._name2loss.values():
             if PhlowerLossFunctionsFactory.get(loss_name) is None:
                 raise ValueError(f"Unknown loss function name: {loss_name}")
 
     def aggregate(self, losses: IPhlowerTensorCollections) -> PhlowerTensor:
-        if self._setting.name2weight is None:
+        if self._name2weight is None:
             return losses.sum()
 
-        return losses.sum(weights=self._setting.name2weight)
+        return losses.sum(weights=self._name2weight)
 
     def calculate(
         self,
@@ -83,7 +115,7 @@ class LossCalculator(ILossCalculator):
         loss_items: dict[str, torch.Tensor] = {}
         for key in answer.keys():
             if key not in prediction:
-                raise KeyError(
+                raise ValueError(
                     f"{key} is not found in predictions. "
                     f"prediction keys: {list(prediction.keys())}"
                 )
@@ -91,11 +123,6 @@ class LossCalculator(ILossCalculator):
             batch_info = batch_info_dict[key]
             _preds = unbatch(prediction[key], batch_info)
             _answers = unbatch(answer[key], batch_info)
-            if len(_preds) != len(_answers):
-                raise ValueError(
-                    "Sizes of unbatched tensors in predictions and "
-                    "that in answers are not equal."
-                )
 
             loss_func = self.get_loss_function(key)
             loss_items[key] = torch.mean(
