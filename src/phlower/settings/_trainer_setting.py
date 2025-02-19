@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import cast
 
 import pydantic
 import pydantic.dataclasses as dc
 from pydantic import Field
 
+from phlower.settings._handler_settings import (
+    EarlyStoppingSetting,
+    HandlerSettingType,
+)
 from phlower.utils import OptimizerSelector, SchedulerSelector
 
 
@@ -58,6 +63,9 @@ class OptimizerSetting(pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
+    def get_lr(self) -> float | None:
+        return self.parameters.get("lr")
+
     @pydantic.field_validator("optimizer")
     @classmethod
     def check_exist_scheduler(cls, name: str) -> str:
@@ -101,24 +109,6 @@ class SchedulerSetting(pydantic.BaseModel):
         return name
 
 
-class HandlerSetting(pydantic.BaseModel):
-    handler: str
-    """
-    handler Class name defined in phlower.services.trainer.handlers.
-    """
-
-    parameters: dict[str, int | float | bool | str] = Field(
-        default_factory=dict
-    )
-    """
-    Parameters to pass when handler class is initialized.
-    Allowed parameters depend on the handler you choose.
-    """
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
-
-
 class PhlowerTrainerSetting(pydantic.BaseModel):
     loss_setting: LossSetting
     """
@@ -137,7 +127,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for schedulers
     """
 
-    handler_settings: list[HandlerSetting] = Field(default_factory=list)
+    handler_settings: list[HandlerSettingType] = Field(default_factory=list)
     """
     setting for handlers
     """
@@ -181,3 +171,13 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    def get_early_stopping_patience(self) -> float | None:
+        for setting in self.handler_settings:
+            if setting.handler != "EarlyStopping":
+                continue
+
+            setting = cast(EarlyStoppingSetting, setting)
+            return setting.get_patience()
+
+        return None

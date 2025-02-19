@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 import random
 from typing import Literal
@@ -11,6 +13,7 @@ from phlower._base import PhlowerTensor
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
 from phlower.io import (
     PhlowerCheckpointFile,
+    PhlowerDirectory,
     PhlowerYamlFile,
     select_snapshot_file,
 )
@@ -30,8 +33,6 @@ from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import (
     AfterEpochTrainingInfo,
     AfterEvaluationOutput,
-    LossFunctionType,
-    PhlowerHandlerType,
 )
 
 _logger = get_logger(__name__)
@@ -113,39 +114,34 @@ class _EvaluationRunner:
 
 
 class PhlowerTrainer:
-    # @classmethod
-    # def from_directory(cls, saved_directory: pathlib.Path) -> Self:
-    #     ph_directory = PhlowerDirectory(saved_directory)
-    #     yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
-    #     setting = PhlowerSetting.read_yaml(yaml_file)
-    #     return cls.from_setting(setting)
+    _SAVED_SETTING_NAME: str = "model"
 
     @classmethod
-    def from_setting(
-        cls,
-        setting: PhlowerSetting,
-        user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None,
-    ) -> Self:
+    def restart_from(cls, model_directory: pathlib.Path) -> Self:
+        ph_directory = PhlowerDirectory(model_directory)
+        yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
+        setting = PhlowerSetting.read_yaml(yaml_file)
+        trainer = cls.from_setting(setting)
+        trainer._reinit_for_restart(model_directory)
+        return trainer
+
+    @classmethod
+    def from_setting(cls, setting: PhlowerSetting) -> PhlowerTrainer:
         if (setting.model is None) or (setting.training is None):
             raise ValueError(
                 "setting content for training or model is not found."
             )
 
         setting.model.resolve()
-        return cls(
-            setting.model,
-            setting.training,
-            user_loss_functions=user_loss_functions,
-            user_handlers=user_handlers,
-        )
+        return cls(setting.model, setting.training)
+
+    def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
+        return self._trainer_setting
 
     def __init__(
         self,
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
-        user_loss_functions: dict[str, LossFunctionType] | None = None,
-        user_handlers: dict[str, PhlowerHandlerType] | None = None,
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
@@ -168,7 +164,7 @@ class PhlowerTrainer:
 
         # initialize loss calculator
         self._loss_calculator = LossCalculator.from_setting(
-            self._trainer_setting, user_loss_functions=user_loss_functions
+            self._trainer_setting
         )
         self._evaluation_runner = _EvaluationRunner(
             trainer_setting=trainer_setting,
@@ -176,9 +172,7 @@ class PhlowerTrainer:
         )
 
         # initialize handler
-        self._handlers = PhlowerHandlersRunner.from_setting(
-            trainer_setting, user_defined_handlers=user_handlers
-        )
+        self._handlers = PhlowerHandlersRunner.from_setting(trainer_setting)
 
         # Internal state
         self._start_epoch = 0
@@ -341,13 +335,13 @@ class PhlowerTrainer:
         )
         PhlowerYamlFile.save(
             output_directory=output_directory,
-            file_basename="model",
+            file_basename=self._SAVED_SETTING_NAME,
             data=dump_setting.model_dump(),
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
 
-    def reinit_for_restart(
+    def _reinit_for_restart(
         self,
         restart_directory: pathlib.Path,
         device: str | None = None,

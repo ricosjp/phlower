@@ -2,8 +2,8 @@ import pathlib
 
 import pytest
 from phlower.services.trainer._handlers import (
+    PhlowerHandlersFactory,
     PhlowerHandlersRunner,
-    create_handler,
 )
 from phlower.settings import PhlowerSetting
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
@@ -14,8 +14,8 @@ DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
 @pytest.mark.parametrize("name", ["aaaaa", "not_exsited"])
 def test__create_handler_with_not_defined_name(name: str):
     with pytest.raises(NotImplementedError) as ex:
-        _ = create_handler(name, {})
-    assert f"Handler {name} is not implemented." in str(ex.value)
+        _ = PhlowerHandlersFactory.create(name, {})
+    assert f"Handler {name} is not registered." in str(ex.value)
 
 
 @pytest.mark.parametrize(
@@ -45,30 +45,33 @@ class DummyCustomHanlder(PhlowerHandlerType):
         self._threshold = state_dict["threshold"]
 
 
+@pytest.fixture
+def setup_user_handler():
+    PhlowerHandlersFactory.register("dummy", DummyCustomHanlder)
+    yield None
+    PhlowerHandlersFactory.unregister("dummy")
+
+
 @pytest.mark.parametrize(
-    "file_name, desired", [("no_handlers.yml", 1), ("stop_trigger.yml", 2)]
+    "file_name, desired",
+    [("user_handlers_1.yml", 1), ("user_handlers_2.yml", 2)],
 )
 def test__initialize_from_setting_file_with_user_defined(
-    file_name: str, desired: int
+    file_name: str, desired: int, setup_user_handler: None
 ):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    runner = PhlowerHandlersRunner.from_setting(
-        setting.training, user_defined_handlers={"dummy": DummyCustomHanlder()}
-    )
+    runner = PhlowerHandlersRunner.from_setting(setting.training)
 
     assert runner.n_handlers == desired
 
 
 @pytest.mark.parametrize(
-    "file_name, threshold",
-    [("no_handlers.yml", 1.0), ("stop_trigger.yml", 2.0)],
+    "file_name",
+    [("user_handlers_1.yml"), ("user_handlers_2.yml")],
 )
-def test__has_termination_flag(file_name: str, threshold: float):
+def test__has_termination_flag(file_name: str, setup_user_handler: None):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    runner = PhlowerHandlersRunner.from_setting(
-        setting.training,
-        user_defined_handlers={"dummy": DummyCustomHanlder(threshold)},
-    )
+    runner = PhlowerHandlersRunner.from_setting(setting.training)
     assert not runner.terminate_training
 
     # Trigger dummy handler
@@ -84,29 +87,21 @@ def test__has_termination_flag(file_name: str, threshold: float):
 
 
 @pytest.mark.parametrize(
-    "file_name, has_user_defined",
+    "file_name",
     [
-        ("no_handlers.yml", False),
-        ("stop_trigger.yml", False),
-        ("stop_trigger.yml", True),
+        ("no_handlers.yml"),
+        ("stop_trigger.yml"),
+        ("user_handlers_1.yml"),
+        ("user_handlers_2.yml"),
     ],
 )
-def test__dump_and_restore(file_name: str, has_user_defined: bool):
+def test__dump_and_restore(file_name: str, setup_user_handler: None):
     setting = PhlowerSetting.read_yaml(DATA_DIR / file_name)
-    if has_user_defined:
-        user_defined_handlers = {"dummy": DummyCustomHanlder()}
-    else:
-        user_defined_handlers = {}
-
-    runner = PhlowerHandlersRunner.from_setting(
-        setting.training, user_defined_handlers=user_defined_handlers
-    )
+    runner = PhlowerHandlersRunner.from_setting(setting.training)
 
     dumped = runner.state_dict()
 
-    new_runner = PhlowerHandlersRunner.from_setting(
-        setting.training, user_defined_handlers=user_defined_handlers
-    )
+    new_runner = PhlowerHandlersRunner.from_setting(setting.training)
     new_runner.load_state_dict(dumped)
 
     assert runner.n_handlers == new_runner.n_handlers
