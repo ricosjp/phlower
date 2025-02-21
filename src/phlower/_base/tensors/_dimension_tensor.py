@@ -515,8 +515,3 @@ def _torch_conv1d(
     inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
     return inputs
-
-
-@dimension_wrap_implements(torch.relu)
-def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
-    return inputs

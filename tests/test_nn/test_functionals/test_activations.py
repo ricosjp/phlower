@@ -7,6 +7,7 @@ from hypothesis import given
 from phlower import phlower_tensor
 from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
+from phlower.utils.exceptions import DimensionIncompatibleError
 
 
 @given(activation_type=st.sampled_from(ActivationType))
@@ -20,6 +21,22 @@ def test__raise_error_when_undefined_activation(name: str):
         _ = ActivationSelector.select(name)
 
     assert f"{name} is not implemented" in str(ex.value)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "relu", "sigmoid", "tanh", "leaky_relu0p5", "smooth_leaky_relu"
+    ]
+)
+def test__raise_error_when_nonlinear_activation_with_dimensioned_tensor(
+    name: str
+):
+    tensor = phlower_tensor(torch.randn(10), dimension={"L": 1, "T": -1})
+    activation = ActivationSelector.select(name)
+    with pytest.raises(DimensionIncompatibleError) as ex:
+        activation(tensor)
+        assert f"Should be dimensionless to apply {name}" in str(ex.value)
 
 
 @pytest.mark.parametrize("name", ["sample", "dummy"])
