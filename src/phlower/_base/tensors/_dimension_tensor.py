@@ -426,7 +426,7 @@ def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
     # NOTE: Allow leaky relu operation also for dimensioned tensor
-    #       because it is scale equivarinat
+    #       because it is scale equivariant
     return tensor
 
 
@@ -509,5 +509,5 @@ def _torch_conv1d(
 @dimension_wrap_implements(torch.relu)
 def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     # NOTE: Allow relu operation also for dimensioned tensor
-    #       because it is scale equivarinat
+    #       because it is scale equivariant
     return inputs

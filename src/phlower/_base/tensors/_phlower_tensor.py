@@ -525,9 +525,6 @@ class PhlowerTensor(IPhlowerTensor):
             if isinstance(a, PhlowerTensor)
             or (isinstance(a, list | tuple) and isinstance(a[0], PhlowerTensor))
         ]
-        if len(tensor_args) == 0:
-            classes = [a.__class__ for a in args]
-            raise ValueError(f"Invalid input classes: {classes}")
 
         list_is_time_series = _recursive_resolve(tensor_args, "is_time_series")
         list_is_voxel = _recursive_resolve(tensor_args, "is_voxel")
