@@ -425,10 +425,8 @@ def sigmoid(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
 def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless:
-        raise DimensionIncompatibleError(
-            f"Should be dimensionless to apply leaky_relu but {tensor}"
-        )
+    # NOTE: Allow leaky relu operation also for dimensioned tensor
+    #       because it is scale equivarinat
     return tensor
 
 
@@ -510,4 +508,6 @@ def _torch_conv1d(
 
 @dimension_wrap_implements(torch.relu)
 def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    # NOTE: Allow relu operation also for dimensioned tensor
+    #       because it is scale equivarinat
     return inputs

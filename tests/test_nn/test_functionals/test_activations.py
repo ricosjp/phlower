@@ -23,10 +23,7 @@ def test__raise_error_when_undefined_activation(name: str):
     assert f"{name} is not implemented" in str(ex.value)
 
 
-@pytest.mark.parametrize(
-    "name",
-    ["sigmoid", "tanh", "leaky_relu0p5", "smooth_leaky_relu"],
-)
+@pytest.mark.parametrize("name", ["sigmoid", "tanh", "smooth_leaky_relu"])
 def test__raise_error_when_nonlinear_activation_with_dimensioned_tensor(
     name: str,
 ):
