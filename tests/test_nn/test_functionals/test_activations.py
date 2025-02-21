@@ -26,7 +26,7 @@ def test__raise_error_when_undefined_activation(name: str):
 @pytest.mark.parametrize(
     "name",
     [
-        "relu", "sigmoid", "tanh", "leaky_relu0p5", "smooth_leaky_relu"
+        "sigmoid", "tanh", "leaky_relu0p5", "smooth_leaky_relu"
     ]
 )
 def test__raise_error_when_nonlinear_activation_with_dimensioned_tensor(

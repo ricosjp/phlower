@@ -421,15 +421,6 @@ def sigmoid(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return tensor
 
 
-@dimension_wrap_implements(torch.relu)
-def relu(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless:
-        raise DimensionIncompatibleError(
-            f"Should be dimensionless to apply relu but {tensor}"
-        )
-    return tensor
-
-
 @dimension_wrap_implements(torch.nn.functional.leaky_relu)
 def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
@@ -514,4 +505,9 @@ def _torch_pad(
 def _torch_conv1d(
     inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.relu)
+def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return inputs
