@@ -8,6 +8,8 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
+from phlower.collections import IPhlowerTensorCollections
+
 ArrayDataType = np.ndarray | sp.coo_matrix | sp.csr_matrix | sp.csc_matrix
 
 DenseArrayType = np.ndarray
@@ -54,3 +56,21 @@ class AfterEvaluationOutput(NamedTuple):
     validation_eval_loss: float | None = None
     train_loss_details: dict[str, float] | None = None
     validation_loss_details: dict[str, float] | None = None
+
+
+# region Prediction
+
+
+class PhlowerInverseScaledPredictionResult(NamedTuple):
+    prediction_data: dict[str, np.ndarray]
+    input_data: dict[str, np.ndarray]
+    answer_data: dict[str, np.ndarray] | None = None
+
+
+class PhlowerPredictionResult(NamedTuple):
+    prediction_data: IPhlowerTensorCollections
+    input_data: IPhlowerTensorCollections | None = None
+    answer_data: IPhlowerTensorCollections | None = None
+
+
+# endregion

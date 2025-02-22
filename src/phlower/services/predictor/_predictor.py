@@ -17,6 +17,10 @@ from phlower.settings import (
     PhlowerPredictorSetting,
     PhlowerSetting,
 )
+from phlower.utils.typing import (
+    PhlowerInverseScaledPredictionResult,
+    PhlowerPredictionResult,
+)
 
 
 class PhlowerPredictor:
@@ -82,29 +86,29 @@ class PhlowerPredictor:
     def predict(
         self,
         preprocessed_directories: list[pathlib.Path],
+        perform_inverse_scaling: False,
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]: ...
+        return_only_prediction: bool = False,
+    ) -> Iterator[PhlowerPredictionResult]: ...
 
     @overload
+    def predict(
+        self,
+        preprocessed_directories: list[pathlib.Path],
+        perform_inverse_scaling: True,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        return_only_prediction: bool = False,
+    ) -> Iterator[PhlowerInverseScaledPredictionResult]: ...
+
     def predict(
         self,
         preprocessed_directories: list[pathlib.Path],
         perform_inverse_scaling: bool,
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]: ...
-
-    def predict(
-        self,
-        preprocessed_directories: list[pathlib.Path],
-        perform_inverse_scaling: bool | None = None,
-        disable_dimensions: bool = False,
-        decrypt_key: bytes | None = None,
     ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
-        if perform_inverse_scaling is None:
-            perform_inverse_scaling = self._predict_setting.inverse_scaling
-
         dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
@@ -134,29 +138,50 @@ class PhlowerPredictor:
         return
 
     def _predict(
-        self,
-        data_loader: DataLoader,
-    ) -> Iterator[IPhlowerTensorCollections]:
+        self, data_loader: DataLoader, return_only_prediction: bool = False
+    ) -> Iterator[PhlowerPredictionResult]:
         for batch in data_loader:
             batch: LumpedTensorData
 
+            # HACK: Need to unbatch ?
+            assert batch.n_data == 1
             h = self._model.forward(batch.x_data, field_data=batch.field_data)
-            yield h
 
-        # HACK: Need to unbatch ?
+            if return_only_prediction:
+                yield PhlowerPredictionResult(prediction_data=h)
+            else:
+                yield PhlowerPredictionResult(
+                    input_data=batch.x_data,
+                    prediction_data=h,
+                    answer_data=batch.y_data,
+                )
 
     def _predict_with_inverse(
-        self,
-        data_loader: DataLoader,
+        self, data_loader: DataLoader, return_only_prediction: bool = False
     ) -> Iterator[dict[str, IPhlowerArray]]:
         for batch in data_loader:
             batch: LumpedTensorData
 
             h = self._model.forward(batch.x_data, field_data=batch.field_data)
 
-            yield self._scalers.inverse_transform(
+            preds = self._scalers.inverse_transform(
                 h.to_phlower_arrays_dict(), raise_missing_message=True
             )
+            if return_only_prediction:
+                yield PhlowerInverseScaledPredictionResult(
+                    prediction_data=preds
+                )
+            else:
+                x_data = self._scalers.inverse_transform(
+                    batch.x_data.to_phlower_arrays_dict(),
+                    raise_missing_message=True,
+                )
+                answer_data = self._scalers.inverse_transform(batch.y_data)
+                yield PhlowerInverseScaledPredictionResult(
+                    prediction_data=preds,
+                    input_data=x_data,
+                    answer_data=answer_data,
+                )
 
 
 def _load_model_setting(
