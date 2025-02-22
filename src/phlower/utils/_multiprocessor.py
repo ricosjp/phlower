@@ -4,8 +4,8 @@ from collections.abc import Callable, Iterable
 from functools import partial
 from typing import Any, TypeVar
 
-from phlower.utils.exceptions import PhlowerMultiProcessError
 from phlower.utils import determine_max_process
+from phlower.utils.exceptions import PhlowerMultiProcessError
 
 T = TypeVar("T")
 

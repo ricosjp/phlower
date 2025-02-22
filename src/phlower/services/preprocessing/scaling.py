@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pathlib
 from functools import partial
-
 from typing import overload
+
 from pipe import chain, select, where
 
 from phlower._base.array import IPhlowerArray
@@ -148,8 +148,7 @@ class PhlowerScalingService:
         data: dict[str, ArrayDataType],
         max_process: int | None = None,
         allow_missing: bool = False,
-    ) -> dict[str, IPhlowerArray]:
-        ...
+    ) -> dict[str, IPhlowerArray]: ...
 
     @overload
     def transform(
@@ -162,8 +161,7 @@ class PhlowerScalingService:
         allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def transform(
         self,
@@ -191,14 +189,14 @@ class PhlowerScalingService:
                 allow_missing=allow_missing,
                 allow_overwrite=allow_overwrite,
                 decrypt_key=decrypt_key,
-                encrypt_key=encrypt_key
+                encrypt_key=encrypt_key,
             )
 
         if data is not None:
             return self._transform_all_data(
                 data=data, max_process=max_process, allow_missing=allow_missing
             )
-    
+
         raise ValueError("Cannot reach here.")
 
     def _transform_all_data(
@@ -210,7 +208,9 @@ class PhlowerScalingService:
         processor = PhlowerMultiprocessor(max_process=max_process)
         results = processor.run(
             list(data.items()),
-            target_fn=partial(self._transform_data, allow_missing=allow_missing),
+            target_fn=partial(
+                self._transform_data, allow_missing=allow_missing
+            ),
         )
 
         return {name: arr for name, arr in results if name is not None}
