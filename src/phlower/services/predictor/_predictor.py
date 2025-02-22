@@ -7,7 +7,6 @@ from typing import overload
 from torch.utils.data import DataLoader
 
 from phlower._base import IPhlowerArray
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.nn import PhlowerGroupModule
@@ -85,6 +84,26 @@ class PhlowerPredictor:
     @overload
     def predict(
         self,
+        preprocessed_data: Iterator[LumpedTensorData],
+        perform_inverse_scaling: False,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        return_only_prediction: bool = False,
+    ) -> Iterator[PhlowerPredictionResult]: ...
+
+    @overload
+    def predict(
+        self,
+        preprocessed_data: Iterator[LumpedTensorData],
+        perform_inverse_scaling: True,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        return_only_prediction: bool = False,
+    ) -> Iterator[PhlowerInverseScaledPredictionResult]: ...
+
+    @overload
+    def predict(
+        self,
         preprocessed_directories: list[pathlib.Path],
         perform_inverse_scaling: False,
         disable_dimensions: bool = False,
@@ -104,11 +123,48 @@ class PhlowerPredictor:
 
     def predict(
         self,
-        preprocessed_directories: list[pathlib.Path],
-        perform_inverse_scaling: bool,
+        preprocessed_data: Iterator[LumpedTensorData] | None = None,
+        preprocessed_directories: list[pathlib.Path] | None = None,
+        perform_inverse_scaling: bool = True,
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
-    ) -> Iterator[IPhlowerTensorCollections | dict[str, IPhlowerArray]]:
+    ) -> Iterator[
+        PhlowerPredictionResult, PhlowerInverseScaledPredictionResult
+    ]:
+        if (preprocessed_data) ^ (preprocessed_directories is not None):
+            raise ValueError(
+                "preprocessed_data and preprocessed_directories is not "
+                "allowed to be set at the same time."
+            )
+
+        if preprocessed_directories is not None:
+            data_loader = self._setup_dataloader(
+                preprocessed_directories,
+                disable_dimensions=disable_dimensions,
+                decrypt_key=decrypt_key,
+            )
+        else:
+            data_loader = preprocessed_data
+
+        if not perform_inverse_scaling:
+            yield from self._predict(data_loader)
+            return
+
+        if self._scalers is None:
+            raise ValueError(
+                "scaler are not defined. "
+                "Please check that your scaling setting"
+                " is inputted when initializing this class."
+            )
+        yield from self._predict_with_inverse(data_loader)
+        return
+
+    def _setup_dataloader(
+        self,
+        preprocessed_directories: list[pathlib.Path] | None = None,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+    ) -> DataLoader:
         dataset = LazyPhlowerDataset(
             input_settings=self._model_setting.inputs,
             label_settings=self._model_setting.labels,
@@ -123,19 +179,7 @@ class PhlowerPredictor:
             disable_dimensions=disable_dimensions,
             shuffle=False,
         )
-
-        if not perform_inverse_scaling:
-            yield from self._predict(data_loader)
-            return
-
-        if self._scalers is None:
-            raise ValueError(
-                "scaler are not defined. "
-                "Please check that your scaling setting"
-                " is inputted when initializing this class."
-            )
-        yield from self._predict_with_inverse(data_loader)
-        return
+        return data_loader
 
     def _predict(
         self, data_loader: DataLoader, return_only_prediction: bool = False
