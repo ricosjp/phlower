@@ -5,6 +5,7 @@ from functools import partial
 from typing import Any, TypeVar
 
 from phlower.utils.exceptions import PhlowerMultiProcessError
+from phlower.utils import determine_max_process
 
 T = TypeVar("T")
 
@@ -50,14 +51,14 @@ def _santize_futures(futures: list[cf.Future]) -> None:
 
 
 class PhlowerMultiprocessor:
-    def __init__(self, max_process: int):
+    def __init__(self, max_process: int | None):
         self.max_process = max_process
 
     def run(
         self,
         *inputs: list[Any],
         target_fn: Callable[[Any], T],
-        chunksize: int = 1,
+        chunksize: int | None = None,
     ) -> list[T]:
         """Wrapper function for concurrent.futures
          to run safely with multiple processes.
@@ -83,6 +84,9 @@ class PhlowerMultiprocessor:
              this error raises.
         """
         futures: list[cf.Future] = []
+
+        chunksize = chunksize or self._determine_chunksize()
+
         with cf.ProcessPoolExecutor(self.max_process) as executor:
             for chunk in _get_chunks(*inputs, chunksize=chunksize):
                 future = executor.submit(
@@ -97,3 +101,11 @@ class PhlowerMultiprocessor:
 
         # flatten
         return sum([f.result() for f in futures], start=[])
+
+    def _determine_chunksize(self, n_items: int) -> int:
+        return int(
+            max(
+                n_items // determine_max_process(),
+                1,
+            )
+        )

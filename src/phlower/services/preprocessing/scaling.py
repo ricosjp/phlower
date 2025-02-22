@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 from functools import partial
 
+from typing import overload
 from pipe import chain, select, where
 
 from phlower._base.array import IPhlowerArray
@@ -141,7 +142,94 @@ class PhlowerScalingService:
             scaler_name, file_path, decrypt_key=decrypt_key
         )
 
-    def transform_interim_all(
+    @overload
+    def transfrom(
+        self,
+        data: dict[str, ArrayDataType],
+        max_process: int | None = None,
+        allow_missing: bool = False,
+    ) -> dict[str, IPhlowerArray]:
+        ...
+
+    @overload
+    def transform(
+        self,
+        data_directories: list[pathlib.Path],
+        output_base_directory: pathlib.Path,
+        *,
+        max_process: int | None = None,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> None:
+        ...
+
+    def transform(
+        self,
+        data: dict[str, ArrayDataType] | None = None,
+        data_directories: list[pathlib.Path] | None = None,
+        output_base_directory: pathlib.Path | None = None,
+        *,
+        max_process: int | None = None,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> dict[str, IPhlowerArray] | None:
+        if (data is not None) ^ (data_directories is not None):
+            raise ValueError(
+                "data and data_directories are not allowed to be set "
+                "at the same time."
+            )
+
+        if data_directories is not None:
+            return self._transform_interim_all(
+                data_directories=data_directories,
+                output_base_directory=output_base_directory,
+                max_process=max_process,
+                allow_missing=allow_missing,
+                allow_overwrite=allow_overwrite,
+                decrypt_key=decrypt_key,
+                encrypt_key=encrypt_key
+            )
+
+        if data is not None:
+            return self._transform_all_data(
+                data=data, max_process=max_process, allow_missing=allow_missing
+            )
+    
+        raise ValueError("Cannot reach here.")
+
+    def _transform_all_data(
+        self,
+        data: dict[str, ArrayDataType],
+        max_process: int | None = None,
+        allow_missing: bool = False,
+    ) -> dict[str, IPhlowerArray]:
+        processor = PhlowerMultiprocessor(max_process=max_process)
+        results = processor.run(
+            list(data.items()),
+            target_fn=partial(self._transform_data, allow_missing=allow_missing),
+        )
+
+        return {name: arr for name, arr in results if name is not None}
+
+    def _transform_data(
+        self,
+        variable_name: str,
+        arr: ArrayDataType,
+        allow_missing: bool = False,
+    ) -> tuple[str | None, IPhlowerArray | None]:
+        scaler_name = self._scaling_setting.get_scaler_name(variable_name)
+        if scaler_name is None:
+            if allow_missing:
+                return (None, None)
+            raise ValueError(f"Scaler for {variable_name} is missiing.")
+
+        return (variable_name, self._scalers.transform(scaler_name, arr))
+
+    def _transform_interim_all(
         self,
         data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,
@@ -172,7 +260,6 @@ class PhlowerScalingService:
                 decrypt_key=decrypt_key,
                 encrypt_key=encrypt_key,
             ),
-            chunksize=1,
         )
 
     def inverse_transform(
