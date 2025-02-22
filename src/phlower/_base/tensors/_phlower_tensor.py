@@ -78,19 +78,20 @@ def phlower_tensor(
     dtype: torch.dtype | None = None,
     device: torch.device | str | None = None,
 ) -> PhlowerTensor:
-    if isinstance(tensor, PhlowerTensor):
-        if not _is_all_none(dimension, is_time_series, is_voxel):
-            logger.warning(
-                "dimensions, is_time_series and is_voxel are ignored."
-            )
-        return tensor
-
-    if isinstance(tensor, float | list | np.ndarray):
-        tensor = torch.tensor(tensor, dtype=dtype, device=device)
-
     dimension_tensor = _resolve_dimension_arg(
         dimension, dtype=dtype, device=device
     )
+
+    if isinstance(tensor, PhlowerTensor):
+        return PhlowerTensor(
+            tensor.to_tensor(),
+            dimension_tensor=dimension_tensor or tensor.dimension,
+            is_time_series=is_time_series or tensor.is_time_series,
+            is_voxel=is_voxel or tensor.is_voxel,
+        )
+
+    if isinstance(tensor, float | list | np.ndarray):
+        tensor = torch.tensor(tensor, dtype=dtype, device=device)
 
     if pattern is not None:
         if not _is_all_none(is_time_series, is_voxel):
@@ -417,6 +418,32 @@ class PhlowerTensor(IPhlowerTensor):
             is_voxel=is_voxel,
         )
 
+    def slice_time(
+        self,
+        indices: int | slice | list[int] | np.ndarray | torch.tensor,
+    ) -> PhlowerTensor:
+        if not self.is_time_series:
+            raise ValueError(
+                "Not time series: \n"
+                f"- shape: {self.shape}\n"
+                f"- pattern: {self.shape_pattern}\n"
+            )
+
+        if isinstance(indices, int):
+            return PhlowerTensor(
+                self[indices],
+                dimension_tensor=self.dimension,
+                is_time_series=False,
+                is_voxel=self.is_voxel,
+            )
+
+        return PhlowerTensor(
+            self[indices],
+            dimension_tensor=self.dimension,
+            is_time_series=True,
+            is_voxel=self.is_voxel,
+        )
+
     def to(
         self,
         device: str | torch.device = None,
@@ -492,11 +519,17 @@ class PhlowerTensor(IPhlowerTensor):
 
         ret: torch.Tensor = func(*_tensors, **kwargs)
 
-        # NOTE: Assume flags for the first tensor is preserved
-        is_time_series = _recursive_resolve(
-            args, "is_time_series", return_first_only=True
-        )
-        is_voxel = _recursive_resolve(args, "is_voxel", return_first_only=True)
+        tensor_args = [
+            a
+            for a in args
+            if isinstance(a, PhlowerTensor)
+            or (isinstance(a, list | tuple) and isinstance(a[0], PhlowerTensor))
+        ]
+
+        list_is_time_series = _recursive_resolve(tensor_args, "is_time_series")
+        list_is_voxel = _recursive_resolve(tensor_args, "is_voxel")
+        is_time_series = np.any(list_is_time_series)
+        is_voxel = np.any(list_is_voxel)
 
         if not _has_dimension(args):
             # Unit calculation is not considered when unit tensor is not found.
