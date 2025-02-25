@@ -114,7 +114,7 @@ class PhlowerDirectory:
     def find_snapshot_files(self) -> list[IPhlowerCheckpointFile]:
         snapshots = [
             PhlowerFileBuilder.checkpoint_file(p)
-            for p in list(self._path.glob("snapshot_epoch_*"))
+            for p in list(self._path.glob("**/snapshot_epoch_*"))
         ]
         return snapshots
 

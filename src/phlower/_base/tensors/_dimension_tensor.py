@@ -137,7 +137,7 @@ class PhlowerDimensionTensor:
 
     def to_dict(self) -> dict[str, float]:
         return {
-            k: self._tensor[v.value].numpy().item()
+            k: self._tensor[v.value].cpu().numpy().item()
             for k, v in PhysicalDimensionSymbolType.__members__.items()
         }
 
@@ -412,14 +412,21 @@ def tanh(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     return tensor
 
 
+@dimension_wrap_implements(torch.sigmoid)
+def sigmoid(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply sigmoid but {tensor}"
+        )
+    return tensor
+
+
 @dimension_wrap_implements(torch.nn.functional.leaky_relu)
 def leaky_relu(
     tensor: PhlowerDimensionTensor, *args: Any, **kwargs: Any
 ) -> PhlowerDimensionTensor:
-    if not tensor.is_dimensionless:
-        raise DimensionIncompatibleError(
-            f"Should be dimensionless to apply leaky_relu but {tensor}"
-        )
+    # NOTE: Allow leaky relu operation also for dimensioned tensor
+    #       because it is scale equivariant
     return tensor
 
 
@@ -501,4 +508,6 @@ def _torch_conv1d(
 
 @dimension_wrap_implements(torch.relu)
 def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    # NOTE: Allow relu operation also for dimensioned tensor
+    #       because it is scale equivariant
     return inputs

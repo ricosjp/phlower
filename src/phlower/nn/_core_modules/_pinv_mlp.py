@@ -115,11 +115,13 @@ class PInvLinear(torch.nn.Module):
     def __init__(self, ref_linear: torch.nn.Linear):
         super().__init__()
         self.ref_linear = ref_linear
+        self.has_bias = self.ref_linear.bias is not None
         return
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        h = torch.nn.functional.linear(x + self.bias, self.weight)
-        return h
+        if self.has_bias:
+            return torch.nn.functional.linear(x + self.bias, self.weight)
+        return torch.nn.functional.linear(x, self.weight)
 
     @property
     def weight(self) -> torch.Tensor:

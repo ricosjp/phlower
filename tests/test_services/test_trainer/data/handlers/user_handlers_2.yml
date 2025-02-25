@@ -11,10 +11,12 @@ training:
     parameters:
       lr: 0.0001
   handler_settings:
+    - handler: dummy
+      parameters:
+        threshold: 2.0
     - handler: EarlyStopping
       parameters:
         patience: 10
-
 
 model:
   inputs:

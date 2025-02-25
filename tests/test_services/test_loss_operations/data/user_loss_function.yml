@@ -5,16 +5,11 @@ training:
   n_epoch: 10
   loss_setting:
     name2loss:
-      nodal_last_u: "mse"
+      nodal_last_u: user_sse
   optimizer_setting:
     optimizer: SGD
     parameters:
       lr: 0.0001
-  handler_settings:
-    - handler: EarlyStopping
-      parameters:
-        patience: 10
-
 
 model:
   inputs:

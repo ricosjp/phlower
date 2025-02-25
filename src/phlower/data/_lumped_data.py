@@ -40,3 +40,10 @@ class LumpedTensorData:
         self.field_data = SimulationField(
             field_tensors=field_data, batch_info=field_batch_info
         )
+
+    @property
+    def n_data(self) -> int:
+        if self.data_directories is None:
+            return 1
+
+        return len(self.data_directories)
