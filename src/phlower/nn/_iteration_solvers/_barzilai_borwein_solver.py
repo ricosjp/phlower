@@ -140,7 +140,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
                 self._is_converged = False
                 break
 
-        return h_inputs
+        return h_inputs.mask(self._keys)
 
     def _calculate_alphas(
         self,
