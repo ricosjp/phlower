@@ -100,7 +100,7 @@ def test__forward_and_backward(
 
 
 @pytest.mark.parametrize("yaml_file", ["forward_time_series.yml"])
-def test__time_series_length(yaml_file: str):
+def test__calculation_graph_when_time_series_mode(yaml_file: str):
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
     setting = PhlowerSetting.read_yaml(setting_file)
 
