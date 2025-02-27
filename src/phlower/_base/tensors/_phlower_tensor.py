@@ -420,7 +420,7 @@ class PhlowerTensor(IPhlowerTensor):
 
     def slice_time(
         self,
-        indices: int | slice | list[int] | np.ndarray | torch.tensor,
+        indices: int | slice | list[int] | np.ndarray | torch.Tensor,
     ) -> PhlowerTensor:
         if not self.is_time_series:
             raise ValueError(

@@ -233,7 +233,7 @@ class PhlowerGroupModule(
                 self._forward(inputs, field_data=field_data, **kwards)
             )
 
-        return reduce_stack(results)
+        return reduce_stack(results, to_time_series=True)
 
     def _forward(
         self,
