@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-from phlower.utils import determine_n_process
+from phlower.utils import determine_max_process
 
 
 @pytest.mark.parametrize(
@@ -12,6 +12,6 @@ def test__determine_n_process(
     n_cpu: int, max_process: int | None, desired: int
 ):
     with mock.patch("os.cpu_count", return_value=n_cpu):
-        n_process = determine_n_process(max_process)
+        n_process = determine_max_process(max_process)
 
         assert n_process == desired

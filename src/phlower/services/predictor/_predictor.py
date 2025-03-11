@@ -10,15 +10,15 @@ from phlower._base import IPhlowerArray
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.nn import PhlowerGroupModule
+from phlower.services.predictor._result import (
+    PhlowerInverseScaledPredictionResult,
+    PhlowerPredictionResult,
+)
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.settings import (
     PhlowerModelSetting,
     PhlowerPredictorSetting,
     PhlowerSetting,
-)
-from phlower.utils.typing import (
-    PhlowerInverseScaledPredictionResult,
-    PhlowerPredictionResult,
 )
 
 
