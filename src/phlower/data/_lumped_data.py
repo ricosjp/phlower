@@ -1,5 +1,5 @@
+from phlower import IPhlowerArray
 from phlower._base import GraphBatchInfo
-from phlower._base.array import IPhlowerArray
 from phlower._fields import SimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.io import PhlowerDirectory
