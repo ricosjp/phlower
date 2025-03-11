@@ -68,4 +68,4 @@ class SimpleIterationSolver(IFIterationSolver):
                 self._is_converged = True
                 break
 
-        return h
+        return h.mask(self._targets)

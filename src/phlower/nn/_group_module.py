@@ -223,13 +223,17 @@ class PhlowerGroupModule(
 
         assert isinstance(self._time_series_length, int)
 
+        inputs = data
         for time_index in range(self._time_series_length):
             if time_index != 0:
                 last_result = results[-1].clone()
-                data.update(last_result, overwrite=True)
-            results.append(self._forward(data, field_data=field_data, **kwards))
+                inputs = data.clone()
+                inputs.update(last_result, overwrite=True)
+            results.append(
+                self._forward(inputs, field_data=field_data, **kwards)
+            )
 
-        return reduce_stack(results)
+        return reduce_stack(results, to_time_series=True)
 
     def _forward(
         self,

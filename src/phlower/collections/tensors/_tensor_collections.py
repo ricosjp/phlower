@@ -284,14 +284,22 @@ def reduce_update(
 
 
 def reduce_stack(
-    values: list[IPhlowerTensorCollections],
+    values: list[IPhlowerTensorCollections], to_time_series: bool = False
 ) -> IPhlowerTensorCollections:
     _results: dict[str, list[PhlowerTensor]] = defaultdict(list)
     for collection in values:
         for k, v in collection.items():
             _results[k].append(v)
 
-    result = {k: torch.stack(v) for k, v in _results.items()}
+    result = {
+        k: phlower_tensor(
+            torch.stack(v),
+            dimension=v[0].dimension,
+            is_time_series=to_time_series,
+            is_voxel=v[0].is_voxel,
+        )
+        for k, v in _results.items()
+    }
     return phlower_tensor_collection(result)
 
 
