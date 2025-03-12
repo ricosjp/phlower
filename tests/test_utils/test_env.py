@@ -11,7 +11,10 @@ from phlower.utils import determine_max_process
 def test__determine_n_process(
     n_cpu: int, max_process: int | None, desired: int
 ):
-    with mock.patch("os.cpu_count", return_value=n_cpu):
+    with (
+        mock.patch("os.cpu_count", return_value=n_cpu),
+        mock.patch("os.sched_getaffinity", return_value=set(range(n_cpu))),
+    ):
         n_process = determine_max_process(max_process)
 
         assert n_process == desired
