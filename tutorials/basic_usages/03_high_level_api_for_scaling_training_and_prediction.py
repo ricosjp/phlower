@@ -140,6 +140,8 @@ predictor = PhlowerPredictor(
 
 preprocessed_directories = [pathlib.Path("out/preprocessed/case_3")]
 
-for result in predictor.predict(preprocessed_directories):
-    for k in result.keys():
-        print(f"{k}: {result[k].dimension}")
+for result in predictor.predict(
+    preprocessed_directories, perform_inverse_scaling=False
+):
+    for k in result.prediction_data.keys():
+        print(f"{k}: {result.prediction_data[k].dimension}")
