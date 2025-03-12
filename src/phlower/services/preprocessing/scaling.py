@@ -73,7 +73,7 @@ class PhlowerScalingService:
         self.lazy_fit_all(
             data_directories=interim_data_directories, decrypt_key=decrypt_key
         )
-        self.transform_interim_all(
+        self._transform_directories(
             data_directories=interim_data_directories,
             output_base_directory=output_base_directory,
             decrypt_key=decrypt_key,
@@ -175,14 +175,13 @@ class PhlowerScalingService:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> dict[str, IPhlowerArray] | None:
-        if (data is not None) ^ (data_directories is not None):
+        if not ((data is not None) ^ (data_directories is not None)):
             raise ValueError(
-                "data and data_directories are not allowed to be set "
-                "at the same time."
+                "Either data and data_directories are allowed to be set "
             )
 
         if data_directories is not None:
-            return self._transform_interim_all(
+            return self._transform_directories(
                 data_directories=data_directories,
                 output_base_directory=output_base_directory,
                 max_process=max_process,
@@ -193,13 +192,13 @@ class PhlowerScalingService:
             )
 
         if data is not None:
-            return self._transform_all_data(
+            return self._transform_multiple_data(
                 data=data, max_process=max_process, allow_missing=allow_missing
             )
 
         raise ValueError("Cannot reach here.")
 
-    def _transform_all_data(
+    def _transform_multiple_data(
         self,
         data: dict[str, ArrayDataType],
         max_process: int | None = None,
@@ -229,7 +228,7 @@ class PhlowerScalingService:
 
         return (variable_name, self._scalers.transform(scaler_name, arr))
 
-    def _transform_interim_all(
+    def _transform_directories(
         self,
         data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,

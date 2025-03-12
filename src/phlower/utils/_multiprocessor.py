@@ -65,6 +65,8 @@ class PhlowerMultiprocessor:
 
         Parameters
         ----------
+        inputs: list[Any]
+            List of arguments which are supposed to be run in parallel
         max_process : int
             the number of processes to use
         target_fn : Callable[[Any], T]
@@ -85,7 +87,7 @@ class PhlowerMultiprocessor:
         """
         futures: list[cf.Future] = []
 
-        chunksize = chunksize or self._determine_chunksize()
+        chunksize = chunksize or self._determine_chunksize(len(inputs))
 
         with cf.ProcessPoolExecutor(self.max_process) as executor:
             for chunk in _get_chunks(*inputs, chunksize=chunksize):
