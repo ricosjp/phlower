@@ -73,6 +73,10 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
             )
 
     @property
+    def name(self) -> str:
+        return self.file_path.name
+
+    @property
     def file_path(self) -> pathlib.Path:
         return self._path
 

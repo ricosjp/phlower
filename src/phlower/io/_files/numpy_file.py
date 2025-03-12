@@ -86,6 +86,10 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         raise NotImplementedError(f"{ext} is not implemented")
 
     @property
+    def name(self) -> str:
+        return self.file_path.name
+
+    @property
     def is_encrypted(self) -> bool:
         if self._ext_type == PhlowerFileExtType.NPYENC:
             return True
