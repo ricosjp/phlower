@@ -35,11 +35,7 @@ def test__process_chunk(
         (
             [(i, i + 1) for i in range(10)],
             2,
-            [
-                (((i, i + 1),), ((i + 1, i + 2),))
-                for i in range(10)
-                if i % 2 == 0
-            ],
+            [((i, i + 1), (i + 1, i + 2)) for i in range(10) if i % 2 == 0],
         ),
     ],
 )
@@ -52,14 +48,19 @@ def test__get_chunks(iterables: list, chunksize: int, expects: list):
     "iterables, chunksize, expects",
     [
         (
-            [list(range(10)), [i + 1 for i in range(10)]],
+            [("a", 2), ("b", 1), ("c", 1)],
+            2,
+            [(("a", 2), ("b", 1)), (("c", 1),)],
+        ),
+        (
+            [(i, i + 1) for i in range(10)],
             2,
             [((i, i + 1), (i + 1, i + 2)) for i in range(10) if i % 2 == 0],
-        )
+        ),
     ],
 )
 def test__get_chunks_multiples(iterables: list, chunksize: int, expects: list):
-    for i, chunk in enumerate(_get_chunks(*iterables, chunksize=chunksize)):
+    for i, chunk in enumerate(_get_chunks(iterables, chunksize=chunksize)):
         assert chunk == expects[i]
 
 
@@ -143,8 +144,8 @@ def sample_add(num1: int, num2: int) -> int:
 @pytest.mark.parametrize(
     "max_process, inputs, chunksize, expects",
     [
-        (2, [[2, 3, 4, 5], [2, 3, 4, 5]], 3, [4, 6, 8, 10]),
-        (2, [[1, 1, 1, 1], [2, 3, 5, 6]], 2, [3, 4, 6, 7]),
+        (2, [(2, 2), (3, 3), (4, 4), (5, 5)], 3, [4, 6, 8, 10]),
+        (2, [(1, 2), (1, 3), (1, 5), (1, 6)], 2, [3, 4, 6, 7]),
     ],
 )
 def test__can_flatten_return_objects(
@@ -158,7 +159,7 @@ def test__can_flatten_return_objects(
 
     processor = PhlowerMultiprocessor(max_process)
     results = processor.run(
-        *inputs,
+        inputs,
         target_fn=sample_add,
         chunksize=chunksize,
     )

@@ -131,7 +131,7 @@ class PhlowerScalingService:
         )
         return scaler_name, self._scalers.get_scaler(scaler_name)
 
-    def transform_file(
+    def _transform_file(
         self,
         variable_name: str,
         file_path: pathlib.Path | IPhlowerNumpyFile,
@@ -145,7 +145,7 @@ class PhlowerScalingService:
     @overload
     def transfrom(
         self,
-        data: dict[str, ArrayDataType],
+        targets: dict[str, ArrayDataType],
         max_process: int | None = None,
         allow_missing: bool = False,
     ) -> dict[str, IPhlowerArray]: ...
@@ -153,7 +153,7 @@ class PhlowerScalingService:
     @overload
     def transform(
         self,
-        data_directories: list[pathlib.Path],
+        targets: list[pathlib.Path],
         output_base_directory: pathlib.Path,
         *,
         max_process: int | None = None,
@@ -165,8 +165,7 @@ class PhlowerScalingService:
 
     def transform(
         self,
-        data: dict[str, ArrayDataType] | None = None,
-        data_directories: list[pathlib.Path] | None = None,
+        targets: dict[str, ArrayDataType] | list[pathlib.Path],
         output_base_directory: pathlib.Path | None = None,
         *,
         max_process: int | None = None,
@@ -175,28 +174,26 @@ class PhlowerScalingService:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> dict[str, IPhlowerArray] | None:
-        if not ((data is not None) ^ (data_directories is not None)):
-            raise ValueError(
-                "Either data and data_directories are allowed to be set "
-            )
+        match targets:
+            case list():
+                return self._transform_directories(
+                    data_directories=targets,
+                    output_base_directory=output_base_directory,
+                    max_process=max_process,
+                    allow_missing=allow_missing,
+                    allow_overwrite=allow_overwrite,
+                    decrypt_key=decrypt_key,
+                    encrypt_key=encrypt_key,
+                )
+            case dict():
+                return self._transform_multiple_data(
+                    data=targets,
+                    max_process=max_process,
+                    allow_missing=allow_missing,
+                )
 
-        if data_directories is not None:
-            return self._transform_directories(
-                data_directories=data_directories,
-                output_base_directory=output_base_directory,
-                max_process=max_process,
-                allow_missing=allow_missing,
-                allow_overwrite=allow_overwrite,
-                decrypt_key=decrypt_key,
-                encrypt_key=encrypt_key,
-            )
-
-        if data is not None:
-            return self._transform_multiple_data(
-                data=data, max_process=max_process, allow_missing=allow_missing
-            )
-
-        raise ValueError("Cannot reach here.")
+            case _:
+                raise ValueError(f"Unexpected data is inputed. {targets=}")
 
     def _transform_multiple_data(
         self,
@@ -349,7 +346,7 @@ class PhlowerScalingService:
         )
 
         for numpy_file in transform_files:
-            transformed_data = self.transform_file(
+            transformed_data = self._transform_file(
                 numpy_file.get_variable_name(),
                 numpy_file,
                 decrypt_key=decrypt_key,
