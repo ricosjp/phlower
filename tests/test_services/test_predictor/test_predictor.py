@@ -7,7 +7,7 @@ import pytest
 import scipy.sparse as sp
 import torch
 from phlower import IPhlowerArray, PhlowerTensor
-from phlower.io import PhlowerDirectory
+from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.services.trainer import PhlowerTrainer
@@ -193,16 +193,19 @@ def test__predict_with_onmemory_dataset(
         )
     )
     loaded_data = [
-        {f.name: np.load(f) for f in p.glob("**/*.npy")}
+        {
+            basename.split(".")[0]: PhlowerNumpyFile(p / basename).load()
+            for basename in [
+                "nodal_initial_u.npy",
+                "nodal_last_u.npy",
+                "nodal_nadj.npz",
+            ]
+        }
         for p in preprocessed_directories
     ]
 
-    result = predictor.predict(
-        preprocessed_data=loaded_data, perform_inverse_scaling=True
-    )
-
     for result in predictor.predict(
-        preprocessed_directories, perform_inverse_scaling=True
+        preprocessed_data=loaded_data, perform_inverse_scaling=True
     ):
         for k in result.prediction_data.keys():
             assert isinstance(result.prediction_data[k], IPhlowerArray)
