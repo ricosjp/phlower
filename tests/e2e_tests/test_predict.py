@@ -63,9 +63,11 @@ def test__predict(simple_training: tuple[PhlowerTensor, pathlib.Path]):
         )
     )
 
-    for result in predictor.predict(preprocessed_directories):
-        for k in result.keys():
-            print(f"{k}: {result[k].dimension}")
+    for result in predictor.predict(
+        preprocessed_directories, perform_inverse_scaling=False
+    ):
+        for k in result.prediction_data.keys():
+            print(f"{k}: {result.prediction_data[k].dimension}")
 
 
 @pytest.mark.e2e_test
@@ -86,13 +88,17 @@ def test__predict_with_gpu(simple_training: tuple[PhlowerTensor, pathlib.Path]):
         )
     )
 
-    for result in predictor.predict(preprocessed_directories):
-        for k in result.keys():
-            print(f"{k}: {result[k].dimension}")
+    for result in predictor.predict(
+        preprocessed_directories, perform_inverse_scaling=False
+    ):
+        for k in result.prediction_data.keys():
+            print(f"{k}: {result.prediction_data[k].dimension}")
 
 
 @pytest.mark.e2e_test
-def test__predict_specified(simple_training: PhlowerTensor):
+def test__predict_specified(
+    simple_training: tuple[PhlowerTensor, pathlib.Path],
+):
     setting = PhlowerSetting.read_yaml(
         "tests/e2e_tests/data/predict_specified.yml"
     )
@@ -114,6 +120,8 @@ def test__predict_specified(simple_training: PhlowerTensor):
         == setting.prediction.target_epoch
     )
 
-    for result in predictor.predict(preprocessed_directories):
-        for k in result.keys():
-            print(f"{k}: {result[k].dimension}")
+    for result in predictor.predict(
+        preprocessed_directories, perform_inverse_scaling=False
+    ):
+        for k in result.prediction_data.keys():
+            print(f"{k}: {result.prediction_data[k].dimension}")

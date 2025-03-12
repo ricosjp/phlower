@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from typing_extensions import Self
 
 from phlower.data._collate_fn import PhlowerCollateFn
 from phlower.data._datasets import IPhlowerDataset
@@ -17,7 +18,7 @@ class DataLoaderBuilder:
     @classmethod
     def from_setting(
         cls, setting: PhlowerTrainerSetting | PhlowerPredictorSetting
-    ) -> Self:
+    ) -> DataLoaderBuilder:
         return DataLoaderBuilder(
             non_blocking=setting.non_blocking,
             device=setting.device,

@@ -11,7 +11,7 @@ class LumpedArrayData:
         x_data: dict[str, IPhlowerArray],
         y_data: dict[str, IPhlowerArray],
         field_data: dict[str, IPhlowerArray],
-        data_directory: PhlowerDirectory,
+        data_directory: PhlowerDirectory | None = None,
     ) -> None:
         self.x_data = x_data
         self.y_data = y_data

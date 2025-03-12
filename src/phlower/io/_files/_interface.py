@@ -21,45 +21,41 @@ class IPhlowerBaseFile(metaclass=abc.ABCMeta):
     ) -> IPhlowerBaseFile: ...
 
     @abc.abstractmethod
-    def __init__(self, path: pathlib.Path) -> None:
-        raise NotImplementedError()
+    def __init__(self, path: pathlib.Path) -> None: ...
 
     @property
     @abc.abstractmethod
-    def is_encrypted(self) -> bool:
-        raise NotImplementedError()
+    def is_encrypted(self) -> bool: ...
 
     @abc.abstractmethod
-    def __str__(self) -> str:
-        raise NotImplementedError()
+    def __str__(self) -> str: ...
 
     @property
     @abc.abstractmethod
-    def file_path(self) -> pathlib.Path:
-        raise NotImplementedError()
+    def file_path(self) -> pathlib.Path: ...
+
+    @property
+    @abc.abstractmethod
+    def name(self) -> str: ...
 
 
 class IPhlowerNumpyFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
-    def file_extension(self) -> str:
-        raise NotImplementedError()
+    def file_extension(self) -> str: ...
 
     @abc.abstractmethod
     def load(
         self, *, check_nan: bool = False, decrypt_key: bytes = None
-    ) -> IPhlowerArray:
-        raise NotImplementedError()
+    ) -> IPhlowerArray: ...
 
     @abc.abstractmethod
-    def get_variable_name(self) -> str:
-        raise NotImplementedError()
+    def get_variable_name(self) -> str: ...
 
 
 class IPhlowerYamlFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def load(self, *, decrypt_key: bytes = None) -> dict:
-        raise NotImplementedError()
+    def load(self, *, decrypt_key: bytes = None) -> dict: ...
 
 
 class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
@@ -69,14 +65,12 @@ class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def epoch(self) -> int:
-        raise NotImplementedError()
+    def epoch(self) -> int: ...
 
     @abc.abstractmethod
     def load(
         self, device: str | None = None, *, decrypt_key: bytes = None
-    ) -> dict:
-        raise NotImplementedError()
+    ) -> dict: ...
 
 
 def to_pathlib_object(

@@ -1,17 +1,21 @@
 import concurrent.futures as cf
-import itertools
 from collections.abc import Callable, Iterable
 from functools import partial
+from logging import getLogger
 from typing import Any, TypeVar
 
+from phlower.utils import determine_max_process
 from phlower.utils.exceptions import PhlowerMultiProcessError
 
-T = TypeVar("T")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+
+_logger = getLogger(__name__)
 
 
 def _process_chunk(
-    fn: Callable[[Any], T], chunk: list[Iterable[Any]]
-) -> list[T]:
+    fn: Callable[[T1], T2], chunk: list[Iterable[Any]]
+) -> list[T1]:
     """Processes a chunk of an iterable passed to map.
 
     Runs the function passed to map() on a chunk of the
@@ -23,16 +27,22 @@ def _process_chunk(
     return [fn(*args) for args in chunk]
 
 
-def _get_chunks(
-    *iterables: Iterable[Any], chunksize: int
-) -> Iterable[list[Any]]:
+def _get_chunks(iterables: Iterable[T1], chunksize: int) -> list[list[T1]]:
     """Iterates over ziped iterables in chunks."""
-    it = zip(*iterables, strict=False)
-    while True:
-        chunk = tuple(itertools.islice(it, chunksize))
-        if not chunk:
-            return
-        yield chunk
+    iterables = _format_inputs(iterables)
+    return [
+        tuple(iterables[i : i + chunksize])
+        for i in range(0, len(iterables), chunksize)
+    ]
+
+
+def _format_inputs(inputs: list) -> list[tuple[T1]]:
+    assert len(inputs) > 0
+
+    if isinstance(inputs[0], tuple):
+        return inputs
+
+    return [(v,) for v in inputs]
 
 
 def _santize_futures(futures: list[cf.Future]) -> None:
@@ -50,30 +60,33 @@ def _santize_futures(futures: list[cf.Future]) -> None:
 
 
 class PhlowerMultiprocessor:
-    def __init__(self, max_process: int):
+    def __init__(self, max_process: int | None):
         self.max_process = max_process
 
     def run(
         self,
-        *inputs: list[Any],
-        target_fn: Callable[[Any], T],
-        chunksize: int = 1,
-    ) -> list[T]:
+        inputs: list[tuple[T1]],
+        target_fn: Callable[[T1], T2],
+        chunksize: int | None = None,
+    ) -> list[T2]:
         """Wrapper function for concurrent.futures
          to run safely with multiple processes.
 
         Parameters
         ----------
+        inputs: list[tuple[T1]]
+            List of arguments which are supposed to be run in parallel
+            Each item of list corresponds to packed arguments for target_fn
         max_process : int
             the number of processes to use
-        target_fn : Callable[[Any], T]
+        target_fn : Callable[[T1], T2]
             function to execute
         chunksize : int, optional
             chunck size, by default 1
 
         Returns
         -------
-        list[T]
+        list[T2]
             Iterable of objects returned from target_fn
 
         Raises
@@ -82,9 +95,15 @@ class PhlowerMultiprocessor:
             If some processes are killed by host system such as OOM killer,
              this error raises.
         """
+        if len(inputs) == 0:
+            return []
+
         futures: list[cf.Future] = []
+        chunksize = chunksize or self._determine_chunksize(len(inputs))
+        _logger.info(f"chunksize is set as {chunksize}.")
+
         with cf.ProcessPoolExecutor(self.max_process) as executor:
-            for chunk in _get_chunks(*inputs, chunksize=chunksize):
+            for chunk in _get_chunks(inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn), chunk
                 )
@@ -97,3 +116,11 @@ class PhlowerMultiprocessor:
 
         # flatten
         return sum([f.result() for f in futures], start=[])
+
+    def _determine_chunksize(self, n_items: int) -> int:
+        return int(
+            max(
+                n_items // determine_max_process(),
+                1,
+            )
+        )

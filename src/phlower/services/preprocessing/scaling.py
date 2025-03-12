@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from functools import partial
+from typing import overload
 
 from pipe import chain, select, where
 
@@ -72,7 +73,7 @@ class PhlowerScalingService:
         self.lazy_fit_all(
             data_directories=interim_data_directories, decrypt_key=decrypt_key
         )
-        self.transform_interim_all(
+        self._transform_directories(
             data_directories=interim_data_directories,
             output_base_directory=output_base_directory,
             decrypt_key=decrypt_key,
@@ -130,7 +131,7 @@ class PhlowerScalingService:
         )
         return scaler_name, self._scalers.get_scaler(scaler_name)
 
-    def transform_file(
+    def _transform_file(
         self,
         variable_name: str,
         file_path: pathlib.Path | IPhlowerNumpyFile,
@@ -141,7 +142,90 @@ class PhlowerScalingService:
             scaler_name, file_path, decrypt_key=decrypt_key
         )
 
-    def transform_interim_all(
+    @overload
+    def transfrom(
+        self,
+        targets: dict[str, ArrayDataType],
+        max_process: int | None = None,
+        allow_missing: bool = False,
+    ) -> dict[str, IPhlowerArray]: ...
+
+    @overload
+    def transform(
+        self,
+        targets: list[pathlib.Path],
+        output_base_directory: pathlib.Path,
+        *,
+        max_process: int | None = None,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> None: ...
+
+    def transform(
+        self,
+        targets: dict[str, ArrayDataType] | list[pathlib.Path],
+        output_base_directory: pathlib.Path | None = None,
+        *,
+        max_process: int | None = None,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> dict[str, IPhlowerArray] | None:
+        match targets:
+            case list():
+                return self._transform_directories(
+                    data_directories=targets,
+                    output_base_directory=output_base_directory,
+                    max_process=max_process,
+                    allow_missing=allow_missing,
+                    allow_overwrite=allow_overwrite,
+                    decrypt_key=decrypt_key,
+                    encrypt_key=encrypt_key,
+                )
+            case dict():
+                return self._transform_multiple_data(
+                    data=targets,
+                    max_process=max_process,
+                    allow_missing=allow_missing,
+                )
+
+            case _:
+                raise ValueError(f"Unexpected data is inputed. {targets=}")
+
+    def _transform_multiple_data(
+        self,
+        data: dict[str, ArrayDataType],
+        max_process: int | None = None,
+        allow_missing: bool = False,
+    ) -> dict[str, IPhlowerArray]:
+        processor = PhlowerMultiprocessor(max_process=max_process)
+        results = processor.run(
+            list(data.items()),
+            target_fn=partial(
+                self._transform_data, allow_missing=allow_missing
+            ),
+        )
+
+        return {name: arr for name, arr in results if name is not None}
+
+    def _transform_data(
+        self,
+        variable_name: str,
+        arr: ArrayDataType,
+        allow_missing: bool = False,
+    ) -> tuple[str | None, IPhlowerArray | None]:
+        scaler_name = self._scaling_setting.get_scaler_name(variable_name)
+        if scaler_name is None:
+            if allow_missing:
+                return (None, None)
+            raise ValueError(f"Scaler for {variable_name} is missiing.")
+
+        return (variable_name, self._scalers.transform(scaler_name, arr))
+
+    def _transform_directories(
         self,
         data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,
@@ -172,7 +256,6 @@ class PhlowerScalingService:
                 decrypt_key=decrypt_key,
                 encrypt_key=encrypt_key,
             ),
-            chunksize=1,
         )
 
     def inverse_transform(
@@ -263,7 +346,7 @@ class PhlowerScalingService:
         )
 
         for numpy_file in transform_files:
-            transformed_data = self.transform_file(
+            transformed_data = self._transform_file(
                 numpy_file.get_variable_name(),
                 numpy_file,
                 decrypt_key=decrypt_key,

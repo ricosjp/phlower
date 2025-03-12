@@ -67,6 +67,10 @@ class PhlowerYamlFile(IPhlowerYamlFile):
         raise NotImplementedError(f"Unknown file extension: {path}")
 
     @property
+    def name(self) -> str:
+        return self.file_path.name
+
+    @property
     def is_encrypted(self) -> bool:
         return self._ext_type in [
             PhlowerFileExtType.YAMLENC,

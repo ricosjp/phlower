@@ -7,7 +7,7 @@ import pytest
 import scipy.sparse as sp
 import torch
 from phlower import IPhlowerArray, PhlowerTensor
-from phlower.io import PhlowerDirectory
+from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.services.trainer import PhlowerTrainer
@@ -140,14 +140,15 @@ def test__predict_with_inverse_scaling(
     )
 
     for result in predictor.predict(
-        preprocessed_directories, perform_inverse_scaling=True
+        preprocessed_data=preprocessed_directories, perform_inverse_scaling=True
     ):
-        for k in result.keys():
-            assert isinstance(result[k], IPhlowerArray)
-            assert result[k].dimension is not None
+        for k in result.prediction_data.keys():
+            assert isinstance(result.prediction_data[k], IPhlowerArray)
 
 
-def test__predict_specified(simple_training: PhlowerTensor):
+def test__predict_specified(
+    simple_training: tuple[PhlowerTensor, pathlib.Path],
+):
     setting = PhlowerSetting.read_yaml(DATA_DIR / "predict_specified.yml")
     _, model_directory = simple_training
 
@@ -167,7 +168,44 @@ def test__predict_specified(simple_training: PhlowerTensor):
         == setting.prediction.target_epoch
     )
 
-    for result in predictor.predict(preprocessed_directories):
-        for k in result.keys():
-            assert isinstance(result[k], PhlowerTensor)
-            assert result[k].dimension is not None
+    for result in predictor.predict(
+        preprocessed_directories, perform_inverse_scaling=False
+    ):
+        for k in result.prediction_data.keys():
+            assert isinstance(result.prediction_data[k], PhlowerTensor)
+            assert result.prediction_data[k].dimension is not None
+
+
+def test__predict_with_onmemory_dataset(
+    simple_training: tuple[PhlowerTensor, pathlib.Path],
+):
+    _, model_directory = simple_training
+
+    predictor = PhlowerPredictor.from_pathes(
+        model_directory=model_directory,
+        predict_setting_yaml=DATA_DIR / "predict.yml",
+        scaling_setting_yaml=OUTPUT_DIR / "preprocessed/preprocess.yml",
+    )
+    phlower_path = PhlowerDirectory(model_directory.parent)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+    loaded_data = [
+        {
+            basename.split(".")[0]: PhlowerNumpyFile(p / basename).load()
+            for basename in [
+                "nodal_initial_u.npy",
+                "nodal_last_u.npy",
+                "nodal_nadj.npz",
+            ]
+        }
+        for p in preprocessed_directories
+    ]
+
+    for result in predictor.predict(
+        preprocessed_data=loaded_data, perform_inverse_scaling=True
+    ):
+        for k in result.prediction_data.keys():
+            assert isinstance(result.prediction_data[k], IPhlowerArray)

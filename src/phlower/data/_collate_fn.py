@@ -1,5 +1,6 @@
 import torch
 
+from phlower.collections import phlower_tensor_collection
 from phlower.collections.arrays import SequencedDictArray
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
 
@@ -40,9 +41,9 @@ class PhlowerCollateFn:
         data_directories = [b.data_directory for b in batch]
 
         return LumpedTensorData(
-            x_data=inputs_tensors,
-            y_data=outputs_tensors,
-            field_data=field_tensors,
+            x_data=phlower_tensor_collection(inputs_tensors),
+            y_data=phlower_tensor_collection(outputs_tensors),
+            field_data=phlower_tensor_collection(field_tensors),
             data_directories=data_directories,
             x_batch_info=inputs_batch_info,
             y_batch_info=outputs_batch_info,
