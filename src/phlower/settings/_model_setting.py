@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 from phlower._base import PhysicalDimensions, PhysicalDimensionsClass
 from phlower.settings._group_setting import GroupModuleSetting
-
+from phlower.utils.enums import ConcatMode
 
 class _MemberSetting(pydantic.BaseModel):
     name: str
@@ -21,17 +21,34 @@ class _MemberSetting(pydantic.BaseModel):
 
 class ModelIOSetting(pydantic.BaseModel):
     name: str
+    """
+    Name of this feature array
+    """
+
     is_time_series: bool = False
+    """
+    Flag for time series array. Default to be False.
+    """
+
     is_voxel: bool = False
-    # time_slices: slice | None = None
+    """
+    Flag for voxel shaped array. Default to be False.
+    """
+
     physical_dimension: PhysicalDimensionsClass | None = None
     """
     physical dimension
     """
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
+    """
+    List of arrays which construct this feature array
+    """
 
     time_slice: list[int | None] | None = pydantic.Field(None, frozen=True)
+    """
+    slice object for time slicing
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
