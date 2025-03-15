@@ -92,13 +92,6 @@ class ModelIOSetting(pydantic.BaseModel):
 
 
 class PhlowerModelSetting(pydantic.BaseModel):
-    variable_dimensions: dict[str, PhysicalDimensionsClass] = pydantic.Field(
-        default_factory=lambda: {}, validate_default=True
-    )
-    """
-    dictionary which maps variable name to value
-    """
-
     inputs: list[ModelIOSetting]
     """
     settings for input feature values
