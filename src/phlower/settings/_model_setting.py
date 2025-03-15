@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 from phlower._base import PhysicalDimensions, PhysicalDimensionsClass
 from phlower.settings._group_setting import GroupModuleSetting
-from phlower.utils.enums import ConcatMode
+
 
 class _MemberSetting(pydantic.BaseModel):
     name: str
