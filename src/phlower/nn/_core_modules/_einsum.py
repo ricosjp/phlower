@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -16,10 +15,24 @@ from phlower.settings._module_settings import EinsumSetting
 
 
 class Einsum(IPhlowerCoreModule, torch.nn.Module):
-    """Einsum"""
+    """Einsum is a neural network module that performs a einsum operation
+    on the input tensors.
+
+    Parameters
+    ----------
+    activation: str
+        Name of the activation function to apply to the output.
+    equation: str
+        Equation of the einsum operation.
+
+    Examples
+    --------
+    >>> einsum = Einsum(activation="relu", equation="ij,jk->ik")
+    >>> einsum(data)
+    """
 
     @classmethod
-    def from_setting(cls, setting: EinsumSetting) -> Self:
+    def from_setting(cls, setting: EinsumSetting) -> Einsum:
         """Create Einsum from setting object
 
         Args:
@@ -66,9 +79,9 @@ class Einsum(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField, optional):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

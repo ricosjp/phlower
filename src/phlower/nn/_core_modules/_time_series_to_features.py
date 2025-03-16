@@ -16,7 +16,26 @@ from phlower.settings._module_settings import TimeSeriesToFeaturesSetting
 
 
 class TimeSeriesToFeatures(IPhlowerCoreModule, torch.nn.Module):
-    """TimeSeriesToFeatures"""
+    """
+    TimeSeriesToFeatures is a neural network module that converts a time series
+    tensor into a non time series tensor by summing the time series tensor
+    along the time dimension.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    activation: str
+        Activation function to apply to the output.
+
+    Examples
+    --------
+    >>> time_series_to_features = TimeSeriesToFeatures(
+    ...     nodes=[10, 20, 30],
+    ...     activation="relu",
+    ... )
+    >>> time_series_to_features(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: TimeSeriesToFeaturesSetting) -> Self:
@@ -70,9 +89,9 @@ class TimeSeriesToFeatures(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessor
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

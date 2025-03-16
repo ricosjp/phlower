@@ -27,18 +27,43 @@ logger = get_logger(__name__)
 
 
 class PhlowerScalingService:
-    """
-    This is Facade Class for scaling process
+    """PhlowerScalingService is a class that provides a service for scaling.
+
+    Examples
+    --------
+    >>> scaling_service = PhlowerScalingService.from_yaml("scaling.yaml")
+    >>> scaling_service.fit_transform_all(
+    ...     interim_data_directories,
+    ...     output_base_directory,
+    ... )
     """
 
     @classmethod
     def from_yaml(cls, yaml_file: str | pathlib.Path) -> PhlowerScalingService:
-        setting = PhlowerSetting.read_yaml(yaml_file)
+        """Create PhlowerScalingService from yaml file
 
+        Args:
+            yaml_file: str | pathlib.Path
+                Yaml file
+
+        Returns:
+            PhlowerScalingService: PhlowerScalingService
+        """
+        setting = PhlowerSetting.read_yaml(yaml_file)
         return PhlowerScalingService.from_setting(setting)
 
     @classmethod
     def from_setting(cls, setting: PhlowerSetting) -> PhlowerScalingService:
+        """Create PhlowerScalingService from PhlowerSetting
+
+        Args:
+            setting: PhlowerSetting
+                PhlowerSetting
+
+        Returns:
+            PhlowerScalingService: PhlowerScalingService
+        """
+
         if setting.scaling is None:
             raise ValueError("setting content about scaling is not found.")
 
@@ -93,6 +118,12 @@ class PhlowerScalingService:
         max_process: int = None,
         decrypt_key: bytes | None = None,
     ) -> None:
+        """Fit scalers by reading data files lazily
+
+        Returns
+        -------
+        None
+        """
         processor = PhlowerMultiprocessor(max_process=max_process)
         results = processor.run(
             self._parameters,
@@ -148,7 +179,22 @@ class PhlowerScalingService:
         targets: dict[str, ArrayDataType],
         max_process: int | None = None,
         allow_missing: bool = False,
-    ) -> dict[str, IPhlowerArray]: ...
+    ) -> dict[str, IPhlowerArray]:
+        """Transform data and return transformed data without saving
+
+        Args:
+            targets: dict[str, ArrayDataType]
+                Dictionary of variable names and data
+            max_process: int | None
+                Maximum number of processes
+            allow_missing: bool
+                If True, allow missing variables
+
+        Returns
+        -------
+        dict[str, IPhlowerArray]: Transformed data
+        """
+        ...
 
     @overload
     def transform(
@@ -161,7 +207,30 @@ class PhlowerScalingService:
         allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> None: ...
+    ) -> None:
+        """Transform data and save transformed data
+
+        Args:
+            targets: list[pathlib.Path]
+                List of paths to the data files
+            output_base_directory: pathlib.Path
+                Path to the output directory
+            max_process: int | None
+                Maximum number of processes
+            allow_missing: bool
+                If True, allow missing variables
+            allow_overwrite: bool
+                If True, allow overwriting existing files
+            decrypt_key: bytes | None
+                Decrypt key
+            encrypt_key: bytes | None
+                Encrypt key
+
+        Returns
+        -------
+        None
+        """
+        ...
 
     def transform(
         self,
@@ -240,6 +309,22 @@ class PhlowerScalingService:
         Apply scaling process to data in interim directory and save results
         in preprocessed directory.
 
+        Args:
+            data_directories: list[pathlib.Path]
+                List of paths to the data files
+            output_base_directory: pathlib.Path
+                Path to the output directory
+            max_process: int | None
+                Maximum number of processes
+            allow_missing: bool
+                If True, allow missing variables
+            allow_overwrite: bool
+                If True, allow overwriting existing files
+            decrypt_key: bytes | None
+                Decrypt key
+            encrypt_key: bytes | None
+                Encrypt key
+
         Returns
         -------
         None
@@ -263,6 +348,18 @@ class PhlowerScalingService:
         dict_data: dict[str, ArrayDataType | IPhlowerArray],
         raise_missing_message: bool = False,
     ) -> dict[str, IPhlowerArray]:
+        """Inverse transform data
+
+        Args:
+            dict_data: dict[str, ArrayDataType | IPhlowerArray]
+                Dictionary of variable names and data
+            raise_missing_message: bool
+                If True, raise message when missing variables
+
+        Returns
+        -------
+        dict[str, IPhlowerArray]: Inverse transformed data
+        """
         _filtered = self._filter_scalable_variables(
             list(dict_data.keys()), raise_missing_message=raise_missing_message
         )

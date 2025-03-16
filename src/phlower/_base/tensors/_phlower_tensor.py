@@ -146,10 +146,30 @@ def _resolve_dimension_arg(
 
 
 class PhlowerTensor(IPhlowerTensor):
-    """PhlowerTensor
+    """
+    PhlowerTensor is a wrapper of torch.Tensor with a physical dimension.
 
-    Tensor object which can be with physics dimenstion tensor.
+    Parameters
+    ----------
+    tensor (torch.Tensor):
+        Tensor to be wrapped.
+    dimension_tensor (PhlowerDimensionTensor, optional):
+        Physical dimension tensor.
+    is_time_series (bool, optional):
+        Whether the tensor is a time series.
+    is_voxel (bool, optional):
+        Whether the tensor is a voxel.
 
+    Examples
+    --------
+    >>> tensor = torch.randn(5, 100, 3)
+    >>> phlower_tensor = PhlowerTensor(
+    ...     tensor,
+    ...     dimension_tensor={"L": 1, "T": -1},
+    ...     is_time_series=True,
+    ...     is_voxel=False,
+    ... )
+    >>> print(phlower_tensor)
     """
 
     @classmethod
@@ -190,30 +210,65 @@ class PhlowerTensor(IPhlowerTensor):
 
     @property
     def has_dimension(self) -> bool:
+        """Whether the tensor has a physical dimension.
+
+        Returns:
+            bool: Whether the tensor has a physical dimension.
+        """
         return self._dimension_tensor is not None
 
     @property
     def dimension(self) -> PhlowerDimensionTensor | None:
+        """Physical dimension tensor.
+
+        Returns:
+            PhlowerDimensionTensor | None: Physical dimension tensor.
+        """
         return self._dimension_tensor
 
     @property
     def shape(self) -> torch.Size:
+        """Shape of the tensor.
+
+        Returns:
+            torch.Size: Shape of the tensor.
+        """
         return self._phlower_shape.shape
 
     @property
     def shape_pattern(self) -> PhlowerShapePattern:
+        """Shape pattern of the tensor.
+
+        Returns:
+            PhlowerShapePattern: Shape pattern of the tensor.
+        """
         return self._phlower_shape
 
     @property
     def is_sparse(self) -> bool:
+        """Whether the tensor is a sparse tensor.
+
+        Returns:
+            bool: Whether the tensor is a sparse tensor.
+        """
         return self._tensor.layout == torch.sparse_coo
 
     @property
     def is_time_series(self) -> bool:
+        """Whether the tensor is a time series.
+
+        Returns:
+            bool: Whether the tensor is a time series.
+        """
         return self._phlower_shape.is_time_series
 
     @property
     def is_voxel(self) -> bool:
+        """Whether the tensor is a voxel.
+
+        Returns:
+            bool: Whether the tensor is a voxel.
+        """
         return self._phlower_shape.is_voxel
 
     def __repr__(self) -> str:
@@ -307,29 +362,64 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def to_tensor(self) -> torch.Tensor:
+        """Convert to torch.Tensor.
+
+        Returns:
+            torch.Tensor: Tensor.
+        """
         return self._tensor
 
     def to_numpy(self) -> np.ndarray:
+        """Convert to numpy.ndarray.
+
+        Returns:
+            numpy.ndarray: Numpy array.
+        """
         return self._tensor.cpu().detach().numpy()
 
     def numpy(self) -> np.ndarray:
         return self.to_numpy()
 
     def coalesce(self) -> torch.Tensor:
+        """Coalesce the tensor.
+
+        Returns:
+            torch.Tensor: Coalesced tensor.
+        """
         return PhlowerTensor(self._tensor.coalesce(), self._dimension_tensor)
 
     def size(self) -> torch.Size:
+        """Size of the tensor.
+
+        Returns:
+            torch.Size: Size of the tensor.
+        """
         return self._tensor.size()
 
     @property
     def dtype(self) -> torch.dtype:
+        """Data type of the tensor.
+
+        Returns:
+            torch.dtype: Data type of the tensor.
+        """
         return self._tensor.dtype
 
     @property
     def device(self) -> torch.device:
+        """Device of the tensor.
+
+        Returns:
+            torch.device: Device of the tensor.
+        """
         return self._tensor.device
 
     def transpose(self, dim0: int, dim1: int) -> PhlowerTensor:
+        """Transpose the tensor.
+
+        Returns:
+            PhlowerTensor: Transposed tensor.
+        """
         _tensor = self._tensor.transpose(dim0, dim1)
         return PhlowerTensor(
             tensor=_tensor,
@@ -339,10 +429,19 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def numel(self) -> int:
+        """Number of elements in the tensor.
+
+        Returns:
+            int: Number of elements in the tensor.
+        """
         return torch.numel(self._tensor)
 
     def rank(self) -> int:
-        """Returns the tensor rank."""
+        """Returns the tensor rank.
+
+        Returns:
+            int: Tensor rank.
+        """
         if self.is_sparse:
             raise PhlowerSparseUnsupportedError(
                 "Cannot call rank() for sparse PhlowerTensor"
@@ -351,7 +450,12 @@ class PhlowerTensor(IPhlowerTensor):
         return self._phlower_shape.rank_size
 
     def n_vertices(self) -> int:
-        """Returns the number of vertices."""
+        """
+        Returns the number of vertices.
+
+        Returns:
+            int: Number of vertices.
+        """
         if self.is_sparse:
             raise PhlowerSparseUnsupportedError(
                 "Cannot call n_vertices() for sparse PhlowerTensor"
@@ -360,9 +464,21 @@ class PhlowerTensor(IPhlowerTensor):
         return self._phlower_shape.get_n_vertices()
 
     def indices(self) -> torch.Tensor:
+        """
+        Returns the indices of the tensor.
+
+        Returns:
+            torch.Tensor: Indices of the tensor.
+        """
         return self._tensor.indices()
 
     def values(self) -> torch.Tensor:
+        """
+        Returns the values of the tensor.
+
+        Returns:
+            torch.Tensor: Values of the tensor.
+        """
         return self._tensor.values()
 
     def to_vertexwise(self) -> tuple[PhlowerTensor, str]:
@@ -398,6 +514,12 @@ class PhlowerTensor(IPhlowerTensor):
         pattern: str,
         **axes_length: dict[str, int],
     ) -> PhlowerTensor:
+        """
+        Rearrange the tensor.
+
+        Returns:
+            PhlowerTensor: Rearranged tensor.
+        """
         rearranged = einops.rearrange(self._tensor, pattern, **axes_length)
 
         to_pattern = pattern.split("->")[-1]
@@ -411,6 +533,12 @@ class PhlowerTensor(IPhlowerTensor):
         is_time_series: bool = False,
         is_voxel: bool = False,
     ) -> PhlowerTensor:
+        """
+        Reshape the tensor.
+
+        Returns:
+            PhlowerTensor: Reshaped tensor.
+        """
         return PhlowerTensor(
             torch.reshape(self.to_tensor(), shape),
             dimension_tensor=self.dimension,
@@ -422,6 +550,12 @@ class PhlowerTensor(IPhlowerTensor):
         self,
         indices: int | slice | list[int] | np.ndarray | torch.Tensor,
     ) -> PhlowerTensor:
+        """
+        Slice the time series tensor.
+
+        Returns:
+            PhlowerTensor: Sliced tensor.
+        """
         if not self.is_time_series:
             raise ValueError(
                 "Not time series: \n"
@@ -450,6 +584,12 @@ class PhlowerTensor(IPhlowerTensor):
         non_blocking: bool = False,
         dtype: torch.dtype = None,
     ) -> PhlowerTensor:
+        """
+        Convert the tensor to a different device or data type.
+
+        Returns:
+            PhlowerTensor: Converted tensor.
+        """
         new_tensor = self._tensor.to(
             device=device, dtype=dtype, non_blocking=non_blocking
         )
@@ -464,6 +604,12 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def detach(self) -> PhlowerTensor:
+        """
+        Detach the tensor.
+
+        Returns:
+            PhlowerTensor: Detached tensor.
+        """
         if self.has_dimension:
             new_dimension = self._dimension_tensor.detach()
         else:
@@ -477,9 +623,18 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def backward(self) -> None:
+        """
+        Backward the tensor.
+        """
         self._tensor.backward()
 
     def as_pattern(self, pattern: str) -> PhlowerTensor:
+        """
+        Convert the tensor to a pattern.
+
+        Returns:
+            PhlowerTensor: Patterned tensor.
+        """
         return PhlowerTensor.from_pattern(
             tensor=self._tensor,
             dimension_tensor=self._dimension_tensor,
@@ -487,6 +642,12 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     def clone(self) -> PhlowerTensor:
+        """
+        Clone the tensor.
+
+        Returns:
+            PhlowerTensor: Cloned tensor.
+        """
         if self.has_dimension:
             new_dimension = self._dimension_tensor.clone()
         else:

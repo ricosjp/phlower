@@ -15,7 +15,30 @@ from phlower.settings._module_settings import RearrangeSetting
 
 
 class Rearrange(IPhlowerCoreModule, torch.nn.Module):
-    """Reducer"""
+    """Rearrange is a neural network module that performs a rearrange operation
+    on the input tensor.
+
+    Parameters
+    ----------
+    pattern: str
+        Pattern of the rearrange operation.
+    axes_lengths: dict[str, int]
+        Axes lengths of the rearrange operation.
+    save_as_time_series: bool
+        Whether to save the output as a time series.
+    save_as_voxel: bool
+        Whether to save the output as a voxel.
+
+    Examples
+    --------
+    >>> rearrange = Rearrange(
+    ...     pattern="t n f-> n f t",
+    ...     axes_lengths={"f": 10, "t": 10},
+    ...     save_as_time_series=True,
+    ...     save_as_voxel=True
+    ... )
+    >>> rearrange(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: RearrangeSetting) -> Self:
@@ -73,9 +96,9 @@ class Rearrange(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

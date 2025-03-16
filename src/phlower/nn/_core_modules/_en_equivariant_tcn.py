@@ -18,7 +18,38 @@ from phlower.settings._module_settings import EnEquivariantTCNSetting
 
 
 class EnEquivariantTCN(torch.nn.Module, IPhlowerCoreModule):
-    """EnEquivariantTCN layer"""
+    """EnEquivariantTCN is a neural network module that performs
+    an E(n)-equivariant operation on the time series input tensors.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    kernel_sizes: list[int]
+        List of kernel sizes.
+    dilations: list[int]
+        List of dilations.
+    activations: list[str]
+        List of activation functions.
+    bias: bool
+        Whether to use bias.
+    dropouts: list[float] | None (optional)
+        List of dropout rates.
+    create_linear_weight: bool
+        Whether to create a linear weight. Default is True.
+
+    Examples
+    --------
+    >>> en_equivariant_tcn = EnEquivariantTCN(
+    ...     nodes=[10, 20, 30],
+    ...     kernel_sizes=[3, 3, 3],
+    ...     dilations=[1, 2, 4],
+    ...     activations=["relu", "relu", "relu"],
+    ...     bias=True,
+    ...     dropouts=[0.1, 0.1, 0.1],
+    ...     create_linear_weight=True)
+    >>> en_equivariant_tcn(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: EnEquivariantTCNSetting) -> EnEquivariantTCN:
@@ -93,9 +124,9 @@ class EnEquivariantTCN(torch.nn.Module, IPhlowerCoreModule):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

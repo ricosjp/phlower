@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -15,10 +14,29 @@ from phlower.settings._module_settings import ConcatenatorSetting
 
 
 class Concatenator(IPhlowerCoreModule, torch.nn.Module):
-    """Concatenator"""
+    """
+    This class is designed to concatenate multiple tensors
+    along the last dimension and apply an activation function
+    to the concatenated result.
+
+    Parameters
+    ----------
+    nodes : list of int, optional
+        List of feature dimension sizes (The last value of tensor shape).
+        Defaults to None.
+    activation : str, optional
+        Name of the activation function to apply to the output.
+        Defaults to "identity" (no activation).
+
+    Examples
+    --------
+    >>> concatenator = Concatenator(activation="relu")
+    >>> concatenator(data)
+
+    """
 
     @classmethod
-    def from_setting(cls, setting: ConcatenatorSetting) -> Self:
+    def from_setting(cls, setting: ConcatenatorSetting) -> Concatenator:
         """Create Concatenator from setting object
 
         Args:
@@ -65,9 +83,9 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

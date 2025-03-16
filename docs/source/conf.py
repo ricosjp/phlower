@@ -7,7 +7,6 @@ import os
 import pathlib
 import shutil
 
-import sphinx_rtd_theme
 from sphinx_gallery.sorting import FileNameSortKey
 
 import phlower
@@ -50,7 +49,7 @@ def mmd_scraper(block, block_vars, gallery_conf):
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "phlower"
+project = "Phlower"
 copyright = "2024, RICOS"
 author = "RICOS"
 version = phlower.__version__
@@ -69,7 +68,7 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinxcontrib.mermaid",
 ]
-
+autosummary_generate = True
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -78,11 +77,18 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
-html_static_path = []
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_theme_options = {"display_version": True}
+html_theme = "furo"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+html_theme_options = {
+    "sidebar_hide_name": True,
+    # "announcement": f"📌 Version: {release}"
+}
 
+
+# Options for logo
+html_logo = "_static/logo.png"
+html_title = f"phlower v{version}"
 
 # -- Extension configuration -------------------------------------------------
 autosummary_generate = True
