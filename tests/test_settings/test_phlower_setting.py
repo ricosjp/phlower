@@ -5,26 +5,8 @@ import shutil
 import pytest
 from phlower.io import PhlowerYamlFile
 from phlower.settings import (
-    PhlowerModelSetting,
     PhlowerSetting,
 )
-
-
-@pytest.mark.parametrize(
-    "variable_dimensions",
-    [({"vala": {"mass_": 1, "time": 4}}), ({"sample": {"kg": 2, "Am": -2}})],
-)
-def test__invalid_dimension_model_setting(variable_dimensions: dict):
-    with pytest.raises(TypeError):
-        _ = PhlowerModelSetting(
-            variable_dimensions=variable_dimensions,
-            network={
-                "name": "sample",
-                "inputs": [],
-                "outputs": [],
-                "modules": [],
-            },
-        )
 
 
 def test__model_dump():

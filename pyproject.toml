@@ -11,47 +11,19 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pydantic = "^2.7.0"
-scipy = "^1.13.0"
+pydantic = ">=2.7.0,<3"
+scipy = ">=1.13.0,<2"
 pycryptodomex = "^3.20.0"
-pyyaml = "^6.0.1"
-dagstream = "^0.1.5"
-scikit-learn = "^1.5.0"
+pyyaml = ">=6.0.1"
+dagstream = ">=0.1.5"
+scikit-learn = ">=1.5.0,<2"
 pipe = "^2.2"
-pyvista = "^0.43.10"
-tqdm = "^4.66.4"
-pandas = "^2.2.2"
-einops = "^0.8.0"
+pyvista = ">=0.43.10,<1"
+tqdm = ">=4.66.4"
+pandas = ">=2.2.2"
+einops = ">=0.8.0"
 torch = "^2.5.0"
-
-[tool.poetry.extras]
-cu124 = ["torch", "torchvision"]
-cpu = ["torch", "torchvision"]
-
-
-[tool.poetry.group.cpu]
-optional = true
-[tool.poetry.group.cpu.dependencies]
-torch = { version = "^2.5.0", source = "torch_cpu", markers = "extra == 'cpu' and extra != 'cu124'" }
-torchvision = { version = "^0.20.1", source = "torch_cpu", markers = "extra == 'cpu' and extra != 'cu124'" }
-
-[[tool.poetry.source]]
-name = "torch_cpu"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "explicit"
-
-
-[tool.poetry.group.cu124]
-optional = true
-[tool.poetry.group.cu124.dependencies]
-torch = { version = "^2.5.0", source = "torch_cu124", markers = "extra=='cu124' and extra!='cpu'" }
-torchvision = { version = "^0.20.1", source = "torch_cu124", markers = "extra=='cu124' and extra!='cpu'" }
-
-
-[[tool.poetry.source]]
-name = "torch_cu124"
-url = "https://download.pytorch.org/whl/cu124"
-priority = "explicit"
+torchvision = "^0.20.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -60,6 +32,7 @@ mypy = "^1.8.0"
 pytest-cov = "^4.1.0"
 ruff = "^0.4.10"
 hypothesis = {extras = ["numpy"], version = "^6.115.3"}
+tomli = "^2.2.1"
 
 
 [tool.poetry.group.docs.dependencies]
