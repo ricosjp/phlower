@@ -281,7 +281,16 @@ class PhlowerTrainer:
         )
         loss = self._loss_calculator.aggregate(losses)
         loss.backward()
-        return loss
+
+        self._scheduled_optimizer.step_optimizer()
+        _last_loss = loss.detach().to_tensor().float().item()
+
+        del loss
+        # NOTE: This is necessary to use less memory
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        return _last_loss
 
     @overload
     def train(
@@ -290,7 +299,7 @@ class PhlowerTrainer:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> PhlowerTensor:
+    ) -> float:
         """
         Train model using directories defined in the setting
 
@@ -303,6 +312,8 @@ class PhlowerTrainer:
                 Decrypt key. Defaults to None.
             encrypt_key: bytes | None
                 Encrypt key. Defaults to None.
+        Returns:
+            float: Last loss
         """
         ...
 
@@ -315,7 +326,7 @@ class PhlowerTrainer:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> PhlowerTensor:
+    ) -> float:
         """Train the model with given directories
 
         Args:
@@ -333,7 +344,7 @@ class PhlowerTrainer:
                 Encrypt key. Defaults to None.
 
         Returns:
-            PhlowerTensor: Last loss
+            float: Last loss
         """
 
     def train(
@@ -344,7 +355,7 @@ class PhlowerTrainer:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
-    ) -> PhlowerTensor:
+    ) -> float:
         if train_directories is None:
             train_directories = self._data_setting.train
             validation_directories = self._data_setting.validation
@@ -372,7 +383,7 @@ class PhlowerTrainer:
             decrypt_key=decrypt_key,
         )
 
-        train_last_loss: PhlowerTensor | None = None
+        train_last_loss: float | None = None
 
         _timer = StopWatch(offset=self._offset_time)
         _timer.start()
@@ -386,12 +397,11 @@ class PhlowerTrainer:
             for tr_batch in train_loader:
                 train_last_loss = self._training_batch_step(tr_batch)
                 self._scheduled_optimizer.step_optimizer()
-                _last_loss = train_last_loss.detach().to_tensor().float().item()
                 _train_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
-                    desc=f"training loss: {_last_loss:.3f}",
+                    desc=f"training loss: {train_last_loss:.3f}",
                 )
-                train_losses.append(_last_loss)
+                train_losses.append(train_last_loss)
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(

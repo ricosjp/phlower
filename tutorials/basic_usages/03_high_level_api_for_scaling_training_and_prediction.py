@@ -112,11 +112,8 @@ loss = trainer.train(
 )
 
 ###################################################################################################
-# ``train`` function returns PhlowerTensor object which corresponds to last validation loss.
+# ``train`` function returns float which corresponds to last training loss.
 # Let's call print it.
-#
-# We can find that loss object has physical dimension and it is L^2 T^(-2)
-# because we use MSE (Mean Squared Error) as a loss function.
 
 print(loss)
 

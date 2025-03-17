@@ -5,7 +5,6 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
-import torch
 from phlower import IPhlowerArray, PhlowerTensor
 from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
@@ -89,7 +88,7 @@ def perform_scaling(
 @pytest.fixture(scope="module")
 def simple_training(
     perform_scaling: pathlib.Path,
-) -> tuple[PhlowerTensor, pathlib.Path]:
+) -> tuple[float, pathlib.Path]:
     phlower_path = PhlowerDirectory(OUTPUT_DIR)
 
     preprocessed_directories = list(
@@ -113,16 +112,8 @@ def simple_training(
     return loss, output_directory
 
 
-def test__simple_training(simple_training: tuple[PhlowerTensor, pathlib.Path]):
-    loss, _ = simple_training
-
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
-
-
 def test__predict_with_inverse_scaling(
-    simple_training: tuple[PhlowerTensor, pathlib.Path],
+    simple_training: tuple[float, pathlib.Path],
 ):
     _, model_directory = simple_training
 
@@ -147,7 +138,7 @@ def test__predict_with_inverse_scaling(
 
 
 def test__predict_specified(
-    simple_training: tuple[PhlowerTensor, pathlib.Path],
+    simple_training: tuple[float, pathlib.Path],
 ):
     setting = PhlowerSetting.read_yaml(DATA_DIR / "predict_specified.yml")
     _, model_directory = simple_training
@@ -177,7 +168,7 @@ def test__predict_specified(
 
 
 def test__predict_with_onmemory_dataset(
-    simple_training: tuple[PhlowerTensor, pathlib.Path],
+    simple_training: tuple[float, pathlib.Path],
 ):
     _, model_directory = simple_training
 

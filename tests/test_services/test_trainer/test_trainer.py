@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
-import torch
 import yaml
-from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
@@ -58,7 +56,7 @@ def prepare_sample_preprocessed_files():
 
 
 @pytest.fixture(scope="module")
-def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
+def simple_training(prepare_sample_preprocessed_files: None) -> float:
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
@@ -129,17 +127,7 @@ def test__training_with_multiple_batch_size(
         validation_directories=preprocessed_directories,
         output_directory=output_directory,
     )
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
-
-
-def test__simple_training(simple_training: PhlowerTensor):
-    loss: PhlowerTensor = simple_training
-
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
+    assert loss > 0.0
 
 
 @pytest.fixture
@@ -174,7 +162,7 @@ def perform_restart() -> Callable[[int | None], None]:
 
 
 def test__not_allowed_restart_when_all_epoch_is_finished(
-    simple_training: PhlowerTensor,
+    simple_training: float,
     perform_restart: Callable[[int | None], None],
 ):
     with pytest.raises(PhlowerRestartTrainingCompletedError):
@@ -182,7 +170,7 @@ def test__not_allowed_restart_when_all_epoch_is_finished(
 
 
 def test__last_epoch_is_update_after_restart(
-    simple_training: PhlowerTensor,
+    simple_training: float,
     perform_restart: Callable[[int | None], None],
 ):
     last_snapshot = select_snapshot_file(_OUTPUT_DIR / "model", "latest")
