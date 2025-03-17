@@ -18,6 +18,33 @@ class TCN(torch.nn.Module, IPhlowerCoreModule):
     Temporal Convolutional Networks
 
     Ref. https://arxiv.org/abs/1803.01271
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    kernel_sizes: list[int]
+        List of kernel sizes.
+    dilations: list[int]
+        List of dilations.
+    activations: list[str]
+        List of activation functions.
+    bias: bool
+        Whether to use bias.
+    dropouts: list[float] | None (optional)
+        List of dropout rates.
+
+    Examples
+    --------
+    >>> tcn = TCN(
+    ...     nodes=[10, 20, 30],
+    ...     kernel_sizes=[3, 3, 3],
+    ...     dilations=[1, 2, 4],
+    ...     activations=["relu", "relu", "relu"],
+    ...     bias=True,
+    ...     dropouts=[0.1, 0.1, 0.1]
+    ... )
+    >>> tcn(data)
     """
 
     @classmethod
@@ -82,9 +109,9 @@ class TCN(torch.nn.Module, IPhlowerCoreModule):
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

@@ -19,6 +19,16 @@ def phlower_dimension_tensor(
     dtype: torch.dtype = torch.float32,
     device: str | torch.device = None,
 ) -> PhlowerDimensionTensor:
+    """Create PhlowerDimensionTensor from dict or PhysicalDimensions object
+
+    Args:
+        values (dict[str, float] | PhysicalDimensions): values
+        dtype (torch.dtype, optional): data type. Defaults to torch.float32.
+        device (str | torch.device, optional): device. Defaults to None.
+
+    Returns:
+        PhlowerDimensionTensor: PhlowerDimensionTensor object
+    """
     if not isinstance(values, PhysicalDimensions):
         values = PhysicalDimensions(values)
 
@@ -38,9 +48,13 @@ def zero_dimension_tensor(
 
 class PhlowerDimensionTensor:
     """
-    PhlowerDimensionTensor
+    PhlowerDimensionTensor is a tensor that represents the physical dimensions
 
-    Tensor object which corresponds to physics dimension.
+    Examples
+    --------
+    >>> dimension_tensor = PhlowerDimensionTensor(
+    ...     values={"M": 1.0, "L": 1.0, "T": -2.0}
+    ... )
     """
 
     @classmethod
@@ -132,10 +146,20 @@ class PhlowerDimensionTensor:
         return f"{self.__class__.__name__}({texts})"
 
     def to_physics_dimension(self) -> PhysicalDimensions:
+        """Convert to PhysicalDimensions object
+
+        Returns:
+            PhysicalDimensions: PhysicalDimensions object
+        """
         _dict = self.to_dict()
         return PhysicalDimensions(_dict)
 
     def to_dict(self) -> dict[str, float]:
+        """Convert to dict
+
+        Returns:
+            dict[str, float]: Dict
+        """
         return {
             k: self._tensor[v.value].cpu().numpy().item()
             for k, v in PhysicalDimensionSymbolType.__members__.items()
@@ -147,6 +171,13 @@ class PhlowerDimensionTensor:
         non_blocking: bool = False,
         dtype: torch.dtype = None,
     ) -> PhlowerDimensionTensor:
+        """Convert to different device or data type
+
+        Args:
+            device (str | torch.device, optional): device. Defaults to None.
+            non_blocking (bool, optional): non-blocking. Defaults to False.
+            dtype (torch.dtype, optional): data type. Defaults to None.
+        """
         new_dimension = self._tensor.to(
             device, non_blocking=non_blocking, dtype=dtype
         )
@@ -169,7 +200,11 @@ class PhlowerDimensionTensor:
 
     @property
     def is_dimensionless(self) -> bool:
-        """Return True if the tensor is dimensionless."""
+        """Return True if the tensor is dimensionless.
+
+        Returns:
+            bool: True if the tensor is dimensionless.
+        """
         return torch.sum(torch.abs(self._tensor)) < 1e-5
 
     @classmethod

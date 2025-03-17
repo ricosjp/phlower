@@ -14,14 +14,27 @@ from phlower.settings._module_settings import IdentitySetting
 
 
 class Identity(IPhlowerCoreModule, torch.nn.Module):
-    """Identity layer"""
+    """Identity is a neural network module that returns the input tensor.
+
+    Parameters
+    ----------
+    nodes: list[int] | None (optional)
+        List of feature dimension sizes (The last value of tensor shape).
+        Defaults to None.
+
+    Examples
+    --------
+    >>> identity = Identity()
+    >>> identity(data) # return data itself
+    """
 
     @classmethod
     def from_setting(cls, setting: IdentitySetting) -> Self:
         """Generate model from setting object
 
         Args:
-            setting (EnEquivariantMLPSetting): setting object
+            setting:  IdentitySettin
+                setting object
 
         Returns:
             Self: Identity object
@@ -62,9 +75,9 @@ class Identity(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

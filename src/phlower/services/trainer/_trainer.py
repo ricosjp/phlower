@@ -114,10 +114,32 @@ class _EvaluationRunner:
 
 
 class PhlowerTrainer:
+    """
+    PhlowerTrainer is a class that manages the training process.
+
+    Examples
+    --------
+    >>> trainer = PhlowerTrainer.from_setting(setting)
+    >>> trainer.train(
+    ...     output_directory,
+    ...     train_directories,
+    ...     validation_directories
+    ... )
+    """
+
     _SAVED_SETTING_NAME: str = "model"
 
     @classmethod
     def restart_from(cls, model_directory: pathlib.Path) -> Self:
+        """Restart PhlowerTrainer from model directory
+
+        Args:
+            model_directory: pathlib.Path
+                Model directory
+
+        Returns:
+            Self: PhlowerTrainer
+        """
         ph_directory = PhlowerDirectory(model_directory)
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
         setting = PhlowerSetting.read_yaml(yaml_file)
@@ -127,6 +149,15 @@ class PhlowerTrainer:
 
     @classmethod
     def from_setting(cls, setting: PhlowerSetting) -> PhlowerTrainer:
+        """Create PhlowerTrainer from PhlowerSetting
+
+        Args:
+            setting: PhlowerSetting
+                PhlowerSetting
+
+        Returns:
+            PhlowerTrainer: PhlowerTrainer
+        """
         if (setting.model is None) or (setting.training is None):
             raise ValueError(
                 "setting content for training or model is not found."
@@ -136,6 +167,11 @@ class PhlowerTrainer:
         return cls(setting.model, setting.training)
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
+        """Get registered trainer setting
+
+        Returns:
+            PhlowerTrainerSetting: Trainer setting
+        """
         return self._trainer_setting
 
     def __init__(
@@ -179,6 +215,11 @@ class PhlowerTrainer:
         self._offset_time = 0.0
 
     def get_n_handlers(self) -> int:
+        """Get the number of handlers
+
+        Returns:
+            int: Number of handlers
+        """
         return self._handlers.n_handlers
 
     def _fix_seed(self, seed: int):
@@ -248,6 +289,25 @@ class PhlowerTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
+        """Train the model
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+            train_directories: list[pathlib.Path]
+                Train directories
+            validation_directories: list[pathlib.Path] | None
+                Validation directories. Defaults to None.
+            disable_dimensions: bool
+                Disable dimensions. Defaults to False.
+            decrypt_key: bytes | None
+                Decrypt key. Defaults to None.
+            encrypt_key: bytes | None
+                Encrypt key. Defaults to None.
+
+        Returns:
+            PhlowerTensor: Last loss
+        """
         validation_directories = validation_directories or []
         logging_runner = LoggingRunner(
             output_directory,
@@ -363,6 +423,20 @@ class PhlowerTrainer:
         device: str | None = None,
         decrypt_key: bytes | None = None,
     ) -> None:
+        """Load pretrained model
+
+        Args:
+            model_directory: pathlib.Path
+                Model directory
+            selection_mode: Literal["best", "latest", "train_best", "specified"]
+                Selection mode
+            target_epoch: int | None
+                Target epoch. Defaults to None.
+            device: str | None
+                Device. Defaults to None.
+            decrypt_key: bytes | None
+                Decrypt key. Defaults to None.
+        """
         checkpoint_file = select_snapshot_file(
             directory=model_directory,
             selection_mode=selection_mode,

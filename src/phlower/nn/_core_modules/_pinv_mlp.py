@@ -18,6 +18,16 @@ from phlower.utils.exceptions import NotFoundReferenceModuleError
 class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
     """
     Pseudo inverse of the reference MLP layer.
+
+    Parameters
+    ----------
+    reference_name: str
+        Name of the reference MLP layer.
+
+    Examples
+    --------
+    >>> pinv_mlp = PInvMLP(reference_name="MLP0")
+    >>> pinv_mlp(data)
     """
 
     @classmethod
@@ -86,9 +96,9 @@ class PInvMLP(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

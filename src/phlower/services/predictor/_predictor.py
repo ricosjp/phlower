@@ -37,6 +37,22 @@ class PhlowerPredictor:
         scaling_setting_yaml: pathlib.Path | None = None,
         decrypt_key: bytes | None = None,
     ) -> PhlowerPredictor:
+        """Create PhlowerPredictor from pathes
+
+        Args:
+            model_directory: pathlib.Path | str
+                Model directory
+            predict_setting_yaml: pathlib.Path
+                Predict setting yaml file
+            scaling_setting_yaml: pathlib.Path | None
+                Scaling setting yaml file. Defaults to None.
+            decrypt_key: bytes | None
+                Decrypt key. Defaults to None.
+
+        Returns:
+            PhlowerPredictor: PhlowerPredictor
+        """
+
         predict_setting = PhlowerSetting.read_yaml(
             predict_setting_yaml, decrypt_key=decrypt_key
         )
@@ -95,7 +111,26 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
-    ) -> Iterator[PhlowerPredictionResult]: ...
+    ) -> Iterator[PhlowerPredictionResult]:
+        """Predict data and return prediction result without inverse scaling
+
+        Args:
+            preprocessed_data: list[dict[str, IPhlowerArray]]
+                Preprocessed data
+            perform_inverse_scaling: bool
+                If True, perform inverse scaling
+            disable_dimensions: bool
+                If True, disable dimensions
+            decrypt_key: bytes | None
+                Decrypt key
+            return_only_prediction: bool
+                If True, return only prediction
+
+        Returns
+        -------
+        Iterator[PhlowerPredictionResult]: Prediction result
+        """
+        ...
 
     @overload
     def predict(
@@ -105,7 +140,26 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
-    ) -> Iterator[PhlowerInverseScaledPredictionResult]: ...
+    ) -> Iterator[PhlowerInverseScaledPredictionResult]:
+        """Predict data and return prediction result with inverse scaling
+
+        Args:
+            preprocessed_data: list[dict[str, IPhlowerArray]]
+                Preprocessed data
+            perform_inverse_scaling: bool
+                If True, perform inverse scaling
+            disable_dimensions: bool
+                If True, disable dimensions
+            decrypt_key: bytes | None
+                Decrypt key
+            return_only_prediction: bool
+                If True, return only prediction
+
+        Returns
+        -------
+        Iterator[PhlowerInverseScaledPredictionResult]: Prediction result
+        """
+        ...
 
     @overload
     def predict(
@@ -115,7 +169,28 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
-    ) -> Iterator[PhlowerPredictionResult]: ...
+    ) -> Iterator[PhlowerPredictionResult]:
+        """
+        Load data from files, make predictions, and
+        return prediction results without inverse scaling
+
+        Args:
+            preprocessed_data: list[pathlib.Path]
+                Preprocessed data
+            perform_inverse_scaling: bool
+                If True, perform inverse scaling
+            disable_dimensions: bool
+                If True, disable dimensions
+            decrypt_key: bytes | None
+                Decrypt key
+            return_only_prediction: bool
+                If True, return only prediction
+
+        Returns
+        -------
+        Iterator[PhlowerPredictionResult]: Prediction result
+        """
+        ...
 
     @overload
     def predict(
@@ -125,7 +200,28 @@ class PhlowerPredictor:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
-    ) -> Iterator[PhlowerInverseScaledPredictionResult]: ...
+    ) -> Iterator[PhlowerInverseScaledPredictionResult]:
+        """
+        Load data from files, make predictions, and
+        return prediction results with inverse scaling
+
+        Args:
+            preprocessed_data: list[pathlib.Path]
+                Preprocessed data
+            perform_inverse_scaling: bool
+                If True, perform inverse scaling
+            disable_dimensions: bool
+                If True, disable dimensions
+            decrypt_key: bytes | None
+                Decrypt key
+            return_only_prediction: bool
+                If True, return only prediction
+
+        Returns
+        -------
+        Iterator[PhlowerInverseScaledPredictionResult]: Prediction result
+        """
+        ...
 
     def predict(
         self,

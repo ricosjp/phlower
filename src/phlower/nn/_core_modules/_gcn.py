@@ -15,7 +15,41 @@ from phlower.settings._module_settings import GCNSetting
 
 
 class GCN(IPhlowerCoreModule, torch.nn.Module):
-    """Graph Convolutional Neural Network"""
+    """GCN is a neural network module that performs a graph convolution
+    operation on the input tensor.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    support_name: str
+        Name of the support tensor.
+    activations: list[str] | None (optional)
+        List of activation functions to apply to the output.
+        Defaults to None.
+    dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output.
+        Defaults to None.
+    repeat: int
+        Number of times to repeat the operation.
+    factor: float
+        Factor to multiply the support tensor by.
+    bias: bool
+        Whether to use bias.
+
+    Examples
+    --------
+    >>> gcn = GCN(
+    ...     nodes=[10, 20, 30],
+    ...     support_name="support",
+    ...     activations=["relu", "relu", "relu"],
+    ...     dropouts=[0.1, 0.1, 0.1],
+    ...     repeat=1,
+    ...     factor=1.0,
+    ...     bias=True
+    ...)
+    >>> gcn(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: GCNSetting) -> GCN:
@@ -85,9 +119,9 @@ class GCN(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

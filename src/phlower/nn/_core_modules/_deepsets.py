@@ -40,10 +40,25 @@ _PoolOperator = Callable[[list[torch.Tensor], int], torch.Tensor]
 
 
 class DeepSets(IPhlowerCoreModule, torch.nn.Module):
-    """
-    DeepSets
+    """DeepSets is a neural network module that performs permutation
+    invariant / equivariant operation on the input tensor.
 
     Ref: https://arxiv.org/abs/1703.06114
+
+    Parameters
+    ----------
+    lambda_config: MLPConfiguration
+        Configuration for the lambda network.
+    gamma_config: MLPConfiguration
+        Configuration for the gamma network.
+    last_activation_name: str
+        Name of the last activation function.
+    pool_operator_name: str
+        Name of the pooling operator. "max" or "mean".
+        Default is "max".
+    unbatch_key: str | None
+        Key of the unbatch operation.
+
     """
 
     _REGISTERED_POOL_OP: dict[str, _PoolOperator] = {
@@ -136,9 +151,9 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

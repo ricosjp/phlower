@@ -15,7 +15,31 @@ from phlower.settings._module_settings import MLPSetting
 
 
 class MLP(IPhlowerCoreModule, torch.nn.Module):
-    """Multi Layer Perceptron"""
+    """Multi Layer Perceptron
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    activations: list[str] | None (optional)
+        List of activation functions to apply to the output.
+        Defaults to None.
+    dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output.
+        Defaults to None.
+    bias: bool
+        Whether to use bias.
+
+    Examples
+    --------
+    >>> mlp = MLP(
+    ...     nodes=[10, 20, 30],
+    ...     activations=["relu", "relu", "relu"],
+    ...     dropouts=[0.1, 0.1, 0.1],
+    ...     bias=True
+    ... )
+    >>> mlp(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: MLPSetting) -> Self:
@@ -79,9 +103,9 @@ class MLP(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

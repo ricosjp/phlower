@@ -15,7 +15,30 @@ from phlower.settings._module_settings import AccessorSetting
 
 
 class Accessor(IPhlowerCoreModule, torch.nn.Module):
-    """Accessor"""
+    """Accessor is a neural network module that provides access to specific
+    tensor data with optional activation.
+
+    This module is designed to access and process specific elements
+    from input tensor collections. It can extract data at a specified index
+    and apply an activation function to the result.
+
+    Parameters
+    ----------
+    nodes: list[int] | None (optional)
+        List of feature dimension sizes (The last value of tensor shape).
+        Defaults to None.
+    activation: str (optional)
+        Name of the activation function to apply to the output.
+        Defaults to "identity" (no activation).
+    index: int (optional)
+        The index to access from the input tensor. Defaults to 0.
+
+    Examples
+    --------
+    >>> accessor = Accessor(activation="relu", index=2)
+    >>> output = accessor(input_data)  # Applies activation to data[2]
+
+    """
 
     @classmethod
     def from_setting(cls, setting: AccessorSetting) -> Self:
@@ -44,7 +67,7 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
 
     def __init__(
         self,
-        nodes: list[int] = None,
+        nodes: list[int] | None = None,
         activation: str = "identity",
         index: int = 0,
     ) -> None:
@@ -71,9 +94,9 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:
