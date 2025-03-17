@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import random
-from typing import Literal
+from typing import Literal, overload
 
 import numpy as np
 import torch
@@ -23,6 +23,7 @@ from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.settings import (
+    PhlowerDataSetting,
     PhlowerModelSetting,
     PhlowerSetting,
     PhlowerTrainerSetting,
@@ -164,7 +165,7 @@ class PhlowerTrainer:
             )
 
         setting.model.resolve()
-        return cls(setting.model, setting.training)
+        return cls(setting.model, setting.data, setting.training)
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -178,12 +179,14 @@ class PhlowerTrainer:
         self,
         model_setting: PhlowerModelSetting,
         trainer_setting: PhlowerTrainerSetting,
+        data_setting: PhlowerDataSetting | None,
     ):
         # NOTE: Must Call at first
         self._fix_seed(trainer_setting.random_seed)
 
         self._model_setting = model_setting
         self._trainer_setting = trainer_setting
+        self._data_setting = data_setting or PhlowerDataSetting()
 
         self._epoch_progress_bar = PhlowerProgressBar(
             total=self._trainer_setting.n_epoch
@@ -280,6 +283,30 @@ class PhlowerTrainer:
         loss.backward()
         return loss
 
+    @overload
+    def train(
+        self,
+        output_directory: pathlib.Path,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> PhlowerTensor:
+        """
+        Train model using directories defined in the setting
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+            disable_dimensions: bool
+                Disable dimensions. Defaults to False.
+            decrypt_key: bytes | None
+                Decrypt key. Defaults to None.
+            encrypt_key: bytes | None
+                Encrypt key. Defaults to None.
+        """
+        ...
+
+    @overload
     def train(
         self,
         output_directory: pathlib.Path,
@@ -289,7 +316,7 @@ class PhlowerTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> PhlowerTensor:
-        """Train the model
+        """Train the model with given directories
 
         Args:
             output_directory: pathlib.Path
@@ -308,7 +335,27 @@ class PhlowerTrainer:
         Returns:
             PhlowerTensor: Last loss
         """
-        validation_directories = validation_directories or []
+
+    def train(
+        self,
+        output_directory: pathlib.Path,
+        train_directories: list[pathlib.Path] | None = None,
+        validation_directories: list[pathlib.Path] | None = None,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> PhlowerTensor:
+        if train_directories is None:
+            train_directories = self._data_setting.train
+            validation_directories = self._data_setting.validation
+        else:
+            if not self._data_setting.is_empty():
+                raise ValueError(
+                    "train_directories and validation_directories "
+                    "should be None when data_setting has train directories."
+                )
+            validation_directories = validation_directories or []
+
         logging_runner = LoggingRunner(
             output_directory,
             log_every_n_epoch=self._trainer_setting.log_every_n_epoch,

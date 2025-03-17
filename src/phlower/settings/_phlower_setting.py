@@ -8,6 +8,7 @@ from packaging.version import Version
 from pydantic_core import ErrorDetails
 
 from phlower.io import PhlowerYamlFile
+from phlower.settings._data_setting import PhlowerDataSetting
 from phlower.settings._model_setting import PhlowerModelSetting
 from phlower.settings._predictor_setting import PhlowerPredictorSetting
 from phlower.settings._scaling_setting import PhlowerScalingSetting
@@ -20,6 +21,16 @@ _logger = get_logger(__name__)
 
 class PhlowerSetting(pydantic.BaseModel):
     version: str = __version__
+    """
+    version of setting file.
+    """
+
+    data: PhlowerDataSetting = pydantic.Field(
+        default_factory=PhlowerDataSetting
+    )
+    """
+    Data seting. Defaults to None.
+    """
 
     training: PhlowerTrainerSetting | None = None
     """
