@@ -83,6 +83,9 @@ html_css_files = ["custom.css"]
 html_theme_options = {
     "sidebar_hide_name": True,
     # "announcement": f"📌 Version: {release}"
+    # "light_css_variables": {
+    #     "color-brand-primary": "#f5f5f5"
+    # },
 }
 
 
