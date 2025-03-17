@@ -31,6 +31,25 @@ def test__create_same_initialized_object_from_list_and_tensor():
     )
 
 
+@given(
+    data=st.lists(
+        st.floats(width=32, allow_infinity=False, allow_nan=False),
+        min_size=1,
+        max_size=100,
+    )
+)
+def test__overwrite_time_series_flag(data: list[float]):
+    a = phlower_tensor(
+        data,
+        is_time_series=False,
+        is_voxel=False,
+        dimension={"T": 1, "L": -2},
+    )
+    b = phlower_tensor(torch.stack([a, a, a]), is_time_series=True)
+    assert b.is_time_series
+    assert a.dimension == b.dimension
+
+
 @pytest.mark.parametrize(
     "device",
     [torch.device("cpu"), torch.device("meta"), "cpu", "meta"],
@@ -208,69 +227,60 @@ def test__add_with_unit_incompatible():
         _ = ap + bp
 
 
-def test__add_scalar_and_timeseries():
-    a = phlower_tensor([1], is_time_series=False, is_voxel=False)
-    b = phlower_tensor(
-        np.random.rand(10, 20, 3, 1), is_time_series=True, is_voxel=False
-    )
+@given(
+    scalar_array=st.floats(allow_nan=False, allow_infinity=False, width=64),
+    time_series_array=st.lists(
+        st.floats(allow_nan=False, allow_infinity=False, width=64),
+        min_size=2,
+        max_size=5,
+    ),
+)
+def test__add_scalar_and_timeseries(
+    scalar_array: float, time_series_array: list[float]
+):
+    a = phlower_tensor([scalar_array], is_time_series=False, is_voxel=False)
+    b = phlower_tensor(time_series_array, is_time_series=True, is_voxel=False)
     assert not a.is_time_series
     assert b.is_time_series
     assert (a + b).is_time_series
     assert (b + a).is_time_series
 
 
-def test__change_time_series():
-    a = phlower_tensor(
-        np.random.rand(20, 3, 1),
-        is_time_series=False,
-        is_voxel=False,
-        dimension={"T": 1, "L": -2},
+@pytest.mark.parametrize(
+    "slicer, tensor_shape, is_time_series",
+    [
+        (slice(2, 15, 3), (20, 3, 1), True),
+        (slice(0, 60, 5), (60, 3, 1), True),
+        (slice(None, None, 5), (60, 3, 1), True),
+        ([2, 5, 8], (20, 3, 1), True),
+        (0, (20, 3, 1), False),
+        (slice(2, None, 3), (20, 3, 1), True),
+        (59, (60, 3, 1), False),
+    ],
+)
+@given(
+    dimensions=st.lists(
+        elements=st.floats(allow_nan=False, allow_infinity=False, width=32),
+        min_size=len(PhysicalDimensionSymbolType),
+        max_size=len(PhysicalDimensionSymbolType),
     )
-    b = phlower_tensor(torch.stack([a, a, a]), is_time_series=True)
-    assert b.is_time_series
-    assert a.dimension == b.dimension
-
-
-def test__slice_time_int():
+)
+def test__slice_time_with_slicable_object(
+    slicer: slice | list | int,
+    tensor_shape: tuple,
+    is_time_series: bool,
+    dimensions: list[float],
+):
     a = phlower_tensor(
-        np.random.rand(20, 3, 1),
+        np.random.rand(*tensor_shape),
         is_time_series=True,
         is_voxel=False,
-        dimension={"T": 1, "L": -2},
+        dimension=dimensions,
     )
-    index = 3
-    b = a.slice_time(index)
-    assert not b.is_time_series
+    b = a.slice_time(slicer)
+    assert b.is_time_series is is_time_series
     assert b.dimension == a.dimension
-    np.testing.assert_almost_equal(b.numpy(), a.numpy()[index])
-
-
-def test__slice_time_slice():
-    a = phlower_tensor(
-        np.random.rand(20, 3, 1),
-        is_time_series=True,
-        is_voxel=False,
-        dimension={"T": 1, "L": -2},
-    )
-    slice_ = slice(2, 15, 3)
-    b = a.slice_time(slice_)
-    assert b.is_time_series
-    assert b.dimension == a.dimension
-    np.testing.assert_almost_equal(b.numpy(), a.numpy()[slice_])
-
-
-def test__slice_time_indices():
-    a = phlower_tensor(
-        np.random.rand(20, 3, 1),
-        is_time_series=True,
-        is_voxel=False,
-        dimension={"T": 1, "L": -2},
-    )
-    indices = [2, 5, 8]
-    b = a.slice_time(indices)
-    assert b.is_time_series
-    assert b.dimension == a.dimension
-    np.testing.assert_almost_equal(b.numpy(), a.numpy()[indices])
+    np.testing.assert_almost_equal(b.numpy(), a.numpy()[slicer])
 
 
 @pytest.mark.parametrize(

@@ -165,7 +165,7 @@ class PhlowerTrainer:
             )
 
         setting.model.resolve()
-        return cls(setting.model, setting.data, setting.training)
+        return cls(setting.model, setting.training, setting.data)
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
