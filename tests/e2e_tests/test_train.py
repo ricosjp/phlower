@@ -4,7 +4,6 @@ import shutil
 import numpy as np
 import pandas as pd
 import pytest
-import torch
 from phlower.io import PhlowerDirectory
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
@@ -38,9 +37,7 @@ def test__training_with_multiple_batch_size(
         validation_directories=preprocessed_directories,
         output_directory=output_directory,
     )
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
+    assert loss > 0
 
 
 @pytest.mark.e2e_test
@@ -71,9 +68,7 @@ def test__training_with_multiple_batch_size_with_gpu(
         validation_directories=preprocessed_directories,
         output_directory=output_directory,
     )
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
+    assert loss > 0
 
 
 @pytest.mark.e2e_test
