@@ -12,7 +12,7 @@ COPY dist/Makefile /workspace/
 
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /workspace
-RUN poetry config virtualenvs.in-project true && make install_cu124
+RUN poetry config virtualenvs.in-project true && make install
 
 
 FROM pytorch/pytorch:2.5.0-cuda12.4-cudnn9-runtime

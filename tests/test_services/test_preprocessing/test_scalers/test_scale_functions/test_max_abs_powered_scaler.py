@@ -268,3 +268,22 @@ def test__retrieve_from_dumped_data(
             continue
 
         assert v == new_state[k]
+
+
+@pytest.mark.parametrize("power", [2.0, 0.3, 4.0])
+@pytest.mark.parametrize(
+    "fit_data_shape, input_shape",
+    [((500, 3), (5, 3)), ((10, 3), (4, 3)), ((100, 5, 1), (3, 5, 1))],
+)
+def test__inverse_scaling(
+    power: float, fit_data_shape: tuple[int, ...], input_shape: tuple[int, ...]
+):
+    scaler = MaxAbsPoweredScaler(power=power)
+
+    sample_data = np.random.rand(*fit_data_shape)
+    _ = scaler.partial_fit(sample_data)
+
+    _data = np.random.rand(*input_shape)
+    _retrieved = scaler.inverse_transform(scaler.transform(_data))
+
+    np.testing.assert_array_almost_equal(_data, _retrieved)

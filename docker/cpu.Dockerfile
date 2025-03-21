@@ -15,7 +15,7 @@ COPY dist/Makefile /workspace/
 
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /workspace
-RUN poetry config virtualenvs.in-project true && make install_cpu
+RUN poetry config virtualenvs.in-project true && make install
 
 
 FROM python:${USE_PYTHON_VERSION}-slim

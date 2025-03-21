@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -16,10 +15,30 @@ from phlower.settings._module_settings import ContractionSetting
 
 
 class Contraction(IPhlowerCoreModule, torch.nn.Module):
-    """Contraction"""
+    """Contraction is a neural network module that performs a contraction
+    operation on the input tensor.
+
+    This module is designed to reduce the dimensionality of the input tensor
+    by summing over specified dimensions.
+
+    Parameters
+    ----------
+    nodes: list[int] | None (optional)
+        List of feature dimension sizes (The last value of tensor shape).
+        Defaults to None.
+    activation: str (optional)
+        Name of the activation function to apply to the output.
+        Defaults to "identity" (no activation).
+
+
+    Examples
+    --------
+    >>> contraction = Contraction(activation="relu")
+    >>> contraction(data)
+    """
 
     @classmethod
-    def from_setting(cls, setting: ContractionSetting) -> Self:
+    def from_setting(cls, setting: ContractionSetting) -> Contraction:
         """Create Contraction from setting object
 
         Args:
@@ -66,9 +85,9 @@ class Contraction(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

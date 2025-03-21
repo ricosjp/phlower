@@ -15,7 +15,24 @@ from phlower.settings._module_settings import ReducerSetting
 
 
 class Reducer(IPhlowerCoreModule, torch.nn.Module):
-    """Reducer"""
+    """Reducer is a neural network module that performs a reduction operation
+    on the input tensor.
+
+    Parameters
+    ----------
+    activation: str
+        Name of the activation function to apply to the output.
+    operator: str
+        Name of the operator to apply to the input tensors. "add" or "mul".
+        Default is "add".
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+
+    Examples
+    --------
+    >>> reducer = Reducer(activation="relu", operator="add", nodes=[10, 20, 30])
+    >>> reducer(data)
+    """
 
     _REGISTERED_OPERATORS = {"add": torch.add, "mul": torch.mul}
 
@@ -24,7 +41,8 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
         """Create Reducer from setting object
 
         Args:
-            setting (ReducerSetting): setting object
+            setting: ReducerSetting
+                setting object
 
         Returns:
             Self: Reducer
@@ -70,9 +88,9 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

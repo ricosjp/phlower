@@ -8,14 +8,9 @@ reset:
 	poetry config virtualenvs.in-project ${IN_PROJECT}
 
 
-.PHONY: install_cu124
-install_cu124:
-	poetry sync --no-root -E cu124 --with cu124 
-
-
-.PHONY: install_cpu
-install_cpu:
-	poetry sync --no-root -E cpu --with cpu
+.PHONY: install
+install:
+	poetry sync --no-root
 
 
 .PHONY: mypy

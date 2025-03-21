@@ -31,6 +31,48 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     """
     Similarity-equivariant Multi Layer Perceptron as in
     https://proceedings.mlr.press/v235/horie24a.html.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    activations: list[str] | None (optional)
+        List of activation functions to apply to the output.
+        Defaults to None.
+    dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output.
+        Defaults to None.
+    bias: bool
+        Whether to use bias.
+    create_linear_weight: bool
+        Whether to create a linear weight.
+    norm_function_name: str
+        Name of the normalization function to apply to the output.
+        Defaults to "identity".
+    disable_en_equivariance: bool
+        Whether to disable en-equivariance.
+    invariant: bool
+        Whether to make the output invariant to the input.
+    centering: bool
+        Whether to center the output.
+    coeff_amplify: float
+        Coefficient to amplify the output.
+
+    Examples
+    --------
+    >>> similarity_equivariant_mlp = SimilarityEquivariantMLP(
+    ...     nodes=[10, 20, 30],
+    ...     activations=["relu", "relu", "relu"],
+    ...     dropouts=[0.1, 0.1, 0.1],
+    ...     bias=True,
+    ...     create_linear_weight=True,
+    ...     norm_function_name="identity",
+    ...     disable_en_equivariance=False,
+    ...     invariant=False,
+    ...     centering=False,
+    ...     coeff_amplify=1.0,
+    ... )
+    >>> similarity_equivariant_mlp(data)
     """
 
     @classmethod
@@ -63,12 +105,13 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = False,
+        bias: bool = True,
         create_linear_weight: bool = False,
         norm_function_name: str = "identity",
         disable_en_equivariance: bool = False,
         invariant: bool = False,
         centering: bool = False,
+        coeff_amplify: float = 1.0,
     ) -> None:
         super().__init__()
 
@@ -77,6 +120,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self._invariant = invariant
         self._centering = centering
         self._create_linear_weight = create_linear_weight
+        self._coeff_amplify = coeff_amplify
 
         if self._disable_en_equivariance:
             self._mlp = MLP(
@@ -126,9 +170,9 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 Data which receives from predecessors.
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:
@@ -153,12 +197,12 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
         dict_dimension = h.dimension.to_dict()
 
-        dict_scales = {
+        dict_scales_for_convert = {
             k: v ** dict_dimension[k] for k, v in dict_scales.items()
         }
 
         # Make h dimensionless
-        for v in dict_scales.values():
+        for v in dict_scales_for_convert.values():
             h = _functions.tensor_times_scalar(h, 1 / v)
 
         if self._centering:
@@ -168,7 +212,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             )
             h = h - mean
 
-        h = self._mlp(phlower_tensor_collection({"h": h}))
+        h = self._mlp(phlower_tensor_collection({"h": h * self._coeff_amplify}))
         assert h.dimension.is_dimensionless
 
         if self._centering:
@@ -181,7 +225,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             return h
 
         # Come back to the original dimension
-        for v in dict_scales.values():
+        for v in dict_scales_for_convert.values():
             h = _functions.tensor_times_scalar(h, v)
 
         return h

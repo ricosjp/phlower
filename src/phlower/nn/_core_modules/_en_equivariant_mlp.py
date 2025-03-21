@@ -17,7 +17,37 @@ from phlower.settings._module_settings import EnEquivariantMLPSetting
 
 
 class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
-    """E(n)-equivariant Multi Layer Perceptron"""
+    """EnEquivariantMLP is a neural network module that performs
+    an E(n)-equivariant operation on the input tensor.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    activations: list[str] | None (optional)
+        List of activation functions to apply to the output.
+        Defaults to None.
+    dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output.
+        Defaults to None.
+    bias: bool
+        Whether to use bias in the output.
+    create_linear_weight: bool
+        Whether to create a linear weight. Default is False.
+    norm_function_name: str
+        Name of the normalization function to apply to the output.
+
+    Examples
+    --------
+    >>> en_equivariant_mlp = EnEquivariantMLP(
+    ...     nodes=[10, 20, 30],
+    ...     activations=["relu", "relu", "relu"],
+    ...     dropouts=[0.1, 0.1, 0.1],
+    ...     bias=True,
+    ...     create_linear_weight=True,
+    ...     norm_function_name="identity")
+    >>> en_equivariant_mlp(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: EnEquivariantMLPSetting) -> EnEquivariantMLP:
@@ -49,7 +79,7 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
-        bias: bool = False,
+        bias: bool = True,
         create_linear_weight: bool = False,
         norm_function_name: str = "identity",
     ) -> None:
@@ -101,9 +131,9 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

@@ -11,9 +11,14 @@ from phlower.settings._nonlinear_solver_setting import (
     IPhlowerIterationSolverSetting,
     SimpleSolverSetting,
 )
+from phlower.utils import get_logger
+
+_logger = get_logger(__name__)
 
 
 class SimpleIterationSolver(IFIterationSolver):
+    _EPS = 1e-8
+
     @classmethod
     def from_setting(
         cls, setting: IPhlowerIterationSolverSetting
@@ -45,16 +50,22 @@ class SimpleIterationSolver(IFIterationSolver):
         problem: IOptimizeProblem,
     ) -> IPhlowerTensorCollections:
         h = initial_values
-        for _ in range(self._max_iterations):
+        for i in range(self._max_iterations):
             h_next = problem.step_forward(h)
 
             diff_h = (h_next.mask(self._targets) - h.mask(self._targets)).apply(
                 torch.linalg.norm
             )
+            rel_diff_h = diff_h / (
+                h.mask(self._targets).apply(torch.linalg.norm) + self._EPS
+            )
             h.update(h_next.mask(self._targets), overwrite=True)
 
-            if diff_h < self._convergence_threshold:
+            if rel_diff_h < self._convergence_threshold:
+                _logger.info(
+                    f"Simple iteration solver is converged. ({i} iteration)"
+                )
                 self._is_converged = True
                 break
 
-        return h
+        return h.mask(self._targets)

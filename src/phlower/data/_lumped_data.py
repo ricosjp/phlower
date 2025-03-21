@@ -11,7 +11,7 @@ class LumpedArrayData:
         x_data: dict[str, IPhlowerArray],
         y_data: dict[str, IPhlowerArray],
         field_data: dict[str, IPhlowerArray],
-        data_directory: PhlowerDirectory,
+        data_directory: PhlowerDirectory | None = None,
     ) -> None:
         self.x_data = x_data
         self.y_data = y_data
@@ -40,3 +40,10 @@ class LumpedTensorData:
         self.field_data = SimulationField(
             field_tensors=field_data, batch_info=field_batch_info
         )
+
+    @property
+    def n_data(self) -> int:
+        if self.data_directories is None:
+            return 1
+
+        return len(self.data_directories)

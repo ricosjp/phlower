@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
-import torch
 import yaml
-from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
@@ -58,7 +56,7 @@ def prepare_sample_preprocessed_files():
 
 
 @pytest.fixture(scope="module")
-def simple_training(prepare_sample_preprocessed_files: None) -> PhlowerTensor:
+def simple_training(prepare_sample_preprocessed_files: None) -> float:
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
     preprocessed_directories = list(
@@ -129,17 +127,7 @@ def test__training_with_multiple_batch_size(
         validation_directories=preprocessed_directories,
         output_directory=output_directory,
     )
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
-
-
-def test__simple_training(simple_training: PhlowerTensor):
-    loss: PhlowerTensor = simple_training
-
-    assert loss.has_dimension
-    assert not torch.isinf(loss.to_tensor())
-    assert not torch.isnan(loss.to_tensor())
+    assert loss > 0.0
 
 
 @pytest.fixture
@@ -156,7 +144,7 @@ def perform_restart() -> Callable[[int | None], None]:
         trainer = PhlowerTrainer.from_setting(setting)
 
         restart_directory = _OUTPUT_DIR / "model"
-        trainer.reinit_for_restart(restart_directory=restart_directory)
+        trainer._reinit_for_restart(restart_directory=restart_directory)
 
         phlower_path = PhlowerDirectory(_OUTPUT_DIR)
         preprocessed_directories = list(
@@ -174,7 +162,7 @@ def perform_restart() -> Callable[[int | None], None]:
 
 
 def test__not_allowed_restart_when_all_epoch_is_finished(
-    simple_training: PhlowerTensor,
+    simple_training: float,
     perform_restart: Callable[[int | None], None],
 ):
     with pytest.raises(PhlowerRestartTrainingCompletedError):
@@ -182,7 +170,7 @@ def test__not_allowed_restart_when_all_epoch_is_finished(
 
 
 def test__last_epoch_is_update_after_restart(
-    simple_training: PhlowerTensor,
+    simple_training: float,
     perform_restart: Callable[[int | None], None],
 ):
     last_snapshot = select_snapshot_file(_OUTPUT_DIR / "model", "latest")
@@ -211,3 +199,63 @@ def test__last_epoch_is_update_after_restart(
     for v in df.loc[:, "elapsed_time"]:
         assert v > _prev
         _prev = v
+
+
+@pytest.fixture
+def clean_directories():
+    output_directory = _OUTPUT_DIR / "base_model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    output_directory = _OUTPUT_DIR / "pretrained_model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+
+def test__starting_pretrained_state(clean_directories: None):
+    # base model
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+    trainer = PhlowerTrainer.from_setting(setting)
+
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+    trainer.train(
+        output_directory=(_OUTPUT_DIR / "base_model"),
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+    )
+
+    # start from pretrained state
+    trainer = PhlowerTrainer.from_setting(setting)
+    trainer.load_pretrained(_OUTPUT_DIR / "base_model", "best")
+    trainer.train(
+        output_directory=(_OUTPUT_DIR / "pretrained_model"),
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+    )
+
+    # check log.csv
+    df = pd.read_csv(
+        _OUTPUT_DIR / "base_model/log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+
+    # assert losses are not same with original ones.
+    df_org = pd.read_csv(
+        _OUTPUT_DIR / "pretrained_model/log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+    assert len(df) == len(df_org)
+    pretrained_losses = df.loc[:, "validation_loss"].to_numpy()
+    org_losses = df_org.loc[:, "validation_loss"].to_numpy()
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_array_almost_equal(pretrained_losses, org_losses)

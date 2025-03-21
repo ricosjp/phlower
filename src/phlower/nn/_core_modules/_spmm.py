@@ -14,7 +14,23 @@ from phlower.settings._module_settings import SPMMSetting
 
 
 class SPMM(torch.nn.Module, IPhlowerCoreModule):
-    """SParse MatMul Network"""
+    """
+    Sparse Matrix Multiplication Network
+
+    Parameters
+    ----------
+    factor: float
+        Factor to multiply the support matrix.
+    support_name: str
+        Name of the support matrix.
+    transpose: bool
+        Whether to transpose the support matrix.
+
+    Examples
+    --------
+    >>> spmm = SPMM(factor=1.0, support_name="support", transpose=False)
+    >>> spmm(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: SPMMSetting) -> SPMM:
@@ -72,9 +88,9 @@ class SPMM(torch.nn.Module, IPhlowerCoreModule):
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

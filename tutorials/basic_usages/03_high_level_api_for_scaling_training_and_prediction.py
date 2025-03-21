@@ -112,11 +112,8 @@ loss = trainer.train(
 )
 
 ###################################################################################################
-# ``train`` function returns PhlowerTensor object which corresponds to last validation loss.
+# ``train`` function returns float which corresponds to last training loss.
 # Let's call print it.
-#
-# We can find that loss object has physical dimension and it is L^2 T^(-2)
-# because we use MSE (Mean Squared Error) as a loss function.
 
 print(loss)
 
@@ -140,6 +137,8 @@ predictor = PhlowerPredictor(
 
 preprocessed_directories = [pathlib.Path("out/preprocessed/case_3")]
 
-for result in predictor.predict(preprocessed_directories):
-    for k in result.keys():
-        print(f"{k}: {result[k].dimension}")
+for result in predictor.predict(
+    preprocessed_directories, perform_inverse_scaling=False
+):
+    for k in result.prediction_data.keys():
+        print(f"{k}: {result.prediction_data[k].dimension}")

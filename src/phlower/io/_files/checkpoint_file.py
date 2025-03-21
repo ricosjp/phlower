@@ -73,6 +73,10 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
             )
 
     @property
+    def name(self) -> str:
+        return self.file_path.name
+
+    @property
     def file_path(self) -> pathlib.Path:
         return self._path
 
@@ -96,7 +100,7 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
             return self._load(device=device)
 
     def _load(self, device: str) -> Any:  # noqa: ANN401
-        return torch.load(self._path, map_location=device)
+        return torch.load(self._path, weights_only=False, map_location=device)
 
     def _load_encrypted(
         self, device: str, decrypt_key: bytes | None = None
@@ -105,7 +109,9 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
             raise ValueError("Feed key to load encrypted model")
 
         checkpoint = torch.load(
-            utils.decrypt_file(decrypt_key, self._path), map_location=device
+            utils.decrypt_file(decrypt_key, self._path),
+            weights_only=False,
+            map_location=device,
         )
         return checkpoint
 

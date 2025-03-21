@@ -223,13 +223,17 @@ class PhlowerGroupModule(
 
         assert isinstance(self._time_series_length, int)
 
+        inputs = data
         for time_index in range(self._time_series_length):
             if time_index != 0:
                 last_result = results[-1].clone()
-                data.update(last_result, overwrite=True)
-            results.append(self._forward(data, field_data=field_data, **kwards))
+                inputs = data.clone()
+                inputs.update(last_result, overwrite=True)
+            results.append(
+                self._forward(inputs, field_data=field_data, **kwards)
+            )
 
-        return reduce_stack(results)
+        return reduce_stack(results, to_time_series=True)
 
     def _forward(
         self,
@@ -302,14 +306,14 @@ class PhlowerGroupModule(
     ) -> None:
         content = checkpoint_file.load(device=device, decrypt_key=decrypt_key)
 
-        key_name = TrainerSavedKeyType.MODEL_STATE_DICT.value
+        key_name = TrainerSavedKeyType.model_state_dict.value
         if key_name not in content:
             raise KeyError(
                 f"Key named {key_name} is not found in "
                 f"{checkpoint_file.file_path}"
             )
         self.load_state_dict(
-            content[TrainerSavedKeyType.MODEL_STATE_DICT.value]
+            content[TrainerSavedKeyType.model_state_dict.value]
         )
 
     def get_core_module(self) -> IPhlowerCoreModule:

@@ -1,7 +1,10 @@
-# phlower
+# Phlower
 
 
-__phlower__ is a deep learning framework based on PyTorch especially for physical phenomenon such as fluid dynamics.
+![](docs/source/_static/logo.png)
+
+
+__Phlower__ is a deep learning framework based on PyTorch especially for physical phenomenon such as fluid dynamics.
 
 For more details, please refer to user manual below.
 
@@ -19,9 +22,9 @@ Tutorials are prepared for key features !
 
 
 
-## Usage
+## Installation
 
-**phlower** can be installed with pip. Python 3.10 or newer is supported.
+**Phlower** is registered at [PyPI](https://pypi.org/project/phlower/).  You can install phlower using pip. Python 3.10 or newer is supported.
 
 ```
 pip install phlower

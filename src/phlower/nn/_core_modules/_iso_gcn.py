@@ -21,7 +21,91 @@ from phlower.settings._module_settings._isogcn_setting import (
 
 
 class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
-    """Graph Convolutional Neural Network"""
+    """IsoGCN is a neural network module that performs
+    an spatial pifferential operation on the input tensor.
+    Ref: https://arxiv.org/abs/2005.06316
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    isoam_names: list[str]
+        List of names of the isoam tensors.
+    propagations (list[IsoGCNPropagationType]):
+        List of propagations to apply to the input tensor.
+    use_self_network: bool
+        Whether to use the self network.
+    self_network_activations: list[str] | None (optional)
+        List of activation functions to apply to the output of the self-network.
+        Defaults to None.
+    self_network_dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output of the self-network.
+        Defaults to None.
+    self_network_bias: bool | None (optional)
+        Whether to use bias in the self-network.
+        Defaults to False.
+    use_coefficient: bool
+        Whether to use the coefficient network.
+    coefficient_activations: list[str] | None (optional)
+        List of activation functions to apply to the output of
+        the coefficient network.
+        Defaults to None.
+    coefficient_dropouts: list[float] | None (optional)
+        List of dropout rates to apply to the output of the coefficient network.
+        Defaults to None.
+    coefficient_bias: bool | None (optional)
+        Whether to use bias in the coefficient network.
+        Defaults to False.
+    mul_order (Literal["ah_w", "a_hw"]):
+        Multiplication order.
+        Defaults to "ah_w".
+    to_symmetric: bool
+        Whether to make the output symmetric.
+        Defaults to False.
+    use_neumann: bool
+        Whether to use the Neumann layer.
+        Defaults to False.
+    neumann_factor: float
+        Factor to multiply the Neumann layer.
+        Defaults to 1.0.
+    neumann_input_name: str | None (optional)
+        Name of the input tensor for the Neumann layer.
+        Defaults to None.
+    inversed_moment_name: str
+        Name of the inversed moment tensor.
+        Defaults to "".
+
+    Examples
+    --------
+    >>> # Create an IsoGCN instance for laplacian operation with neumann condition
+    >>> isogcn = IsoGCN(
+    ...     nodes=[10, 20, 30],                    # Feature dimensions
+    ...     isoam_names=["isoam_x", "isoam_y", "isoam_z"],
+    ...     propagations=[                          # Types of propagation
+    ...         IsoGCNPropagationType.convolution,
+    ...         IsoGCNPropagationType.contraction
+    ...     ],
+    ...     # Self network configuration
+    ...     use_self_network=True,
+    ...     self_network_activations=["relu", "relu"],
+    ...     self_network_dropouts=[0.1, 0.1],
+    ...     self_network_bias=True,
+    ...     # Coefficient network configuration
+    ...     use_coefficient=True,
+    ...     coefficient_activations=["relu", "relu"],
+    ...     coefficient_dropouts=[0.1, 0.1],
+    ...     coefficient_bias=True,
+    ...     # Additional settings
+    ...     mul_order="ah_w",
+    ...     to_symmetric=True,
+    ...     use_neumann=True,
+    ...     neumann_factor=1.0,
+    ...     neumann_input_name="neumann_input",
+    ...     inversed_moment_name="inversed_moment"
+    ... )
+    >>> # Forward pass
+    >>> output = isogcn(data)
+    """  # noqa
 
     @classmethod
     def from_setting(cls, setting: IsoGCNSetting) -> IsoGCN:
@@ -146,15 +230,15 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         self,
         data: IPhlowerTensorCollections,
         *,
-        field_data: ISimulationField,
+        field_data: ISimulationField | None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

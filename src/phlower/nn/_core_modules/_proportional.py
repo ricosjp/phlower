@@ -15,14 +15,26 @@ from phlower.settings._module_settings import ProportionalSetting
 
 
 class Proportional(IPhlowerCoreModule, torch.nn.Module):
-    """Proportional, i.e., strictly linear, layer"""
+    """Proportional, i.e., strictly linear, layer
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+
+    Examples
+    --------
+    >>> proportional = Proportional(nodes=[10, 20, 30])
+    >>> proportional(data)
+    """
 
     @classmethod
     def from_setting(cls, setting: ProportionalSetting) -> Self:
         """Generate model from setting object
 
         Args:
-            setting (ProportionalSetting): setting object
+            setting: ProportionalSetting
+                setting object
 
         Returns:
             Self: Proportional object
@@ -74,9 +86,9 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

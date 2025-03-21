@@ -97,3 +97,30 @@ def test__forward_and_backward(
     loss = torch.nn.functional.mse_loss(actual, dummy_label)
 
     loss.backward()
+
+
+@pytest.mark.parametrize("yaml_file", ["forward_time_series.yml"])
+def test__calculation_graph_when_time_series_mode(yaml_file: str):
+    setting_file = _SAMPLE_SETTING_DIR / yaml_file
+    setting = PhlowerSetting.read_yaml(setting_file)
+
+    setting.model.network.resolve(is_first=True)
+    group = PhlowerGroupModule.from_setting(setting.model.network)
+
+    input_tensor = phlower_tensor(torch.rand(2, 3))
+    phlower_tensors = phlower_tensor_collection({"sample_input": input_tensor})
+
+    results = group.forward(phlower_tensors, field_data=None)
+    out = results.unique_item()
+    assert out.is_time_series
+
+    # Check time series tensors are not parent-child
+    #  relashionship on calculation graph
+    grads = torch.autograd.grad(
+        [out[0]],
+        [out[1]],
+        grad_outputs=[torch.ones_like(out[0])],
+        retain_graph=True,
+        allow_unused=True,
+    )
+    assert grads[0] is None

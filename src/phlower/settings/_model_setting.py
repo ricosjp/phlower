@@ -21,17 +21,34 @@ class _MemberSetting(pydantic.BaseModel):
 
 class ModelIOSetting(pydantic.BaseModel):
     name: str
+    """
+    Name of this feature array
+    """
+
     is_time_series: bool = False
+    """
+    Flag for time series array. Default to be False.
+    """
+
     is_voxel: bool = False
-    # time_slices: slice | None = None
+    """
+    Flag for voxel shaped array. Default to be False.
+    """
+
     physical_dimension: PhysicalDimensionsClass | None = None
     """
     physical dimension
     """
 
     members: list[_MemberSetting] = pydantic.Field(default_factory=list)
+    """
+    List of arrays which construct this feature array
+    """
 
     time_slice: list[int | None] | None = pydantic.Field(None, frozen=True)
+    """
+    slice object for time slicing
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -92,13 +109,6 @@ class ModelIOSetting(pydantic.BaseModel):
 
 
 class PhlowerModelSetting(pydantic.BaseModel):
-    variable_dimensions: dict[str, PhysicalDimensionsClass] = pydantic.Field(
-        default_factory=lambda: {}, validate_default=True
-    )
-    """
-    dictionary which maps variable name to value
-    """
-
     inputs: list[ModelIOSetting]
     """
     settings for input feature values

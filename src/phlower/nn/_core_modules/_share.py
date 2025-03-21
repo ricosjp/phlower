@@ -14,7 +14,15 @@ from phlower.utils.exceptions import NotFoundReferenceModuleError
 
 
 class Share(IPhlowerCoreModule, torch.nn.Module):
-    """
+    """Share module have same operations as the reference module.
+
+    Parameters
+    ----------
+    reference_name: str
+        Name of the reference module.
+
+    Notes
+    -----
     Share module is a reference to another module.
     Share module itself does not have any trainable parameters.
     """
@@ -63,9 +71,9 @@ class Share(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overload torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            field_data (ISimulationField):
+            field_data: ISimulationField | None
                 Constant information through training or prediction
 
         Returns:

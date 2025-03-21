@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -15,10 +14,28 @@ from phlower.settings._module_settings import DirichletSetting
 
 
 class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
-    """Dirichlet"""
+    """Dirichlet is a neural network module that overwrites values
+    with that of dirichlet field.
+
+    Parameters
+    ----------
+    activation: str
+        Name of the activation function to apply to the output.
+    dirichlet_name: str
+        Name of the dirichlet field.
+    nodes: list[int] | None (optional)
+        List of feature dimension sizes (The last value of tensor shape).
+        Defaults to None.
+
+    Examples
+    --------
+    >>> dirichlet = Dirichlet(activation="relu", dirichlet_name="dirichlet")
+    >>> dirichlet(data)
+
+    """
 
     @classmethod
-    def from_setting(cls, setting: DirichletSetting) -> Self:
+    def from_setting(cls, setting: DirichletSetting) -> Dirichlet:
         """Create Dirichlet from setting object
 
         Args:
@@ -68,9 +85,9 @@ class Dirichlet(IPhlowerCoreModule, torch.nn.Module):
         """forward function which overloads torch.nn.Module
 
         Args:
-            data (IPhlowerTensorCollections):
+            data: IPhlowerTensorCollections
                 data which receives from predecessors
-            supports (dict[str, PhlowerTensor], optional):
+            supports: dict[str, PhlowerTensor] | None
                 Graph object. Defaults to None. Dirichlet will not use it.
 
         Returns:

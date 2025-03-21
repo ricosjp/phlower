@@ -113,7 +113,7 @@ def test__saved_array_is_same_as_saved_scalers_transformed(
         )
         for name in variable_names:
             file_path = path.find_variable_file(name)
-            transformed = restored_scaler.transform_file(name, file_path)
+            transformed = restored_scaler._transform_file(name, file_path)
 
             saved_file_path = saved_path.find_variable_file(name)
             saved_arr = saved_file_path.load()

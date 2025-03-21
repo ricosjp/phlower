@@ -1,5 +1,13 @@
+import pathlib
+
 import phlower
+import tomli
 
 
-def test__version():
-    assert phlower.__version__ == "0.1.0"
+def test__version_same_as_pyproject_toml():
+    pyproject_path = pathlib.Path(__file__) / "../../pyproject.toml"
+    with open(pyproject_path.resolve(), "rb") as fr:
+        pyproject_data = tomli.load(fr)
+
+    version_number = pyproject_data["tool"]["poetry"]["version"]
+    assert phlower.__version__ == version_number
