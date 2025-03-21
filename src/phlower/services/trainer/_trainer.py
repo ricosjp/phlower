@@ -283,6 +283,7 @@ class PhlowerTrainer:
         loss.backward()
 
         self._scheduled_optimizer.step_optimizer()
+        self._scheduled_optimizer.zero_grad()
         _last_loss = loss.detach().to_tensor().float().item()
 
         del loss
@@ -396,7 +397,6 @@ class PhlowerTrainer:
 
             for tr_batch in train_loader:
                 train_last_loss = self._training_batch_step(tr_batch)
-                self._scheduled_optimizer.step_optimizer()
                 _train_batch_pbar.update(
                     trick=self._trainer_setting.batch_size,
                     desc=f"training loss: {train_last_loss:.3f}",
