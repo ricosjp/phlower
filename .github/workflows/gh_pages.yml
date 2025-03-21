@@ -12,7 +12,7 @@ jobs:
         image: python:3.10-slim
     steps:
       - name: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       
       - name: setup
         shell: bash
@@ -31,7 +31,7 @@ jobs:
           cp -r docs/build/html/* public/
 
       - name: upload_artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html_pages
           path: public/ # or path/to/artifact
@@ -42,7 +42,7 @@ jobs:
     steps:
 
       - name: download_artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: html_pages
           path: public/
