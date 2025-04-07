@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import cast
+from typing import cast, Any
 
 import pydantic
 import pydantic.dataclasses as dc
@@ -85,7 +85,7 @@ class SchedulerSetting(pydantic.BaseModel):
     Scheduler Class name defined in torch.optim.lr_schedulers.
     """
 
-    parameters: dict[str, int | float | bool | str] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict
     )
     """
