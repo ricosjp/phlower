@@ -13,7 +13,7 @@ from phlower.settings._interface import (
 
 class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int]
+    nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
 
     # special keyward to forbid extra fields in pydantic
