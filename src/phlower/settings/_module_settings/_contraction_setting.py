@@ -17,7 +17,7 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     activation: str = Field("identity", frozen=True)
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 2 and len(input_dims) != 1:
@@ -38,6 +38,9 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     @pydantic.model_validator(mode="after")
     def check_n_nodes(self) -> Self:
         vals = self.nodes
+        if vals is None:
+            return vals
+
         if len(vals) != 2:
             raise ValueError(f"Length of nodes must be 2. input: {vals}.")
 
