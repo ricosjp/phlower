@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import torch
 
 from phlower._base._functionals import unbatch
@@ -12,6 +10,7 @@ from phlower._base.tensors import (
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
+from phlower.nn._functionals import PoolingSelector
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -20,23 +19,6 @@ from phlower.settings._module_settings import DeepSetsSetting
 from phlower.utils import get_logger
 
 _logger = get_logger(__name__)
-
-
-def _max_pool(tensors: list[torch.Tensor], nodes_dim: int) -> torch.Tensor:
-    return torch.stack(
-        [torch.max(t, dim=nodes_dim, keepdim=False)[0] for t in tensors],
-        dim=nodes_dim,
-    )
-
-
-def _mean(tensors: list[torch.Tensor], nodes_dim: int) -> torch.Tensor:
-    return torch.stack(
-        [torch.mean(t, dim=nodes_dim, keepdim=False) for t in tensors],
-        dim=nodes_dim,
-    )
-
-
-_PoolOperator = Callable[[list[torch.Tensor], int], torch.Tensor]
 
 
 class DeepSets(IPhlowerCoreModule, torch.nn.Module):
@@ -60,11 +42,6 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
         Key of the unbatch operation.
 
     """
-
-    _REGISTERED_POOL_OP: dict[str, _PoolOperator] = {
-        "max": _max_pool,
-        "mean": _mean,
-    }
 
     @classmethod
     def from_setting(cls, setting: DeepSetsSetting) -> DeepSets:
@@ -123,16 +100,8 @@ class DeepSets(IPhlowerCoreModule, torch.nn.Module):
         self._last_activation = _utils.ActivationSelector.select(
             last_activation_name
         )
-        self._pool_operator = self._select_pool_operator(pool_operator_name)
+        self._pool_operator = PoolingSelector.select(pool_operator_name)
         self._reference_batch_name = unbatch_key
-
-    def _select_pool_operator(self, name: str) -> _PoolOperator:
-        if name not in self._REGISTERED_POOL_OP:
-            raise NotImplementedError(
-                f"pooling operation named {name} is not defined."
-            )
-
-        return self._REGISTERED_POOL_OP[name]
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
