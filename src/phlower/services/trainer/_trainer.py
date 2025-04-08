@@ -358,7 +358,7 @@ class PhlowerTrainer:
         encrypt_key: bytes | None = None,
     ) -> float:
         if train_directories is None:
-            train_directories = self._data_setting.train
+            train_directories = self._data_setting.training
             validation_directories = self._data_setting.validation
         else:
             if not self._data_setting.is_empty():

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import cast, Any
+from typing import Any, cast
 
 import pydantic
 import pydantic.dataclasses as dc
@@ -85,9 +85,7 @@ class SchedulerSetting(pydantic.BaseModel):
     Scheduler Class name defined in torch.optim.lr_schedulers.
     """
 
-    parameters: dict[str, Any] = Field(
-        default_factory=dict
-    )
+    parameters: dict[str, Any] = Field(default_factory=dict)
     """
     Parameters to pass when scheduler class is initialized.
     Allowed parameters depend on the scheduler you choose.
