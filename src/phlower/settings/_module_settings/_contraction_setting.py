@@ -31,7 +31,7 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
-        return [sum_dim, self.nodes[-1]]
+        return [sum_dim, input_dims[-1]]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
@@ -73,10 +73,5 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             raise ValueError(
                 f"Invalid length of nodes to overwrite. Input: {nodes}"
             )
-
-        if nodes[1] != self.nodes[1]:
-            raise ValueError("the last value of nodes is not consistent.")
-        if nodes[0] <= 0:
-            raise ValueError("Resolved nodes must be positive.")
 
         self.nodes = nodes
