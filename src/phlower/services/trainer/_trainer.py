@@ -298,6 +298,7 @@ class PhlowerTrainer:
         self,
         output_directory: pathlib.Path,
         disable_dimensions: bool = False,
+        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
@@ -325,6 +326,7 @@ class PhlowerTrainer:
         train_directories: list[pathlib.Path],
         validation_directories: list[pathlib.Path] | None = None,
         disable_dimensions: bool = False,
+        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
@@ -354,19 +356,21 @@ class PhlowerTrainer:
         train_directories: list[pathlib.Path] | None = None,
         validation_directories: list[pathlib.Path] | None = None,
         disable_dimensions: bool = False,
+        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
-        if train_directories is None:
-            train_directories = self._data_setting.training
-            validation_directories = self._data_setting.validation
-        else:
-            if not self._data_setting.is_empty():
-                raise ValueError(
-                    "train_directories and validation_directories "
-                    "should be None when data_setting has train directories."
-                )
-            validation_directories = validation_directories or []
+        if random_seed is not None:
+            self._fix_seed(random_seed)
+
+        self._data_setting = self._data_setting.upgrade(
+            training=train_directories, validation=validation_directories
+        )
+        if self._data_setting.is_empty():
+            raise ValueError(
+                "No training or validation directories are found. "
+                "Please check the setting file."
+            )
 
         logging_runner = LoggingRunner(
             output_directory,
@@ -376,6 +380,9 @@ class PhlowerTrainer:
         if self._start_epoch == 0:
             # start_epoch > 0 means that this training is restarted.
             self._save_setting(output_directory, encrypt_key=encrypt_key)
+
+        train_directories = self._data_setting.training
+        validation_directories = self._data_setting.validation
 
         train_loader, validation_loader = self._prepare_dataloader(
             train_directories=train_directories,
@@ -445,10 +452,19 @@ class PhlowerTrainer:
         return train_last_loss
 
     def _save_setting(
-        self, output_directory: pathlib.Path, encrypt_key: bytes | None = None
+        self,
+        output_directory: pathlib.Path,
+        random_seed: int | None = None,
+        encrypt_key: bytes | None = None,
     ) -> None:
+        dumped_training = self._trainer_setting.model_dump()
+        if random_seed is not None:
+            dumped_training["random_seed"] = random_seed
+
         dump_setting = PhlowerSetting(
-            training=self._trainer_setting, model=self._model_setting
+            training=dumped_training,
+            model=self._model_setting,
+            data=self._data_setting,
         )
         PhlowerYamlFile.save(
             output_directory=output_directory,

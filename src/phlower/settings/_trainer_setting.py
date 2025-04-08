@@ -114,7 +114,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     """
 
     optimizer_setting: OptimizerSetting = Field(
-        default_factory=OptimizerSetting
+        default_factory=lambda: OptimizerSetting()
     )
     """
     setting for optimizer
