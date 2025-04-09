@@ -28,8 +28,8 @@ from phlower.settings import (
 )
 from phlower.utils import get_logger
 
-
 _logger = get_logger(__name__)
+
 
 class PhlowerPredictor:
     @classmethod
@@ -109,12 +109,12 @@ class PhlowerPredictor:
     def _determine_output_scaler(self, name: str) -> str:
         if name in self._predict_setting.output_to_scaler_name:
             return self._predict_setting.output_to_scaler_name[name]
-        
+
         for label in self._model_setting.labels:
             if label.name == name:
                 if len(label.members) == 1:
                     return label.members[0].name
-        
+
         raise ValueError(
             f"Cannot determine scaler for output variable. output name: {name} "
             "Please set output_to_scaler_name in predict setting."
@@ -257,7 +257,9 @@ class PhlowerPredictor:
         )
 
         if not perform_inverse_scaling:
-            yield from self._predict(data_loader, return_only_prediction=return_only_prediction)
+            yield from self._predict(
+                data_loader, return_only_prediction=return_only_prediction
+            )
             return
 
         if self._scalers is None:
@@ -266,7 +268,9 @@ class PhlowerPredictor:
                 "Please check that your scaling setting"
                 " is inputted when initializing this class."
             )
-        yield from self._predict_with_inverse(data_loader, return_only_prediction=return_only_prediction)
+        yield from self._predict_with_inverse(
+            data_loader, return_only_prediction=return_only_prediction
+        )
         return
 
     def _setup_dataloader(
@@ -347,14 +351,20 @@ class PhlowerPredictor:
 
             _logger.info("Start inverse scaling")
             # for inverse scaling, change name temporarly
-            _pred_name_to_scaler = {k: self._determine_output_scaler(k) for k in h.keys()}
-            _scaler_to_pred_name = {k2: k1 for k1, k2 in _pred_name_to_scaler.items()}
+            _pred_name_to_scaler = {
+                k: self._determine_output_scaler(k) for k in h.keys()
+            }
+            _scaler_to_pred_name = {
+                k2: k1 for k1, k2 in _pred_name_to_scaler.items()
+            }
 
             h = {_pred_name_to_scaler[k]: v for k, v in h.items()}
             preds = self._scalers.inverse_transform(
                 h, raise_missing_message=True
             )
-            preds = {_scaler_to_pred_name[k]: v.to_numpy() for k, v in preds.items()}
+            preds = {
+                _scaler_to_pred_name[k]: v.to_numpy() for k, v in preds.items()
+            }
 
             if return_only_prediction:
                 yield PhlowerInverseScaledPredictionResult(

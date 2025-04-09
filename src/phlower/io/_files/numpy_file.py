@@ -8,7 +8,6 @@ from typing import Any, get_args
 
 import numpy as np
 import scipy.sparse as sp
-from typing_extensions import Self
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array

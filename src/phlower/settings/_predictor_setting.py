@@ -50,15 +50,13 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     target_epoch specifies the number of snapshot. Defaults to None.
     """
 
-    output_to_scaler_name: dict[str, str] = pydantic.Field(
-        default_factory=dict
-    )
+    output_to_scaler_name: dict[str, str] = pydantic.Field(default_factory=dict)
     """
-    output_to_scaler_name is a dictionary to define the scaler name
-    for each output variable. The key is the name of the output variable
-    and the value is the name of the scaler. Defaults to empty dictionary, 
-    relationship between output variable and scaler is assumed to be the same 
-    as that of label variables.
+    output_to_scaler_name is a dictionary to define the scaler
+     for each output variable. The key is the name of the output variable
+    and the value is the name of variable which has the scaler to use.
+    Defaults to empty dictionary, relationship between output variable
+     and scaler is assumed to be the same as that of label variables.
     """
 
     # special keyward to forbid extra fields in pydantic
