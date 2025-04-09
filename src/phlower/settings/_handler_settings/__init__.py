@@ -17,6 +17,11 @@ class _DiscriminatorHandlerTag(str, Enum):
 
 
 def _custom_handler_discriminator(value: object) -> str:
+    if isinstance(value, EarlyStoppingSetting):
+        return _DiscriminatorHandlerTag.EarlyStopping.value
+    if isinstance(value, UserDefinedHandlerSetting):
+        return _DiscriminatorHandlerTag.UserCustom.value
+
     handler_type = value.get("handler", None)
 
     if not isinstance(handler_type, str):

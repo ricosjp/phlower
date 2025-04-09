@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import cast
+from typing import Any, cast
 
 import pydantic
 import pydantic.dataclasses as dc
@@ -52,7 +52,7 @@ class OptimizerSetting(pydantic.BaseModel):
     Ex. Adam, RMSprop, SGD
     """
 
-    parameters: dict[str, int | float | bool | str] = Field(
+    parameters: dict[str, int | float | bool | str | Any] = Field(
         default_factory=dict
     )
     """
@@ -85,9 +85,7 @@ class SchedulerSetting(pydantic.BaseModel):
     Scheduler Class name defined in torch.optim.lr_schedulers.
     """
 
-    parameters: dict[str, int | float | bool | str] = Field(
-        default_factory=dict
-    )
+    parameters: dict[str, Any] = Field(default_factory=dict)
     """
     Parameters to pass when scheduler class is initialized.
     Allowed parameters depend on the scheduler you choose.
@@ -116,7 +114,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     """
 
     optimizer_setting: OptimizerSetting = Field(
-        default_factory=OptimizerSetting
+        default_factory=lambda: OptimizerSetting()
     )
     """
     setting for optimizer

@@ -39,17 +39,22 @@ class PhlowerScalingService:
     """
 
     @classmethod
-    def from_yaml(cls, yaml_file: str | pathlib.Path) -> PhlowerScalingService:
+    def from_yaml(
+        cls, yaml_file: str | pathlib.Path, decrypt_key: bytes | None = None
+    ) -> PhlowerScalingService:
         """Create PhlowerScalingService from yaml file
 
         Args:
             yaml_file: str | pathlib.Path
                 Yaml file
+            decrypt_key: bytes | None
+                Decrypt key
+                If None, do not decrypt.
 
         Returns:
             PhlowerScalingService: PhlowerScalingService
         """
-        setting = PhlowerSetting.read_yaml(yaml_file)
+        setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
         return PhlowerScalingService.from_setting(setting)
 
     @classmethod
@@ -174,7 +179,7 @@ class PhlowerScalingService:
         )
 
     @overload
-    def transfrom(
+    def transform(
         self,
         targets: dict[str, ArrayDataType],
         max_process: int | None = None,

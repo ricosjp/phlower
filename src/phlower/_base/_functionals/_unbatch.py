@@ -42,7 +42,12 @@ def unbatch(
     results = _dense_unbatch(
         tensor.to_tensor(), n_nodes, tensor.shape_pattern.nodes_dim
     )
-    return [phlower_tensor(v, tensor.dimension) for v in results]
+    return [
+        phlower_tensor(
+            v, dimension=tensor.dimension, is_time_series=tensor.is_time_series
+        )
+        for v in results
+    ]
 
 
 def _sparse_unbatch(

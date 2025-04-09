@@ -28,7 +28,7 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
-    @pydantic.field_validator("nodes")
+    @pydantic.field_validator("nodes", mode="before")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
         if vals is None:

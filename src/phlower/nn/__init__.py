@@ -16,6 +16,7 @@ from phlower.nn._core_modules import (
     Identity,
     IsoGCN,
     PInvMLP,
+    Pooling,
     Proportional,
     Rearrange,
     Reducer,

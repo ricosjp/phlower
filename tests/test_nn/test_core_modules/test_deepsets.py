@@ -12,7 +12,7 @@ from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import ActivationSelector, DeepSets, MLPConfiguration
 from phlower.settings._module_settings import DeepSetsSetting
-from phlower.utils.enums import ActivationType
+from phlower.utils.enums import ActivationType, PoolingType
 
 
 def test__can_call_parameters():
@@ -56,8 +56,8 @@ def create_mlp_configs(
     return nodes, activations, dropouts, bias
 
 
-@pytest.mark.parametrize("pool_operator_name", ["max", "mean"])
 @given(
+    pool_operator_name=st.sampled_from(PoolingType),
     last_activation=st.sampled_from(ActivationType),
     mlp_configs=create_mlp_configs(),
 )

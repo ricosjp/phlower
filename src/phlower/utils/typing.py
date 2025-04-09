@@ -8,11 +8,18 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
-ArrayDataType = np.ndarray | sp.coo_matrix | sp.csr_matrix | sp.csc_matrix
-
 DenseArrayType = np.ndarray
 
-SparseArrayType = sp.coo_matrix | sp.csr_matrix | sp.csc_matrix
+SparseArrayType = (
+    sp.coo_matrix
+    | sp.csr_matrix
+    | sp.csc_matrix
+    | sp.csr_array
+    | sp.coo_array
+    | sp.csc_array
+)
+
+ArrayDataType = np.ndarray | SparseArrayType
 
 LossFunctionType = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 

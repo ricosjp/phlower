@@ -70,6 +70,22 @@ class PhlowerSetting(pydantic.BaseModel):
         return version
 
     @classmethod
+    def read_dictionary(
+        cls,
+        data: dict,
+    ) -> PhlowerSetting:
+        try:
+            return PhlowerSetting(**data)
+        except pydantic.ValidationError as ex:
+            raise ValueError(
+                "Invalid contents are found in the input setting file. "
+                "Details are shown below. \n"
+                f"{_format_errors(ex.errors())} \n"
+                f"{ex.error_count()} errors are "
+                f"found."
+            ) from ex
+
+    @classmethod
     def read_yaml(
         cls,
         file_path: pathlib.Path | str | PhlowerYamlFile,
@@ -88,16 +104,7 @@ class PhlowerSetting(pydantic.BaseModel):
         """
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
-        try:
-            return PhlowerSetting(**data)
-        except pydantic.ValidationError as ex:
-            raise ValueError(
-                "Invalid contents are found in the input setting file. "
-                "Details are shown below. \n"
-                f"{_format_errors(ex.errors())} \n"
-                f"{ex.error_count()} errors are "
-                f"found in {file_path}."
-            ) from ex
+        return PhlowerSetting.read_dictionary(data)
 
 
 def _format_loc(location: list[str]) -> str:

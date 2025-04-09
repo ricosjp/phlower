@@ -105,6 +105,7 @@ class PhlowerDirectory:
 
         raise ValueError(
             f"Unknown extension or file not found for {file_base_name}"
+            f" in {self.path}"
         )
 
     def exist_variable_file(self, variable_name: str) -> bool:

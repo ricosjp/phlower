@@ -18,6 +18,9 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(True, frozen=True)
 
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 
