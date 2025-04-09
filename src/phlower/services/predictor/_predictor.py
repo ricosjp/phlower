@@ -229,6 +229,7 @@ class PhlowerPredictor:
         perform_inverse_scaling: bool = False,
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
+        return_only_prediction: bool = False,
     ) -> Iterator[
         PhlowerPredictionResult, PhlowerInverseScaledPredictionResult
     ]:
@@ -239,7 +240,7 @@ class PhlowerPredictor:
         )
 
         if not perform_inverse_scaling:
-            yield from self._predict(data_loader)
+            yield from self._predict(data_loader, return_only_prediction=return_only_prediction)
             return
 
         if self._scalers is None:
@@ -248,7 +249,7 @@ class PhlowerPredictor:
                 "Please check that your scaling setting"
                 " is inputted when initializing this class."
             )
-        yield from self._predict_with_inverse(data_loader)
+        yield from self._predict_with_inverse(data_loader, return_only_prediction=return_only_prediction)
         return
 
     def _setup_dataloader(
@@ -319,7 +320,7 @@ class PhlowerPredictor:
 
     def _predict_with_inverse(
         self, data_loader: DataLoader, return_only_prediction: bool = False
-    ) -> Iterator[dict[str, IPhlowerArray]]:
+    ) -> Iterator[PhlowerInverseScaledPredictionResult]:
         for batch in data_loader:
             batch: LumpedTensorData
 

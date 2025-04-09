@@ -32,7 +32,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         allow_overwrite: bool = False,
         dtype: np.dtype = np.float32,
         **kwargs,
-    ) -> Self:
+    ) -> PhlowerNumpyFile:
         fileio = _get_fileio(data, encrypt_key=encrypt_key)
         save_path = fileio.get_save_path(output_directory, file_basename)
         if not allow_overwrite:
@@ -45,7 +45,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
             save_path=save_path, data=data, dtype=dtype, encrypt_key=encrypt_key
         )
         _logger.info(f"{file_basename} is saved in: {save_path}")
-        return cls(save_path)
+        return PhlowerNumpyFile(save_path)
 
     def __init__(self, path: os.PathLike | IPhlowerNumpyFile) -> None:
         path = to_pathlib_object(path)
