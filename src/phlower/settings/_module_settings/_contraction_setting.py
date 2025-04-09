@@ -74,4 +74,14 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 f"Invalid length of nodes to overwrite. Input: {nodes}"
             )
 
+        if self.nodes is None:
+            self.nodes = nodes
+            return
+
+        if nodes[1] != self.nodes[1]:
+            raise ValueError("the last value of nodes is not consistent.")
+
+        if nodes[0] <= 0:
+            raise ValueError("Resolved nodes must be positive.")
+
         self.nodes = nodes
