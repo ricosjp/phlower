@@ -11,6 +11,10 @@ class PhlowerDataSetting(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(frozen=True)
 
+    @pydantic.field_serializer("training", "validation")
+    def serialize_path(self, value: list[pathlib.Path]) -> list[str]:
+        return [str(p) for p in value]
+
     def is_empty(self) -> bool:
         return len(self.training) == 0 and len(self.validation) == 0
 
