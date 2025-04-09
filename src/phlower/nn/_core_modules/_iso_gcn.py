@@ -466,9 +466,8 @@ def _validate_rank0_before_applying_nonlinear(
 
     if layer.has_nonlinearity():
         raise ValueError(
-            "Cannot apply nonlinear operator for rank > 0 tensor."
-            "Set bias and actications to "
-            "apply linear operation for rank > 0 tensor."
+            "Nonlinear operation is not allowed for rank > 0 tensor. "
+            "Try to apply linear operation for rank > 0 tensor. "
             f"Layer info: {layer.has_bias()=}, {layer.has_dropout()=}, "
             f"activations={layer.get_activation_names()}"
         )

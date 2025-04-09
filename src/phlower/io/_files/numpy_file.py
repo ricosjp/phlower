@@ -191,7 +191,7 @@ class _NpyEncFileIO(INumpyFileIOCore):
     def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         if decrypt_key is None:
             raise ValueError(
-                "encrpt key is None. Cannot decrypt encrypted file."
+                "decrypt key is None. Cannot decrypt encrypted file."
             )
 
         return np.load(utils.decrypt_file(decrypt_key, path))
