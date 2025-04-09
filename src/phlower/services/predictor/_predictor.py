@@ -26,7 +26,10 @@ from phlower.settings import (
     PhlowerPredictorSetting,
     PhlowerSetting,
 )
+from phlower.utils import get_logger
 
+
+_logger = get_logger(__name__)
 
 class PhlowerPredictor:
     @classmethod
@@ -101,6 +104,20 @@ class PhlowerPredictor:
             selection_mode=self._predict_setting.selection_mode,
             device=self._predict_setting.device,
             target_epoch=self._predict_setting.target_epoch,
+        )
+
+    def _determine_output_scaler(self, name: str) -> str:
+        if name in self._predict_setting.output_to_scaler_name:
+            return self._predict_setting.output_to_scaler_name[name]
+        
+        for label in self._model_setting.labels:
+            if label.name == name:
+                if len(label.members) == 1:
+                    return label.members[0].name
+        
+        raise ValueError(
+            f"Cannot determine scaler for output variable. output name: {name} "
+            "Please set output_to_scaler_name in predict setting."
         )
 
     @overload
@@ -325,10 +342,20 @@ class PhlowerPredictor:
             batch: LumpedTensorData
 
             h = self._model.forward(batch.x_data, field_data=batch.field_data)
+            h = h.to_phlower_arrays_dict()
+            _logger.info("Finished prediction")
 
+            _logger.info("Start inverse scaling")
+            # for inverse scaling, change name temporarly
+            _pred_name_to_scaler = {k: self._determine_output_scaler(k) for k in h.keys()}
+            _scaler_to_pred_name = {k2: k1 for k1, k2 in _pred_name_to_scaler.items()}
+
+            h = {_pred_name_to_scaler[k]: v for k, v in h.items()}
             preds = self._scalers.inverse_transform(
-                h.to_phlower_arrays_dict(), raise_missing_message=True
+                h, raise_missing_message=True
             )
+            preds = {_scaler_to_pred_name[k]: v.to_numpy() for k, v in preds.items()}
+
             if return_only_prediction:
                 yield PhlowerInverseScaledPredictionResult(
                     prediction_data=preds
