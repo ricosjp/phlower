@@ -164,7 +164,7 @@ class PhlowerTrainer:
             )
 
         setting.model.resolve()
-        return cls(setting.model, setting.training, setting.data)
+        return PhlowerTrainer(setting)
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -373,7 +373,11 @@ class PhlowerTrainer:
 
         if self._start_epoch == 0:
             # start_epoch > 0 means that this training is restarted.
-            self._save_setting(output_directory, encrypt_key=encrypt_key)
+            self._save_setting(
+                output_directory,
+                encrypt_key=encrypt_key,
+                data_setting=data_setting,
+            )
 
         train_directories = data_setting.training
         validation_directories = data_setting.validation

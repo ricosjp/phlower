@@ -39,7 +39,7 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def check_n_nodes(self) -> Self:
         vals = self.nodes
         if vals is None:
-            return vals
+            return self
 
         if len(vals) != 2:
             raise ValueError(f"Length of nodes must be 2. input: {vals}.")

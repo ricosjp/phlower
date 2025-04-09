@@ -52,7 +52,7 @@ class OptimizerSetting(pydantic.BaseModel):
     Ex. Adam, RMSprop, SGD
     """
 
-    parameters: dict[str, int | float | bool | str] = Field(
+    parameters: dict[str, int | float | bool | str | Any] = Field(
         default_factory=dict
     )
     """

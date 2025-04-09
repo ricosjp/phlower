@@ -1,3 +1,5 @@
+from typing import Any
+
 import pydantic
 
 
@@ -7,7 +9,7 @@ class UserDefinedHandlerSetting(pydantic.BaseModel):
     handler Class name defined in phlower.services.trainer.handlers.
     """
 
-    parameters: dict[str, int | float | bool | str] = pydantic.Field(
+    parameters: dict[str, Any] = pydantic.Field(
         default_factory=dict
     )
     """
