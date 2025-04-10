@@ -3,6 +3,7 @@ from collections.abc import Callable, Iterable
 from functools import partial
 from logging import getLogger
 from typing import Any, TypeVar
+import os
 
 from phlower.utils import determine_max_process
 from phlower.utils.exceptions import PhlowerMultiProcessError
@@ -61,7 +62,10 @@ def _santize_futures(futures: list[cf.Future]) -> None:
 
 class PhlowerMultiprocessor:
     def __init__(self, max_process: int | None):
-        self.max_process = max_process
+        self._max_process = determine_max_process(max_process)
+
+    def get_determined_process(self) -> int:
+        return self._max_process
 
     def run(
         self,
@@ -82,7 +86,7 @@ class PhlowerMultiprocessor:
         target_fn : Callable[[T1], T2]
             function to execute
         chunksize : int, optional
-            chunck size, by default 1
+            chunck size. By default, automatically determined.
 
         Returns
         -------
@@ -97,12 +101,17 @@ class PhlowerMultiprocessor:
         """
         if len(inputs) == 0:
             return []
+        
+        if self._max_process == 1:
+            # NOTE: This is a workaround to avoid pickling objects
+            # when max_process is 1.
+            return [target_fn(*arg) for arg in inputs]
 
         futures: list[cf.Future] = []
         chunksize = chunksize or self._determine_chunksize(len(inputs))
         _logger.info(f"chunksize is set as {chunksize}.")
 
-        with cf.ProcessPoolExecutor(self.max_process) as executor:
+        with cf.ProcessPoolExecutor(self._max_process) as executor:
             for chunk in _get_chunks(inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn), chunk
