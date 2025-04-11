@@ -3,7 +3,6 @@ from collections.abc import Callable, Iterable
 from functools import partial
 from logging import getLogger
 from typing import Any, TypeVar
-import os
 
 from phlower.utils import determine_max_process
 from phlower.utils.exceptions import PhlowerMultiProcessError
@@ -101,7 +100,7 @@ class PhlowerMultiprocessor:
         """
         if len(inputs) == 0:
             return []
-        
+
         if self._max_process == 1:
             # NOTE: This is a workaround to avoid pickling objects
             # when max_process is 1.
