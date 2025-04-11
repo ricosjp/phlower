@@ -13,9 +13,7 @@ T2 = TypeVar("T2")
 _logger = getLogger(__name__)
 
 
-def _process_chunk(
-    fn: Callable[[T1], T2], chunk: list[Iterable[Any]]
-) -> list[T1]:
+def _process_chunk(fn: Callable[[T1], T2], chunk: list[tuple[Any]]) -> list[T1]:
     """Processes a chunk of an iterable passed to map.
 
     Runs the function passed to map() on a chunk of the
@@ -27,7 +25,9 @@ def _process_chunk(
     return [fn(*args) for args in chunk]
 
 
-def _get_chunks(iterables: Iterable[T1], chunksize: int) -> list[list[T1]]:
+def _get_chunks(
+    iterables: Iterable[T1 | tuple[T1]], chunksize: int
+) -> list[tuple[T1]]:
     """Iterates over ziped iterables in chunks."""
     iterables = _format_inputs(iterables)
     return [
@@ -68,7 +68,7 @@ class PhlowerMultiprocessor:
 
     def run(
         self,
-        inputs: list[tuple[T1]],
+        inputs: list[tuple[T1] | T1],
         target_fn: Callable[[T1], T2],
         chunksize: int | None = None,
     ) -> list[T2]:
@@ -104,7 +104,7 @@ class PhlowerMultiprocessor:
         if self._max_process == 1:
             # NOTE: This is a workaround to avoid pickling objects
             # when max_process is 1.
-            return [target_fn(*arg) for arg in inputs]
+            return [target_fn(*arg) for arg in _format_inputs(inputs)]
 
         futures: list[cf.Future] = []
         chunksize = chunksize or self._determine_chunksize(len(inputs))
