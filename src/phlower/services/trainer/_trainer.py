@@ -564,6 +564,6 @@ def _evaluation(
             results.append(val_loss.detach().to_tensor().float().item())
         pbar.update(
             trick=_batch.n_data,
-            desc=f"{pbar_title}: {results[-1]}",
+            desc=f"{pbar_title}: {results[-1]:.3f}",
         )
     return np.average(results)
