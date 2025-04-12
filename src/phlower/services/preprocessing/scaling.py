@@ -104,7 +104,9 @@ class PhlowerScalingService:
         None
         """
         self.lazy_fit_all(
-            data_directories=interim_data_directories, max_process=max_process, decrypt_key=decrypt_key
+            data_directories=interim_data_directories,
+            max_process=max_process,
+            decrypt_key=decrypt_key,
         )
         self._transform_directories(
             data_directories=interim_data_directories,
