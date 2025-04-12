@@ -1,6 +1,8 @@
 from logging import getLogger
 from typing import Any, get_args
 
+import numpy as np
+
 from phlower._base import PhysicalDimensions
 from phlower._base.array import dense, sparse
 from phlower._base.array._interface_wrapper import IPhlowerArray
@@ -14,6 +16,7 @@ def phlower_array(
     is_time_series: bool | None = None,
     is_voxel: bool | None = None,
     dimensions: PhysicalDimensions | None = None,
+    dtype: np.dtype = np.float32,
 ) -> IPhlowerArray:
     if isinstance(data, IPhlowerArray):
         if not _is_all_none(is_time_series, is_voxel, dimensions):
@@ -29,7 +32,7 @@ def phlower_array(
 
     if isinstance(data, DenseArrayType):
         return dense.NdArrayWrapper(
-            data,
+            data.astype(dtype),
             is_time_series=is_time_series,
             is_voxel=is_voxel,
             dimensions=dimensions,

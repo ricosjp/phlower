@@ -72,7 +72,7 @@ class PhlowerScalingService:
         if setting.scaling is None:
             raise ValueError("setting content about scaling is not found.")
 
-        return cls(setting.scaling)
+        return PhlowerScalingService(setting.scaling)
 
     def __init__(
         self,
@@ -88,6 +88,9 @@ class PhlowerScalingService:
         self,
         interim_data_directories: list[pathlib.Path],
         output_base_directory: pathlib.Path,
+        max_process: int = None,
+        allow_missing: bool = False,
+        allow_overwrite: bool = False,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> None:
@@ -101,11 +104,14 @@ class PhlowerScalingService:
         None
         """
         self.lazy_fit_all(
-            data_directories=interim_data_directories, decrypt_key=decrypt_key
+            data_directories=interim_data_directories, max_process=max_process, decrypt_key=decrypt_key
         )
         self._transform_directories(
             data_directories=interim_data_directories,
             output_base_directory=output_base_directory,
+            max_process=max_process,
+            allow_missing=allow_missing,
+            allow_overwrite=allow_overwrite,
             decrypt_key=decrypt_key,
             encrypt_key=encrypt_key,
         )
