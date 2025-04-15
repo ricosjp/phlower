@@ -44,7 +44,9 @@ def phlower_array(
                 "Sparse Array cannot have time series flag and voxel flag."
             )
 
-        return sparse.SparseArrayWrapper(data.astype(dtype), dimensions=dimensions)
+        return sparse.SparseArrayWrapper(
+            data.astype(dtype), dimensions=dimensions
+        )
 
     raise ValueError(f"Unsupported data type: {data.__class__}, {type(data)}")
 

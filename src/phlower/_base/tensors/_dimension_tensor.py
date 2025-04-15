@@ -546,3 +546,8 @@ def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
     # NOTE: Allow relu operation also for dimensioned tensor
     #       because it is scale equivariant
     return inputs
+
+
+@dimension_wrap_implements(torch.squeeze)
+def _torch_squeeze(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    return inputs

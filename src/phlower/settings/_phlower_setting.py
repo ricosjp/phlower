@@ -119,7 +119,9 @@ def _format_loc(location: list[str], ref: dict | None = None) -> str:
     return " -> ".join(_msg)
 
 
-def _access(key: str | int, ref: dict | list | None = None) -> dict | list | None:
+def _access(
+    key: str | int, ref: dict | list | None = None
+) -> dict | list | None:
     if ref is None:
         return None
 
@@ -132,10 +134,12 @@ def _access(key: str | int, ref: dict | list | None = None) -> dict | list | Non
 
         if isinstance(ref, list):
             return ref[key]
-    except:
+    except Exception:
         return None
 
+    # NOTE: this is unreachable code.
     return None
+
 
 def _to_order(value: int) -> str:
     value += 1

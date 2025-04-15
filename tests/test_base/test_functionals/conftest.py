@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
+import torch
 from phlower._base import PhysicalDimensions, phlower_tensor
 from phlower._base.array import phlower_array
 from phlower._base.tensors._interface import IPhlowerTensor
@@ -60,7 +61,9 @@ def create_dense_tensors() -> (
         if dimensions is None:
             return [
                 phlower_tensor(
-                    np.random.rand(*shape), is_time_series=is_time_series
+                    np.random.rand(*shape),
+                    is_time_series=is_time_series,
+                    dtype=torch.float32,
                 )
                 for shape in shapes
             ]
@@ -70,6 +73,7 @@ def create_dense_tensors() -> (
                 np.random.rand(*shape),
                 dimension=dims,
                 is_time_series=is_time_series,
+                dtype=torch.float32,
             )
             for shape, dims in zip(shapes, dimensions, strict=True)
         ]

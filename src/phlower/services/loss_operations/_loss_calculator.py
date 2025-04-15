@@ -16,18 +16,15 @@ from phlower.utils.typing import LossFunctionType
 
 
 def _mse(pred: PhlowerTensor, answer: PhlowerTensor) -> PhlowerTensor:
-
     # NOTE: To avoid shape mismatch
     # Ex. (1, N, 3, 1) and (N, 3, 1)
     return torch.nn.functional.mse_loss(
-        torch.squeeze(pred), 
-        torch.squeeze(answer)
+        torch.squeeze(pred), torch.squeeze(answer)
     )
 
+
 class PhlowerLossFunctionsFactory:
-    _REGISTERED: dict[str, LossFunctionType] = {
-        "mse": _mse
-    }
+    _REGISTERED: dict[str, LossFunctionType] = {"mse": _mse}
 
     @classmethod
     def register(

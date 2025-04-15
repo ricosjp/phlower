@@ -6,7 +6,6 @@ from functools import partial
 
 import dagstream
 import torch
-from typing_extensions import Self
 
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import (

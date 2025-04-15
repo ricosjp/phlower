@@ -7,7 +7,6 @@ from typing import Literal, overload
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from typing_extensions import Self
 
 from phlower._base import PhlowerTensor
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
@@ -130,7 +129,9 @@ class PhlowerTrainer:
     _SAVED_SETTING_NAME: str = "model"
 
     @classmethod
-    def restart_from(cls, model_directory: pathlib.Path, decrypt_key: bytes | None = None) -> PhlowerTrainer:
+    def restart_from(
+        cls, model_directory: pathlib.Path, decrypt_key: bytes | None = None
+    ) -> PhlowerTrainer:
         """Restart PhlowerTrainer from model directory
 
         Args:
@@ -376,7 +377,7 @@ class PhlowerTrainer:
             output_directory,
             encrypt_key=encrypt_key,
             data_setting=data_setting,
-            skip_if_exist=(self._start_epoch > 0)
+            skip_if_exist=(self._start_epoch > 0),
         )
 
         train_directories = data_setting.training
@@ -396,7 +397,7 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
-        for epoch in range(self._start_epoch, self._setting.training.n_epoch + 1):
+        for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
 
@@ -454,7 +455,7 @@ class PhlowerTrainer:
         output_directory: pathlib.Path,
         data_setting: PhlowerDataSetting,
         encrypt_key: bytes | None = None,
-        skip_if_exist: bool = False
+        skip_if_exist: bool = False,
     ) -> None:
         dumped_yaml = PhlowerDirectory(output_directory).find_yaml_file(
             file_base_name=self._SAVED_SETTING_NAME, allow_missing=True
