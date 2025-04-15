@@ -61,7 +61,7 @@ class LoggingRunner:
         self,
         info: AfterEvaluationOutput,
     ) -> None:
-        if info.epoch == 0:
+        if not self._record_io.file_path.exists():
             self._record_io.write_header()
 
         # Dumo to file

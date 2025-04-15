@@ -72,6 +72,10 @@ class LogRecordIO:
         self._validation_details_title = r"details_val/"
         self._headers = self._get_headers()
 
+    @property
+    def file_path(self) -> pathlib.Path:
+        return self._file_path
+
     def _get_headers(self) -> list[ILoggingItem]:
         headers = [
             "epoch",
@@ -131,6 +135,7 @@ class LogRecordIO:
         )
 
         header_str = ",".join(headers)
+        self._file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self._file_path, "w") as fw:
             fw.write(header_str + "\n")
 
