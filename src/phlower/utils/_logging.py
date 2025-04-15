@@ -26,7 +26,6 @@ class DefaultLoggerFactory:
             r"[%(funcName)s] %(message)s"
         )
 
-
         _handler = logging.StreamHandler()
         _handler.setLevel(logging.WARNING)
         _handler.setFormatter(formatter)
