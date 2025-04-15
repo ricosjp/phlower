@@ -80,6 +80,7 @@ class PhlowerPredictor:
         model_directory: pathlib.Path | str,
         predict_setting: PhlowerPredictorSetting,
         scaling_setting: PhlowerSetting | None = None,
+        decrypt_key: bytes | None = None
     ):
         self._model_directory = PhlowerDirectory(model_directory)
         self._predict_setting = predict_setting
@@ -92,6 +93,7 @@ class PhlowerPredictor:
         self._model_setting = _load_model_setting(
             model_directory=self._model_directory,
             file_basename=predict_setting.saved_setting_filename,
+            decrypt_key=decrypt_key
         )
         # NOTE: it is necessary to resolve information of modules
         #  which need reference module.
@@ -104,6 +106,7 @@ class PhlowerPredictor:
             selection_mode=self._predict_setting.selection_mode,
             device=self._predict_setting.device,
             target_epoch=self._predict_setting.target_epoch,
+            decrypt_key=decrypt_key
         )
 
     def _determine_label_key_map(self) -> dict[str, str]:
@@ -306,6 +309,7 @@ class PhlowerPredictor:
                     field_settings=self._model_setting.fields,
                     directories=preprocessed_data,
                     decrypt_key=decrypt_key,
+                    allow_no_y_data=True
                 )
             case dict():
                 return OnMemoryPhlowerDataSet(
@@ -314,6 +318,7 @@ class PhlowerPredictor:
                     label_settings=self._model_setting.labels,
                     field_settings=self._model_setting.fields,
                     decrypt_key=decrypt_key,
+                    allow_no_y_data=True
                 )
             case _:
                 raise ValueError(
@@ -360,7 +365,6 @@ class PhlowerPredictor:
             preds = self._scalers.inverse_transform(
                 h, raise_missing_message=True
             )
-            preds = _pred_key_map.backward_flip(preds)
             preds = {
                 k: v.to_numpy() for k, v in preds.items()
             }
@@ -377,7 +381,7 @@ class PhlowerPredictor:
                 answer_data = self._scalers.inverse_transform(
                     _label_key_map.forward_flip(batch.y_data.to_phlower_arrays_dict()),
                 )
-                answer_data = {k: v.to_numpy() for k, v in _label_key_map.backward_flip(answer_data).items()}
+                answer_data = {k: v.to_numpy() for k, v in answer_data.items()}
                 yield PhlowerInverseScaledPredictionResult(
                     prediction_data=preds,
                     input_data=x_data,
@@ -398,10 +402,10 @@ class _DictKeyValueFlipper:
 
 
 def _load_model_setting(
-    model_directory: PhlowerDirectory, file_basename: str
+    model_directory: PhlowerDirectory, file_basename: str, decrypt_key: bytes | None = None
 ) -> PhlowerModelSetting:
     yaml_file = model_directory.find_yaml_file(file_base_name=file_basename)
-    setting = PhlowerSetting.read_yaml(yaml_file)
+    setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
     if setting.model is None:
         raise ValueError(f"model setting is not found in {yaml_file.file_path}")
     return setting.model
@@ -413,6 +417,7 @@ def _load_model(
     selection_mode: str,
     device: str | None = None,
     target_epoch: int | None = None,
+    decrypt_key: bytes | None = None
 ) -> PhlowerGroupModule:
     _model = PhlowerGroupModule.from_setting(model_setting.network)
     _model.load_checkpoint_file(
@@ -420,6 +425,7 @@ def _load_model(
             model_directory, selection_mode, target_epoch=target_epoch
         ),
         device=device,
+        decrypt_key=decrypt_key
     )
     if device is not None:
         _model.to(device)
