@@ -130,7 +130,7 @@ class PhlowerTrainer:
     _SAVED_SETTING_NAME: str = "model"
 
     @classmethod
-    def restart_from(cls, model_directory: pathlib.Path) -> Self:
+    def restart_from(cls, model_directory: pathlib.Path, decrypt_key: bytes | None = None) -> PhlowerTrainer:
         """Restart PhlowerTrainer from model directory
 
         Args:
@@ -142,9 +142,9 @@ class PhlowerTrainer:
         """
         ph_directory = PhlowerDirectory(model_directory)
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
-        setting = PhlowerSetting.read_yaml(yaml_file)
+        setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
         trainer = cls.from_setting(setting)
-        trainer._reinit_for_restart(model_directory)
+        trainer._reinit_for_restart(model_directory, decrypt_key=decrypt_key)
         return trainer
 
     @classmethod
@@ -371,13 +371,13 @@ class PhlowerTrainer:
             log_every_n_epoch=self._setting.training.log_every_n_epoch,
         )
 
-        if self._start_epoch == 0:
-            # start_epoch > 0 means that this training is restarted.
-            self._save_setting(
-                output_directory,
-                encrypt_key=encrypt_key,
-                data_setting=data_setting,
-            )
+        # when restart training, skip is allowed
+        self._save_setting_if_necessary(
+            output_directory,
+            encrypt_key=encrypt_key,
+            data_setting=data_setting,
+            skip_if_exist=(self._start_epoch > 0)
+        )
 
         train_directories = data_setting.training
         validation_directories = data_setting.validation
@@ -396,7 +396,7 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
-        for epoch in range(self._start_epoch, self._setting.training.n_epoch):
+        for epoch in range(self._start_epoch, self._setting.training.n_epoch + 1):
             self._model.train()
             train_losses: list[float] = []
 
@@ -449,12 +449,20 @@ class PhlowerTrainer:
 
         return train_last_loss
 
-    def _save_setting(
+    def _save_setting_if_necessary(
         self,
         output_directory: pathlib.Path,
         data_setting: PhlowerDataSetting,
         encrypt_key: bytes | None = None,
+        skip_if_exist: bool = False
     ) -> None:
+        dumped_yaml = PhlowerDirectory(output_directory).find_yaml_file(
+            file_base_name=self._SAVED_SETTING_NAME, allow_missing=True
+        )
+        if (dumped_yaml is not None) and skip_if_exist:
+            _logger.info("model setting file has already existed. Skip saving.")
+            return
+
         dump_setting = self._setting.model_copy(update={"data": data_setting})
         PhlowerYamlFile.save(
             output_directory=output_directory,
