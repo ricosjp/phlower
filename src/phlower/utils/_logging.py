@@ -30,13 +30,21 @@ class DefaultLoggerFactory:
         _handler.setLevel(logging.WARNING)
         _handler.setFormatter(formatter)
 
-        _phlower_root_logger = logging.getLogger("phlower")
         _phlower_root_logger.addHandler(_handler)
         return
 
 
 def get_phlower_logger() -> logging.Logger:
     return DefaultLoggerFactory._get_library_logger()
+
+
+def set_debug_logger_properties():
+    """
+    This method is designed to set debug logger properties.
+    It is used in the test code or debug code for Phlower itself.
+    """
+    DefaultLoggerFactory._initialize_handler()
+    return
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -53,6 +61,5 @@ def get_logger(name: str) -> logging.Logger:
     -------
     logging.Logger
     """
-    DefaultLoggerFactory._initialize_handler()
     logger = logging.getLogger(name)
     return logger

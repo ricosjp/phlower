@@ -1,4 +1,5 @@
 import concurrent.futures as cf
+import multiprocessing as mp
 from collections.abc import Callable, Iterable
 from functools import partial
 from logging import getLogger
@@ -71,6 +72,7 @@ class PhlowerMultiprocessor:
         inputs: list[tuple[T1] | T1],
         target_fn: Callable[[T1], T2],
         chunksize: int | None = None,
+        mp_context: str | None = None,
     ) -> list[T2]:
         """Wrapper function for concurrent.futures
          to run safely with multiple processes.
@@ -110,7 +112,9 @@ class PhlowerMultiprocessor:
         chunksize = chunksize or self._determine_chunksize(len(inputs))
         _logger.info(f"chunksize is set as {chunksize}.")
 
-        with cf.ProcessPoolExecutor(self._max_process) as executor:
+        with cf.ProcessPoolExecutor(
+            self._max_process, mp_context=mp.get_context(mp_context)
+        ) as executor:
             for chunk in _get_chunks(inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn), chunk
