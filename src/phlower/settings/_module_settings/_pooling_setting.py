@@ -19,6 +19,13 @@ class PoolingSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @pydantic.field_serializer("pool_operator_name")
+    def serialize_pool_operator(self, value: PoolingType | str) -> str:
+        if isinstance(value, PoolingType):
+            return value.name
+
+        return value
+
     @pydantic.field_validator("nodes", mode="before")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
