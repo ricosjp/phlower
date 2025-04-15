@@ -80,7 +80,7 @@ class PhlowerSetting(pydantic.BaseModel):
             raise ValueError(
                 "Invalid contents are found in the input setting file. "
                 "Details are shown below. \n"
-                f"{_format_errors(ex.errors())} \n"
+                f"{_format_errors(ex.errors(), ref=data)} \n"
                 f"{ex.error_count()} errors are "
                 f"found."
             ) from ex
@@ -107,12 +107,38 @@ class PhlowerSetting(pydantic.BaseModel):
         return PhlowerSetting.read_dictionary(data)
 
 
-def _format_loc(location: list[str]) -> str:
-    _msg = [
-        loc if not isinstance(loc, int) else f"{_to_order(loc)} item"
-        for loc in location
-    ]
+def _format_loc(location: list[str], ref: dict | None = None) -> str:
+    _msg = []
+    for loc in location:
+        ref = _access(loc, ref)
+        if not isinstance(loc, int):
+            _msg.append(loc)
+        else:
+            _msg.append(f"{_to_order(loc)} item (name: {_access('name', ref)})")
+
     return " -> ".join(_msg)
+
+
+def _access(
+    key: str | int, ref: dict | list | None = None
+) -> dict | list | None:
+    if ref is None:
+        return None
+
+    if key == "MODULE" or key == "GROUP":
+        return ref
+
+    try:
+        if isinstance(ref, dict):
+            return ref.get(key)
+
+        if isinstance(ref, list):
+            return ref[key]
+    except Exception:
+        return None
+
+    # NOTE: this is unreachable code.
+    return None
 
 
 def _to_order(value: int) -> str:
@@ -129,13 +155,13 @@ def _to_order(value: int) -> str:
     return f"{value}th"
 
 
-def _format_errors(errors: list[ErrorDetails]) -> str:
+def _format_errors(errors: list[ErrorDetails], ref: dict) -> str:
     data = {"errors": []}
 
     for error in errors:
         _data = {
             "error_type": error["type"],
-            "error_location": _format_loc(error["loc"]),
+            "error_location": _format_loc(error["loc"], ref),
             "message": error["msg"],
             "your input": error["input"],
         }

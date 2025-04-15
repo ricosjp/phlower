@@ -80,6 +80,7 @@ class PhlowerPredictor:
         model_directory: pathlib.Path | str,
         predict_setting: PhlowerPredictorSetting,
         scaling_setting: PhlowerSetting | None = None,
+        decrypt_key: bytes | None = None,
     ):
         self._model_directory = PhlowerDirectory(model_directory)
         self._predict_setting = predict_setting
@@ -92,6 +93,7 @@ class PhlowerPredictor:
         self._model_setting = _load_model_setting(
             model_directory=self._model_directory,
             file_basename=predict_setting.saved_setting_filename,
+            decrypt_key=decrypt_key,
         )
         # NOTE: it is necessary to resolve information of modules
         #  which need reference module.
@@ -104,21 +106,26 @@ class PhlowerPredictor:
             selection_mode=self._predict_setting.selection_mode,
             device=self._predict_setting.device,
             target_epoch=self._predict_setting.target_epoch,
+            decrypt_key=decrypt_key,
         )
 
-    def _determine_output_scaler(self, name: str) -> str:
-        if name in self._predict_setting.output_to_scaler_name:
-            return self._predict_setting.output_to_scaler_name[name]
+    def _determine_label_key_map(self) -> dict[str, str]:
+        to_scaler_name: dict[str, str] = {}
 
         for label in self._model_setting.labels:
-            if label.name == name:
-                if len(label.members) == 1:
-                    return label.members[0].name
+            if len(label.members) != 1:
+                _logger.info(
+                    f"Scaler name for {label.name} cannot be determined "
+                    f"because members are not unique: {label.members}"
+                )
+                continue
+            to_scaler_name[label.name] = label.members[0].name
 
-        raise ValueError(
-            f"Cannot determine scaler for output variable. output name: {name} "
-            "Please set output_to_scaler_name in predict setting."
-        )
+        return to_scaler_name
+
+    def _determine_prediction_key_map(self) -> dict[str, str]:
+        label_key_map = self._determine_label_key_map()
+        return self._predict_setting.output_to_scaler_name | label_key_map
 
     @overload
     def predict(
@@ -305,6 +312,7 @@ class PhlowerPredictor:
                     field_settings=self._model_setting.fields,
                     directories=preprocessed_data,
                     decrypt_key=decrypt_key,
+                    allow_no_y_data=True,
                 )
             case dict():
                 return OnMemoryPhlowerDataSet(
@@ -313,6 +321,7 @@ class PhlowerPredictor:
                     label_settings=self._model_setting.labels,
                     field_settings=self._model_setting.fields,
                     decrypt_key=decrypt_key,
+                    allow_no_y_data=True,
                 )
             case _:
                 raise ValueError(
@@ -342,6 +351,11 @@ class PhlowerPredictor:
     def _predict_with_inverse(
         self, data_loader: DataLoader, return_only_prediction: bool = False
     ) -> Iterator[PhlowerInverseScaledPredictionResult]:
+        _pred_key_map = _DictKeyValueFlipper(
+            self._determine_prediction_key_map()
+        )
+        _label_key_map = _DictKeyValueFlipper(self._determine_label_key_map())
+
         for batch in data_loader:
             batch: LumpedTensorData
 
@@ -350,21 +364,12 @@ class PhlowerPredictor:
             _logger.info("Finished prediction")
 
             _logger.info("Start inverse scaling")
-            # for inverse scaling, change name temporarly
-            _pred_name_to_scaler = {
-                k: self._determine_output_scaler(k) for k in h.keys()
-            }
-            _scaler_to_pred_name = {
-                k2: k1 for k1, k2 in _pred_name_to_scaler.items()
-            }
-
-            h = {_pred_name_to_scaler[k]: v for k, v in h.items()}
+            # for inverse scaling, change name temporary
+            h = _pred_key_map.forward_flip(h)
             preds = self._scalers.inverse_transform(
                 h, raise_missing_message=True
             )
-            preds = {
-                _scaler_to_pred_name[k]: v.to_numpy() for k, v in preds.items()
-            }
+            preds = {k: v.to_numpy() for k, v in preds.items()}
 
             if return_only_prediction:
                 yield PhlowerInverseScaledPredictionResult(
@@ -376,8 +381,11 @@ class PhlowerPredictor:
                     raise_missing_message=True,
                 )
                 answer_data = self._scalers.inverse_transform(
-                    batch.y_data.to_phlower_arrays_dict()
+                    _label_key_map.forward_flip(
+                        batch.y_data.to_phlower_arrays_dict()
+                    ),
                 )
+                answer_data = {k: v.to_numpy() for k, v in answer_data.items()}
                 yield PhlowerInverseScaledPredictionResult(
                     prediction_data=preds,
                     input_data=x_data,
@@ -385,11 +393,29 @@ class PhlowerPredictor:
                 )
 
 
+class _DictKeyValueFlipper:
+    def __init__(self, forward_key_map: dict[str, str]):
+        self._key_forward_map = forward_key_map
+        self._key_backward_map = {v: k for k, v in forward_key_map.items()}
+
+    def forward_flip(
+        self, data: dict[str, IPhlowerArray]
+    ) -> dict[str, IPhlowerArray]:
+        return {self._key_forward_map[k]: v for k, v in data.items()}
+
+    def backward_flip(
+        self, data: dict[str, IPhlowerArray]
+    ) -> dict[str, IPhlowerArray]:
+        return {self._key_backward_map[k]: v for k, v in data.items()}
+
+
 def _load_model_setting(
-    model_directory: PhlowerDirectory, file_basename: str
+    model_directory: PhlowerDirectory,
+    file_basename: str,
+    decrypt_key: bytes | None = None,
 ) -> PhlowerModelSetting:
     yaml_file = model_directory.find_yaml_file(file_base_name=file_basename)
-    setting = PhlowerSetting.read_yaml(yaml_file)
+    setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
     if setting.model is None:
         raise ValueError(f"model setting is not found in {yaml_file.file_path}")
     return setting.model
@@ -401,6 +427,7 @@ def _load_model(
     selection_mode: str,
     device: str | None = None,
     target_epoch: int | None = None,
+    decrypt_key: bytes | None = None,
 ) -> PhlowerGroupModule:
     _model = PhlowerGroupModule.from_setting(model_setting.network)
     _model.load_checkpoint_file(
@@ -408,6 +435,7 @@ def _load_model(
             model_directory, selection_mode, target_epoch=target_epoch
         ),
         device=device,
+        decrypt_key=decrypt_key,
     )
     if device is not None:
         _model.to(device)
