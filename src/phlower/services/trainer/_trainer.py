@@ -27,7 +27,11 @@ from phlower.settings import (
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
-from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType
+from phlower.utils.enums import (
+    ModelSelectionType,
+    TrainerInitializeType,
+    TrainerSavedKeyType,
+)
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import (
     AfterEpochTrainingInfo,
@@ -139,7 +143,7 @@ class PhlowerTrainer:
                 Model directory
 
         Returns:
-            Self: PhlowerTrainer
+            PhlowerTrainer: PhlowerTrainer
         """
         ph_directory = PhlowerDirectory(model_directory)
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
@@ -149,7 +153,9 @@ class PhlowerTrainer:
         return trainer
 
     @classmethod
-    def from_setting(cls, setting: PhlowerSetting) -> PhlowerTrainer:
+    def from_setting(
+        cls, setting: PhlowerSetting, decrypt_key: bytes | None = None
+    ) -> PhlowerTrainer:
         """Create PhlowerTrainer from PhlowerSetting
 
         Args:
@@ -164,8 +170,30 @@ class PhlowerTrainer:
                 "setting content for training or model is not found."
             )
 
+        init_setting = setting.training.initializer_setting
+        if init_setting.type_name == TrainerInitializeType.restart:
+            trainer = PhlowerTrainer.restart_from(
+                init_setting.reference_directory, decrypt_key=decrypt_key
+            )
+            return trainer
+
         setting.model.resolve()
-        return PhlowerTrainer(setting)
+        trainer = PhlowerTrainer(setting)
+
+        if init_setting.type_name == TrainerInitializeType.none:
+            return trainer
+
+        if init_setting.type_name == TrainerInitializeType.pretrained:
+            trainer.load_pretrained(
+                model_directory=init_setting.reference_directory,
+                selection_mode="best",
+                decrypt_key=decrypt_key,
+            )
+            return trainer
+
+        raise NotImplementedError(
+            f"Initialize way for {init_setting.type_name} is not implemented."
+        )
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -176,6 +204,16 @@ class PhlowerTrainer:
         return self._setting.training
 
     def __init__(self, setting: PhlowerSetting):
+        """Initialize PhlowerTrainer without updating trainer's
+         inner state.
+        If you want to initialize PhlowerTrainer following to
+         your setting such as `restart` or `pretrained`,
+         please use `from_setting` method.
+
+        Args:
+            setting (PhlowerSetting): setting of phlower
+
+        """
         self._setting = setting
 
         if self._setting.model is None:

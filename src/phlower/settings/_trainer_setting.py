@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pathlib
 from collections.abc import Iterable
 from typing import Any, cast
 
@@ -12,6 +13,7 @@ from phlower.settings._handler_settings import (
     HandlerSettingType,
 )
 from phlower.utils import OptimizerSelector, SchedulerSelector
+from phlower.utils.enums import TrainerInitializeType
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
@@ -71,7 +73,7 @@ class OptimizerSetting(pydantic.BaseModel):
     def check_exist_scheduler(cls, name: str) -> str:
         if not OptimizerSelector.exist(name):
             raise ValueError(
-                f"{name} is not defined in phlower. "
+                f"{name} is not defined as an optimizer in phlower. "
                 "If you defined user defined optimizer, "
                 "please use `register` function in "
                 "`phlower.utils.OptimizerSelector`."
@@ -99,7 +101,7 @@ class SchedulerSetting(pydantic.BaseModel):
     def check_exist_scheduler(cls, name: str) -> str:
         if not SchedulerSelector.exist(name):
             raise ValueError(
-                f"{name} is not defined in phlower. "
+                f"{name} is not defined as an scheduler in phlower. "
                 "If you defined user defined scheduler, "
                 "please use `register` function in "
                 "`phlower.utils.SchedulerSelector`."
@@ -107,8 +109,53 @@ class SchedulerSetting(pydantic.BaseModel):
         return name
 
 
+class TrainerInitializerSetting(pydantic.BaseModel):
+    type_name: str | TrainerInitializeType = "none"
+    """
+    Weight initializer type.
+    """
+
+    reference_directory: pathlib.Path | None = None
+    """
+    Reference directory to get weight.
+    It is used when `pretrained` or `restart`
+    """
+
+    model_config = pydantic.ConfigDict(
+        frozen=True, extra="forbid", validate_default=True
+    )
+
+    @pydantic.field_validator("type_name")
+    @classmethod
+    def check_exist_initializer(cls, name: str) -> str:
+        if name not in TrainerInitializeType.__members__:
+            raise ValueError(
+                f"{name} is not defined initializer for PhlowerTrainer."
+                "Choose from none, pretrained, restart."
+            )
+        return TrainerInitializeType[name]
+
+    @pydantic.field_serializer("type_name")
+    @classmethod
+    def serialize_type_name(cls, value: str | TrainerInitializeType) -> str:
+        if isinstance(value, TrainerInitializeType):
+            return value.value
+        return value
+
+    @pydantic.field_serializer("reference_directory")
+    @classmethod
+    def serialize_reference_directory(
+        cls, value: pathlib.Path | None
+    ) -> str | None:
+        if value is None:
+            return None
+        return str(value)
+
+
 class PhlowerTrainerSetting(pydantic.BaseModel):
-    loss_setting: LossSetting
+    loss_setting: LossSetting = Field(
+        default_factory=lambda: LossSetting(name2loss={})
+    )
     """
     setting for loss function
     """
@@ -120,7 +167,7 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for optimizer
     """
 
-    scheduler_setting: list[SchedulerSetting] = Field(default_factory=list)
+    scheduler_settings: list[SchedulerSetting] = Field(default_factory=list)
     """
     setting for schedulers
     """
@@ -165,12 +212,19 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     dump log items every nth epoch
     """
 
+    initializer_setting: TrainerInitializerSetting = Field(
+        default_factory=lambda: TrainerInitializerSetting()
+    )
+    """
+    setting for trainer initializer
+    """
+
     non_blocking: bool = False
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
-    def get_early_stopping_patience(self) -> float | None:
+    def get_early_stopping_patience(self) -> int | None:
         for setting in self.handler_settings:
             if setting.handler != "EarlyStopping":
                 continue

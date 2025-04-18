@@ -106,3 +106,9 @@ class PhlowerIterationSolverType(str, Enum):
 
 class PhlowerHandlerRegisteredKey(str, Enum):
     TERMINATE = "TERMINATE"
+
+
+class TrainerInitializeType(str, Enum):
+    none = "none"
+    pretrained = "pretrained"
+    restart = "restart"

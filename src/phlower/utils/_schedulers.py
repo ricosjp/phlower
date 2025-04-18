@@ -21,6 +21,10 @@ class SchedulerSelector:
     }
 
     @staticmethod
+    def get_registered_names() -> list[str]:
+        return list(SchedulerSelector._REGISTERED.keys())
+
+    @staticmethod
     def register(
         name: str, cls: type[torch.optim.lr_scheduler.LRScheduler]
     ) -> None:
