@@ -32,7 +32,7 @@ def test__pass_kwargs_when_call_from_setting(
             "optimizer": optimizer,
             "parameters": optimizer_parameters,
         },
-        scheduler_setting=schedulers,
+        scheduler_settings=schedulers,
     )
 
     with mock.patch.object(

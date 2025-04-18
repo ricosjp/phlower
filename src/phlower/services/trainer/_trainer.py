@@ -27,7 +27,11 @@ from phlower.settings import (
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
-from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType, TrainerInitializeType
+from phlower.utils.enums import (
+    ModelSelectionType,
+    TrainerInitializeType,
+    TrainerSavedKeyType,
+)
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import (
     AfterEpochTrainingInfo,
@@ -149,7 +153,9 @@ class PhlowerTrainer:
         return trainer
 
     @classmethod
-    def from_setting(cls, setting: PhlowerSetting, decrypt_key: bytes | None = None) -> PhlowerTrainer:
+    def from_setting(
+        cls, setting: PhlowerSetting, decrypt_key: bytes | None = None
+    ) -> PhlowerTrainer:
         """Create PhlowerTrainer from PhlowerSetting
 
         Args:
@@ -166,7 +172,9 @@ class PhlowerTrainer:
 
         init_setting = setting.training.initializer_setting
         if init_setting.type_name == TrainerInitializeType.restart:
-            trainer = PhlowerTrainer.restart_from(init_setting.reference_directory, decrypt_key=decrypt_key)
+            trainer = PhlowerTrainer.restart_from(
+                init_setting.reference_directory, decrypt_key=decrypt_key
+            )
             return trainer
 
         setting.model.resolve()
@@ -179,11 +187,13 @@ class PhlowerTrainer:
             trainer.load_pretrained(
                 model_directory=init_setting.reference_directory,
                 selection_mode="best",
-                decrypt_key=decrypt_key
+                decrypt_key=decrypt_key,
             )
             return trainer
 
-        raise NotImplementedError(f"Initialize way for {init_setting.type_name} is not implemented.")
+        raise NotImplementedError(
+            f"Initialize way for {init_setting.type_name} is not implemented."
+        )
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -196,7 +206,7 @@ class PhlowerTrainer:
     def __init__(self, setting: PhlowerSetting):
         """Initialize PhlowerTrainer without updating trainer's
          inner state.
-        If you want to initialize PhlowerTrainer following to 
+        If you want to initialize PhlowerTrainer following to
          your setting such as `restart` or `pretrained`,
          please use `from_setting` method.
 

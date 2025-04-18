@@ -19,7 +19,7 @@ class EarlyStoppingSetting(pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
-    def get_patience(self) -> float:
+    def get_patience(self) -> int:
         return self.parameters["patience"]
 
     @pydantic.model_validator(mode="after")

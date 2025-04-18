@@ -108,7 +108,6 @@ class PhlowerHandlerRegisteredKey(str, Enum):
     TERMINATE = "TERMINATE"
 
 
-
 class TrainerInitializeType(str, Enum):
     none = "none"
     pretrained = "pretrained"
