@@ -501,8 +501,15 @@ class PhlowerTrainer:
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
-        if encrypt_key is not None:
-            self._model.draw(output_directory=output_directory)
+
+    def draw_model(self, output_directory: pathlib.Path) -> None:
+        """Draw model
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+        """
+        self._model.draw(output_directory=output_directory)
 
     def _reinit_for_restart(
         self,
