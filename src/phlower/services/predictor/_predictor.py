@@ -378,12 +378,13 @@ class PhlowerPredictor:
             else:
                 x_data = self._scalers.inverse_transform(
                     batch.x_data.to_phlower_arrays_dict(),
-                    raise_missing_message=True,
+                    raise_missing_message=False,
                 )
                 answer_data = self._scalers.inverse_transform(
                     _label_key_map.forward_flip(
                         batch.y_data.to_phlower_arrays_dict()
                     ),
+                    raise_missing_message=True
                 )
                 answer_data = {k: v.to_numpy() for k, v in answer_data.items()}
                 yield PhlowerInverseScaledPredictionResult(

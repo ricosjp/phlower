@@ -224,10 +224,6 @@ class PhlowerTrainer:
         # NOTE: Must Call at first
         self._fix_seed(self._setting.training.random_seed)
 
-        self._epoch_progress_bar = PhlowerProgressBar(
-            total=self._setting.training.n_epoch
-        )
-
         # initialize model
         self._model = PhlowerGroupModule.from_setting(
             self._setting.model.network
@@ -435,6 +431,8 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
+        logging_runner.show_overview(device=self._setting.training.device)
+
         for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
@@ -476,16 +474,6 @@ class PhlowerTrainer:
                 _logger.info("Training process is killed by handler.")
                 break
 
-            # update epoch
-            if output.validation_eval_loss is not None:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"val loss {output.validation_eval_loss:.3f}"
-                )
-            else:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"train loss {output.train_eval_loss:.3f}"
-                )
-
         return train_last_loss
 
     def _save_setting_if_necessary(
@@ -510,6 +498,8 @@ class PhlowerTrainer:
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
+        if encrypt_key is not None:
+            self._model.draw(output_directory=output_directory)
 
     def _reinit_for_restart(
         self,

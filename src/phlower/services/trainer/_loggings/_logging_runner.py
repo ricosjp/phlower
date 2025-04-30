@@ -1,6 +1,7 @@
 import pathlib
 
 from tqdm import tqdm
+import torch
 
 from phlower.io import PhlowerCheckpointFile
 from phlower.nn import PhlowerGroupModule
@@ -15,10 +16,18 @@ class LoggingRunner:
         self._output_directory = output_directory
         self._record_io = LogRecordIO(file_path=output_directory / "log.csv")
         self._log_every_n_epoch = log_every_n_epoch
-        self._exist_header = False
 
     def get_weight_directory(self) -> pathlib.Path:
         return self._output_directory / "weights"
+
+    def show_overview(self, device: torch.device) -> None:
+        tqdm.write("\n-------  Start Training -------")
+        tqdm.write(f"Device: {device}")
+        tqdm.write(f"{torch.cuda.is_available()=}")
+        tqdm.write(f"Log every {self._log_every_n_epoch} epoch")
+        tqdm.write(f"Output directory: {self._output_directory}")
+        tqdm.write("-------------------------------")
+        tqdm.write(self._record_io.get_header())
 
     def run(
         self,
@@ -49,11 +58,6 @@ class LoggingRunner:
         self,
         info: AfterEvaluationOutput,
     ) -> None:
-        # Dump to console
-        if not self._exist_header:
-            tqdm.write(self._record_io.get_header())
-            self._exist_header = True
-
         tqdm.write(self._record_io.to_str(info))
         return
 
