@@ -1,7 +1,7 @@
 import pathlib
 
-from tqdm import tqdm
 import torch
+from tqdm import tqdm
 
 from phlower.io import PhlowerCheckpointFile
 from phlower.nn import PhlowerGroupModule

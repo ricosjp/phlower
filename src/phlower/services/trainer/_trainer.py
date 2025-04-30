@@ -469,7 +469,7 @@ class PhlowerTrainer:
             )
 
             # Call handlers
-            self._handlers(output)
+            self._handlers.run(output)
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
                 break
