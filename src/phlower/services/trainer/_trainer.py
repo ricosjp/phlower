@@ -77,6 +77,7 @@ class _EvaluationRunner:
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
             elapsed_time=timer.watch(),
+            output_directory=info.output_directory,
         )
 
     def _evaluate_training(
@@ -447,7 +448,9 @@ class PhlowerTrainer:
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(
-                epoch=epoch, train_losses=train_losses
+                epoch=epoch,
+                train_losses=train_losses,
+                output_directory=output_directory,
             )
 
             output = self._evaluation_runner.run(
