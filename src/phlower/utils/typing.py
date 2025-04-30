@@ -51,7 +51,7 @@ class AfterEpochTrainingInfo(NamedTuple):
 
     epoch: int
     train_losses: list[float]
-    output_directory: pathlib.Path
+    output_directory: pathlib.Path | None = None
 
 
 class AfterEvaluationOutput(NamedTuple):
@@ -60,7 +60,7 @@ class AfterEvaluationOutput(NamedTuple):
     epoch: int
     train_eval_loss: float
     elapsed_time: float
-    output_directory: pathlib.Path
+    output_directory: pathlib.Path | None = None
     validation_eval_loss: float | None = None
     train_loss_details: dict[str, float] | None = None
     validation_loss_details: dict[str, float] | None = None
