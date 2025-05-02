@@ -38,4 +38,6 @@ def _create_batch_info(
         _sizes = list(tensors | select(lambda x: x.size()))
         n_nodes = tuple(v[dense_concat_dim] for v in _shapes)
 
-    return GraphBatchInfo(_sizes, _shapes, n_nodes=n_nodes)
+    return GraphBatchInfo(
+        _sizes, _shapes, n_nodes=n_nodes, dense_concat_dim=dense_concat_dim
+    )
