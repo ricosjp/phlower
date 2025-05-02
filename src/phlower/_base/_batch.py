@@ -6,6 +6,7 @@ class GraphBatchInfo(NamedTuple):
     sizes: list[int]
     shapes: list[tuple[int]]
     n_nodes: tuple[int]
+    dense_concat_dim: int | None = None
 
     @cached_property
     def total_n_nodes(self) -> int:

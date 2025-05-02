@@ -89,7 +89,7 @@ def test__aggregate(
 
 def create_random_dataset(
     name2shape: dict[str, list[tuple[int]]],
-    overwrite_answer_shape: dict[str, list[tuple[int]]] | None = None
+    overwrite_answer_shape: dict[str, list[tuple[int]]] | None = None,
 ) -> tuple[
     IPhlowerTensorCollections,
     IPhlowerTensorCollections,
@@ -286,7 +286,6 @@ def test__compute_loss_for_not_batched_voxel_tensor(
     answer_shape: dict[str, list[tuple[int, ...]]],
     setup_user_loss_function: None,
 ):
-
     predictions: dict[str, PhlowerTensor] = {}
     answers: dict[str, PhlowerTensor] = {}
     batch_info: dict[str, GraphBatchInfo] = {}
