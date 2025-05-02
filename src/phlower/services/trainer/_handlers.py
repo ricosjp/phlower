@@ -43,7 +43,7 @@ class PhlowerHandlersFactory:
         return cls._REGISTERED[name](**params)
 
 
-class PhlowerHandlersRunner(PhlowerHandlerType):
+class PhlowerHandlersRunner:
     @classmethod
     def from_setting(
         cls, setting: PhlowerTrainerSetting
@@ -72,7 +72,7 @@ class PhlowerHandlersRunner(PhlowerHandlerType):
     def name(cls) -> str:
         return "HandlersRunner"
 
-    def __call__(self, output: AfterEvaluationOutput):
+    def run(self, output: AfterEvaluationOutput):
         for func in self._handlers.values():
             result = func(output)
             if result.get(PhlowerHandlerRegisteredKey.TERMINATE):

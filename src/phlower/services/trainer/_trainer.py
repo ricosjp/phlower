@@ -77,6 +77,7 @@ class _EvaluationRunner:
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
             elapsed_time=timer.watch(),
+            output_directory=info.output_directory,
         )
 
     def _evaluate_training(
@@ -223,10 +224,6 @@ class PhlowerTrainer:
 
         # NOTE: Must Call at first
         self._fix_seed(self._setting.training.random_seed)
-
-        self._epoch_progress_bar = PhlowerProgressBar(
-            total=self._setting.training.n_epoch
-        )
 
         # initialize model
         self._model = PhlowerGroupModule.from_setting(
@@ -435,6 +432,8 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
+        logging_runner.show_overview(device=self._setting.training.device)
+
         for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
@@ -449,7 +448,9 @@ class PhlowerTrainer:
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(
-                epoch=epoch, train_losses=train_losses
+                epoch=epoch,
+                train_losses=train_losses,
+                output_directory=output_directory,
             )
 
             output = self._evaluation_runner.run(
@@ -471,20 +472,10 @@ class PhlowerTrainer:
             )
 
             # Call handlers
-            self._handlers(output)
+            self._handlers.run(output)
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
                 break
-
-            # update epoch
-            if output.validation_eval_loss is not None:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"val loss {output.validation_eval_loss:.3f}"
-                )
-            else:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"train loss {output.train_eval_loss:.3f}"
-                )
 
         return train_last_loss
 
@@ -510,6 +501,15 @@ class PhlowerTrainer:
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
+
+    def draw_model(self, output_directory: pathlib.Path) -> None:
+        """Draw model
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+        """
+        self._model.draw(output_directory=output_directory)
 
     def _reinit_for_restart(
         self,

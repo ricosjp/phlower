@@ -187,6 +187,9 @@ class PhlowerGroupModule(
         if isinstance(output_directory, str):
             output_directory = pathlib.Path(output_directory)
 
+        if not output_directory.exists():
+            output_directory.mkdir(parents=True, exist_ok=True)
+
         drawer.output(
             self._phlower_modules, output_directory / f"{self.name}.mmd"
         )

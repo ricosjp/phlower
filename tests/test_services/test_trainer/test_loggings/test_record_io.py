@@ -59,6 +59,7 @@ def test__to_str(
         train_eval_loss=train_eval_loss,
         elapsed_time=elapsed_time,
         validation_eval_loss=validation_eval_loss,
+        output_directory="dummy",
     )
     actual = record_io.to_str(output)
     assert len(actual.split()) == 4
