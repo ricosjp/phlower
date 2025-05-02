@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pydantic
-from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
@@ -13,7 +12,6 @@ from phlower.settings._interface import (
 
 class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     nodes: list[int]  # This property only overwritten when resolving.
-    dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
