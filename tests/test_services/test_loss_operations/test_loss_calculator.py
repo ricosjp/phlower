@@ -89,7 +89,7 @@ def test__aggregate(
 
 def create_random_dataset(
     name2shape: dict[str, list[tuple[int]]],
-    overwrite_answer_shape: dict[str, list[tuple[int]]] | None = None,
+    overwrite_answer_shape: dict[str, list[tuple[int]]] | None = None
 ) -> tuple[
     IPhlowerTensorCollections,
     IPhlowerTensorCollections,
@@ -257,3 +257,53 @@ def test__raise_error_when_prediction_and_answer_not_match(
     with pytest.raises(ValueError) as ex:
         _ = calculator.calculate(predictions, answers, batch_info)
     assert f"{missing_key} is not found in predictions" in str(ex.value)
+
+
+@pytest.mark.parametrize(
+    "name2loss, name2shape, answer_shape",
+    [
+        (
+            {"nodal_u": "mse"},
+            {"nodal_u": [(10, 10, 10, 3, 1)]},
+            {"nodal_u": [(10, 10, 10, 3, 1)]},
+        ),
+        (
+            {"nodal_u": "mse", "nodal_p": "user_sse"},
+            {
+                "nodal_u": [(4, 4, 4, 3, 1)],
+                "nodal_p": [(4, 4, 4, 1)],
+            },
+            {
+                "nodal_u": [(4, 4, 4, 3, 1)],
+                "nodal_p": [(4, 4, 4, 1)],
+            },
+        ),
+    ],
+)
+def test__compute_loss_for_not_batched_voxel_tensor(
+    name2loss: dict[str, str],
+    name2shape: dict[str, list[tuple[int, ...]]],
+    answer_shape: dict[str, list[tuple[int, ...]]],
+    setup_user_loss_function: None,
+):
+
+    predictions: dict[str, PhlowerTensor] = {}
+    answers: dict[str, PhlowerTensor] = {}
+    batch_info: dict[str, GraphBatchInfo] = {}
+
+    for name, shapes in name2shape.items():
+        preds = [phlower_tensor(np.random.rand(*shape)) for shape in shapes]
+        ans = [
+            phlower_tensor(np.random.rand(*shape), is_voxel=True)
+            for shape in answer_shape[name]
+        ]
+
+        preds, info = to_batch(preds)
+        ans, _ = to_batch(ans)
+
+        predictions[name] = preds
+        answers[name] = ans
+        batch_info[name] = info
+
+    calculator = LossCalculator(name2loss=name2loss)
+    _ = calculator.calculate(predictions, answers, batch_info)
