@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -29,7 +28,7 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
     """
 
     @classmethod
-    def from_setting(cls, setting: ProportionalSetting) -> Self:
+    def from_setting(cls, setting: ProportionalSetting) -> Proportional:
         """Generate model from setting object
 
         Args:
