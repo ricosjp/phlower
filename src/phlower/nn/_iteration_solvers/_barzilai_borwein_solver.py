@@ -164,28 +164,32 @@ class AlphaCalculator:
         component_wise: bool,
         bb_type: Literal["long", "short"],
     ):
-        self._componentwise_alpha: bool = component_wise
-        self._type_bb: Literal["long", "short"] = bb_type
+        self._componentwise_alpha = component_wise
+        self._type_bb = bb_type
 
         self._zero_threshold = 1e-8
 
     def calculate(
         self, delta_x: PhlowerTensor, delta_g: PhlowerTensor
     ) -> PhlowerTensor | float:
-        if (torch.sum(delta_x) < self._zero_threshold) and (
-            torch.sum(delta_g) < self._zero_threshold
-        ):
-            return 1.0
-
         pattern = self._get_einsum_pattern()
         if self._type_bb == "long":
-            return functions.einsum(pattern, delta_x, delta_x) / (
-                functions.einsum(pattern, delta_x, delta_g)
-            )
+            if torch.any(
+                (denominator := functions.einsum(pattern, delta_x, delta_g))
+                < self._zero_threshold
+            ):
+                return 1.0
+
+            return functions.einsum(pattern, delta_x, delta_x) / denominator
+
         if self._type_bb == "short":
-            return functions.einsum(pattern, delta_x, delta_g) / (
-                functions.einsum(pattern, delta_g, delta_g)
-            )
+            if torch.any(
+                (denominator := functions.einsum(pattern, delta_g, delta_g))
+                < self._zero_threshold
+            ):
+                return 1.0
+
+            return functions.einsum(pattern, delta_x, delta_g) / denominator
 
         raise NotImplementedError(
             f"bb type: {self._type_bb} is not implemented."
