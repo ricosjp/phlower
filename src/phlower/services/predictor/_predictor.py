@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from collections.abc import Iterator
-from typing import overload
+from typing import Literal, overload
 
 from torch.utils.data import DataLoader
 
@@ -131,7 +131,7 @@ class PhlowerPredictor:
     def predict(
         self,
         preprocessed_data: list[dict[str, IPhlowerArray]],
-        perform_inverse_scaling: False,
+        perform_inverse_scaling: Literal[False],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
@@ -160,7 +160,7 @@ class PhlowerPredictor:
     def predict(
         self,
         preprocessed_data: list[dict[str, IPhlowerArray]],
-        perform_inverse_scaling: True,
+        perform_inverse_scaling: Literal[True],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
@@ -189,7 +189,7 @@ class PhlowerPredictor:
     def predict(
         self,
         preprocessed_data: list[pathlib.Path],
-        perform_inverse_scaling: False,
+        perform_inverse_scaling: Literal[False],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
@@ -220,7 +220,7 @@ class PhlowerPredictor:
     def predict(
         self,
         preprocessed_data: list[pathlib.Path],
-        perform_inverse_scaling: True,
+        perform_inverse_scaling: Literal[True],
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
         return_only_prediction: bool = False,
