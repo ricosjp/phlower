@@ -175,7 +175,9 @@ class AlphaCalculator:
         pattern = self._get_einsum_pattern()
         if self._type_bb == "long":
             if torch.any(
-                (denominator := functions.einsum(pattern, delta_x, delta_g))
+                torch.abs(
+                    denominator := functions.einsum(pattern, delta_x, delta_g)
+                )
                 < self._zero_threshold
             ):
                 return 1.0
