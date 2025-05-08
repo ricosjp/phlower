@@ -149,4 +149,30 @@ def test__hanlding_denominator_of_alpha(
     assert alpha == desired
 
 
+@pytest.mark.parametrize(
+    "bb_type, delta_x, delta_g, not_desired",
+    [
+        ("long", [[-1.0], [1.0], [0.0]], [[2.0], [1.0], [0.0]], 1.0),
+        ("long", [[-1.0], [1.0], [-10.0]], [[2.0], [1.0], [1.0]], 1.0),
+    ],
+)
+@given(component_wise=st.booleans())
+def test__not_hanlding_denominator_of_alpha(
+    bb_type: str,
+    delta_x: list[list[float]],
+    delta_g: list[list[float]],
+    not_desired: float,
+    component_wise: bool,
+):
+    alpha_calculator = AlphaCalculator(
+        component_wise=component_wise, bb_type=bb_type
+    )
+
+    delta_x = phlower_tensor(torch.tensor(delta_x), dtype=torch.float32)
+    delta_g = phlower_tensor(torch.tensor(delta_g), dtype=torch.float32)
+
+    alpha = alpha_calculator.calculate(delta_x, delta_g)
+    assert alpha != not_desired
+
+
 # endregion
