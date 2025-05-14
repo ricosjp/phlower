@@ -17,3 +17,4 @@ from phlower.nn._functionals._functions import (
     tensor_times_scalar,
     time_series_to_features,
 )
+from phlower.nn._functionals._pooling import PoolingSelector

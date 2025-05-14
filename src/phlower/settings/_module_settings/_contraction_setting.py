@@ -13,11 +13,11 @@ from phlower.settings._interface import (
 
 class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
-    nodes: list[int]
+    nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 2 and len(input_dims) != 1:
@@ -31,13 +31,16 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
-        return [sum_dim, self.nodes[-1]]
+        return [sum_dim, input_dims[-1]]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
     @pydantic.model_validator(mode="after")
     def check_n_nodes(self) -> Self:
         vals = self.nodes
+        if vals is None:
+            return self
+
         if len(vals) != 2:
             raise ValueError(f"Length of nodes must be 2. input: {vals}.")
 
@@ -71,8 +74,13 @@ class ContractionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 f"Invalid length of nodes to overwrite. Input: {nodes}"
             )
 
+        if self.nodes is None:
+            self.nodes = nodes
+            return
+
         if nodes[1] != self.nodes[1]:
             raise ValueError("the last value of nodes is not consistent.")
+
         if nodes[0] <= 0:
             raise ValueError("Resolved nodes must be positive.")
 

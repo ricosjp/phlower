@@ -37,12 +37,32 @@ def unbatch(
         results = _sparse_unbatch(tensor.to_tensor(), batch_info)
         return [phlower_tensor(v, tensor.dimension) for v in results]
 
+    # Only for dense tensor
+
     if batch_info:
         n_nodes = batch_info.n_nodes
-    results = _dense_unbatch(
-        tensor.to_tensor(), n_nodes, tensor.shape_pattern.nodes_dim
-    )
-    return [phlower_tensor(v, tensor.dimension) for v in results]
+        if not batch_info.is_concatenated:
+            return [tensor]
+
+    if tensor.is_voxel:
+        if batch_info is None:
+            raise ValueError(
+                "batch_info is necessary when unbatching voxel tensor."
+            )
+        results = _dense_unbatch(
+            tensor.to_tensor(), n_nodes, batch_info.dense_concat_dim
+        )
+    else:
+        results = _dense_unbatch(
+            tensor.to_tensor(), n_nodes, tensor.shape_pattern.nodes_dim
+        )
+
+    return [
+        phlower_tensor(
+            v, dimension=tensor.dimension, is_time_series=tensor.is_time_series
+        )
+        for v in results
+    ]
 
 
 def _sparse_unbatch(

@@ -1,4 +1,5 @@
 import concurrent.futures as cf
+import multiprocessing as mp
 from collections.abc import Callable, Iterable
 from functools import partial
 from logging import getLogger
@@ -13,9 +14,7 @@ T2 = TypeVar("T2")
 _logger = getLogger(__name__)
 
 
-def _process_chunk(
-    fn: Callable[[T1], T2], chunk: list[Iterable[Any]]
-) -> list[T1]:
+def _process_chunk(fn: Callable[[T1], T2], chunk: list[tuple[Any]]) -> list[T1]:
     """Processes a chunk of an iterable passed to map.
 
     Runs the function passed to map() on a chunk of the
@@ -27,7 +26,9 @@ def _process_chunk(
     return [fn(*args) for args in chunk]
 
 
-def _get_chunks(iterables: Iterable[T1], chunksize: int) -> list[list[T1]]:
+def _get_chunks(
+    iterables: Iterable[T1 | tuple[T1]], chunksize: int
+) -> list[tuple[T1]]:
     """Iterates over ziped iterables in chunks."""
     iterables = _format_inputs(iterables)
     return [
@@ -61,13 +62,17 @@ def _santize_futures(futures: list[cf.Future]) -> None:
 
 class PhlowerMultiprocessor:
     def __init__(self, max_process: int | None):
-        self.max_process = max_process
+        self._max_process = determine_max_process(max_process)
+
+    def get_determined_process(self) -> int:
+        return self._max_process
 
     def run(
         self,
-        inputs: list[tuple[T1]],
+        inputs: list[tuple[T1] | T1],
         target_fn: Callable[[T1], T2],
         chunksize: int | None = None,
+        mp_context: str | None = None,
     ) -> list[T2]:
         """Wrapper function for concurrent.futures
          to run safely with multiple processes.
@@ -82,7 +87,7 @@ class PhlowerMultiprocessor:
         target_fn : Callable[[T1], T2]
             function to execute
         chunksize : int, optional
-            chunck size, by default 1
+            chunck size. By default, automatically determined.
 
         Returns
         -------
@@ -98,11 +103,18 @@ class PhlowerMultiprocessor:
         if len(inputs) == 0:
             return []
 
+        if self._max_process == 1:
+            # NOTE: This is a workaround to avoid pickling objects
+            # when max_process is 1.
+            return [target_fn(*arg) for arg in _format_inputs(inputs)]
+
         futures: list[cf.Future] = []
         chunksize = chunksize or self._determine_chunksize(len(inputs))
         _logger.info(f"chunksize is set as {chunksize}.")
 
-        with cf.ProcessPoolExecutor(self.max_process) as executor:
+        with cf.ProcessPoolExecutor(
+            self._max_process, mp_context=mp.get_context(mp_context)
+        ) as executor:
             for chunk in _get_chunks(inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn), chunk

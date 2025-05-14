@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from collections.abc import Callable
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -65,6 +66,7 @@ def test__get_chunks_multiples(iterables: list, chunksize: int, expects: list):
 
 
 def freaky_job(num: int) -> int:
+    assert isinstance(num, int)
     if num == 1:
         sys.exit(0)
     else:
@@ -72,17 +74,21 @@ def freaky_job(num: int) -> int:
 
 
 @pytest.mark.parametrize("inputs, expects", [([3, 5, 6], [3, 5, 6])])
-def test__can_execute_functions(inputs: list[int], expects: list[int]):
-    processor = PhlowerMultiprocessor(max_process=2)
+@pytest.mark.parametrize("max_process", [1, 2])
+def test__can_execute_functions(
+    inputs: list[int], expects: list[int], max_process: int
+):
+    processor = PhlowerMultiprocessor(max_process=max_process)
     results = processor.run(inputs, target_fn=freaky_job)
 
     assert results == expects
 
 
 @pytest.mark.parametrize("inputs", [([3, 1, 6]), ([1, 1, 1])])
-def test__can_detect_child_process_error(inputs: list[int]):
+@pytest.mark.parametrize("max_process", [3, 2])
+def test__can_detect_child_process_error(inputs: list[int], max_process: int):
     with pytest.raises(PhlowerMultiProcessError):
-        processor = PhlowerMultiprocessor(max_process=2)
+        processor = PhlowerMultiprocessor(max_process=max_process)
         _ = processor.run(inputs, target_fn=freaky_job)
 
 
@@ -165,3 +171,30 @@ def test__can_flatten_return_objects(
     )
 
     assert results == expects
+
+
+@pytest.mark.parametrize(
+    "max_process, mock_process, desired",
+    [
+        (None, 5, 5),
+        (2, 1, 1),
+        (3, 2, 2),
+        (4, 4, 4),
+        (5, 2, 2),
+    ],
+)
+def test__get_determine_max_process(
+    max_process: int | None, mock_process: int, desired: int
+):
+    with mock.patch(
+        "phlower.utils._multiprocessor.determine_max_process",
+        return_value=mock_process,
+    ):
+        processor = PhlowerMultiprocessor(max_process)
+        assert processor.get_determined_process() == desired
+
+
+@pytest.mark.parametrize("max_process", [1, 2, 3])
+def test__get_empty_list_when_inputs_is_empty(max_process: int):
+    processor = PhlowerMultiprocessor(max_process=max_process)
+    assert processor.run([], target_fn=sample_add) == []

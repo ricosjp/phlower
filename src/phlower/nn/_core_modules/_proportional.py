@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from typing_extensions import Self
 
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
@@ -29,7 +28,7 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
     """
 
     @classmethod
-    def from_setting(cls, setting: ProportionalSetting) -> Self:
+    def from_setting(cls, setting: ProportionalSetting) -> Proportional:
         """Generate model from setting object
 
         Args:
@@ -39,7 +38,7 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             Self: Proportional object
         """
-        return cls(**setting.__dict__)
+        return Proportional(**setting.model_dump())
 
     @classmethod
     def get_nn_name(cls) -> str:
@@ -57,15 +56,13 @@ class Proportional(IPhlowerCoreModule, torch.nn.Module):
     def __init__(
         self,
         nodes: list[int],
-        dropouts: list[float] | None = None,
     ) -> None:
         super().__init__()
 
-        if dropouts is None:
-            dropouts = []
-
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=["identity"], dropouts=[], bias=False
+            nodes=nodes,
+            activations=["identity" for _ in range(len(nodes) - 1)],
+            bias=False,
         )
         self._nodes = nodes
 

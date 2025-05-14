@@ -81,7 +81,7 @@ def test__has_termination_flag(file_name: str, setup_user_handler: None):
         validation_eval_loss=3.0,
         elapsed_time=100,
     )
-    runner(dummy)
+    runner.run(dummy)
 
     assert runner.terminate_training
 

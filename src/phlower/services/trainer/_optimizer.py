@@ -18,7 +18,7 @@ class PhlowerOptimizerWrapper:
             optimizer=setting.optimizer_setting.optimizer,
             optimizer_kwargs=setting.optimizer_setting.parameters,
             schedulers={
-                v.scheduler: v.parameters for v in setting.scheduler_setting
+                v.scheduler: v.parameters for v in setting.scheduler_settings
             },
         )
 

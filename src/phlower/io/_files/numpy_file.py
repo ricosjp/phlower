@@ -8,7 +8,6 @@ from typing import Any, get_args
 
 import numpy as np
 import scipy.sparse as sp
-from typing_extensions import Self
 
 from phlower import utils
 from phlower._base.array import IPhlowerArray, phlower_array
@@ -32,7 +31,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         allow_overwrite: bool = False,
         dtype: np.dtype = np.float32,
         **kwargs,
-    ) -> Self:
+    ) -> PhlowerNumpyFile:
         fileio = _get_fileio(data, encrypt_key=encrypt_key)
         save_path = fileio.get_save_path(output_directory, file_basename)
         if not allow_overwrite:
@@ -45,7 +44,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
             save_path=save_path, data=data, dtype=dtype, encrypt_key=encrypt_key
         )
         _logger.info(f"{file_basename} is saved in: {save_path}")
-        return cls(save_path)
+        return PhlowerNumpyFile(save_path)
 
     def __init__(self, path: os.PathLike | IPhlowerNumpyFile) -> None:
         path = to_pathlib_object(path)
@@ -191,7 +190,7 @@ class _NpyEncFileIO(INumpyFileIOCore):
     def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         if decrypt_key is None:
             raise ValueError(
-                "encrpt key is None. Cannot decrypt encrypted file."
+                "decrypt key is None. Cannot decrypt encrypted file."
             )
 
         return np.load(utils.decrypt_file(decrypt_key, path))

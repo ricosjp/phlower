@@ -7,7 +7,7 @@ from typing import Any
 
 import pydantic
 import yaml
-from pipe import select
+from pipe import select, where
 from pydantic import dataclasses as dc
 from typing_extensions import Self
 
@@ -191,6 +191,7 @@ class ScalerResolvedParameter:
                     x, allow_missing=allow_missing
                 )
             )
+            | where(lambda x: x is not None)
         )
 
         return file_paths

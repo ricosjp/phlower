@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
 from phlower._base import PhlowerTensor, phlower_tensor
 from phlower.collections import (
     IPhlowerTensorCollections,
@@ -8,6 +10,7 @@ from phlower.collections import (
 )
 from phlower.nn._interface_iteration_solver import IOptimizeProblem
 from phlower.nn._iteration_solvers._barzilai_borwein_solver import (
+    AlphaCalculator,
     BarzilaiBorweinSolver,
 )
 
@@ -84,3 +87,92 @@ def test__can_converge_quadratic_equation(
 
     # Make sure that the number of iterations is not necessary for bb method
     assert solver.get_n_iterated() < 30
+
+
+# region Test for AlphaCalculator
+
+
+@pytest.mark.parametrize(
+    "component_wise, delta_x_shape, delta_g_shape, desired",
+    [
+        (True, (2, 5, 1), (2, 5, 1), (1,)),
+        (True, (3, 10), (3, 10), (10,)),
+        (True, (1, 1), (1, 1), (1,)),
+        (False, (2, 5, 1), (2, 5, 1), ()),
+        (False, (3, 10), (3, 10), ()),
+        (False, (1, 1), (1, 1), ()),
+    ],
+)
+@given(bb_type=st.sampled_from(["long", "short"]))
+def test__shape_of_alpha_with_component_wise(
+    component_wise: bool,
+    delta_x_shape: tuple[int, ...],
+    delta_g_shape: tuple[int, ...],
+    desired: tuple[int, ...],
+    bb_type: str,
+):
+    alpha_calculator = AlphaCalculator(
+        component_wise=component_wise, bb_type=bb_type
+    )
+
+    delta_x = phlower_tensor(torch.rand(delta_x_shape), dtype=torch.float32)
+    delta_g = phlower_tensor(torch.rand(delta_g_shape), dtype=torch.float32)
+
+    alpha = alpha_calculator.calculate(delta_x, delta_g)
+    assert alpha.shape == desired
+
+
+@pytest.mark.parametrize(
+    "bb_type, delta_x, delta_g, desired",
+    [
+        ("long", [[-1.0], [1.0], [0.0]], [[1.0], [1.0], [0.0]], 1.0),
+        ("long", [[-2.0], [5.0], [0.0]], [[5.0], [2.0], [0.0]], 1.0),
+        ("short", [[-2.0], [5.0], [0.0]], [[0.0], [0.0], [0.0]], 1.0),
+    ],
+)
+@given(component_wise=st.booleans())
+def test__hanlding_denominator_of_alpha(
+    bb_type: str,
+    delta_x: list[list[float]],
+    delta_g: list[list[float]],
+    desired: float,
+    component_wise: bool,
+):
+    alpha_calculator = AlphaCalculator(
+        component_wise=component_wise, bb_type=bb_type
+    )
+
+    delta_x = phlower_tensor(torch.tensor(delta_x), dtype=torch.float32)
+    delta_g = phlower_tensor(torch.tensor(delta_g), dtype=torch.float32)
+
+    alpha = alpha_calculator.calculate(delta_x, delta_g)
+    assert alpha == desired
+
+
+@pytest.mark.parametrize(
+    "bb_type, delta_x, delta_g, not_desired",
+    [
+        ("long", [[-1.0], [1.0], [0.0]], [[2.0], [1.0], [0.0]], 1.0),
+        ("long", [[-1.0], [1.0], [-10.0]], [[2.0], [1.0], [1.0]], 1.0),
+    ],
+)
+@given(component_wise=st.booleans())
+def test__not_hanlding_denominator_of_alpha(
+    bb_type: str,
+    delta_x: list[list[float]],
+    delta_g: list[list[float]],
+    not_desired: float,
+    component_wise: bool,
+):
+    alpha_calculator = AlphaCalculator(
+        component_wise=component_wise, bb_type=bb_type
+    )
+
+    delta_x = phlower_tensor(torch.tensor(delta_x), dtype=torch.float32)
+    delta_g = phlower_tensor(torch.tensor(delta_g), dtype=torch.float32)
+
+    alpha = alpha_calculator.calculate(delta_x, delta_g)
+    assert alpha != not_desired
+
+
+# endregion

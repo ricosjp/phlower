@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import torch
@@ -38,6 +38,14 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def is_voxel(self) -> bool: ...
+
+    @property
+    @abc.abstractmethod
+    def device(self) -> torch.device: ...
+
+    @property
+    @abc.abstractmethod
+    def dtype(self) -> torch.dtype: ...
 
     @abc.abstractmethod
     def values(self) -> torch.Tensor: ...
@@ -89,6 +97,14 @@ class IPhlowerTensor(metaclass=abc.ABCMeta):
         self,
         pattern: str,
         **kwargs: dict[str, int],
+    ) -> IPhlowerTensor: ...
+
+    @abc.abstractmethod
+    def reshape(
+        self,
+        shape: Sequence[int],
+        is_time_series: bool = False,
+        is_voxel: bool = False,
     ) -> IPhlowerTensor: ...
 
     @abc.abstractmethod

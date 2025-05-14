@@ -62,7 +62,7 @@ class Contraction(IPhlowerCoreModule, torch.nn.Module):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(self, activation: str, nodes: list[int] = None):
+    def __init__(self, activation: str, nodes: list[int] | None = None):
         super().__init__()
         self._nodes = nodes
         self._activation_name = activation

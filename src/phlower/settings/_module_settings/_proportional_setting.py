@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pydantic
-from pydantic import Field
 from typing_extensions import Self
 
 from phlower.settings._interface import (
@@ -12,10 +11,10 @@ from phlower.settings._interface import (
 
 
 class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    nodes: list[int] = Field(
-        ...
-    )  # This property only overwritten when resolving.
-    dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
+    nodes: list[int]  # This property only overwritten when resolving.
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     def confirm(self, self_module: IModuleSetting) -> None:
         return
@@ -31,11 +30,11 @@ class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     @pydantic.field_validator("nodes")
     @classmethod
-    def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if len(vals) == 2:
+    def check_n_nodes(cls, vals: list[int] | None) -> list[int]:
+        if len(vals) < 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in "
-                "EnEquivariantMLPSetting. input: {vals}"
+                f"EnEquivariantMLPSetting. input: {vals}"
             )
 
         for i, v in enumerate(vals):

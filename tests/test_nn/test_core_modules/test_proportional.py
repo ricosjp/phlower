@@ -1,9 +1,12 @@
 import numpy as np
 import pytest
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
 from phlower import PhlowerTensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import Proportional
+from phlower.settings._module_settings import ProportionalSetting
 
 
 def test__can_call_parameters():
@@ -11,6 +14,23 @@ def test__can_call_parameters():
 
     # To check Concatenator inherit torch.nn.Module appropriately
     _ = model.parameters()
+
+
+@given(
+    nodes=st.lists(
+        st.integers(min_value=1, max_value=10), min_size=2, max_size=5
+    ),
+)
+def test__can_pass_parameters_via_setting(
+    nodes: list[int],
+):
+    setting = ProportionalSetting(
+        nodes=nodes,
+    )
+
+    model = Proportional.from_setting(setting)
+
+    assert model._nodes == nodes
 
 
 @pytest.mark.parametrize(

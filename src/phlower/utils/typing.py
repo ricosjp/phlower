@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import pathlib
 from collections.abc import Callable, Mapping
 from typing import Any, NamedTuple
 
@@ -8,11 +9,18 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
-ArrayDataType = np.ndarray | sp.coo_matrix | sp.csr_matrix | sp.csc_matrix
-
 DenseArrayType = np.ndarray
 
-SparseArrayType = sp.coo_matrix | sp.csr_matrix | sp.csc_matrix
+SparseArrayType = (
+    sp.coo_matrix
+    | sp.csr_matrix
+    | sp.csc_matrix
+    | sp.csr_array
+    | sp.coo_array
+    | sp.csc_array
+)
+
+ArrayDataType = np.ndarray | SparseArrayType
 
 LossFunctionType = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
@@ -43,6 +51,7 @@ class AfterEpochTrainingInfo(NamedTuple):
 
     epoch: int
     train_losses: list[float]
+    output_directory: pathlib.Path | None = None
 
 
 class AfterEvaluationOutput(NamedTuple):
@@ -51,6 +60,7 @@ class AfterEvaluationOutput(NamedTuple):
     epoch: int
     train_eval_loss: float
     elapsed_time: float
+    output_directory: pathlib.Path | None = None
     validation_eval_loss: float | None = None
     train_loss_details: dict[str, float] | None = None
     validation_loss_details: dict[str, float] | None = None

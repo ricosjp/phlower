@@ -7,7 +7,6 @@ from typing import Literal, overload
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from typing_extensions import Self
 
 from phlower._base import PhlowerTensor
 from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
@@ -24,12 +23,15 @@ from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.settings import (
     PhlowerDataSetting,
-    PhlowerModelSetting,
     PhlowerSetting,
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
-from phlower.utils.enums import ModelSelectionType, TrainerSavedKeyType
+from phlower.utils.enums import (
+    ModelSelectionType,
+    TrainerInitializeType,
+    TrainerSavedKeyType,
+)
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import (
     AfterEpochTrainingInfo,
@@ -75,6 +77,7 @@ class _EvaluationRunner:
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
             elapsed_time=timer.watch(),
+            output_directory=info.output_directory,
         )
 
     def _evaluate_training(
@@ -131,7 +134,9 @@ class PhlowerTrainer:
     _SAVED_SETTING_NAME: str = "model"
 
     @classmethod
-    def restart_from(cls, model_directory: pathlib.Path) -> Self:
+    def restart_from(
+        cls, model_directory: pathlib.Path, decrypt_key: bytes | None = None
+    ) -> PhlowerTrainer:
         """Restart PhlowerTrainer from model directory
 
         Args:
@@ -139,17 +144,19 @@ class PhlowerTrainer:
                 Model directory
 
         Returns:
-            Self: PhlowerTrainer
+            PhlowerTrainer: PhlowerTrainer
         """
         ph_directory = PhlowerDirectory(model_directory)
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
-        setting = PhlowerSetting.read_yaml(yaml_file)
+        setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
         trainer = cls.from_setting(setting)
-        trainer._reinit_for_restart(model_directory)
+        trainer._reinit_for_restart(model_directory, decrypt_key=decrypt_key)
         return trainer
 
     @classmethod
-    def from_setting(cls, setting: PhlowerSetting) -> PhlowerTrainer:
+    def from_setting(
+        cls, setting: PhlowerSetting, decrypt_key: bytes | None = None
+    ) -> PhlowerTrainer:
         """Create PhlowerTrainer from PhlowerSetting
 
         Args:
@@ -164,8 +171,30 @@ class PhlowerTrainer:
                 "setting content for training or model is not found."
             )
 
+        init_setting = setting.training.initializer_setting
+        if init_setting.type_name == TrainerInitializeType.restart:
+            trainer = PhlowerTrainer.restart_from(
+                init_setting.reference_directory, decrypt_key=decrypt_key
+            )
+            return trainer
+
         setting.model.resolve()
-        return cls(setting.model, setting.training, setting.data)
+        trainer = PhlowerTrainer(setting)
+
+        if init_setting.type_name == TrainerInitializeType.none:
+            return trainer
+
+        if init_setting.type_name == TrainerInitializeType.pretrained:
+            trainer.load_pretrained(
+                model_directory=init_setting.reference_directory,
+                selection_mode="best",
+                decrypt_key=decrypt_key,
+            )
+            return trainer
+
+        raise NotImplementedError(
+            f"Initialize way for {init_setting.type_name} is not implemented."
+        )
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -173,45 +202,51 @@ class PhlowerTrainer:
         Returns:
             PhlowerTrainerSetting: Trainer setting
         """
-        return self._trainer_setting
+        return self._setting.training
 
-    def __init__(
-        self,
-        model_setting: PhlowerModelSetting,
-        trainer_setting: PhlowerTrainerSetting,
-        data_setting: PhlowerDataSetting | None,
-    ):
+    def __init__(self, setting: PhlowerSetting):
+        """Initialize PhlowerTrainer without updating trainer's
+         inner state.
+        If you want to initialize PhlowerTrainer following to
+         your setting such as `restart` or `pretrained`,
+         please use `from_setting` method.
+
+        Args:
+            setting (PhlowerSetting): setting of phlower
+
+        """
+        self._setting = setting
+
+        if self._setting.model is None:
+            raise ValueError("setting content for model is not found.")
+        if self._setting.training is None:
+            raise ValueError("setting content for training is not found.")
+
         # NOTE: Must Call at first
-        self._fix_seed(trainer_setting.random_seed)
-
-        self._model_setting = model_setting
-        self._trainer_setting = trainer_setting
-        self._data_setting = data_setting or PhlowerDataSetting()
-
-        self._epoch_progress_bar = PhlowerProgressBar(
-            total=self._trainer_setting.n_epoch
-        )
+        self._fix_seed(self._setting.training.random_seed)
 
         # initialize model
         self._model = PhlowerGroupModule.from_setting(
-            self._model_setting.network
+            self._setting.model.network
         )
-        self._model.to(self._trainer_setting.device)
+        self._model.to(self._setting.training.device)
         self._scheduled_optimizer = PhlowerOptimizerWrapper.from_setting(
-            self._trainer_setting, model=self._model
+            self._setting.training, model=self._model
         )
 
         # initialize loss calculator
         self._loss_calculator = LossCalculator.from_setting(
-            self._trainer_setting
+            self._setting.training
         )
         self._evaluation_runner = _EvaluationRunner(
-            trainer_setting=trainer_setting,
+            trainer_setting=self._setting.training,
             loss_calculator=self._loss_calculator,
         )
 
         # initialize handler
-        self._handlers = PhlowerHandlersRunner.from_setting(trainer_setting)
+        self._handlers = PhlowerHandlersRunner.from_setting(
+            self._setting.training
+        )
 
         # Internal state
         self._start_epoch = 0
@@ -231,8 +266,8 @@ class PhlowerTrainer:
         torch.manual_seed(seed)
 
     def _initialize_model(self) -> PhlowerGroupModule:
-        _model = PhlowerGroupModule.from_setting(self._model_setting.network)
-        _model.to(self._trainer_setting.device)
+        _model = PhlowerGroupModule.from_setting(self._setting.model.network)
+        _model.to(self._setting.training.device)
 
     def _prepare_dataloader(
         self,
@@ -242,21 +277,21 @@ class PhlowerTrainer:
         decrypt_key: bytes | None = None,
     ) -> tuple[DataLoader, DataLoader | None]:
         train_dataset = LazyPhlowerDataset(
-            input_settings=self._model_setting.inputs,
-            label_settings=self._model_setting.labels,
-            field_settings=self._model_setting.fields,
+            input_settings=self._setting.model.inputs,
+            label_settings=self._setting.model.labels,
+            field_settings=self._setting.model.fields,
             directories=train_directories,
             decrypt_key=decrypt_key,
         )
         validation_dataset = LazyPhlowerDataset(
-            input_settings=self._model_setting.inputs,
-            label_settings=self._model_setting.labels,
-            field_settings=self._model_setting.fields,
+            input_settings=self._setting.model.inputs,
+            label_settings=self._setting.model.labels,
+            field_settings=self._setting.model.fields,
             directories=validation_directories,
             decrypt_key=decrypt_key,
         )
 
-        builder = DataLoaderBuilder.from_setting(self._trainer_setting)
+        builder = DataLoaderBuilder.from_setting(self._setting.training)
         train_loader = builder.create(
             train_dataset,
             disable_dimensions=disable_dimensions,
@@ -298,6 +333,7 @@ class PhlowerTrainer:
         self,
         output_directory: pathlib.Path,
         disable_dimensions: bool = False,
+        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
@@ -357,25 +393,30 @@ class PhlowerTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
-        if train_directories is None:
-            train_directories = self._data_setting.train
-            validation_directories = self._data_setting.validation
-        else:
-            if not self._data_setting.is_empty():
-                raise ValueError(
-                    "train_directories and validation_directories "
-                    "should be None when data_setting has train directories."
-                )
-            validation_directories = validation_directories or []
+        data_setting = self._setting.data.upgrade(
+            training=train_directories, validation=validation_directories
+        )
+        if data_setting.is_empty():
+            raise ValueError(
+                "No training or validation directories are found. "
+                "Please check the setting file."
+            )
 
         logging_runner = LoggingRunner(
             output_directory,
-            log_every_n_epoch=self._trainer_setting.log_every_n_epoch,
+            log_every_n_epoch=self._setting.training.log_every_n_epoch,
         )
 
-        if self._start_epoch == 0:
-            # start_epoch > 0 means that this training is restarted.
-            self._save_setting(output_directory, encrypt_key=encrypt_key)
+        # when restart training, skip is allowed
+        self._save_setting_if_necessary(
+            output_directory,
+            encrypt_key=encrypt_key,
+            data_setting=data_setting,
+            skip_if_exist=(self._start_epoch > 0),
+        )
+
+        train_directories = data_setting.training
+        validation_directories = data_setting.validation
 
         train_loader, validation_loader = self._prepare_dataloader(
             train_directories=train_directories,
@@ -391,21 +432,25 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
-        for epoch in range(self._start_epoch, self._trainer_setting.n_epoch):
+        logging_runner.show_overview(device=self._setting.training.device)
+
+        for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
 
             for tr_batch in train_loader:
                 train_last_loss = self._training_batch_step(tr_batch)
                 _train_batch_pbar.update(
-                    trick=self._trainer_setting.batch_size,
+                    trick=self._setting.training.batch_size,
                     desc=f"training loss: {train_last_loss:.3f}",
                 )
                 train_losses.append(train_last_loss)
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(
-                epoch=epoch, train_losses=train_losses
+                epoch=epoch,
+                train_losses=train_losses,
+                output_directory=output_directory,
             )
 
             output = self._evaluation_runner.run(
@@ -427,29 +472,28 @@ class PhlowerTrainer:
             )
 
             # Call handlers
-            self._handlers(output)
+            self._handlers.run(output)
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
                 break
 
-            # update epoch
-            if output.validation_eval_loss is not None:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"val loss {output.validation_eval_loss:.3f}"
-                )
-            else:
-                self._epoch_progress_bar.update(
-                    trick=1, desc=f"train loss {output.train_eval_loss:.3f}"
-                )
-
         return train_last_loss
 
-    def _save_setting(
-        self, output_directory: pathlib.Path, encrypt_key: bytes | None = None
+    def _save_setting_if_necessary(
+        self,
+        output_directory: pathlib.Path,
+        data_setting: PhlowerDataSetting,
+        encrypt_key: bytes | None = None,
+        skip_if_exist: bool = False,
     ) -> None:
-        dump_setting = PhlowerSetting(
-            training=self._trainer_setting, model=self._model_setting
+        dumped_yaml = PhlowerDirectory(output_directory).find_yaml_file(
+            file_base_name=self._SAVED_SETTING_NAME, allow_missing=True
         )
+        if (dumped_yaml is not None) and skip_if_exist:
+            _logger.info("model setting file has already existed. Skip saving.")
+            return
+
+        dump_setting = self._setting.model_copy(update={"data": data_setting})
         PhlowerYamlFile.save(
             output_directory=output_directory,
             file_basename=self._SAVED_SETTING_NAME,
@@ -457,6 +501,15 @@ class PhlowerTrainer:
             encrypt_key=encrypt_key,
             allow_overwrite=False,
         )
+
+    def draw_model(self, output_directory: pathlib.Path) -> None:
+        """Draw model
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+        """
+        self._model.draw(output_directory=output_directory)
 
     def _reinit_for_restart(
         self,
@@ -523,7 +576,7 @@ class PhlowerTrainer:
         self._start_epoch = int(checkpoint["epoch"]) + 1
         self._offset_time = checkpoint["elapsed_time"]
 
-        if self._trainer_setting.n_epoch == self._start_epoch:
+        if self._setting.training.n_epoch == self._start_epoch:
             raise PhlowerRestartTrainingCompletedError(
                 "Checkpoint at last epoch exists. "
                 "Model to restart has already finished"
@@ -558,6 +611,6 @@ def _evaluation(
             results.append(val_loss.detach().to_tensor().float().item())
         pbar.update(
             trick=_batch.n_data,
-            desc=f"{pbar_title}: {results[-1]}",
+            desc=f"{pbar_title}: {results[-1]:.3f}",
         )
     return np.average(results)

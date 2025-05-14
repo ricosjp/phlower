@@ -158,12 +158,16 @@ class GroupModuleSetting(
         if len(_names) == len(self.modules):
             return self
 
+        # found duplicate name
         for module in self.modules:
-            if module.get_name() in _names:
-                raise PhlowerModuleDuplicateNameError(
-                    f"Duplicate module name '{module.name}' is detected "
-                    f"in {self.name}"
-                )
+            _name = module.get_name()
+            if _name in _names:
+                _names.discard(_name)
+                continue
+            raise PhlowerModuleDuplicateNameError(
+                f"Duplicate module name '{_name}' is detected "
+                f"in {self.name}"
+            )
 
         # it is not supposed to be reached here
         raise NotImplementedError()

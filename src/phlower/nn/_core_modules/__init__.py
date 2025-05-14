@@ -13,6 +13,7 @@ from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._iso_gcn import IsoGCN
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._pinv_mlp import PInvMLP
+from phlower.nn._core_modules._pooling import Pooling
 from phlower.nn._core_modules._proportional import Proportional
 from phlower.nn._core_modules._rearrange import Rearrange
 from phlower.nn._core_modules._reducer import Reducer
@@ -42,6 +43,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     IsoGCN,
     MLP,
     PInvMLP,
+    Pooling,
     Proportional,
     Rearrange,
     Reducer,

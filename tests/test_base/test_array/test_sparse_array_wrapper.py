@@ -18,10 +18,12 @@ def random_sparse_array(
     rng = np.random.default_rng()
     shapes = draw(arr_shape)
     if shapes[0] == 1 and shapes[1] == 1:
-        return sp.random(*shapes, density=1, random_state=rng)
+        return sp.random(*shapes, density=1, random_state=rng, dtype=np.float32)
 
     else:
-        return sp.random(*shapes, density=0.2, random_state=rng)
+        return sp.random(
+            *shapes, density=0.2, random_state=rng, dtype=np.float32
+        )
 
 
 @st.composite

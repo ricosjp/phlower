@@ -6,7 +6,6 @@ from functools import partial
 
 import dagstream
 import torch
-from typing_extensions import Self
 
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
@@ -63,7 +62,7 @@ class _GroupOptimizeProblem(IOptimizeProblem):
         operator_value = self._step_forward(h)
         if self._steady_mode:
             # R(u) = - D[u] dt
-            residuals = -1.0 * operator_value.mask(target_keys)
+            residuals = operator_value.mask(target_keys) * -1.0
         else:
             # R(u) = v - u(t) - D[u] dt
             residuals = (
@@ -82,7 +81,7 @@ class PhlowerGroupModule(
     torch.nn.Module,
 ):
     @classmethod
-    def from_setting(cls, setting: GroupModuleSetting) -> Self:
+    def from_setting(cls, setting: GroupModuleSetting) -> PhlowerGroupModule:
         _modules: list[IPhlowerModuleAdapter] = []
         for _setting in setting.modules:
             if isinstance(_setting, GroupModuleSetting):
@@ -187,6 +186,9 @@ class PhlowerGroupModule(
 
         if isinstance(output_directory, str):
             output_directory = pathlib.Path(output_directory)
+
+        if not output_directory.exists():
+            output_directory.mkdir(parents=True, exist_ok=True)
 
         drawer.output(
             self._phlower_modules, output_directory / f"{self.name}.mmd"

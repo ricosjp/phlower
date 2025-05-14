@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
-from phlower import IPhlowerArray, PhlowerTensor
+from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
 from phlower.services.preprocessing import PhlowerScalingService
@@ -134,7 +134,7 @@ def test__predict_with_inverse_scaling(
         preprocessed_data=preprocessed_directories, perform_inverse_scaling=True
     ):
         for k in result.prediction_data.keys():
-            assert isinstance(result.prediction_data[k], IPhlowerArray)
+            assert isinstance(result.prediction_data[k], np.ndarray)
 
 
 def test__predict_specified(
@@ -199,4 +199,4 @@ def test__predict_with_onmemory_dataset(
         preprocessed_data=loaded_data, perform_inverse_scaling=True
     ):
         for k in result.prediction_data.keys():
-            assert isinstance(result.prediction_data[k], IPhlowerArray)
+            assert isinstance(result.prediction_data[k], np.ndarray)

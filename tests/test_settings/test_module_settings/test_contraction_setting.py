@@ -9,8 +9,8 @@ from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import ContractionSetting
 
 
-@pytest.mark.parametrize("nodes", [([-1, 20]), ([10, 10])])
-def test__can_accept_valid_n_nodes(nodes: list[int]):
+@pytest.mark.parametrize("nodes", [[-1, 20], [10, 10], None])
+def test__can_accept_valid_n_nodes(nodes: list[int] | None):
     _ = ContractionSetting(nodes=nodes)
 
 

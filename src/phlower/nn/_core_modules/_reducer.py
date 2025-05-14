@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from functools import reduce
+
 import torch
 from typing_extensions import Self
 
+from phlower._base._functionals import broadcast_to
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -99,14 +102,16 @@ class Reducer(IPhlowerCoreModule, torch.nn.Module):
 
         tensors = tuple(data.values())
         ans = tensors[0]
-        for i in range(len(tensors) - 1):
-            vs, vl = _convert_to_broadcastable_shape(ans, tensors[i + 1])
-            ans = self._operator(vs, vl)
+
+        ans = reduce(
+            lambda x, y: self._operator(*_to_broadcastable_shape(x, y)),
+            tensors,
+        )
 
         return self._activation_func(ans)
 
 
-def _convert_to_broadcastable_shape(
+def _to_broadcastable_shape(
     tensor1: PhlowerTensor, tensor2: PhlowerTensor
 ) -> tuple[PhlowerTensor, PhlowerTensor]:
     if len(tensor1.shape) == len(tensor2.shape):
@@ -114,27 +119,5 @@ def _convert_to_broadcastable_shape(
 
     tensor_s, tensor_l = sorted([tensor1, tensor2], key=lambda x: len(x.shape))
 
-    shape_s = tensor_s.shape
-    shape_l = tensor_l.shape
-    new_shape: list[int] = []
-
-    index_s = 0
-    for vl in shape_l:
-        if index_s >= len(shape_s):
-            new_shape.append(1)
-            continue
-
-        front = shape_s[index_s]
-        if front == vl:
-            new_shape.append(vl)
-            index_s += 1
-
-        else:
-            new_shape.append(1)
-
-    tensor_s = tensor_s.reshape(
-        tuple(new_shape),
-        is_time_series=tensor_s.is_time_series,
-        is_voxel=tensor_s.is_voxel,
-    )
+    tensor_s = broadcast_to(tensor_s, tensor_l.shape_pattern)
     return tensor_s, tensor_l

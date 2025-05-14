@@ -182,7 +182,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
 
 
 def _apply_setting(
-    dict_arrs: dict[str, np.ndarray],
+    dict_arrs: dict[str, np.ndarray | IPhlowerArray],
     io_setting: ModelIOSetting,
     allow_missing: bool = False,
 ) -> IPhlowerArray | None:
@@ -192,6 +192,8 @@ def _apply_setting(
             continue
 
         _arr = dict_arrs[member.name]
+        if isinstance(_arr, IPhlowerArray):
+            _arr = _arr.to_numpy()
 
         if member.n_last_dim is None:
             member_arrs.append(_arr)

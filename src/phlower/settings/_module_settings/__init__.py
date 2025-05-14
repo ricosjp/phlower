@@ -25,6 +25,7 @@ from phlower.settings._module_settings._identity_setting import IdentitySetting
 from phlower.settings._module_settings._isogcn_setting import IsoGCNSetting
 from phlower.settings._module_settings._mlp_setting import MLPSetting
 from phlower.settings._module_settings._pinv_mlp_setting import PInvMLPSetting
+from phlower.settings._module_settings._pooling_setting import PoolingSetting
 from phlower.settings._module_settings._proportional_setting import (
     ProportionalSetting,
 )
@@ -64,6 +65,7 @@ _name_to_setting: dict[str, IPhlowerLayerParameters] = {
     "SPMM": SPMMSetting,
     "TCN": TCNSetting,
     "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
+    "Pooling": PoolingSetting,
 }
 
 

@@ -62,6 +62,11 @@ class ActivationType(str, Enum):
     truncated_atanh = "truncated_atanh"
 
 
+class PoolingType(str, Enum):
+    max = "max"
+    mean = "mean"
+
+
 class PhysicalDimensionSymbolType(Enum):
     T = 0  # time
     L = 1  # length
@@ -101,3 +106,9 @@ class PhlowerIterationSolverType(str, Enum):
 
 class PhlowerHandlerRegisteredKey(str, Enum):
     TERMINATE = "TERMINATE"
+
+
+class TrainerInitializeType(str, Enum):
+    none = "none"
+    pretrained = "pretrained"
+    restart = "restart"
