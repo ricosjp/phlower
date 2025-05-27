@@ -2,7 +2,7 @@
 name = "phlower"
 version = "0.2.0"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
-authors = ["sakamoto <sakamoto@ricos.co.jp>"]
+authors = ["RICOS Co. Ltd."]
 readme = "README.md"
 license="Apache-2.0"
 packages = [
