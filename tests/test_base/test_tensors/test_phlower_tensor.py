@@ -521,21 +521,52 @@ def test__to_vertexwise_inverse(
 
 
 @pytest.mark.parametrize(
-    "input_shape, pattern, dict_shape, desired_shape",
+    "input_shape, is_time_series, is_voxel, pattern, dict_shape, desired_shape",
     [
-        ((10, 3, 16), "n p a -> n (p a)", {"a": 16}, (10, 3 * 16)),
-        ((10, 3 * 16), "n (p a) -> n p a", {"p": 3}, (10, 3, 16)),
+        (
+            (10, 3, 16),
+            False,
+            False,
+            "n p a -> n (p a)",
+            {"a": 16},
+            (10, 3 * 16),
+        ),
+        ((10, 3 * 16), False, False, "n (p a) -> n p a", {"p": 3}, (10, 3, 16)),
+        [
+            (10, 8, 8, 8, 3, 3, 16),
+            True,
+            True,
+            "... (f g) -> ... f g",
+            {"f": 4},
+            (10, 8, 8, 8, 3, 3, 4, 4),
+        ],
+        [
+            (10, 8, 8, 8, 3, 3, 16),
+            True,
+            False,
+            "t ... (f g) -> t ... f g",
+            {"f": 4},
+            (10, 8, 8, 8, 3, 3, 4, 4),
+        ],
     ],
 )
 def test__rearrange(
     input_shape: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
     pattern: str,
     dict_shape: dict,
     desired_shape: tuple[int],
 ):
-    phlower_tensor = PhlowerTensor(torch.rand(*input_shape))
-    actual = phlower_tensor.rearrange(pattern, **dict_shape)
+    ph_tensor = phlower_tensor(
+        torch.rand(*input_shape),
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+    actual = ph_tensor.rearrange(pattern, **dict_shape)
     assert actual.shape == desired_shape
+    assert actual.is_time_series is ph_tensor.is_time_series
+    assert actual.is_voxel is ph_tensor.is_voxel
 
 
 def test__clone():

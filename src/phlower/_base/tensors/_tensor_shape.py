@@ -36,6 +36,41 @@ class PhlowerShapePattern:
         self._is_time_series = is_time_series
         self._is_voxel = is_voxel
 
+    def rearrange(
+        self, pattern: str, to_shape: torch.Size
+    ) -> PhlowerShapePattern:
+        """Transform the shape pattern to a new pattern.
+
+        Args:
+            pattern (str): The new pattern string.
+
+        Returns:
+            PhlowerShapePattern: A new instance with the transformed pattern.
+        """
+
+        from_patterns = _split_pattern(pattern.split("->")[0].strip())
+        to_pattern = pattern.split("->")[1].strip()
+
+        # Fill ellipse if it exists
+        if "..." in to_pattern:
+            assert "..." in from_patterns
+
+            start_idx = -1
+            end_idx = -1
+            for i, c in enumerate(from_patterns):
+                if c != "...":
+                    continue
+
+                start_idx = i
+                _n_left = len(from_patterns) - i - 1
+                end_idx = len(self._shape) - _n_left
+                break
+
+            ellipse_pattern = self.get_pattern().split(" ")[start_idx:end_idx]
+            to_pattern = to_pattern.replace("...", " ".join(ellipse_pattern))
+
+        return PhlowerShapePattern.from_pattern(to_shape, to_pattern)
+
     def get_pattern_to_size(self, drop_last: bool = False) -> dict[str, int]:
         """Return mapping of which key is pattern symbol and
           value is its dimension value.
