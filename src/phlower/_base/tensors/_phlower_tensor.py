@@ -521,10 +521,10 @@ class PhlowerTensor(IPhlowerTensor):
             PhlowerTensor: Rearranged tensor.
         """
         rearranged = einops.rearrange(self._tensor, pattern, **axes_length)
+        shape_pattern = self._phlower_shape.rearrange(pattern, rearranged.shape)
 
-        to_pattern = pattern.split("->")[-1]
         return PhlowerTensor.from_pattern(
-            rearranged, dimension_tensor=self.dimension, pattern=to_pattern
+            rearranged, dimension_tensor=self.dimension, pattern=shape_pattern
         )
 
     def reshape(
