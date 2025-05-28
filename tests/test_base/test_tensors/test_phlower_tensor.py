@@ -615,6 +615,16 @@ def test__nan_to_num(inputs: list[float], nan: float):
             True,
         ),
         (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
+            True,
+        ),
+        (
             (5, 3, 4),
             [...],
             True,
@@ -646,6 +656,16 @@ def test__getitem_for_timeseries_phlower_tensor(
     [
         ((4, 4, 4, 3, 4), 0, False),
         ((4, 4, 4, 3, 4), torch.tensor([1, 2, 3], dtype=torch.long), True),
+        (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
+            True,
+        ),
         ((4, 4, 4, 3, 4), [..., 0], True),
         ((5, 4, 5, 3, 4), [None, ..., 0], False),
         ((5, 4, 5, 3, 4), [slice(1, 2)], False),
@@ -678,6 +698,18 @@ def test__getitem_for_voxel_phlower_tensor(
         (
             (4, 4, 4, 3, 4),
             torch.tensor([1, 2, 3], dtype=torch.long),
+            True,
+            True,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
             True,
             True,
         ),
