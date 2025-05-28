@@ -280,7 +280,7 @@ def test__slice_time_with_slicable_object(
     b = a.slice_time(slicer)
     assert b.is_time_series is is_time_series
     assert b.dimension == a.dimension
-    np.testing.assert_almost_equal(b.numpy(), a.numpy()[slicer])
+    np.testing.assert_almost_equal(b.numpy(), a.to_tensor()[[slicer]].numpy())
 
 
 @pytest.mark.parametrize(
@@ -600,3 +600,181 @@ def test__nan_to_num(inputs: list[float], nan: float):
     assert not torch.any(torch.isnan(new_tensor.to_tensor()))
 
     np.testing.assert_array_almost_equal(new_tensor.numpy(), tensor.numpy())
+
+
+# region Test for __getitem__
+
+
+@pytest.mark.parametrize(
+    "shape, index, desired_time_series",
+    [
+        ((5, 3, 4), 0, False),
+        (
+            (5, 3, 4),
+            torch.tensor([1, 2, 3], dtype=torch.long),
+            True,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
+            True,
+        ),
+        (
+            (5, 3, 4),
+            [...],
+            True,
+        ),
+        ((5, 3, 4), [slice(1, 5)], True),
+        ((5, 3, 4), [slice(1, 2)], False),
+        ((5, 3, 4), [None, ...], False),
+        ((5, 3, 4), [..., None], True),
+        ((3, 6, 3, 3, 1), [..., None, slice(1, 2, 1)], True),
+    ],
+)
+def test__getitem_for_timeseries_phlower_tensor(
+    shape: tuple[int],
+    index: int,
+    desired_time_series: bool,
+):
+    base_tensor = torch.rand(*shape)
+    pht = phlower_tensor(base_tensor, is_time_series=True)
+    actual = pht[index]
+    assert actual.is_time_series == desired_time_series
+
+    np.testing.assert_array_almost_equal(
+        actual.to_numpy(), base_tensor[index].numpy()
+    )
+
+
+@pytest.mark.parametrize(
+    "shape, index, desired_voxel",
+    [
+        ((4, 4, 4, 3, 4), 0, False),
+        ((4, 4, 4, 3, 4), torch.tensor([1, 2, 3], dtype=torch.long), True),
+        (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
+            True,
+        ),
+        ((4, 4, 4, 3, 4), [..., 0], True),
+        ((5, 4, 5, 3, 4), [None, ..., 0], False),
+        ((5, 4, 5, 3, 4), [slice(1, 2)], False),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 5), slice(1, 5)], True),
+        ((5, 4, 5, 3, 4), [slice(1, 2), slice(1, 5), slice(1, 5)], False),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 2), slice(1, 5)], False),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 5), slice(1, 2)], False),
+        ((5, 4, 5, 3, 4), [slice(1, 5), ..., None, slice(1, 5)], True),
+    ],
+)
+def test__getitem_for_voxel_phlower_tensor(
+    shape: tuple[int],
+    index: int,
+    desired_voxel: bool,
+):
+    base_tensor = torch.rand(*shape)
+    pht = phlower_tensor(base_tensor, is_voxel=True)
+    actual = pht[index]
+    assert actual.is_voxel == desired_voxel
+
+    np.testing.assert_array_almost_equal(
+        actual.to_numpy(), base_tensor[index].numpy()
+    )
+
+
+@pytest.mark.parametrize(
+    "shape, index, desired_time_series, desired_voxel",
+    [
+        ((4, 4, 4, 3, 4), 0, False, True),
+        (
+            (4, 4, 4, 3, 4),
+            torch.tensor([1, 2, 3], dtype=torch.long),
+            True,
+            True,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            (torch.rand(4, 4, 4, 3, 4) > 0.5),
+            False,
+            False,
+        ),
+        (
+            (4, 4, 4, 3, 4),
+            np.array([1, 2, 3], dtype=np.long),
+            True,
+            True,
+        ),
+        ((4, 4, 4, 3, 4), [..., 0], True, True),
+        ((5, 4, 5, 3, 4), [None, ..., 0], False, False),
+        ((5, 4, 5, 3, 4), [..., None, 0], True, True),
+        ((5, 4, 5, 3, 4), slice(1, 2), False, True),
+        ((5, 4, 5, 3, 4), slice(1, 3, 3), False, True),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 5), slice(1, 5)], True, True),
+        ((5, 4, 5, 3, 4), [slice(1, 2), slice(1, 5), slice(1, 5)], False, True),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 2), slice(1, 5)], True, False),
+        ((5, 4, 5, 3, 4), [slice(1, 5), slice(1, 5), slice(1, 2)], True, False),
+        (
+            (5, 4, 5, 3, 4),
+            [slice(1, 5), slice(1, 5), slice(1, 4), slice(1, 2)],
+            True,
+            False,
+        ),
+        ((5, 4, 5, 3, 4), [slice(1, 5), ..., None, slice(1, 5)], True, True),
+    ],
+)
+def test__getitem_for_voxel_and_timeseries_phlower_tensor(
+    shape: tuple[int],
+    index: int,
+    desired_time_series: bool,
+    desired_voxel: bool,
+):
+    base_tensor = torch.rand(*shape)
+    pht = phlower_tensor(base_tensor, is_voxel=True, is_time_series=True)
+    actual = pht[index]
+    assert actual.is_time_series == desired_time_series
+    assert actual.is_voxel == desired_voxel
+
+    np.testing.assert_array_almost_equal(
+        actual.to_numpy(), base_tensor[index].numpy()
+    )
+
+
+@pytest.mark.parametrize(
+    "shape, index",
+    [
+        ((4, 4, 4, 3, 4), 0),
+        (
+            (4, 4, 4, 3, 4),
+            torch.tensor([1, 2, 3], dtype=torch.long),
+        ),
+        ((4, 4, 4, 3, 4), [..., 0]),
+        ((5, 4, 5, 3, 4), [None, ..., 0]),
+        ((5, 4, 5, 3, 4), slice(1, 3, 3)),
+        ((5, 4, 5, 3, 4), [slice(1, 5), ..., None, slice(1, 5)]),
+    ],
+)
+def test__getitem_for_nodal_phlower_tensor(
+    shape: tuple[int],
+    index: int,
+):
+    base_tensor = torch.rand(*shape)
+    pht = phlower_tensor(base_tensor)
+    actual = pht[index]
+    assert actual.is_time_series is False
+    assert actual.is_voxel is False
+
+    np.testing.assert_array_almost_equal(
+        actual.to_numpy(), base_tensor[index].numpy()
+    )
+
+
+# endregion

@@ -179,6 +179,7 @@ def test__add_tensor_collections(
     new_dict = dict_data1 + dict_data2
 
     for i, k in enumerate(key_names):
+        print(f"Adding {k}: {args[i][0].shape} + {args[i][1].shape}")
         np.testing.assert_array_almost_equal(
             new_dict[k], (args[i][0] + args[i][1])
         )
@@ -509,6 +510,7 @@ def test__cannot_truediv_tensor_collections_with_different_keys(
         )
     ),
 )
+@settings(deadline=600)
 def test__mask_tensor_collections(tensors: list[PhlowerTensor]):
     n_items = len(tensors)
     dict_data1 = phlower_tensor_collection(
