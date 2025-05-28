@@ -333,11 +333,12 @@ class PhlowerTensor(IPhlowerTensor):
     def __bool__(self) -> bool:
         return bool(self._tensor)
 
-    @functools.wraps(torch.Tensor.__getitem__)
-    def __getitem__(self, key: Any) -> torch.Tensor:
-        # NOTE: When accessed by index, PhlowerTensor cannot ensure
-        # its shape pattern. Thus, return only Tensor object
-        return self._tensor[key]
+    def __getitem__(self, key: Any) -> PhlowerTensor:
+        val = self._tensor[key]
+        shape_pattern = self.shape_pattern.resolve_index_access(key, val.shape)
+        return PhlowerTensor.from_pattern(
+            val, dimension_tensor=self._dimension_tensor, pattern=shape_pattern
+        )
 
     @functools.wraps(torch.Tensor.__setitem__)
     def __setitem__(self, key: Any, value: Any) -> Self:
