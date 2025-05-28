@@ -380,6 +380,8 @@ class _IndexKeyWrapper:
                 return key.size > 1
             case None:
                 return False
+            case list() | tuple():
+                return len(key) > 1
             case _:
                 raise ValueError(
                     f"Unsupported key type for index access. {type(key)=}"

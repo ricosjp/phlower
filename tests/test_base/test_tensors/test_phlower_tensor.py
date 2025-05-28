@@ -280,7 +280,7 @@ def test__slice_time_with_slicable_object(
     b = a.slice_time(slicer)
     assert b.is_time_series is is_time_series
     assert b.dimension == a.dimension
-    np.testing.assert_almost_equal(b.numpy(), a.numpy()[slicer])
+    np.testing.assert_almost_equal(b.numpy(), a.to_tensor()[[slicer]].numpy())
 
 
 @pytest.mark.parametrize(
