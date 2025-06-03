@@ -15,7 +15,7 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     nodes: list[int]
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
-    bias: bool = Field(False, frozen=True)
+    bias: bool = Field(True, frozen=True)
     create_linear_weight: bool = Field(False, frozen=True)
     norm_function_name: str = Field(
         default_factory=lambda: "identity", frozen=True
