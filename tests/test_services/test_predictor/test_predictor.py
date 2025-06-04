@@ -140,7 +140,6 @@ def test__predict_with_inverse_scaling(
             assert isinstance(result.input_data[k], np.ndarray)
 
 
-
 def test__predict_specified(
     simple_training: tuple[float, pathlib.Path],
 ):
