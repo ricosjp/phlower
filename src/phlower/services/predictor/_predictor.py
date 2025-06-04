@@ -380,6 +380,8 @@ class PhlowerPredictor:
                     batch.x_data.to_phlower_arrays_dict(),
                     raise_missing_message=False,
                 )
+                x_data = {k: v.to_numpy() for k, v in x_data.items()}
+
                 answer_data = self._scalers.inverse_transform(
                     _label_key_map.forward_flip(
                         batch.y_data.to_phlower_arrays_dict()

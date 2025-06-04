@@ -136,6 +136,9 @@ def test__predict_with_inverse_scaling(
         for k in result.prediction_data.keys():
             assert isinstance(result.prediction_data[k], np.ndarray)
 
+        for k in result.input_data.keys():
+            assert isinstance(result.input_data[k], np.ndarray)
+
 
 def test__predict_specified(
     simple_training: tuple[float, pathlib.Path],
