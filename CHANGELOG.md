@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## UnReleased
+* Decompose members when to apply reverse transform after prediction
+
 
 ## [0.2.1] - 2025-06-04
 ### Added

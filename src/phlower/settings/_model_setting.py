@@ -99,6 +99,12 @@ class ModelIOSetting(pydantic.BaseModel):
         # NOTE: check comment in 'check_valid_time_slice'
         return slice(*self.time_slice)
 
+    def has_member(self, name: str) -> bool:
+        """
+        Check if this setting has member with the specified name.
+        """
+        return any(m.name == name for m in self.members)
+
     def get_n_last_dim(self) -> int | None:
         if self._contain_none:
             # "Feature dimensions cannot be calculated"
