@@ -19,7 +19,7 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     factor: float = Field(1.0, frozen=True)
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
-    bias: bool = Field(False, frozen=True)
+    bias: bool = Field(True, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
