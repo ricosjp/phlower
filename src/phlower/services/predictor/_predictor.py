@@ -73,6 +73,7 @@ class PhlowerPredictor:
             model_directory=model_directory,
             predict_setting=predict_setting.prediction,
             scaling_setting=scaling_setting,
+            decrypt_key=decrypt_key,
         )
 
     def __init__(

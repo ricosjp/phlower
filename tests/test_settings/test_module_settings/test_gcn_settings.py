@@ -95,6 +95,7 @@ def test__fill_default_settings(
 
     assert setting.activations == desired_activations
     assert setting.dropouts == desired_dropouts
+    assert setting.bias is True
 
 
 @st.composite

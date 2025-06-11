@@ -58,7 +58,7 @@ _TensorLike = TypeVar("_TensorLike", torch.Tensor, IPhlowerTensor)
 class ActivationSelector:
     _SMOOTH_LEAKY_RELU = SmoothLeakyReLU()
 
-    _REGISTERED_ACTIVATIONS: dict[str,] = {
+    _REGISTERED_ACTIVATIONS: dict[str, Callable[[_TensorLike], _TensorLike]] = {
         "identity": identity,
         "inversed_leaky_relu0p5": inversed_leaky_relu0p5,
         "inversed_smooth_leaky_relu": _SMOOTH_LEAKY_RELU.inverse,

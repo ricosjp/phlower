@@ -17,6 +17,17 @@ def test__use_flag_when_default_setting():
     assert not _setting.neumann_setting.use_neumann
 
 
+def test__bias_when_default_setting():
+    _setting = IsoGCNSetting(
+        isoam_names=["dummy"],
+        coefficient_network={"use_network": True},
+        self_network={"use_network": True},
+    )
+
+    assert _setting.self_network.bias is False
+    assert _setting.coefficient_network.bias is True
+
+
 @pytest.mark.parametrize(
     "isoam_names", [([]), (["a", "b", "c", "d"]), (["a", "b", "c", "d", "e"])]
 )

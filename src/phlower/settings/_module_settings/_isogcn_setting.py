@@ -21,11 +21,21 @@ class IsoGCNPropagationType(str, Enum):
     rotation = "rotation"
 
 
-class _SubNetworkSetting(pydantic.BaseModel):
+class _SelfNetworkSetting(pydantic.BaseModel):
     use_network: bool = True
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+
+class _CoeffNetworkSetting(pydantic.BaseModel):
+    use_network: bool = True
+    activations: list[str] = Field(default_factory=lambda: [], frozen=True)
+    dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
+    bias: bool = Field(True, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -71,12 +81,12 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     propagations: list[str] = Field(default_factory=lambda: [], frozen=True)
     mul_order: Literal["ah_w", "a_hw"] = "ah_w"
     to_symmetric: bool = False
-    self_network: _SubNetworkSetting = Field(
-        default_factory=lambda: _SubNetworkSetting(use_network=False),
+    self_network: _SelfNetworkSetting = Field(
+        default_factory=lambda: _SelfNetworkSetting(use_network=False),
         frozen=True,
     )
-    coefficient_network: _SubNetworkSetting = Field(
-        default_factory=lambda: _SubNetworkSetting(use_network=False),
+    coefficient_network: _CoeffNetworkSetting = Field(
+        default_factory=lambda: _CoeffNetworkSetting(use_network=False),
         frozen=True,
     )
     # neumann_options
