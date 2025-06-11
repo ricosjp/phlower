@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Decompose input members when to apply reverse transform after prediction
 * Change default value of `bias` parameter in setting class of `GCN`. (False -> True)
+* Change default value of `bias` parameter in setting class of `coefficient_network` in `IsoGCN`. (False -> True)
 
 
 ## [0.2.1] - 2025-06-04
