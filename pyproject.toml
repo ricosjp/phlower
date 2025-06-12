@@ -1,16 +1,22 @@
-[tool.poetry]
+[project]
 name = "phlower"
 version = "0.2.2-beta2"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
-authors = ["RICOS Co. Ltd."]
-readme = "README.md"
 license="Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+authors = [{name = "RICOS Co. Ltd."}]
+maintainers = [
+    { name = "Riku Sakamoto", email = "sakamoto@ricos.co.jp" },
+]
+
+[tool.poetry]
 packages = [
     {include = "phlower", from = "src"}
 ]
 
+
 [tool.poetry.dependencies]
-python = "^3.10"
 pydantic = ">=2.7.0,<3"
 scipy = ">=1.13.0,<2"
 pycryptodomex = "^3.20.0"
