@@ -1,6 +1,6 @@
 [project]
 name = "phlower"
-version = "0.2.2-beta2"
+version = "0.2.2"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
 license="Apache-2.0"
 readme = "README.md"
