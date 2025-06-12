@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## UnReleased
 
+## [0.2.2] - 2025-06-12
+
+### Fixed
+* Fix `PhlowerTensor` with physical dimension to handle `torch.stack`.
+
 ### Changed
 * Decompose input members when to apply reverse transform after prediction
 * Change default value of `bias` parameter in setting class of `GCN`. (False -> True)

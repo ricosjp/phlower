@@ -602,6 +602,26 @@ def test__nan_to_num(inputs: list[float], nan: float):
     np.testing.assert_array_almost_equal(new_tensor.numpy(), tensor.numpy())
 
 
+@pytest.mark.parametrize("dim", [0, -1])
+@given(
+    random_phlower_tensors_with_same_dimension_and_shape(
+        shape=st.lists(
+            st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+        )
+    )
+)
+def test__stack_operation(
+    dim: int, tensors: tuple[PhlowerTensor, PhlowerTensor]
+):
+    a, b = tensors
+    stacked_pht: PhlowerTensor = torch.stack([a, b], dim=dim)
+
+    assert stacked_pht.dimension == a.dimension
+
+    torch_tensor = torch.stack([a.to_tensor(), b.to_tensor()], dim=dim)
+    assert stacked_pht.shape == torch_tensor.shape
+
+
 # region Test for __getitem__
 
 
