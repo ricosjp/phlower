@@ -9,5 +9,5 @@ def test__version_same_as_pyproject_toml():
     with open(pyproject_path.resolve(), "rb") as fr:
         pyproject_data = tomli.load(fr)
 
-    version_number = pyproject_data["tool"]["poetry"]["version"]
+    version_number = pyproject_data["project"]["version"]
     assert phlower.__version__ == version_number
