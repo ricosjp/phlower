@@ -141,7 +141,7 @@ class SpecifiedModelSelector(IModelSelector):
 
         if len(target_snapshots) == 0:
             raise FileNotFoundError(
-                f"snapshot file in {target_epoch} does not exist."
+                f"File at {target_epoch} epoch does not exist."
             )
 
         if len(target_snapshots) != 1:

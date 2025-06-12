@@ -1,0 +1,67 @@
+misc:
+
+  tests:
+    MLP0: [10, 20, 10]
+    EN0: [10, 10, 10]
+    GCN0: [10, 5]
+
+model:
+  inputs:
+    - name: feature0
+      is_time_series: true
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 12
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - EN0
+        nn_parameters:
+          nodes: [-1, 20, 10]
+          activations: ["Identity", "identity"]
+
+      - nn_type: EnEquivariantMLP
+        name: EN0
+        input_keys:
+          - mlp0
+        output_key: out_mlp
+        destinations:
+          - GCN0
+        nn_parameters:
+          nodes: [-1, 10, 10]
+          create_linear_weight: False
+          norm_function_name: identity
+
+      - nn_type: GCN
+        name: GCN0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

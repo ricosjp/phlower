@@ -1,5 +1,7 @@
 import abc
 import pathlib
+from functools import reduce
+from typing import Literal
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -14,6 +16,13 @@ from phlower.settings._model_setting import _MemberSetting
 class IPhlowerDataset(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __getitem__(self, idx: int) -> LumpedArrayData: ...
+
+    @abc.abstractmethod
+    def get_members(
+        self, index: int, data_type: Literal["input", "label"]
+    ) -> dict[str, IPhlowerArray]:
+        """Get members of the dataset for the specified data type."""
+        ...
 
 
 class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
@@ -57,6 +66,26 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         return LumpedArrayData(
             x_data=x_data, y_data=y_data, field_data=field_data
         )
+
+    def get_members(
+        self, index: int, data_type: Literal["input", "label"]
+    ) -> dict[str, IPhlowerArray]:
+        match data_type:
+            case "input":
+                target_settings = self._input_settings
+            case "label":
+                target_settings = self._label_settings
+            case _:
+                raise ValueError(
+                    f"Invalid data type: {data_type}. "
+                    "Must be 'input' or 'label'."
+                )
+
+        return {
+            name: arr
+            for name, arr in self._loaded_data[index].items()
+            if any(setting.has_member(name) for setting in target_settings)
+        }
 
     def _setup_data(
         self,
@@ -126,6 +155,33 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             field_data=field_data,
             data_directory=data_directory,
         )
+
+    def get_members(
+        self, index: int, data_type: Literal["input", "label"]
+    ) -> dict[str, IPhlowerArray]:
+        match data_type:
+            case "input":
+                io_settings = self._input_settings
+            case "label":
+                io_settings = self._label_settings
+            case _:
+                raise ValueError(
+                    f"Invalid data type: {data_type}. "
+                    "Must be 'input' or 'label'."
+                )
+
+        data_directory = self._directories[index]
+        dict_arrs = [
+            self._load_ndarray_data(
+                data_directory=data_directory,
+                members=_setting.members,
+                allow_missing=True,
+            )
+            for _setting in io_settings
+        ]
+
+        dict_arrs = reduce(lambda x, y: {**x, **y}, dict_arrs)
+        return {name: phlower_array(arr) for name, arr in dict_arrs.items()}
 
     def _setup_data(
         self,

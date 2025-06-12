@@ -117,9 +117,9 @@ def test__calculation_graph_when_time_series_mode(yaml_file: str):
     # Check time series tensors are not parent-child
     #  relashionship on calculation graph
     grads = torch.autograd.grad(
-        [out[0]],
-        [out[1]],
-        grad_outputs=[torch.ones_like(out[0])],
+        [out[0].to_tensor()],
+        [out[1].to_tensor()],
+        grad_outputs=[torch.ones_like(out[0].to_tensor())],
         retain_graph=True,
         allow_unused=True,
     )

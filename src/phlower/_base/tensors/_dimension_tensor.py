@@ -389,7 +389,9 @@ def dropout(
 
 
 @dimension_wrap_implements(torch.stack)
-def stack(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+def stack(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     device = _determine_device(*inputs)
     uniq_inputs: list[PhlowerDimensionTensor] = list(
         _convert_phlower_dimension_tensors(*inputs, device=device) | uniq

@@ -319,6 +319,4 @@ class PhlowerGroupModule(
         )
 
     def get_core_module(self) -> IPhlowerCoreModule:
-        raise ValueError(
-            "`get_core_module` cannot be called in PhlowerGroupModule."
-        )
+        return self

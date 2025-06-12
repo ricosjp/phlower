@@ -73,6 +73,7 @@ class PhlowerPredictor:
             model_directory=model_directory,
             predict_setting=predict_setting.prediction,
             scaling_setting=scaling_setting,
+            decrypt_key=decrypt_key,
         )
 
     def __init__(
@@ -376,10 +377,18 @@ class PhlowerPredictor:
                     prediction_data=preds
                 )
             else:
+                assert batch.n_data == 1, (
+                    "Batch size must be 1 for prediction "
+                    "when inverse scaling is performed."
+                )
+                assert isinstance(data_loader.dataset, IPhlowerDataset)
+
                 x_data = self._scalers.inverse_transform(
-                    batch.x_data.to_phlower_arrays_dict(),
+                    data_loader.dataset.get_members(0, "input"),
                     raise_missing_message=False,
                 )
+                x_data = {k: v.to_numpy() for k, v in x_data.items()}
+
                 answer_data = self._scalers.inverse_transform(
                     _label_key_map.forward_flip(
                         batch.y_data.to_phlower_arrays_dict()

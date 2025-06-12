@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import torch
 
@@ -35,6 +37,65 @@ class PhlowerShapePattern:
         self._shape = shape
         self._is_time_series = is_time_series
         self._is_voxel = is_voxel
+
+    def resolve_index_access(
+        self, index: Any, to_shape: torch.Size
+    ) -> PhlowerShapePattern:
+        if (not self.is_time_series) and (not self.is_voxel):
+            return PhlowerShapePattern(to_shape, False, False)
+
+        if isinstance(index, torch.Tensor) and index.dtype == torch.bool:
+            return PhlowerShapePattern(to_shape, False, False)
+
+        wrapped = _IndexKeyWrapper(keys=index, shapes=self._shape)
+        time_series = (
+            wrapped.check_dimension_kept(0) if self.is_time_series else False
+        )
+        voxel = (
+            wrapped.check_dimension_kept(self.start_space_index)
+            and wrapped.check_dimension_kept(self.start_space_index + 1)
+            and wrapped.check_dimension_kept(self.start_space_index + 2)
+            if self.is_voxel
+            else False
+        )
+        return PhlowerShapePattern(
+            to_shape, is_time_series=time_series, is_voxel=voxel
+        )
+
+    def rearrange(
+        self, pattern: str, to_shape: torch.Size
+    ) -> PhlowerShapePattern:
+        """Transform the shape pattern to a new pattern.
+
+        Args:
+            pattern (str): The new pattern string.
+
+        Returns:
+            PhlowerShapePattern: A new instance with the transformed pattern.
+        """
+
+        from_patterns = _split_pattern(pattern.split("->")[0].strip())
+        to_pattern = pattern.split("->")[1].strip()
+
+        # Fill ellipse if it exists
+        if "..." in to_pattern:
+            assert "..." in from_patterns
+
+            start_idx = -1
+            end_idx = -1
+            for i, c in enumerate(from_patterns):
+                if c != "...":
+                    continue
+
+                start_idx = i
+                _n_left = len(from_patterns) - i - 1
+                end_idx = len(self._shape) - _n_left
+                break
+
+            ellipse_pattern = self.get_pattern().split(" ")[start_idx:end_idx]
+            to_pattern = to_pattern.replace("...", " ".join(ellipse_pattern))
+
+        return PhlowerShapePattern.from_pattern(to_shape, to_pattern)
 
     def get_pattern_to_size(self, drop_last: bool = False) -> dict[str, int]:
         """Return mapping of which key is pattern symbol and
@@ -282,3 +343,72 @@ def _collect_until_brace_end(pattern: str, start: int) -> tuple[str, int]:
         index += 1
 
     raise ValueError(f"brace is not closed correctly. {pattern}")
+
+
+_ACCESS_ITEM = int | slice | torch.Tensor | np.ndarray | None
+
+
+class _IndexKeyWrapper:
+    def __init__(self, keys: _ACCESS_ITEM, shapes: torch.Size):
+        keys = keys if isinstance(keys, list | tuple) else [keys]
+        self._key = self._resolve_ellipse(keys, shapes)
+        self._shapes = shapes
+
+        self._first_none_index = self._find_first_none_index()
+
+    def _find_first_none_index(self) -> int:
+        for i, k in enumerate(self._key):
+            if k is None:
+                return i
+        return np.inf
+
+    def check_dimension_kept(self, index: int) -> bool:
+        if index >= self._first_none_index:
+            return False
+
+        key = self[index]
+
+        match key:
+            case int():
+                return False
+            case slice():
+                count = len(range(self._shapes[index])[key])
+                return count > 1
+            case torch.Tensor():
+                return key.numel() > 1
+            case np.ndarray():
+                return key.size > 1
+            case None:
+                return False
+            case list() | tuple():
+                return len(key) > 1
+            case _:
+                raise ValueError(
+                    f"Unsupported key type for index access. {type(key)=}"
+                )
+
+    def __getitem__(
+        self, index: int
+    ) -> int | slice | torch.Tensor | np.ndarray:
+        if index >= len(self._key):
+            return slice(None)
+
+        return self._key[index]
+
+    def _resolve_ellipse(
+        self, keys: list[_ACCESS_ITEM], shapes: torch.Size
+    ) -> list[_ACCESS_ITEM]:
+        total_wo_none = sum(1 for k in keys if k is not None)
+        _resolved: list[_ACCESS_ITEM] = []
+
+        for k in keys:
+            if k is Ellipsis:
+                n_wo_none = sum(1 for k in _resolved if k is not None)
+                _resolved += [slice(None)] * (
+                    len(shapes) - n_wo_none - (total_wo_none - n_wo_none - 1)
+                )
+                continue
+
+            _resolved.append(k)
+
+        return _resolved

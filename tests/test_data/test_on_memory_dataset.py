@@ -4,8 +4,9 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import yaml
+from phlower._base import IPhlowerArray, phlower_array
 from phlower.data import OnMemoryPhlowerDataSet
-from phlower.settings import PhlowerModelSetting
+from phlower.settings import ModelIOSetting, PhlowerModelSetting
 from phlower.utils.typing import ArrayDataType
 
 
@@ -29,10 +30,10 @@ def create_loaded_data() -> list[dict[str, ArrayDataType]]:
     for _ in directory_names:
         dict_data = {}
         for v_name, v_shape in name2dense_shape.items():
-            dict_data[v_name] = np.random.rand(*v_shape)
+            dict_data[v_name] = phlower_array(np.random.rand(*v_shape))
 
         for v_name, v_shape in name2sparse_shape.items():
-            dict_data[v_name] = sp.random(*v_shape, density=0.1)
+            dict_data[v_name] = phlower_array(sp.random(*v_shape, density=0.1))
 
         results.append(dict_data)
     return results
@@ -104,3 +105,52 @@ def test__on_memory_dataset_array_shape_when_no_ydata(
 
         for name, actual in item.field_data.items():
             assert actual.shape == tuple(desired_shapes["fields"][name])
+
+
+@pytest.mark.parametrize("index", [0, 1, 2])
+@pytest.mark.parametrize(
+    "data_type, expected",
+    [
+        ("input", ["x0", "x1", "x2", "x3"]),
+        ("label", ["y0", "y1"]),
+    ],
+)
+def test__get_members(
+    index: int,
+    data_type: str,
+    expected: list[str],
+    create_loaded_data: list[dict[str, ArrayDataType]],
+):
+    input_settings = [
+        ModelIOSetting(
+            name="all_x",
+            members=[
+                {"name": "x0"},
+                {"name": "x1"},
+                {"name": "x2"},
+            ],
+        ),
+        ModelIOSetting(name="x3", members=[{"name": "x3"}]),
+    ]
+    label_settings = [
+        ModelIOSetting(name="all_y", members=[{"name": "y0"}, {"name": "y1"}]),
+        ModelIOSetting(name="y1", members=[{"name": "y1"}]),
+    ]
+
+    dataset = OnMemoryPhlowerDataSet(
+        loaded_data=create_loaded_data,
+        input_settings=input_settings,
+        label_settings=label_settings,
+    )
+
+    members = dataset.get_members(index, data_type=data_type)
+    assert len(members) == len(expected)
+
+    for name in expected:
+        assert name in members
+        assert isinstance(members[name], IPhlowerArray)
+
+        expected_arr = create_loaded_data[index][name]
+        np.testing.assert_array_equal(
+            members[name].to_numpy(), expected_arr.to_numpy()
+        )

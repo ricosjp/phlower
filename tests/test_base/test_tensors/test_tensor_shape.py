@@ -107,3 +107,110 @@ def test__detect_time_series_voxel_pattern(shapes: tuple[int], desired: str):
     )
 
     assert shape.get_pattern() == desired
+
+
+# test for Rearrange
+
+
+@pytest.mark.parametrize(
+    "is_time_series, is_voxel",
+    [(True, True), (False, False), (True, False), (False, True)],
+)
+@pytest.mark.parametrize(
+    "orig_shape, to_shape, pattern",
+    [
+        (
+            (10, 8, 8, 8, 3, 3, 16),
+            (10, 8, 8, 8, 3, 3, 4, 4),
+            "... (f g) -> ... f g",
+        ),
+        (
+            (5, 3, 1, 2, 2, 2),
+            (5, 3, 1, 2, 4),
+            "... d0 d1 -> ... (d0 d1)",
+        ),
+        (
+            (5, 3, 2, 2, 2),
+            (5, 3, 2, 2, 2),
+            "... f -> ... f",
+        ),
+    ],
+)
+def test__save_flags_of_shape_pattern_when_rearrange(
+    is_time_series: bool,
+    is_voxel: bool,
+    orig_shape: tuple[int],
+    to_shape: tuple[int],
+    pattern: str,
+):
+    shape_pattern = PhlowerShapePattern(
+        shape=orig_shape, is_time_series=is_time_series, is_voxel=is_voxel
+    )
+
+    actual = shape_pattern.rearrange(pattern, to_shape=to_shape)
+
+    assert actual.shape == to_shape
+    assert actual.is_time_series == is_time_series
+    assert actual.is_voxel == is_voxel
+
+
+@pytest.mark.parametrize(
+    "orig_shape, is_time_series, is_voxel, to_shape, pattern, "
+    "desired_time_series, desired_voxel",
+    [
+        (
+            (5, 3, 1, 2, 2, 2),
+            True,
+            True,
+            (5, 6, 4),
+            "t x y z d0 d1 -> t (x y z) (d0 d1)",
+            True,
+            False,
+        ),
+        (
+            (5, 3, 1, 2, 2, 2),
+            True,
+            True,
+            (30, 4),
+            "t x y z d0 d1 -> (t x y z) (d0 d1)",
+            False,
+            False,
+        ),
+        (
+            (5, 3, 1, 2, 2, 2),
+            True,
+            True,
+            (5, 3, 1, 2, 4),
+            "t ... d0 d1 -> t ... (d0 d1)",
+            True,
+            True,
+        ),
+        (
+            (4, 3, 2, 2, 2, 1),
+            False,
+            False,
+            (4, 3, 2, 2, 2),
+            "n ... d0 d1 -> n ... (d0 d1)",
+            False,
+            False,
+        ),
+    ],
+)
+def test__detech_shape_pattern_when_rearrange(
+    orig_shape: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    to_shape: tuple[int],
+    pattern: str,
+    desired_time_series: bool,
+    desired_voxel: bool,
+):
+    shape_pattern = PhlowerShapePattern(
+        shape=orig_shape, is_time_series=is_time_series, is_voxel=is_voxel
+    )
+
+    actual = shape_pattern.rearrange(pattern, to_shape=to_shape)
+
+    assert actual.shape == to_shape
+    assert actual.is_time_series is desired_time_series
+    assert actual.is_voxel is desired_voxel
