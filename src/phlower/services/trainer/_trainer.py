@@ -297,14 +297,14 @@ class PhlowerTrainer:
                 decrypt_key=decrypt_key,
             )
         else:
-            train_dataset = OnMemoryPhlowerDataSet(
+            train_dataset = OnMemoryPhlowerDataSet.create(
                 input_settings=self._setting.model.inputs,
                 label_settings=self._setting.model.labels,
                 field_settings=self._setting.model.fields,
                 directories=train_directories,
                 decrypt_key=decrypt_key,
             )
-            validation_dataset = OnMemoryPhlowerDataSet(
+            validation_dataset = OnMemoryPhlowerDataSet.create(
                 input_settings=self._setting.model.inputs,
                 label_settings=self._setting.model.labels,
                 field_settings=self._setting.model.fields,

@@ -29,7 +29,7 @@ class IPhlowerDataset(metaclass=abc.ABCMeta):
 
 class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
     @classmethod
-    def from_settings(
+    def create(
         cls,
         input_settings: list[ModelIOSetting],
         label_settings: list[ModelIOSetting],

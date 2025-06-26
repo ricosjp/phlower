@@ -259,3 +259,49 @@ def test__starting_pretrained_state(clean_directories: None):
 
     with pytest.raises(AssertionError):
         np.testing.assert_array_almost_equal(pretrained_losses, org_losses)
+
+
+def test__faster_training_with_on_memory_dataset(
+    simple_training: float,
+    prepare_sample_preprocessed_files: None,
+) -> float:
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_on_memory.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_on_memory"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+    # load lazy_load csv
+    df_lazy = pd.read_csv(
+        _OUTPUT_DIR / "model/log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+    lazy_time = df_lazy.loc[:, "elapsed_time"].to_numpy().max()
+
+    df = pd.read_csv(
+        output_directory / "log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+    on_memory_time = df.loc[:, "elapsed_time"].to_numpy().max()
+
+    # NOTE: the number 1.5 is arbitrary, but it should be larger than 1.0
+    assert lazy_time > on_memory_time * 1.5
