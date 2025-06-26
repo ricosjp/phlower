@@ -1,4 +1,5 @@
 import pathlib
+import secrets
 import shutil
 from collections import defaultdict
 
@@ -12,6 +13,7 @@ from phlower.io import PhlowerNumpyFile
 from phlower.settings import ModelIOSetting, PhlowerModelSetting
 from phlower.utils.typing import ArrayDataType
 
+TEST_ENCRYPT_KEY = secrets.token_bytes(32)
 OUTPUT_BASE_DIRECTORY = pathlib.Path(__file__).parent / "tmp/datasets"
 
 
@@ -42,12 +44,16 @@ def create_dataset() -> list[pathlib.Path]:
 
         for v_name, v_shape in name2dense_shape.items():
             arr = np.random.rand(*v_shape)
-            PhlowerNumpyFile.save(_output_directory, v_name, arr)
+            PhlowerNumpyFile.save(
+                _output_directory, v_name, arr, encrypt_key=TEST_ENCRYPT_KEY
+            )
             results[name][v_name] = arr
 
         for v_name, v_shape in name2sparse_shape.items():
             arr = sp.random(*v_shape, density=0.1)
-            PhlowerNumpyFile.save(_output_directory, v_name, arr)
+            PhlowerNumpyFile.save(
+                _output_directory, v_name, arr, encrypt_key=TEST_ENCRYPT_KEY
+            )
             results[name][v_name] = arr
 
 
@@ -69,6 +75,7 @@ def test__lazy_dataset_array_shape(
         label_settings=setting.labels,
         directories=[OUTPUT_BASE_DIRECTORY / name for name in directories],
         field_settings=setting.fields,
+        decrypt_key=TEST_ENCRYPT_KEY,
     )
 
     desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
@@ -108,6 +115,7 @@ def test__lazy_dataset_array_shape_when_no_ydata(
         directories=[OUTPUT_BASE_DIRECTORY / name for name in directories],
         field_settings=setting.fields,
         allow_no_y_data=True,
+        decrypt_key=TEST_ENCRYPT_KEY,
     )
 
     desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
@@ -178,6 +186,7 @@ def test__get_members(
         label_settings=[ModelIOSetting(**v) for v in label_settings],
         directories=directories,
         field_settings=[ModelIOSetting(**v) for v in field_settings],
+        decrypt_key=TEST_ENCRYPT_KEY,
     )
 
     members = dataset.get_members(index, data_type=data_type)
@@ -187,5 +196,9 @@ def test__get_members(
         assert name in members
         assert isinstance(members[name], IPhlowerArray)
 
-        expected_arr = np.load(directories[index] / f"{name}.npy")
-        np.testing.assert_array_equal(members[name].to_numpy(), expected_arr)
+        expected_arr = PhlowerNumpyFile(
+            directories[index] / f"{name}.npy.enc"
+        ).load(decrypt_key=TEST_ENCRYPT_KEY)
+        np.testing.assert_array_equal(
+            members[name].to_numpy(), expected_arr.to_numpy()
+        )
