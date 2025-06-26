@@ -214,6 +214,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
                 data_directory=data_directory,
                 members=_setting.members,
                 allow_missing=True,
+                decrypt_key=self._decrypt_key,
             )
             for _setting in io_settings
         ]
@@ -231,7 +232,10 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             (
                 setting.name,
                 _load_phlower_array(
-                    data_directory, setting, allow_missing=allow_missing
+                    data_directory,
+                    setting,
+                    allow_missing=allow_missing,
+                    decrypt_key=self._decrypt_key,
                 ),
             )
             for setting in variable_settings
