@@ -219,6 +219,13 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     setting for trainer initializer
     """
 
+    lazy_load: bool = True
+    """
+    If True, data is loaded lazily.
+    If False, all data is loaded at once.
+    Defaults to True.
+    """
+
     non_blocking: bool = False
 
     # special keyward to forbid extra fields in pydantic

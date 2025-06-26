@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## UnReleased
+### Added
+* Add `lazy_load` parameter to `TrainingSetting` to load data lazily.
+
 
 ## [0.2.2] - 2025-06-12
 

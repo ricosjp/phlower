@@ -9,7 +9,12 @@ import torch
 from torch.utils.data import DataLoader
 
 from phlower._base import PhlowerTensor
-from phlower.data import DataLoaderBuilder, LazyPhlowerDataset, LumpedTensorData
+from phlower.data import (
+    DataLoaderBuilder,
+    LazyPhlowerDataset,
+    LumpedTensorData,
+    OnMemoryPhlowerDataSet,
+)
 from phlower.io import (
     PhlowerCheckpointFile,
     PhlowerDirectory,
@@ -276,20 +281,36 @@ class PhlowerTrainer:
         disable_dimensions: bool = False,
         decrypt_key: bytes | None = None,
     ) -> tuple[DataLoader, DataLoader | None]:
-        train_dataset = LazyPhlowerDataset(
-            input_settings=self._setting.model.inputs,
-            label_settings=self._setting.model.labels,
-            field_settings=self._setting.model.fields,
-            directories=train_directories,
-            decrypt_key=decrypt_key,
-        )
-        validation_dataset = LazyPhlowerDataset(
-            input_settings=self._setting.model.inputs,
-            label_settings=self._setting.model.labels,
-            field_settings=self._setting.model.fields,
-            directories=validation_directories,
-            decrypt_key=decrypt_key,
-        )
+        if self._setting.training.lazy_load:
+            train_dataset = LazyPhlowerDataset(
+                input_settings=self._setting.model.inputs,
+                label_settings=self._setting.model.labels,
+                field_settings=self._setting.model.fields,
+                directories=train_directories,
+                decrypt_key=decrypt_key,
+            )
+            validation_dataset = LazyPhlowerDataset(
+                input_settings=self._setting.model.inputs,
+                label_settings=self._setting.model.labels,
+                field_settings=self._setting.model.fields,
+                directories=validation_directories,
+                decrypt_key=decrypt_key,
+            )
+        else:
+            train_dataset = OnMemoryPhlowerDataSet.create(
+                input_settings=self._setting.model.inputs,
+                label_settings=self._setting.model.labels,
+                field_settings=self._setting.model.fields,
+                directories=train_directories,
+                decrypt_key=decrypt_key,
+            )
+            validation_dataset = OnMemoryPhlowerDataSet.create(
+                input_settings=self._setting.model.inputs,
+                label_settings=self._setting.model.labels,
+                field_settings=self._setting.model.fields,
+                directories=validation_directories,
+                decrypt_key=decrypt_key,
+            )
 
         builder = DataLoaderBuilder.from_setting(self._setting.training)
         train_loader = builder.create(
