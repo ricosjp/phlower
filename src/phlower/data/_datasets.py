@@ -210,7 +210,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
 
         data_directory = self._directories[index]
         dict_arrs = [
-            self._load_ndarray_data(
+            _load_ndarray_data(
                 data_directory=data_directory,
                 members=_setting.members,
                 allow_missing=True,
