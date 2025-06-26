@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import pathlib
 from functools import reduce
@@ -26,6 +28,42 @@ class IPhlowerDataset(metaclass=abc.ABCMeta):
 
 
 class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
+    @classmethod
+    def from_settings(
+        cls,
+        input_settings: list[ModelIOSetting],
+        label_settings: list[ModelIOSetting],
+        directories: list[pathlib.Path],
+        *,
+        field_settings: list[ModelIOSetting] | None = None,
+        allow_no_y_data: bool = False,
+        decrypt_key: bytes | None = None,
+    ) -> OnMemoryPhlowerDataSet:
+        field_settings = field_settings or []
+        _members = [
+            _setting.members
+            for _setting in input_settings + label_settings + field_settings
+        ]
+        _members = reduce(lambda x, y: x + y, _members)
+
+        loaded_data = [
+            _load_ndarray_data(
+                data_directory=PhlowerDirectory(directory),
+                members=_members,
+                allow_missing=True,
+                decrypt_key=decrypt_key,
+            )
+            for directory in directories
+        ]
+        return OnMemoryPhlowerDataSet(
+            loaded_data=loaded_data,
+            input_settings=input_settings,
+            label_settings=label_settings,
+            field_settings=field_settings,
+            allow_no_y_data=allow_no_y_data,
+            decrypt_key=decrypt_key,
+        )
+
     def __init__(
         self,
         loaded_data: list[dict[str, IPhlowerArray]],
@@ -192,7 +230,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         arrs = [
             (
                 setting.name,
-                self._load_phlower_array(
+                _load_phlower_array(
                     data_directory, setting, allow_missing=allow_missing
                 ),
             )
@@ -201,40 +239,43 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
 
         return {name: arr for name, arr in arrs if arr is not None}
 
-    def _load_phlower_array(
-        self,
-        data_directory: PhlowerDirectory,
-        io_setting: ModelIOSetting,
-        allow_missing: bool,
-    ) -> IPhlowerArray | None:
-        dict_arrs = self._load_ndarray_data(
-            data_directory=data_directory,
-            members=io_setting.members,
-            allow_missing=allow_missing,
+
+def _load_phlower_array(
+    data_directory: PhlowerDirectory,
+    io_setting: ModelIOSetting,
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+) -> IPhlowerArray | None:
+    dict_arrs = _load_ndarray_data(
+        data_directory=data_directory,
+        members=io_setting.members,
+        allow_missing=allow_missing,
+        decrypt_key=decrypt_key,
+    )
+    return _apply_setting(
+        dict_arrs, io_setting=io_setting, allow_missing=allow_missing
+    )
+
+
+def _load_ndarray_data(
+    data_directory: PhlowerDirectory,
+    members: list[_MemberSetting],
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+) -> dict[str, np.ndarray]:
+    name_to_arr: dict[str, np.ndarray] = {}
+
+    for member in members:
+        ph_path = data_directory.find_variable_file(
+            variable_name=member.name, allow_missing=allow_missing
         )
-        return _apply_setting(
-            dict_arrs, io_setting=io_setting, allow_missing=allow_missing
-        )
+        if ph_path is None:
+            continue
 
-    def _load_ndarray_data(
-        self,
-        data_directory: PhlowerDirectory,
-        members: list[_MemberSetting],
-        allow_missing: bool,
-    ) -> dict[str, np.ndarray]:
-        name_to_arr: dict[str, np.ndarray] = {}
+        _arr = ph_path.load(decrypt_key=decrypt_key).to_numpy()
+        name_to_arr[ph_path.get_variable_name()] = _arr
 
-        for member in members:
-            ph_path = data_directory.find_variable_file(
-                variable_name=member.name, allow_missing=allow_missing
-            )
-            if ph_path is None:
-                continue
-
-            _arr = ph_path.load(decrypt_key=self._decrypt_key).to_numpy()
-            name_to_arr[ph_path.get_variable_name()] = _arr
-
-        return name_to_arr
+    return name_to_arr
 
 
 def _apply_setting(
