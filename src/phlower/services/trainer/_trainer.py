@@ -257,6 +257,21 @@ class PhlowerTrainer:
         self._start_epoch = 0
         self._offset_time = 0.0
 
+    def attach_handler(
+        self,
+        name: str,
+        handler: PhlowerHandlersRunner,
+        allow_overwrite: bool = False,
+    ) -> None:
+        """Attach handler to the trainer
+        Args:
+            name (str): Name of the handler
+            handler (PhlowerHandlersRunner): Handler to attach
+        Raises:
+            ValueError: If handler with the same name already exists
+        """
+        self._handlers.attach(name, handler, allow_overwrite=allow_overwrite)
+
     def get_n_handlers(self) -> int:
         """Get the number of handlers
 

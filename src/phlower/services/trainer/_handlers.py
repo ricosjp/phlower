@@ -79,6 +79,18 @@ class PhlowerHandlersRunner:
                 self._terminate = True
                 break
 
+    def attach(
+        self,
+        name: str,
+        handler: PhlowerHandlerType,
+        allow_overwrite: bool = False,
+    ) -> None:
+        if (not allow_overwrite) and (name in self._handlers):
+            raise ValueError(
+                f"Handler named {name} is already attached."
+            )
+        self._handlers[name] = handler
+
     @property
     def terminate_training(self) -> bool:
         return self._terminate

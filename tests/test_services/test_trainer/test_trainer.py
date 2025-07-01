@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pathlib
 import random
 import shutil
@@ -12,6 +14,8 @@ from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
+from phlower.utils.typing import PhlowerHandlerType
+
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
@@ -305,3 +309,33 @@ def test__faster_training_with_on_memory_dataset(
 
     # NOTE: the number 1.5 is arbitrary, but it should be larger than 1.0
     assert lazy_time > on_memory_time * 1.5
+
+
+@pytest.mark.parametrize(
+    "name, allow_overwrite, success",
+    [
+        ("EarlyStopping", True, True),
+        ("EarlyStopping", False, False),
+        ("DummyHandler", True, True),
+        ("DummyHandler", False, True),
+    ],
+)
+def test__attach_hanlder(
+    name: str,
+    allow_overwrite: bool,
+    success: bool,
+):
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+    trainer = PhlowerTrainer.from_setting(setting)
+
+    mocked = mock.Mock(spec=PhlowerHandlerType)
+
+    if success:
+        trainer.attach_handler(name, mocked, allow_overwrite=allow_overwrite)
+        assert name in trainer._handlers._handlers
+    else:
+        with pytest.raises(ValueError) as ex:
+            trainer.attach_handler(
+                name, mocked, allow_overwrite=allow_overwrite
+            )
+        assert str(ex.value) == f"Handler named {name} is already attached."
