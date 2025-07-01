@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## UnReleased
 ### Added
+* Add `attach_handler` method to `PhlowerTrainer` to add an extra handler at training process.
 * Add `lazy_load` parameter to `TrainingSetting` to load data lazily.
 
 
