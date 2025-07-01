@@ -86,9 +86,7 @@ class PhlowerHandlersRunner:
         allow_overwrite: bool = False,
     ) -> None:
         if (not allow_overwrite) and (name in self._handlers):
-            raise ValueError(
-                f"Handler named {name} is already attached."
-            )
+            raise ValueError(f"Handler named {name} is already attached.")
         self._handlers[name] = handler
 
     @property

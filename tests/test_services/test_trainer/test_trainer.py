@@ -1,9 +1,8 @@
-from unittest import mock
-
 import pathlib
 import random
 import shutil
 from collections.abc import Callable
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -15,7 +14,6 @@ from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
 from phlower.utils.typing import PhlowerHandlerType
-
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
