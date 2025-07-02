@@ -103,6 +103,39 @@ def test__forward_and_backward(
     loss.backward()
 
 
+@pytest.mark.parametrize(
+    "yaml_file, time_series_length",
+    [
+        ("forward_time_series.yml", 3),
+        ("forward_time_series_any.yml", 7),
+        ("forward_time_series_any.yml", 1),
+    ],
+)
+def test__forward_time_series_mode(yaml_file: str, time_series_length: int):
+    setting_file = _SAMPLE_SETTING_DIR / yaml_file
+    setting = PhlowerSetting.read_yaml(setting_file)
+
+    setting.model.network.resolve(is_first=True)
+    group = PhlowerGroupModule.from_setting(setting.model.network)
+
+    input_tensor = phlower_tensor(torch.rand(10, 3))
+    time_series_tensor = phlower_tensor(
+        torch.rand(time_series_length, 10, 1), is_time_series=True
+    )
+    phlower_tensors = phlower_tensor_collection(
+        {
+            "sample_input": input_tensor,
+            "time_series_boundary": time_series_tensor,
+        }
+    )
+
+    results = group.forward(phlower_tensors, field_data=None)
+    out = results.unique_item()
+    assert out.is_time_series
+
+    assert out.time_series_length == time_series_length
+
+
 @pytest.mark.parametrize("yaml_file", ["forward_time_series.yml"])
 def test__calculation_graph_when_time_series_mode(yaml_file: str):
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
