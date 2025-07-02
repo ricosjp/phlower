@@ -80,3 +80,30 @@ def test__duplicate_modules_error(file_name: str):
         _ = GroupModuleSetting(**data["network"])
 
     assert "Duplicate module name" in str(ex.value)
+
+
+@pytest.mark.parametrize(
+    "time_series_length, success",
+    [
+        (-4, False),
+        (-100, False),
+        (-1, True),  # -1 is allowed for time series length
+        (0, True),
+        (5, True),
+        (10, True),
+    ],
+)
+def test__raise_error_when_invalid_time_series_length(
+    time_series_length: int, success: bool
+):
+    data = parse_file("time_series_length.yml")
+    data["network"]["time_series_length"] = time_series_length
+
+    if success:
+        setting = GroupModuleSetting(**data["network"])
+        assert setting.time_series_length == time_series_length
+    else:
+        with pytest.raises(pydantic.ValidationError) as ex:
+            _ = GroupModuleSetting(**data["network"])
+
+        assert "time_series_length must be -1 or larger" in str(ex.value)

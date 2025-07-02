@@ -552,3 +552,115 @@ def test__apply_operation_tensor_collections(
         np.testing.assert_array_almost_equal(
             actual[k].numpy(), operation(dict_data1[k]).numpy()
         )
+
+
+@pytest.mark.parametrize(
+    "shapes, time_series, expected",
+    [
+        ([(3, 10, 4), (10, 4)], [True, False], 3),
+        ([(3, 5, 1), (5, 1)], [True, False], 3),
+        ([(5, 1), (5, 1), (10, 1)], [False, False, False], 0),
+        ([(3, 1), (5, 1), (10, 1)], [False, False, False], 0),
+        ([(5, 10, 4), (5, 10, 4, 1)], [True, True], 5),
+    ],
+)
+def test___get_time_series_length_for_time_series_tensor(
+    shapes: list[tuple[int, ...]],
+    time_series: list[bool],
+    expected: int,
+):
+    tensors = [
+        phlower_tensor(np.random.rand(*shape), is_time_series=ts)
+        for shape, ts in zip(shapes, time_series, strict=True)
+    ]
+    collection = phlower_tensor_collection(
+        {f"sample_{i}": t for i, t in enumerate(tensors)}
+    )
+
+    assert collection.get_time_series_length() == expected
+
+
+@pytest.mark.parametrize(
+    "shapes, time_series",
+    [
+        ([(3, 10, 4), (10, 4)], [True, True]),
+        ([(5, 10, 4), (6, 10, 4), (10, 1)], [True, True, False]),
+    ],
+)
+def test___get_time_series_length_for_invalid_time_series_tensor(
+    shapes: list[tuple[int, ...]], time_series: list[bool]
+):
+    tensors = [
+        phlower_tensor(np.random.rand(*shape), is_time_series=ts)
+        for shape, ts in zip(shapes, time_series, strict=True)
+    ]
+    collection = phlower_tensor_collection(
+        {f"sample_{i}": t for i, t in enumerate(tensors)}
+    )
+
+    with pytest.raises(ValueError) as ex:
+        _ = collection.get_time_series_length()
+    assert "Cannot determine time series length" in str(ex)
+
+
+@pytest.mark.parametrize(
+    "shapes, time_series",
+    [
+        ([(3, 10, 4), (10, 4)], [True, False]),
+        ([(3, 5, 1), (5, 1)], [True, False]),
+        ([(5, 1), (5, 1), (10, 1)], [False, False, False]),
+        ([(3, 1), (5, 1), (10, 1)], [False, False, False]),
+        ([(5, 10, 4), (5, 10, 4, 1)], [True, True]),
+    ],
+)
+def test__not_time_series_after_snapshot(
+    shapes: list[tuple[int, ...]], time_series: list[bool]
+):
+    tensors = [
+        phlower_tensor(np.random.rand(*shape), is_time_series=ts)
+        for shape, ts in zip(shapes, time_series, strict=True)
+    ]
+    collection = phlower_tensor_collection(
+        {f"sample_{i}": t for i, t in enumerate(tensors)}
+    )
+
+    snapped_collectiton = collection.snapshot(0)
+    assert snapped_collectiton.get_time_series_length() == 0
+
+
+@pytest.mark.parametrize(
+    "shapes, time_series",
+    [
+        ([(3, 10, 4), (10, 4)], [True, False]),
+        ([(3, 5, 1), (5, 1)], [True, False]),
+        ([(5, 1), (5, 1), (10, 1)], [False, False, False]),
+        ([(3, 1), (5, 1), (10, 1)], [False, False, False]),
+        ([(5, 10, 4), (5, 10, 4, 1)], [True, True]),
+    ],
+)
+def test__snapshot_content(
+    shapes: list[tuple[int, ...]], time_series: list[bool]
+):
+    tensors = [
+        phlower_tensor(np.random.rand(*shape), is_time_series=ts)
+        for shape, ts in zip(shapes, time_series, strict=True)
+    ]
+    collection = phlower_tensor_collection(
+        {f"sample_{i}": t for i, t in enumerate(tensors)}
+    )
+    keys = list(collection.keys())
+
+    for time in range(collection.get_time_series_length()):
+        snapped_collectiton = collection.snapshot(time)
+
+        for k in keys:
+            assert k in snapped_collectiton
+            assert snapped_collectiton[k].is_time_series is False
+            if collection[k].is_time_series:
+                np.testing.assert_array_almost_equal(
+                    collection[k][time].numpy(), snapped_collectiton[k].numpy()
+                )
+            else:
+                np.testing.assert_array_almost_equal(
+                    collection[k].numpy(), snapped_collectiton[k].numpy()
+                )

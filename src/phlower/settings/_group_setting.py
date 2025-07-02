@@ -153,6 +153,18 @@ class GroupModuleSetting(
         return values
 
     @pydantic.model_validator(mode="after")
+    def _check_time_series_length(self) -> Self:
+        if self.time_series_length is None:
+            return self
+
+        if self.time_series_length < -1:
+            raise ValueError(
+                f"time_series_length must be -1 or larger. "
+                f"Input: {self.time_series_length}"
+            )
+        return self
+
+    @pydantic.model_validator(mode="after")
     def _check_duplicate_module_name(self) -> Self:
         _names: set[str] = {v.name for v in self.modules}
         if len(_names) == len(self.modules):
