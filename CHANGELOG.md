@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add `attach_handler` method to `PhlowerTrainer` to add an extra handler at training process.
 * Add `lazy_load` parameter to `TrainingSetting` to load data lazily.
+* When `time_series_length` is -1, `PhlowerGroupModule` determines the time series length automatically from the input data.
+
+### Changed
+* time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.
+
 
 
 ## [0.2.2] - 2025-06-12
