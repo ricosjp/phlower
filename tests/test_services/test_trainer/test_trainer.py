@@ -50,9 +50,19 @@ def prepare_sample_preprocessed_files():
             nodal_initial_u.astype(dtype),
         )
 
-        # nodal_last_u = np.random.rand(n_nodes, 3, 1)
+        nodal_last_u = np.random.rand(n_nodes, 3, 1)
         np.save(
-            preprocessed_dir / "nodal_last_u.npy", nodal_initial_u.astype(dtype)
+            preprocessed_dir / "nodal_last_u.npy", nodal_last_u.astype(dtype)
+        )
+
+        nodal_initial_p = np.random.rand(n_nodes, 1)
+        np.save(
+            preprocessed_dir / "nodal_initial_p.npy",
+            nodal_initial_p.astype(dtype),
+        )
+        nodal_last_p = np.random.rand(n_nodes, 1)
+        np.save(
+            preprocessed_dir / "nodal_last_p.npy", nodal_last_p.astype(dtype)
         )
 
         rng = np.random.default_rng()
@@ -354,9 +364,115 @@ def test__attach_hanlder(
         assert str(ex.value) == f"Handler named {name} is already attached."
 
 
+# region Test for dumped details in training log
+
+
+def simple_training_with_yaml(
+    setting: PhlowerSetting, output_directory: pathlib.Path
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+
+@pytest.mark.parametrize(
+    "yaml_file, output_directory",
+    [
+        (
+            _SETTINGS_DIR / "train_for_multiple_targets.yml",
+            _OUTPUT_DIR / "model_for_multiple_targets",
+        ),
+        (
+            _SETTINGS_DIR / "train_for_multiple_targets_with_weights.yml",
+            _OUTPUT_DIR / "model_for_multiple_targets_with_weights",
+        ),
+        (
+            _SETTINGS_DIR / "train_for_multiple_targets_not_evaluating.yml",
+            _OUTPUT_DIR / "model_for_multiple_targets_not_evaluating",
+        ),
+    ],
+)
+def test__dumped_details_training_log(
+    yaml_file: pathlib.Path,
+    output_directory: pathlib.Path,
+    prepare_sample_preprocessed_files: None,
+):
+    setting = PhlowerSetting.read_yaml(yaml_file)
+
+    simple_training_with_yaml(setting, output_directory=output_directory)
+
+    log_csv = output_directory / "log.csv"
+    assert log_csv.exists()
+    df = pd.read_csv(
+        log_csv,
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+
+    train_loss = df.loc[:, "train_loss"].to_numpy()
+    train_loss_details = df.filter(regex=r"^details_tr")
+
+    # check train loss details
+    loss_weights = setting.training.loss_setting.name2weight
+    if loss_weights is None:
+        weights = {k: 1.0 for k in train_loss_details.columns}
+    else:
+        weights = {
+            name: loss_weights[name.removeprefix("details_tr/")]
+            for name in train_loss_details.columns
+        }
+
+    _details = np.stack(
+        [train_loss_details.loc[:, k].to_numpy() * weights[k] for k in weights],
+        axis=1,
+    )
+    np.testing.assert_array_almost_equal(
+        train_loss, np.sum(_details, axis=1), decimal=5
+    )
+
+    # check validation loss
+    validation_loss = df.loc[:, "validation_loss"].to_numpy()
+    validation_loss_details = df.filter(regex=r"^details_val")
+    if loss_weights is None:
+        weights = {k: 1.0 for k in validation_loss_details.columns}
+    else:
+        weights = {
+            name: loss_weights[name.removeprefix("details_val/")]
+            for name in validation_loss_details.columns
+        }
+
+    _vl_details = np.stack(
+        [
+            validation_loss_details.loc[:, k].to_numpy() * weights[k]
+            for k in weights
+        ],
+        axis=1,
+    )
+    np.testing.assert_array_almost_equal(
+        validation_loss, np.sum(_vl_details, axis=1), decimal=5
+    )
+
+
+# endregion
+
+
 def test__train_with_raise_nan_detected():
     phlower_path = PhlowerDirectory(_OUTPUT_NAN_DIR)
-
     preprocessed_directories = list(
         phlower_path.find_directory(
             required_filename="preprocessed", recursive=True

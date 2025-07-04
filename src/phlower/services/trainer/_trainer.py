@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from phlower._base import PhlowerTensor
 from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
@@ -69,15 +68,17 @@ class _EvaluationRunner:
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch,
     ) -> AfterEvaluationOutput:
-        train_eval_loss = self._evaluate_training(
+        train_eval_loss, train_loss_details = self._evaluate_training(
             info, model=model, train_loader=train_loader, train_pbar=train_pbar
         )
 
-        validation_eval_loss = self._evaluate_validation(
-            info,
-            model=model,
-            validation_loader=validation_loader,
-            validation_pbar=validation_pbar,
+        validation_eval_loss, validation_loss_details = (
+            self._evaluate_validation(
+                info,
+                model=model,
+                validation_loader=validation_loader,
+                validation_pbar=validation_pbar,
+            )
         )
 
         return AfterEvaluationOutput(
@@ -86,6 +87,8 @@ class _EvaluationRunner:
             validation_eval_loss=validation_eval_loss,
             elapsed_time=timer.watch(),
             output_directory=info.output_directory,
+            train_loss_details=train_loss_details,
+            validation_loss_details=validation_loss_details,
         )
 
     def _evaluate_training(
@@ -94,9 +97,11 @@ class _EvaluationRunner:
         model: PhlowerGroupModule,
         train_loader: DataLoader,
         train_pbar: PhlowerProgressBar,
-    ) -> float:
+    ) -> tuple[float | None, dict[str, float] | None]:
         if not self._trainer_setting.evaluation_for_training:
-            return np.average(info.train_losses)
+            return np.average(info.train_losses), _aggregate_loss_details(
+                info.train_loss_details
+            )
 
         return _evaluation(
             model,
@@ -113,9 +118,9 @@ class _EvaluationRunner:
         model: PhlowerGroupModule,
         validation_loader: DataLoader | None = None,
         validation_pbar: PhlowerProgressBar | None = None,
-    ) -> float | None:
+    ) -> tuple[float | None, dict[str, float] | None]:
         if validation_loader is None:
-            return None
+            return None, None
 
         return _evaluation(
             model,
@@ -348,7 +353,9 @@ class PhlowerTrainer:
         )
         return train_loader, validation_loader
 
-    def _training_batch_step(self, tr_batch: LumpedTensorData) -> PhlowerTensor:
+    def _training_batch_step(
+        self, tr_batch: LumpedTensorData
+    ) -> tuple[float, dict[str, float]]:
         self._scheduled_optimizer.zero_grad()
 
         h = self._model.forward(tr_batch.x_data, field_data=tr_batch.field_data)
@@ -356,6 +363,7 @@ class PhlowerTrainer:
         losses = self._loss_calculator.calculate(
             h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
         )
+        detached_losses = {k: v.item() for k, v in losses.to_numpy().items()}
         loss = self._loss_calculator.aggregate(losses)
         loss.backward()
 
@@ -368,7 +376,7 @@ class PhlowerTrainer:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        return _last_loss
+        return _last_loss, detached_losses
 
     @overload
     def train(
@@ -447,6 +455,7 @@ class PhlowerTrainer:
         logging_runner = LoggingRunner(
             output_directory,
             log_every_n_epoch=self._setting.training.log_every_n_epoch,
+            loss_keys=self._setting.training.loss_setting.loss_variable_names(),
         )
 
         # when restart training, skip is allowed
@@ -479,9 +488,12 @@ class PhlowerTrainer:
         for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
+            train_loss_details: list[dict[str, float]] = []
 
             for tr_batch in train_loader:
-                train_last_loss = self._training_batch_step(tr_batch)
+                train_last_loss, train_detail_losses = (
+                    self._training_batch_step(tr_batch)
+                )
                 self._handlers.run(
                     train_last_loss,
                     trigger=PhlowerHandlerTrigger.iteration,
@@ -491,11 +503,13 @@ class PhlowerTrainer:
                     desc=f"training loss: {train_last_loss:.3f}",
                 )
                 train_losses.append(train_last_loss)
+                train_loss_details.append(train_detail_losses)
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(
                 epoch=epoch,
                 train_losses=train_losses,
+                train_loss_details=train_loss_details,
                 output_directory=output_directory,
             )
 
@@ -641,8 +655,9 @@ def _evaluation(
     pbar: PhlowerProgressBar,
     pbar_title: str,
     handlers: PhlowerHandlersRunner,
-) -> float:
+) -> tuple[float, dict[str, float] | None]:
     results: list[float] = []
+    results_details: list[dict[str, np.ndarray]] = []
 
     model.eval()
     for _batch in data_loader:
@@ -657,8 +672,30 @@ def _evaluation(
             val_loss = loss_function.aggregate(val_losses)
             handlers.run(val_loss, trigger=PhlowerHandlerTrigger.iteration)
             results.append(val_loss.detach().to_tensor().float().item())
+            results_details.append(val_losses.to_numpy())
         pbar.update(
             trick=_batch.n_data,
             desc=f"{pbar_title}: {results[-1]:.3f}",
         )
-    return np.average(results)
+    return np.average(results), _aggregate_loss_details(results_details)
+
+
+def _aggregate_loss_details(
+    loss_details: list[dict[str, np.ndarray]],
+) -> dict[str, float]:
+    """Aggregate loss details from list of loss details
+
+    Args:
+        loss_details (list[dict[str, float]]): List of loss details
+
+    Returns:
+        dict[str, float]: Aggregated loss details
+    """
+    if len(loss_details) == 0:
+        return {}
+
+    assert all(len(v) == len(loss_details[0]) for v in loss_details)
+    keys = loss_details[0].keys()
+    aggregated = {k: np.mean([v[k] for v in loss_details]).item() for k in keys}
+
+    return aggregated

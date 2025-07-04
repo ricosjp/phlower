@@ -59,6 +59,7 @@ class AfterEpochTrainingInfo(NamedTuple):
 
     epoch: int
     train_losses: list[float]
+    train_loss_details: list[dict[str, float]]
     output_directory: pathlib.Path | None = None
 
 

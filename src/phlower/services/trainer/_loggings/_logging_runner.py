@@ -12,9 +12,16 @@ from phlower.utils.typing import AfterEvaluationOutput
 
 
 class LoggingRunner:
-    def __init__(self, output_directory: pathlib.Path, log_every_n_epoch: int):
+    def __init__(
+        self,
+        output_directory: pathlib.Path,
+        log_every_n_epoch: int,
+        loss_keys: list[str],
+    ):
         self._output_directory = output_directory
-        self._record_io = LogRecordIO(file_path=output_directory / "log.csv")
+        self._record_io = LogRecordIO(
+            file_path=output_directory / "log.csv", loss_keys=loss_keys
+        )
         self._log_every_n_epoch = log_every_n_epoch
 
     def get_weight_directory(self) -> pathlib.Path:
