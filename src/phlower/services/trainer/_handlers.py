@@ -80,7 +80,9 @@ class PhlowerHandlersRunner:
         return "HandlersRunner"
 
     def run(
-        self, output: AfterEvaluationOutput, trigger: PhlowerHandlerTrigger,
+        self,
+        output: AfterEvaluationOutput,
+        trigger: PhlowerHandlerTrigger,
     ):
         for func in self._handlers.values():
             if func.trigger() != trigger:

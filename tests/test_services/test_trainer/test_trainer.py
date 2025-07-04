@@ -80,7 +80,6 @@ def prepare_sample_preprocessed_files():
     np.save(u_file, u)
 
 
-
 @pytest.fixture(scope="module")
 def simple_training(prepare_sample_preprocessed_files: None) -> float:
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)

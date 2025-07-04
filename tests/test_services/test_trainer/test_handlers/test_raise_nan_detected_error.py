@@ -1,4 +1,3 @@
-
 import pytest
 from phlower.services.trainer._handler_functions import RaiseNaNDetectedError
 from phlower.utils.enums import PhlowerHandlerTrigger

@@ -1,4 +1,3 @@
-
 from collections import OrderedDict
 from collections.abc import Mapping
 
@@ -28,7 +27,6 @@ class RaiseNaNDetectedError(PhlowerHandlerType):
     def __init__(
         self,
     ):
-
         self.has_nan = False
         self.logger = get_logger(__name__ + "." + self.__class__.__name__)
 

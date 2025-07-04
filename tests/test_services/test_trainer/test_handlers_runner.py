@@ -30,7 +30,6 @@ def test__initialize_from_setting_file(file_name: str, desired: int):
 
 
 class DummyCustomHanlder(PhlowerHandlerType):
-
     @classmethod
     def trigger(self) -> PhlowerHandlerTrigger:
         return PhlowerHandlerTrigger.evaluation
