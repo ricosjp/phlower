@@ -13,8 +13,8 @@ from phlower.utils.typing import AfterEvaluationOutput
         (
             ["v", "p"],
             1,
-            "\nepoch train_loss validation_loss elapsed_time "
-            "details_tr/v details_tr/p details_val/v details_val/p ",
+            "\nepoch train_loss validation_loss details_tr/v "
+            "details_tr/p details_val/v details_val/p elapsed_time ",
         ),
     ],
 )
