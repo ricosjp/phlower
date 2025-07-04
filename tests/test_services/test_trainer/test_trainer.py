@@ -430,7 +430,7 @@ def test__dumped_details_training_log(
     # check train loss details
     loss_weights = setting.training.loss_setting.name2weight
     if loss_weights is None:
-        weights = {k: 1.0 for k in train_loss_details.columns}
+        weights = dict.fromkeys(train_loss_details.columns, 1.0)
     else:
         weights = {
             name: loss_weights[name.removeprefix("details_tr/")]
@@ -449,7 +449,7 @@ def test__dumped_details_training_log(
     validation_loss = df.loc[:, "validation_loss"].to_numpy()
     validation_loss_details = df.filter(regex=r"^details_val")
     if loss_weights is None:
-        weights = {k: 1.0 for k in validation_loss_details.columns}
+        weights = dict.fromkeys(validation_loss_details.columns, 1.0)
     else:
         weights = {
             name: loss_weights[name.removeprefix("details_val/")]
