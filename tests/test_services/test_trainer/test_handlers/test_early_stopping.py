@@ -1,10 +1,16 @@
 import pytest
+
 from phlower.services.trainer._handler_functions import EarlyStopping
+from phlower.utils.enums import PhlowerHandlerTrigger
 from phlower.utils.typing import AfterEvaluationOutput
 
 
 def test__name():
     assert EarlyStopping.name() == "EarlyStopping"
+
+
+def test__trigger():
+    assert EarlyStopping.trigger() == PhlowerHandlerTrigger.evaluation
 
 
 @pytest.mark.parametrize(

@@ -1,11 +1,13 @@
 import pathlib
 
 import pytest
+
 from phlower.services.trainer._handlers import (
     PhlowerHandlersFactory,
     PhlowerHandlersRunner,
 )
 from phlower.settings import PhlowerSetting
+from phlower.utils.enums import PhlowerHandlerTrigger
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
@@ -29,6 +31,11 @@ def test__initialize_from_setting_file(file_name: str, desired: int):
 
 
 class DummyCustomHanlder(PhlowerHandlerType):
+
+    @classmethod
+    def trigger(self) -> PhlowerHandlerTrigger:
+        return PhlowerHandlerTrigger.evaluation
+
     def __init__(self, threshold: float = 1.0):
         self._threshold = threshold
 
@@ -81,7 +88,7 @@ def test__has_termination_flag(file_name: str, setup_user_handler: None):
         validation_eval_loss=3.0,
         elapsed_time=100,
     )
-    runner.run(dummy)
+    runner.run(dummy, trigger=PhlowerHandlerTrigger.evaluation)
 
     assert runner.terminate_training
 
@@ -91,6 +98,7 @@ def test__has_termination_flag(file_name: str, setup_user_handler: None):
     [
         ("no_handlers.yml"),
         ("stop_trigger.yml"),
+        ("raise_nan_detected_error.yml"),
         ("user_handlers_1.yml"),
         ("user_handlers_2.yml"),
     ],

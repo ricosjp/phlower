@@ -9,13 +9,18 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 import yaml
+
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
-from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
+from phlower.utils.exceptions import (
+    PhlowerNaNDetectedError,
+    PhlowerRestartTrainingCompletedError,
+)
 from phlower.utils.typing import PhlowerHandlerType
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
+_OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
 
 
@@ -26,6 +31,8 @@ def prepare_sample_preprocessed_files():
     if _OUTPUT_DIR.exists():
         shutil.rmtree(_OUTPUT_DIR)
     _OUTPUT_DIR.mkdir()
+    if _OUTPUT_NAN_DIR.exists():
+        shutil.rmtree(_OUTPUT_NAN_DIR)
 
     base_preprocessed_dir = _OUTPUT_DIR / "preprocessed"
     base_preprocessed_dir.mkdir()
@@ -55,6 +62,14 @@ def prepare_sample_preprocessed_files():
         )
 
         (preprocessed_dir / "preprocessed").touch()
+
+    # Prepare data with NaN values
+    shutil.copytree(_OUTPUT_DIR, _OUTPUT_NAN_DIR)
+    u_file = _OUTPUT_NAN_DIR / "preprocessed/case_0/nodal_initial_u.npy"
+    u = np.load(u_file)
+    u[0] = np.nan
+    np.save(u_file, u)
+
 
 
 @pytest.fixture(scope="module")
@@ -337,3 +352,29 @@ def test__attach_hanlder(
                 name, mocked, allow_overwrite=allow_overwrite
             )
         assert str(ex.value) == f"Handler named {name} is already attached."
+
+
+def test__train_with_raise_nan_detected():
+    phlower_path = PhlowerDirectory(_OUTPUT_NAN_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        _SETTINGS_DIR / "handlers/raise_nan_detected_error.yml"
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_w_nan"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    with pytest.raises(PhlowerNaNDetectedError):
+        trainer.train(
+            train_directories=preprocessed_directories,
+            validation_directories=preprocessed_directories,
+            output_directory=output_directory,
+        )
