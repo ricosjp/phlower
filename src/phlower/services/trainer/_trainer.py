@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from phlower._base import PhlowerTensor
 from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
@@ -97,7 +96,9 @@ class _EvaluationRunner:
         train_pbar: PhlowerProgressBar,
     ) -> tuple[float | None, dict[str, float] | None]:
         if not self._trainer_setting.evaluation_for_training:
-            return np.average(info.train_losses), None
+            return np.average(info.train_losses), _aggregate_loss_details(
+                info.train_loss_details
+            )
 
         return _evaluation(
             model,
@@ -346,7 +347,9 @@ class PhlowerTrainer:
         )
         return train_loader, validation_loader
 
-    def _training_batch_step(self, tr_batch: LumpedTensorData) -> PhlowerTensor:
+    def _training_batch_step(
+        self, tr_batch: LumpedTensorData
+    ) -> tuple[float, dict[str, float]]:
         self._scheduled_optimizer.zero_grad()
 
         h = self._model.forward(tr_batch.x_data, field_data=tr_batch.field_data)
@@ -354,6 +357,7 @@ class PhlowerTrainer:
         losses = self._loss_calculator.calculate(
             h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
         )
+        detached_losses = {k: v.item() for k, v in losses.to_numpy().items()}
         loss = self._loss_calculator.aggregate(losses)
         loss.backward()
 
@@ -366,7 +370,7 @@ class PhlowerTrainer:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        return _last_loss
+        return _last_loss, detached_losses
 
     @overload
     def train(
@@ -478,19 +482,24 @@ class PhlowerTrainer:
         for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
             train_losses: list[float] = []
+            train_loss_details: list[dict[str, float]] = []
 
             for tr_batch in train_loader:
-                train_last_loss = self._training_batch_step(tr_batch)
+                train_last_loss, train_detail_losses = (
+                    self._training_batch_step(tr_batch)
+                )
                 _train_batch_pbar.update(
                     trick=self._setting.training.batch_size,
                     desc=f"training loss: {train_last_loss:.3f}",
                 )
                 train_losses.append(train_last_loss)
+                train_loss_details.append(train_detail_losses)
 
             self._scheduled_optimizer.step_scheduler()
             info = AfterEpochTrainingInfo(
                 epoch=epoch,
                 train_losses=train_losses,
+                train_loss_details=train_loss_details,
                 output_directory=output_directory,
             )
 

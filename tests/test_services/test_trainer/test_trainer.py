@@ -385,6 +385,10 @@ def simple_training_with_yaml(
             _SETTINGS_DIR / "train_for_multiple_targets_with_weights.yml",
             _OUTPUT_DIR / "model_for_multiple_targets_with_weights",
         ),
+        (
+            _SETTINGS_DIR / "train_for_multiple_targets_not_evaluating.yml",
+            _OUTPUT_DIR / "model_for_multiple_targets_not_evaluating",
+        ),
     ],
 )
 def test__dumped_details_training_log(
