@@ -66,15 +66,17 @@ class _EvaluationRunner:
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch,
     ) -> AfterEvaluationOutput:
-        train_eval_loss = self._evaluate_training(
+        train_eval_loss, train_loss_details = self._evaluate_training(
             info, model=model, train_loader=train_loader, train_pbar=train_pbar
         )
 
-        validation_eval_loss = self._evaluate_validation(
-            info,
-            model=model,
-            validation_loader=validation_loader,
-            validation_pbar=validation_pbar,
+        validation_eval_loss, validation_loss_details = (
+            self._evaluate_validation(
+                info,
+                model=model,
+                validation_loader=validation_loader,
+                validation_pbar=validation_pbar,
+            )
         )
 
         return AfterEvaluationOutput(
@@ -83,6 +85,8 @@ class _EvaluationRunner:
             validation_eval_loss=validation_eval_loss,
             elapsed_time=timer.watch(),
             output_directory=info.output_directory,
+            train_loss_details=train_loss_details,
+            validation_loss_details=validation_loss_details,
         )
 
     def _evaluate_training(
@@ -91,9 +95,9 @@ class _EvaluationRunner:
         model: PhlowerGroupModule,
         train_loader: DataLoader,
         train_pbar: PhlowerProgressBar,
-    ) -> float:
+    ) -> tuple[float | None, dict[str, float] | None]:
         if not self._trainer_setting.evaluation_for_training:
-            return np.average(info.train_losses)
+            return np.average(info.train_losses), None
 
         return _evaluation(
             model,
@@ -109,9 +113,9 @@ class _EvaluationRunner:
         model: PhlowerGroupModule,
         validation_loader: DataLoader | None = None,
         validation_pbar: PhlowerProgressBar | None = None,
-    ) -> float | None:
+    ) -> tuple[float | None, dict[str, float] | None]:
         if validation_loader is None:
-            return None
+            return None, None
 
         return _evaluation(
             model,
@@ -441,6 +445,7 @@ class PhlowerTrainer:
         logging_runner = LoggingRunner(
             output_directory,
             log_every_n_epoch=self._setting.training.log_every_n_epoch,
+            loss_keys=self._setting.training.loss_setting.loss_variable_names(),
         )
 
         # when restart training, skip is allowed
@@ -630,8 +635,9 @@ def _evaluation(
     loss_function: LossCalculator,
     pbar: PhlowerProgressBar,
     pbar_title: str,
-) -> float:
+) -> tuple[float, dict[str, float] | None]:
     results: list[float] = []
+    results_details: list[dict[str, np.ndarray]] = []
 
     model.eval()
     for _batch in data_loader:
@@ -645,8 +651,30 @@ def _evaluation(
             )
             val_loss = loss_function.aggregate(val_losses)
             results.append(val_loss.detach().to_tensor().float().item())
+            results_details.append(val_losses.to_numpy())
         pbar.update(
             trick=_batch.n_data,
             desc=f"{pbar_title}: {results[-1]:.3f}",
         )
-    return np.average(results)
+    return np.average(results), _aggregate_loss_details(results_details)
+
+
+def _aggregate_loss_details(
+    loss_details: list[dict[str, np.ndarray]],
+) -> dict[str, float]:
+    """Aggregate loss details from list of loss details
+
+    Args:
+        loss_details (list[dict[str, float]]): List of loss details
+
+    Returns:
+        dict[str, float]: Aggregated loss details
+    """
+    if len(loss_details) == 0:
+        return {}
+
+    assert all(len(v) == len(loss_details[0]) for v in loss_details)
+    keys = loss_details[0].keys()
+    aggregated = {k: np.mean([v[k] for v in loss_details]).item() for k in keys}
+
+    return aggregated

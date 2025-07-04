@@ -62,7 +62,7 @@ class LogRecordIO:
     def __init__(
         self,
         file_path: pathlib.Path,
-        loss_keys: list[str] = None,
+        loss_keys: list[str] | None = None,
         display_margin: int = 4,
     ) -> None:
         self._file_path = file_path
@@ -81,9 +81,9 @@ class LogRecordIO:
             "epoch",
             "train_loss",
             "validation_loss",
-            "elapsed_time",
             *[f"{self._train_details_title}{k}" for k in self._loss_keys],
             *[f"{self._validation_details_title}{k}" for k in self._loss_keys],
+            "elapsed_time",
         ]
         headers = [create_logitems(v) for v in headers]
         return headers
@@ -101,14 +101,14 @@ class LogRecordIO:
             log_record.train_loss.format(
                 formatter=".5e", padding_margin=self._display_margin
             ),
+            log_record.validation_loss.format(
+                formatter=".5e", padding_margin=self._display_margin
+            ),
             log_record.train_loss_details.format(
                 formatter=".5e",
                 key_orders=self._loss_keys,
                 padding_margin=self._display_margin,
                 title=self._train_details_title,
-            ),
-            log_record.validation_loss.format(
-                formatter=".5e", padding_margin=self._display_margin
             ),
             log_record.validation_loss_details.format(
                 formatter=".5e",
@@ -144,10 +144,10 @@ class LogRecordIO:
         values = [
             log_record.epoch.format(),
             log_record.train_loss.format(formatter=".5e"),
+            log_record.validation_loss.format(formatter=".5e"),
             log_record.train_loss_details.format(
                 formatter=".5e", key_orders=self._loss_keys
             ),
-            log_record.validation_loss.format(formatter=".5e"),
             log_record.validation_loss_details.format(
                 formatter=".5e", key_orders=self._loss_keys
             ),
