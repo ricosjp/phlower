@@ -9,7 +9,6 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 import yaml
-
 from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting

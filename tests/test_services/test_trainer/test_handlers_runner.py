@@ -1,7 +1,6 @@
 import pathlib
 
 import pytest
-
 from phlower.services.trainer._handlers import (
     PhlowerHandlersFactory,
     PhlowerHandlersRunner,
