@@ -1,1 +1,2 @@
 from ._early_stopping import EarlyStopping
+from ._raise_nan_detected_error import RaiseNaNDetectedError

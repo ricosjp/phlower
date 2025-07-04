@@ -34,6 +34,7 @@ from phlower.settings import (
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 from phlower.utils.enums import (
     ModelSelectionType,
+    PhlowerHandlerTrigger,
     TrainerInitializeType,
     TrainerSavedKeyType,
 )
@@ -51,9 +52,11 @@ class _EvaluationRunner:
         self,
         trainer_setting: PhlowerTrainerSetting,
         loss_calculator: LossCalculator,
+        handlers: PhlowerHandlersRunner,
     ):
         self._trainer_setting = trainer_setting
         self._loss_calculator = loss_calculator
+        self._handlers = handlers
 
     def run(
         self,
@@ -101,6 +104,7 @@ class _EvaluationRunner:
             loss_function=self._loss_calculator,
             pbar=train_pbar,
             pbar_title="batch train loss",
+            handlers=self._handlers,
         )
 
     def _evaluate_validation(
@@ -119,6 +123,7 @@ class _EvaluationRunner:
             loss_function=self._loss_calculator,
             pbar=validation_pbar,
             pbar_title="batch val loss",
+            handlers=self._handlers,
         )
 
 
@@ -239,6 +244,11 @@ class PhlowerTrainer:
             self._setting.training, model=self._model
         )
 
+        # initialize handler
+        self._handlers = PhlowerHandlersRunner.from_setting(
+            self._setting.training
+        )
+
         # initialize loss calculator
         self._loss_calculator = LossCalculator.from_setting(
             self._setting.training
@@ -246,11 +256,7 @@ class PhlowerTrainer:
         self._evaluation_runner = _EvaluationRunner(
             trainer_setting=self._setting.training,
             loss_calculator=self._loss_calculator,
-        )
-
-        # initialize handler
-        self._handlers = PhlowerHandlersRunner.from_setting(
-            self._setting.training
+            handlers=self._handlers,
         )
 
         # Internal state
@@ -476,6 +482,10 @@ class PhlowerTrainer:
 
             for tr_batch in train_loader:
                 train_last_loss = self._training_batch_step(tr_batch)
+                self._handlers.run(
+                    train_last_loss,
+                    trigger=PhlowerHandlerTrigger.iteration,
+                )
                 _train_batch_pbar.update(
                     trick=self._setting.training.batch_size,
                     desc=f"training loss: {train_last_loss:.3f}",
@@ -508,7 +518,7 @@ class PhlowerTrainer:
             )
 
             # Call handlers
-            self._handlers.run(output)
+            self._handlers.run(output, trigger=PhlowerHandlerTrigger.evaluation)
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
                 break
@@ -630,6 +640,7 @@ def _evaluation(
     loss_function: LossCalculator,
     pbar: PhlowerProgressBar,
     pbar_title: str,
+    handlers: PhlowerHandlersRunner,
 ) -> float:
     results: list[float] = []
 
@@ -644,6 +655,7 @@ def _evaluation(
                 batch_info_dict=_batch.y_batch_info,
             )
             val_loss = loss_function.aggregate(val_losses)
+            handlers.run(val_loss, trigger=PhlowerHandlerTrigger.iteration)
             results.append(val_loss.detach().to_tensor().float().item())
         pbar.update(
             trick=_batch.n_data,

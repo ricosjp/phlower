@@ -2,15 +2,22 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from phlower.services.trainer._handler_functions import EarlyStopping
+from phlower.services.trainer._handler_functions import (
+    EarlyStopping,
+    RaiseNaNDetectedError,
+)
 from phlower.settings import PhlowerTrainerSetting
-from phlower.utils.enums import PhlowerHandlerRegisteredKey
+from phlower.utils.enums import (
+    PhlowerHandlerRegisteredKey,
+    PhlowerHandlerTrigger,
+)
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 
 class PhlowerHandlersFactory:
     _REGISTERED: dict[str, type[PhlowerHandlerType]] = {
-        "EarlyStopping": EarlyStopping
+        "EarlyStopping": EarlyStopping,
+        "RaiseNaNDetectedError": RaiseNaNDetectedError,
     }
 
     @classmethod
@@ -72,8 +79,13 @@ class PhlowerHandlersRunner:
     def name(cls) -> str:
         return "HandlersRunner"
 
-    def run(self, output: AfterEvaluationOutput):
+    def run(
+        self, output: AfterEvaluationOutput, trigger: PhlowerHandlerTrigger,
+    ):
         for func in self._handlers.values():
+            if func.trigger() != trigger:
+                continue
+
             result = func(output)
             if result.get(PhlowerHandlerRegisteredKey.TERMINATE):
                 self._terminate = True

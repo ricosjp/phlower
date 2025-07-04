@@ -9,7 +9,10 @@ from collections.abc import Mapping
 from typing import cast
 
 from phlower.utils import get_logger
-from phlower.utils.enums import PhlowerHandlerRegisteredKey
+from phlower.utils.enums import (
+    PhlowerHandlerRegisteredKey,
+    PhlowerHandlerTrigger,
+)
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 __all__ = ["EarlyStopping"]
@@ -39,6 +42,10 @@ class EarlyStopping(PhlowerHandlerType):
     @classmethod
     def name(cls) -> str:
         return "EarlyStopping"
+
+    @classmethod
+    def trigger(self) -> PhlowerHandlerTrigger:
+        return PhlowerHandlerTrigger.evaluation
 
     def __init__(
         self,

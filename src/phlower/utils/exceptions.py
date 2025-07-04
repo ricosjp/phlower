@@ -104,3 +104,7 @@ class PhlowerDimensionRequiredError(ValueError):
 
 class PhlowerInvalidArgumentsError(ValueError):
     """This error raises when the arguments are invalid."""
+
+
+class PhlowerNaNDetectedError(RuntimeError):
+    """This error raises when NaN value is detected."""

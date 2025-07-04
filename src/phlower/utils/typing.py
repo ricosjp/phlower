@@ -9,6 +9,8 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
+from phlower.utils.enums import PhlowerHandlerTrigger
+
 DenseArrayType = np.ndarray
 
 SparseArrayType = (
@@ -27,12 +29,14 @@ LossFunctionType = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
 class PhlowerHandlerType(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __call__(self, output: AfterEvaluationOutput) -> dict[str, Any]:
+    def __call__(self, output: AfterEvaluationOutput | float) -> dict[str, Any]:
         """Run handler's program. If output dictionary conatins "TERMINATE" and
          its value is True, training process is terminated forcefully.
 
         Args:
-            output (AfterEvaluationOutput): output data from evaluation runner
+            output (AfterEvaluationOutput | float):
+                loss value for the current iteration (trigger: iteration)
+                output data from evaluation runner (trigger: evaluation)
 
         Returns:
             dict[str, Any]: output data
@@ -44,6 +48,10 @@ class PhlowerHandlerType(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def load_state_dict(self, state_dict: Mapping) -> None: ...
+
+    @classmethod
+    @abc.abstractmethod
+    def trigger(self) -> PhlowerHandlerTrigger: ...
 
 
 class AfterEpochTrainingInfo(NamedTuple):
