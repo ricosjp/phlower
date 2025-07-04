@@ -77,7 +77,7 @@ class EarlyStopping(PhlowerHandlerType):
                 self.best_score = score
             self.counter += 1
             self.logger.debug(
-                "EarlyStopping: %i / %i" % (self.counter, self.patience)
+                f"EarlyStopping: {self.counter} / {self.patience}"
             )
             if self.counter >= self.patience:
                 self.logger.info("EarlyStopping: Stop training")
