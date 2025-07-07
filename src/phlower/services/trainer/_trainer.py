@@ -533,7 +533,8 @@ class PhlowerTrainer:
 
             # Call handlers
             self._handlers.run(
-                output, trigger=PhlowerHandlerTrigger.epoch_completed,
+                output,
+                trigger=PhlowerHandlerTrigger.epoch_completed,
             )
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
@@ -673,7 +674,8 @@ def _evaluation(
             )
             val_loss = loss_function.aggregate(val_losses)
             handlers.run(
-                val_loss, trigger=PhlowerHandlerTrigger.iteration_completed,
+                val_loss,
+                trigger=PhlowerHandlerTrigger.iteration_completed,
             )
             results.append(val_loss.detach().to_tensor().float().item())
             results_details.append(val_losses.to_numpy())

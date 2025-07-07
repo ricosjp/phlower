@@ -9,8 +9,10 @@ def test__name():
 
 
 def test__trigger():
-    assert NaNStoppingHandler.trigger() \
+    assert (
+        NaNStoppingHandler.trigger()
         == PhlowerHandlerTrigger.iteration_completed
+    )
 
 
 def test__raise_when_nan():
