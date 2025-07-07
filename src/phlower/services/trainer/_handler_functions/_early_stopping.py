@@ -9,13 +9,16 @@ from collections.abc import Mapping
 from typing import cast
 
 from phlower.utils import get_logger
-from phlower.utils.enums import PhlowerHandlerRegisteredKey
+from phlower.utils.enums import (
+    PhlowerHandlerRegisteredKey,
+    PhlowerHandlerTrigger,
+)
 from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 
 __all__ = ["EarlyStopping"]
 
 
-class EarlyStopping(PhlowerHandlerType):
+class EarlyStopping(PhlowerHandlerType[AfterEvaluationOutput]):
     """EarlyStopping handler can be used to stop the training
       if no improvement after a given number of events.
 
@@ -39,6 +42,10 @@ class EarlyStopping(PhlowerHandlerType):
     @classmethod
     def name(cls) -> str:
         return "EarlyStopping"
+
+    @classmethod
+    def trigger(self) -> PhlowerHandlerTrigger:
+        return PhlowerHandlerTrigger.epoch_completed
 
     def __init__(
         self,
@@ -77,7 +84,7 @@ class EarlyStopping(PhlowerHandlerType):
                 self.best_score = score
             self.counter += 1
             self.logger.debug(
-                "EarlyStopping: %i / %i" % (self.counter, self.patience)
+                f"EarlyStopping: {self.counter} / {self.patience}"
             )
             if self.counter >= self.patience:
                 self.logger.info("EarlyStopping: Stop training")
