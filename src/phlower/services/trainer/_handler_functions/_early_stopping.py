@@ -18,7 +18,7 @@ from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 __all__ = ["EarlyStopping"]
 
 
-class EarlyStopping(PhlowerHandlerType):
+class EarlyStopping(PhlowerHandlerType[AfterEvaluationOutput]):
     """EarlyStopping handler can be used to stop the training
       if no improvement after a given number of events.
 

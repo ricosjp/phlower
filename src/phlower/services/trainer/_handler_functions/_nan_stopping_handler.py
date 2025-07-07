@@ -11,7 +11,7 @@ from phlower.utils.exceptions import PhlowerNaNDetectedError
 from phlower.utils.typing import PhlowerHandlerType
 
 
-class NaNStoppingHandler(PhlowerHandlerType):
+class NaNStoppingHandler(PhlowerHandlerType[float]):
     """NaNStoppingHandler handler raises PhlowerNaNDetectedError when loss
     has NaN values.
     """
