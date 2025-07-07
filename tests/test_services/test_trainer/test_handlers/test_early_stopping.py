@@ -9,7 +9,7 @@ def test__name():
 
 
 def test__trigger():
-    assert EarlyStopping.trigger() == PhlowerHandlerTrigger.evaluation
+    assert EarlyStopping.trigger() == PhlowerHandlerTrigger.epoch_completed
 
 
 @pytest.mark.parametrize(

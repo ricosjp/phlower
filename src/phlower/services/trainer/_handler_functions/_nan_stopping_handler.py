@@ -11,18 +11,18 @@ from phlower.utils.exceptions import PhlowerNaNDetectedError
 from phlower.utils.typing import PhlowerHandlerType
 
 
-class NanStoppingHandler(PhlowerHandlerType):
-    """RaiseNaNDetectedError handler raises PhlowerNaNDetectedError when loss
+class NaNStoppingHandler(PhlowerHandlerType):
+    """NaNStoppingHandler handler raises PhlowerNaNDetectedError when loss
     has NaN values.
     """
 
     @classmethod
     def name(cls) -> str:
-        return "RaiseNaNDetectedError"
+        return "NaNStoppingHandler"
 
     @classmethod
     def trigger(self) -> PhlowerHandlerTrigger:
-        return PhlowerHandlerTrigger.iteration
+        return PhlowerHandlerTrigger.iteration_completed
 
     def __init__(
         self,

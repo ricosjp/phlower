@@ -496,7 +496,7 @@ class PhlowerTrainer:
                 )
                 self._handlers.run(
                     train_last_loss,
-                    trigger=PhlowerHandlerTrigger.iteration,
+                    trigger=PhlowerHandlerTrigger.iteration_completed,
                 )
                 _train_batch_pbar.update(
                     trick=self._setting.training.batch_size,
@@ -532,7 +532,9 @@ class PhlowerTrainer:
             )
 
             # Call handlers
-            self._handlers.run(output, trigger=PhlowerHandlerTrigger.evaluation)
+            self._handlers.run(
+                output, trigger=PhlowerHandlerTrigger.epoch_completed,
+            )
             if self._handlers.terminate_training:
                 _logger.info("Training process is killed by handler.")
                 break
@@ -670,7 +672,9 @@ def _evaluation(
                 batch_info_dict=_batch.y_batch_info,
             )
             val_loss = loss_function.aggregate(val_losses)
-            handlers.run(val_loss, trigger=PhlowerHandlerTrigger.iteration)
+            handlers.run(
+                val_loss, trigger=PhlowerHandlerTrigger.iteration_completed,
+            )
             results.append(val_loss.detach().to_tensor().float().item())
             results_details.append(val_losses.to_numpy())
         pbar.update(

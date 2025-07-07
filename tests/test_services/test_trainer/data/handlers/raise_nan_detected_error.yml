@@ -11,7 +11,7 @@ training:
     parameters:
       lr: 0.0001
   handler_settings:
-    - handler: RaiseNaNDetectedError
+    - handler: NaNStoppingHandler
       parameters: {}
 
 model:

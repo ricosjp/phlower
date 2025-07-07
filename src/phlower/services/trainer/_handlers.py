@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 from phlower.services.trainer._handler_functions import (
     EarlyStopping,
-    RaiseNaNDetectedError,
+    NaNStoppingHandler,
 )
 from phlower.settings import PhlowerTrainerSetting
 from phlower.utils.enums import (
@@ -17,7 +17,7 @@ from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
 class PhlowerHandlersFactory:
     _REGISTERED: dict[str, type[PhlowerHandlerType]] = {
         "EarlyStopping": EarlyStopping,
-        "RaiseNaNDetectedError": RaiseNaNDetectedError,
+        "NaNStoppingHandler": NaNStoppingHandler,
     }
 
     @classmethod

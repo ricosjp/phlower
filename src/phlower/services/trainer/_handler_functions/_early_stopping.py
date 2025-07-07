@@ -45,7 +45,7 @@ class EarlyStopping(PhlowerHandlerType):
 
     @classmethod
     def trigger(self) -> PhlowerHandlerTrigger:
-        return PhlowerHandlerTrigger.evaluation
+        return PhlowerHandlerTrigger.epoch_completed
 
     def __init__(
         self,

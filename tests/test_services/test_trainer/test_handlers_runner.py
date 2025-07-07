@@ -32,7 +32,7 @@ def test__initialize_from_setting_file(file_name: str, desired: int):
 class DummyCustomHanlder(PhlowerHandlerType):
     @classmethod
     def trigger(self) -> PhlowerHandlerTrigger:
-        return PhlowerHandlerTrigger.evaluation
+        return PhlowerHandlerTrigger.epoch_completed
 
     def __init__(self, threshold: float = 1.0):
         self._threshold = threshold
@@ -86,7 +86,7 @@ def test__has_termination_flag(file_name: str, setup_user_handler: None):
         validation_eval_loss=3.0,
         elapsed_time=100,
     )
-    runner.run(dummy, trigger=PhlowerHandlerTrigger.evaluation)
+    runner.run(dummy, trigger=PhlowerHandlerTrigger.epoch_completed)
 
     assert runner.terminate_training
 

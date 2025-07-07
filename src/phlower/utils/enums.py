@@ -109,8 +109,8 @@ class PhlowerHandlerRegisteredKey(str, Enum):
 
 
 class PhlowerHandlerTrigger(str, Enum):
-    iteration = "iteration"
-    evaluation = "evaluation"
+    iteration_completed = "iteration_completed"
+    epoch_completed = "epoch_completed"
 
 
 class TrainerInitializeType(str, Enum):
