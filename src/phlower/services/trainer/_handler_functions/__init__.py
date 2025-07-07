@@ -1,2 +1,2 @@
 from ._early_stopping import EarlyStopping
-from ._raise_nan_detected_error import NaNStoppingHandler
+from ._nan_stopping_handler import NaNStoppingHandler
