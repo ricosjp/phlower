@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import abc
 from collections import defaultdict
-from collections.abc import Callable, ItemsView, Iterable, KeysView, Sequence
-from typing import Any
+from collections.abc import (
+    Callable,
+    ItemsView,
+    KeysView,
+    Sequence,
+    ValuesView,
+)
 
 import numpy as np
 import torch
@@ -89,7 +94,32 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def clone(self) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
+    def snapshot(self, time_index: int) -> IPhlowerTensorCollections:
+        """
+        Create a snapshot of the current state of the collection
+          at a given time index. Timeseries tensor is converted to
+          a tensor with the specified time index by index access.
+          Non-timeseries tensors are returned as is.
+
+        Args:
+            time_index (int): The index of the time point.
+        Returns:
+            IPhlowerTensorCollections: A new collection containing
+            the state of the tensors at the specified time index.
+        """
+        ...
+
+    @abc.abstractmethod
     def to_phlower_arrays_dict(self) -> dict[str, IPhlowerArray]: ...
+
+    @abc.abstractmethod
+    def get_time_series_length(self) -> int:
+        """
+        Get the length of the time series in the collection.
+        Returns:
+            int: The length of the time series.
+        """
+        ...
 
 
 def phlower_tensor_collection(
@@ -188,10 +218,10 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
     def __len__(self) -> int:
         return len(self._x)
 
-    def values(self) -> Iterable[dict[str, Any]]:
+    def values(self) -> ValuesView[PhlowerTensor]:
         return self._x.values()
 
-    def keys(self) -> Iterable[str]:
+    def keys(self) -> KeysView[str]:
         return self._x.keys()
 
     def items(self) -> ItemsView[str, PhlowerTensor]:
@@ -272,6 +302,29 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def to_phlower_arrays_dict(self) -> dict[str, IPhlowerArray]:
         return {k: v.to_phlower_array() for k, v in self.items()}
+
+    def snapshot(self, time_index: int) -> IPhlowerTensorCollections:
+        results = {
+            k: v.slice_time(time_index, keep_time_series=False)
+            if v.is_time_series
+            else v
+            for k, v in self.items()
+        }
+        return PhlowerDictTensors(results)
+
+    def get_time_series_length(self) -> int:
+        values = {
+            v.time_series_length for v in self.values() if v.is_time_series
+        }
+
+        if len(values) > 1:
+            raise ValueError(
+                "Cannot determine time series length, "
+                "because there are different time series lengths "
+                "in the collection."
+            )
+
+        return values.pop() if len(values) == 1 else 0
 
 
 def reduce_update(

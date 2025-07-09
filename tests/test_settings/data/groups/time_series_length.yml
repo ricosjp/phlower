@@ -1,0 +1,45 @@
+network:
+  nn_type: GROUP
+  name: CYCLE_MODEL
+  inputs:
+    - name: feature0
+      n_last_dim: 10
+    - name: feature1
+      n_last_dim: 12
+
+  time_series_length: -3
+
+  solver_type: bb  # simple, none
+  solver_parameters:
+    max_iterations: 100
+    convergence_threshold: 0.0001
+    divergence_threshold: 10000
+    target_keys: [feature0]
+    alpha_component_wise: false
+    bb_type: long
+  
+  outputs:
+    - name: feature0
+      n_last_dim: 5
+  
+  modules:
+    - nn_type: MLP
+      name: MLP0
+      input_keys:
+        - feature0
+      output_key: mlp0
+      destinations:
+        - GCN0
+      nn_parameters:
+        nodes: [-1, 20, 100]
+        activations: ["Identity", "identity"]
+
+    - nn_type: GCN
+      name: GCN0
+      input_keys:
+        - mlp0
+      output_key: feature0
+      nn_parameters:
+        nodes: [-1, 5]
+        activations: ["identity"]
+        support_name: support1

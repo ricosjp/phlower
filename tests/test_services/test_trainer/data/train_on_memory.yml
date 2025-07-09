@@ -1,0 +1,60 @@
+
+training:
+  batch_size: 1
+  random_seed: 0
+  n_epoch: 10
+  lazy_load: false
+  loss_setting:
+    name2loss:
+      nodal_last_u: "mse"
+  optimizer_setting:
+    optimizer: SGD
+    parameters:
+      lr: 0.0001
+  handler_settings:
+    - handler: EarlyStopping
+      parameters:
+        patience: 10
+
+
+model:
+  inputs:
+    - name: nodal_initial_u
+      physical_dimension: {"L": 1, "T": -1}
+      members:
+        - name: nodal_initial_u
+          n_last_dim: 1
+    
+  labels:
+    - name: nodal_last_u
+      physical_dimension: {"L": 1, "T": -1}
+      members:
+        - name: nodal_last_u
+          n_last_dim: 1
+  
+  fields:
+    - name: "nodal_nadj"
+      physical_dimension: {}
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: nodal_initial_u
+        n_last_dim: 1
+    
+    outputs:
+      - name: nodal_last_u
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - nodal_initial_u
+        output_key: nodal_last_u
+        nn_parameters:
+          nodes: [-1, 16, 1]
+          activations: ["identity", "identity"]
+          bias: False
+

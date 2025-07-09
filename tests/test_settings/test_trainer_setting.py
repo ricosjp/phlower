@@ -140,3 +140,14 @@ def test__raise_error_when_not_implemented_optimizer(name: str):
             }
         )
     assert "is not defined as an optimizer in phlower" in str(ex.value)
+
+
+def test__default_trainer_setting():
+    setting = PhlowerTrainerSetting()
+
+    assert setting.loss_setting.name2loss == {}
+    assert setting.optimizer_setting.optimizer == "Adam"
+    assert len(setting.scheduler_settings) == 0
+    assert setting.initializer_setting.type_name == "none"
+    assert setting.initializer_setting.reference_directory is None
+    assert setting.lazy_load is True

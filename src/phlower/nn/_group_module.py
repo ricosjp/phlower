@@ -134,7 +134,8 @@ class PhlowerGroupModule(
         self._output_keys = output_keys
         self._is_steady_problem = is_steady_problem
         self._iteration_solver = iteration_solver
-        self._time_series_length = time_series_length
+        self._time_series_length = time_series_length or 0
+        assert self._time_series_length >= -1
 
         self._stream = self.resolve()
         for _module in self._phlower_modules:
@@ -145,8 +146,8 @@ class PhlowerGroupModule(
         return self._name
 
     @property
-    def do_time_series_iteration(self) -> int:
-        return bool(self._time_series_length)
+    def do_time_series_iteration(self) -> bool:
+        return self._time_series_length != 0
 
     def get_display_info(self) -> str:
         return (
@@ -224,13 +225,19 @@ class PhlowerGroupModule(
         results: list[IPhlowerTensorCollections] = []
 
         assert isinstance(self._time_series_length, int)
+        _time_series_length = (
+            self._time_series_length
+            if self._time_series_length > 0
+            else data.get_time_series_length()
+        )
 
-        inputs = data
-        for time_index in range(self._time_series_length):
+        for time_index in range(_time_series_length):
+            inputs = data.snapshot(time_index).clone()
+
             if time_index != 0:
                 last_result = results[-1].clone()
-                inputs = data.clone()
                 inputs.update(last_result, overwrite=True)
+
             results.append(
                 self._forward(inputs, field_data=field_data, **kwards)
             )

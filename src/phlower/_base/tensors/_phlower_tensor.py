@@ -209,6 +209,18 @@ class PhlowerTensor(IPhlowerTensor):
         )
 
     @property
+    def time_series_length(self) -> int:
+        """Length of the time series.
+
+        Returns:
+            int | None: Length of the time series.
+        """
+        if not self.is_time_series:
+            return 0
+
+        return self._tensor.shape[0]
+
+    @property
     def has_dimension(self) -> bool:
         """Whether the tensor has a physical dimension.
 
@@ -556,6 +568,7 @@ class PhlowerTensor(IPhlowerTensor):
     def slice_time(
         self,
         indices: int | slice | list[int] | np.ndarray | torch.Tensor,
+        keep_time_series: bool = True,
     ) -> PhlowerTensor:
         """
         Slice the time series tensor.
@@ -570,7 +583,7 @@ class PhlowerTensor(IPhlowerTensor):
                 f"- pattern: {self.shape_pattern}\n"
             )
 
-        return self[[indices]]
+        return self[[indices]] if keep_time_series else self[indices]
 
     def to(
         self,
