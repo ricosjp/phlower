@@ -2,6 +2,7 @@
 training:
   batch_size: 1
   random_seed: 0
+  device: "cuda:0"
   loss_setting:
     name2loss:
       nodal_last_u: "mse"
