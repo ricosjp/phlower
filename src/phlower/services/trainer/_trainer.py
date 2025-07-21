@@ -673,8 +673,9 @@ def _evaluation(
                 batch_info_dict=_batch.y_batch_info,
             )
             val_loss = loss_function.aggregate(val_losses)
+            detached_val_loss = val_loss.detach().to_tensor().float().item()
             handlers.run(
-                val_loss,
+                detached_val_loss,
                 trigger=PhlowerHandlerTrigger.iteration_completed,
             )
             results.append(val_loss.detach().to_tensor().float().item())
