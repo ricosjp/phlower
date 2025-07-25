@@ -16,7 +16,7 @@ from phlower.utils.exceptions import (
     PhlowerNaNDetectedError,
     PhlowerRestartTrainingCompletedError,
 )
-from phlower.utils.typing import PhlowerHandlerType
+from phlower.utils.typing import IPhlowerHandler
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
 _OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
@@ -349,7 +349,7 @@ def test__attach_hanlder(
     setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
     trainer = PhlowerTrainer.from_setting(setting)
 
-    mocked = mock.Mock(spec=PhlowerHandlerType)
+    mocked = mock.Mock(spec=IPhlowerHandler)
 
     if success:
         trainer.attach_handler(name, mocked, allow_overwrite=allow_overwrite)

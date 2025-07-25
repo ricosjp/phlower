@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Literal, overload
 
 from phlower.services.trainer._handler_functions import (
     EarlyStopping,
@@ -11,11 +12,11 @@ from phlower.utils.enums import (
     PhlowerHandlerRegisteredKey,
     PhlowerHandlerTrigger,
 )
-from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
+from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
 
 
 class PhlowerHandlersFactory:
-    _REGISTERED: dict[str, type[PhlowerHandlerType]] = {
+    _REGISTERED: dict[str, type[IPhlowerHandler]] = {
         "EarlyStopping": EarlyStopping,
         "NaNStoppingHandler": NaNStoppingHandler,
     }
@@ -24,7 +25,7 @@ class PhlowerHandlersFactory:
     def register(
         cls,
         name: str,
-        handler_type: type[PhlowerHandlerType],
+        handler_type: type[IPhlowerHandler],
         overwrite: bool = False,
     ):
         if (name not in cls._REGISTERED) or overwrite:
@@ -44,7 +45,7 @@ class PhlowerHandlersFactory:
         cls._REGISTERED.pop(name)
 
     @classmethod
-    def create(cls, name: str, params: dict) -> PhlowerHandlerType:
+    def create(cls, name: str, params: dict) -> IPhlowerHandler:
         if name not in cls._REGISTERED:
             raise NotImplementedError(f"Handler {name} is not registered.")
         return cls._REGISTERED[name](**params)
@@ -79,9 +80,23 @@ class PhlowerHandlersRunner:
     def name(cls) -> str:
         return "HandlersRunner"
 
+    @overload
     def run(
         self,
         output: AfterEvaluationOutput,
+        trigger: Literal[PhlowerHandlerTrigger.epoch_completed],
+    ) -> None: ...
+
+    @overload
+    def run(
+        self,
+        output: float,
+        trigger: Literal[PhlowerHandlerTrigger.iteration_completed],
+    ) -> None: ...
+
+    def run(
+        self,
+        output: AfterEvaluationOutput | float,
         trigger: PhlowerHandlerTrigger,
     ):
         for func in self._handlers.values():
@@ -96,7 +111,7 @@ class PhlowerHandlersRunner:
     def attach(
         self,
         name: str,
-        handler: PhlowerHandlerType,
+        handler: IPhlowerHandler,
         allow_overwrite: bool = False,
     ) -> None:
         if (not allow_overwrite) and (name in self._handlers):

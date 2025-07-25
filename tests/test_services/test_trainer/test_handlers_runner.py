@@ -7,7 +7,7 @@ from phlower.services.trainer._handlers import (
 )
 from phlower.settings import PhlowerSetting
 from phlower.utils.enums import PhlowerHandlerTrigger
-from phlower.utils.typing import AfterEvaluationOutput, PhlowerHandlerType
+from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
 
 DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
 
@@ -29,7 +29,7 @@ def test__initialize_from_setting_file(file_name: str, desired: int):
     assert runner.n_handlers == desired
 
 
-class DummyCustomHanlder(PhlowerHandlerType):
+class DummyCustomHanlder(IPhlowerHandler):
     @classmethod
     def trigger(self) -> PhlowerHandlerTrigger:
         return PhlowerHandlerTrigger.epoch_completed
