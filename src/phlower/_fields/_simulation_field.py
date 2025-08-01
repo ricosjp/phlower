@@ -1,5 +1,5 @@
 import abc
-from collections.abc import Iterable
+from collections.abc import ItemsView, Iterable
 
 from phlower._base import GraphBatchInfo, PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -11,6 +11,9 @@ class ISimulationField(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def keys(self): ...
+
+    @abc.abstractmethod
+    def items(self): ...
 
     @abc.abstractmethod
     def get_batch_info(self, name: str) -> GraphBatchInfo: ...
@@ -33,6 +36,9 @@ class SimulationField(ISimulationField):
 
     def keys(self) -> Iterable[str]:
         return self._field_tensors.keys()
+
+    def items(self) -> ItemsView:
+        return self._field_tensors.items()
 
     def __getitem__(self, name: str) -> PhlowerTensor:
         if name not in self._field_tensors:

@@ -186,6 +186,58 @@ def contraction(
     )
 
 
+def inner_product(
+    x: IPhlowerTensor, y: IPhlowerTensor | None = None
+) -> IPhlowerTensor:
+    """
+    Compute the inner products with interactions.
+
+    Args:
+        x : IPhlowerTensor
+            (..., f1)-shaped input tensor.
+        y : IPhlowerTensor, optional
+            (..., f2)-shaped second input tensor.
+            If not fed, it computes inner products of x.
+
+    Returns:
+        IPhlowerTensor
+            (..., f1 * f2)-shaped tensor
+    """
+    if y is None:
+        y = x
+
+    if x.rank() != y.rank():
+        raise ValueError(
+            "Rank should be the same for inner product: "
+            f"{x.rank()} vs {y.rank()}"
+        )
+
+    if x.is_voxel != y.is_voxel:
+        raise PhlowerIncompatibleTensorError(
+            "Cannot compute inner products between non-voxel and voxel."
+        )
+
+    ret_is_time_series = x.is_time_series or y.is_time_series
+    time_x = x.shape_pattern.time_series_pattern
+    time_y = y.shape_pattern.time_series_pattern
+    time_ret = "t" if ret_is_time_series else ""
+
+    # No need to consider y because they should be compatible
+    space = x.shape_pattern.get_space_pattern(omit_space=True)
+
+    if x.dimension is None or y.dimension is None:
+        dimension = None
+    else:
+        dimension = x.dimension * y.dimension
+
+    return einsum(
+        f"{time_x}{space}...f,{time_y}{space}...g->{time_ret}{space}fg",
+        x,
+        y,
+        dimension=dimension,
+    ).rearrange("... f g -> ... (f g)")
+
+
 def tensor_product(x: IPhlowerTensor, y: IPhlowerTensor) -> IPhlowerTensor:
     """
     Compute spatial tensor product for input tensors.
@@ -289,6 +341,9 @@ def apply_orthogonal_group(
 def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     """Compute sum over space."""
 
+    if len(tensor.shape) == 1 and tensor.numel() == 1:
+        return tensor
+
     time = tensor.shape_pattern.time_series_pattern
     space = tensor.shape_pattern.get_space_pattern(omit_space=True)
     start_space = tensor.shape_pattern.start_space_index
@@ -305,6 +360,14 @@ def spatial_sum(tensor: IPhlowerTensor) -> IPhlowerTensor:
     return squeezed.as_pattern(f"{time}{space}...")
 
 
-def spatial_mean(tensor: IPhlowerTensor) -> IPhlowerTensor:
+def spatial_mean(
+    tensor: IPhlowerTensor, weight: IPhlowerTensor = None
+) -> IPhlowerTensor:
     """Compute mean over space."""
-    return spatial_sum(tensor) / tensor.n_vertices()
+    if weight is None:
+        return spatial_sum(tensor) / tensor.n_vertices()
+
+    # Weighted mean
+    return spatial_sum(tensor_times_scalar(tensor, weight)) / spatial_sum(
+        weight
+    )

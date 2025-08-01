@@ -9,6 +9,7 @@ from phlower.settings._interface import (
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
+from phlower.utils.enums import PhysicalDimensionSymbolType
 
 
 class SimilarityEquivariantMLPSetting(
@@ -17,6 +18,7 @@ class SimilarityEquivariantMLPSetting(
     nodes: list[int] = Field(
         ...
     )  # This property only overwritten when resolving.
+    scale_names: dict[str, str] = Field(default_factory=lambda: {}, frozen=True)
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(False, frozen=True)
@@ -27,6 +29,8 @@ class SimilarityEquivariantMLPSetting(
     disable_en_equivariance: bool = Field(False, frozen=True)
     invariant: bool = Field(False, frozen=True)
     centering: bool = Field(False, frozen=True)
+    cross_interaction: bool = Field(False, frozen=True)
+    normalize: bool = Field(True, frozen=True)
 
     def confirm(self, self_module: IModuleSetting) -> None:
         return
@@ -87,3 +91,17 @@ class SimilarityEquivariantMLPSetting(
 
     def get_reference(self, parent: IReadOnlyReferenceGroupSetting):
         return
+
+    @pydantic.field_validator("scale_names")
+    @classmethod
+    def check_scale_names(cls, vals: dict[str, str]) -> list[int]:
+        if len(vals) == 0:
+            raise ValueError("scale_names is empty.")
+
+        for key in vals.keys():
+            if not PhysicalDimensionSymbolType.is_exist(key):
+                raise ValueError(
+                    f"Key not in physical dimension: {vals.keys()}"
+                )
+
+        return vals

@@ -10,6 +10,7 @@ from phlower.nn._functionals._functions import (
     apply_orthogonal_group,
     contraction,
     einsum,
+    inner_product,
     spatial_mean,
     spatial_sum,
     spmm,

@@ -73,6 +73,15 @@ e2e_test:
     - gpu
     - GenuineIntel
 
+examples:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
+  stage: test
+  script:
+    - make examples
+  tags:
+    - gpu
+    - GenuineIntel
+
 pages_test:
   stage: document_test
   script:
