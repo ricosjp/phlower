@@ -22,6 +22,12 @@ class EnEquivariantMLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         default_factory=lambda: "identity", frozen=True
     )
 
+    # If cross_interaction = True, use interaction layer proposed by
+    # https://arxiv.org/abs/2203.06442. If normalize = True, use eq (12)
+    # in that paper.
+    cross_interaction: bool = Field(False, frozen=True)
+    normalize: bool = Field(True, frozen=True)
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 

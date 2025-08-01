@@ -14,7 +14,7 @@ def test__training_with_multiple_batch_size(
     prepare_sample_preprocessed_files_fixture: pathlib.Path,
 ):
     output_dir = prepare_sample_preprocessed_files_fixture
-    phlower_path = PhlowerDirectory(output_dir)
+    phlower_path = PhlowerDirectory(output_dir / "preprocessed")
 
     preprocessed_directories = list(
         phlower_path.find_directory(
@@ -45,7 +45,7 @@ def test__training_with_multiple_batch_size_with_gpu(
     prepare_sample_preprocessed_files_fixture: pathlib.Path,
 ):
     output_dir = prepare_sample_preprocessed_files_fixture
-    phlower_path = PhlowerDirectory(output_dir)
+    phlower_path = PhlowerDirectory(output_dir / "preprocessed")
 
     preprocessed_directories = list(
         phlower_path.find_directory(
@@ -76,7 +76,7 @@ def test__same_loss_value_when_traing_data_and_validation_data_is_same(
     prepare_sample_preprocessed_files_fixture: None,
 ):
     output_dir = prepare_sample_preprocessed_files_fixture
-    phlower_path = PhlowerDirectory(output_dir)
+    phlower_path = PhlowerDirectory(output_dir / "preprocessed")
 
     preprocessed_directories = list(
         phlower_path.find_directory(

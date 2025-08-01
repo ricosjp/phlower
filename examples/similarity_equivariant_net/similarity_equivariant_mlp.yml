@@ -1,0 +1,78 @@
+
+data:
+  training:
+    - data/case_0
+  validation:
+    - data/scaled_case_0
+
+training:
+  batch_size: 1
+  random_seed: 0
+  device: "auto"
+  loss_setting:
+    name2loss:
+      nodal_last_u: "mse"
+  optimizer_setting:
+    optimizer: Adam
+    parameters:
+      lr: 0.001
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+
+model:
+  inputs:
+    - name: nodal_initial_u
+      physical_dimension: {"L": 1, "T": -1}
+  labels:
+    - name: nodal_last_u
+      physical_dimension: {"L": 1, "T": -1}
+
+  fields:
+    - name: "length"
+      physical_dimension: {"L": 1}
+    - name: "time"
+      physical_dimension: {"T": 1}
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: nodal_initial_u
+        n_last_dim: 1
+
+    outputs:
+      - name: nodal_last_u
+        n_last_dim: 1
+
+    modules:
+      - name: MLP0
+        nn_type: MLP
+        input_keys:
+          - nodal_initial_u
+        destinations:
+          - SEMLP0
+        nn_parameters:
+          nodes: [-1, 16]
+          activations: ["identity"]
+          bias: False
+
+      - name: SEMLP0
+        nn_type: SimilarityEquivariantMLP
+        destinations:
+          - MLP1
+        nn_parameters:
+          nodes: [16, 16, 16]
+          activations: ["tanh", "tanh"]
+          cross_interaction: true
+          scale_names:
+            L: length
+            T: time
+
+      - name: MLP1
+        nn_type: MLP
+        output_key: nodal_last_u
+        nn_parameters:
+          nodes: [16, 1]
+          activations: ["identity"]
+          bias: False

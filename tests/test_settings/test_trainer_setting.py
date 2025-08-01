@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -151,3 +153,17 @@ def test__default_trainer_setting():
     assert setting.initializer_setting.type_name == "none"
     assert setting.initializer_setting.reference_directory is None
     assert setting.lazy_load is True
+
+
+@mock.patch("torch.cuda.is_available")
+def test__device_auto_when_cuda_is_available(mocked: mock.MagicMock):
+    mocked.return_value = True
+    setting = PhlowerTrainerSetting(device="auto")
+    assert setting.device == "cuda:0"
+
+
+@mock.patch("torch.cuda.is_available")
+def test__device_auto_when_cuda_is_not_available(mocked: mock.MagicMock):
+    mocked.return_value = False
+    setting = PhlowerTrainerSetting(device="auto")
+    assert setting.device == "cpu"

@@ -810,11 +810,11 @@ def test_apply_orthogonal_group(
         [[-1], [-1], [2], [0], [1], [0], [0]],
     ],
 )
-def test_spatial_mean(
+def test_spatial_mean_wo_weight(
     size: tuple[int],
     is_time_series: bool,
     is_voxel: bool,
-    mean_dims: int,
+    mean_dims: list[int],
     dimension: list[list[int]] | None,
 ):
     torch_tensor = torch.rand(*size)
@@ -841,3 +841,73 @@ def test_spatial_mean(
         np.testing.assert_almost_equal(actual_dimension, dimension)
     else:
         assert actual.dimension is None
+
+
+@pytest.mark.parametrize(
+    "size, is_time_series, is_voxel",
+    [
+        ((10, 3, 16), False, False),
+    ],
+)
+@pytest.mark.parametrize(
+    "dimension",
+    [
+        [[-1], [2], [0], [0], [0], [0], [0]],
+        [[1], [0], [1], [0], [0], [0], [0]],
+        [[-1], [-1], [2], [0], [1], [0], [0]],
+    ],
+)
+@pytest.mark.parametrize(
+    "weight_dimension",
+    [
+        [[0], [0], [0], [0], [0], [0], [0]],
+        [[3], [0], [1], [0], [0], [0], [0]],
+    ],
+)
+def test_spatial_mean_w_weight(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    dimension: list[list[int]] | None,
+    weight_dimension: list[list[int]] | None,
+):
+    torch_tensor = torch.rand(*size)
+    x = phlower_tensor(
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+    weight = phlower_tensor(torch.rand(len(x), 1), dimension=dimension)
+    actual = phlower.nn.functional.spatial_mean(x, weight)
+
+    desired = torch.einsum(
+        "npf,nf->pf",
+        torch_tensor,
+        weight.to_tensor(),
+    )[None, ...] / torch.sum(weight.to_tensor())
+    np.testing.assert_almost_equal(
+        actual.to_numpy(), desired.numpy(), decimal=5
+    )
+
+    assert actual.is_time_series == is_time_series
+    assert actual.is_voxel == is_voxel
+
+    actual_dimension = actual.dimension._tensor.numpy()
+    np.testing.assert_almost_equal(actual_dimension, np.array(dimension))
+
+
+def test_inner_product():
+    a = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )[None, ...]  # (1, 3, 3)-shaped tensor assuming n_feature = 3
+
+    t = phlower_tensor(a)
+    inner_product = (
+        phlower.nn.functional.inner_product(t, t).reshape((3, 3)).numpy()
+    )
+    np.testing.assert_almost_equal(inner_product, np.eye(3))

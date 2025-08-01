@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import pydantic
 import pydantic.dataclasses as dc
+import torch
 from pydantic import Field
 
 from phlower.settings._handler_settings import (
@@ -199,7 +200,8 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
 
     device: str = "cpu"
     """
-    device name. Defaults to cpu
+    device name. Defaults to cpu. When auto is set, device is automatically
+    set to gpu when available, otherwise cpu.
     """
 
     evaluation_for_training: bool = True
@@ -240,3 +242,14 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
             return setting.get_patience()
 
         return None
+
+    @pydantic.field_validator("device", mode="before")
+    @classmethod
+    def _resolve_device(cls, device: str) -> str:
+        if device != "auto":
+            return device
+
+        if torch.cuda.is_available():
+            return "cuda:0"
+
+        return "cpu"
