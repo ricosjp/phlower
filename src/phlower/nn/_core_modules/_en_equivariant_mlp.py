@@ -169,10 +169,8 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor: Tensor object
         """
         if self._cross_interaction:
-            print("self._forward_w_cross_interaction")
             return self._forward_w_cross_interaction(data)
 
-        print("self._forward_wo_cross_interaction")
         return self._forward_wo_cross_interaction(data)
 
     def _forward_w_cross_interaction(
