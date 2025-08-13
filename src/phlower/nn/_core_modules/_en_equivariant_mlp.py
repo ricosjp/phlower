@@ -36,6 +36,12 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Whether to create a linear weight. Default is False.
     norm_function_name: str
         Name of the normalization function to apply to the output.
+    cross_interaction: bool
+        If True, use interaction layer proposed by
+        https://arxiv.org/abs/2203.06442.
+    normalize: bool
+        If True, use eq (12) in https://arxiv.org/abs/2203.06442 when
+        cross_interaction is True.
 
     Examples
     --------
@@ -45,7 +51,10 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     dropouts=[0.1, 0.1, 0.1],
     ...     bias=True,
     ...     create_linear_weight=True,
-    ...     norm_function_name="identity")
+    ...     norm_function_name="identity",
+    ...     cross_interaction=False,
+    ...     normalize=True,
+    ... )
     >>> en_equivariant_mlp(data)
     """
 
@@ -160,8 +169,10 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor: Tensor object
         """
         if self._cross_interaction:
+            print("self._forward_w_cross_interaction")
             return self._forward_w_cross_interaction(data)
 
+        print("self._forward_wo_cross_interaction")
         return self._forward_wo_cross_interaction(data)
 
     def _forward_w_cross_interaction(

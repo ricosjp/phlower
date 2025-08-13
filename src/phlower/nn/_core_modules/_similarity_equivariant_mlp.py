@@ -80,6 +80,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     invariant=False,
     ...     centering=False,
     ...     coeff_amplify=1.0,
+    ...     cross_interaction=False,
+    ...     normalize=True,
     ... )
     >>> similarity_equivariant_mlp(data)
     """
@@ -196,6 +198,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             raise PhlowerInvalidArgumentsError("Field data is required")
 
         h = data.unique_item()
+
         dict_scales = {
             scale_name: field_data[field_name]
             for scale_name, field_name in self._scale_names.items()
@@ -223,6 +226,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             h = h - mean
 
         h = self._mlp(phlower_tensor_collection({"h": h * self._coeff_amplify}))
+
         assert (
             h.dimension.is_dimensionless
         ), f"Feature cannot be converted to dimensionless: {h.dimension}"
