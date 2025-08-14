@@ -80,6 +80,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     invariant=False,
     ...     centering=False,
     ...     coeff_amplify=1.0,
+    ...     cross_interaction=False,
+    ...     normalize=True,
     ... )
     >>> similarity_equivariant_mlp(data)
     """
