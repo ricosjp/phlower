@@ -82,11 +82,6 @@ html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 html_theme_options = {
     "sidebar_hide_name": True,
-    "announcement": (
-        '📢 <strong>Phlower</strong> will be presented at the '
-        'in-person Poster Session at <a href="https://www.scipy2025.scipy.org/" target="_blank" style="color: #fff; text-decoration: underline;">'
-        'SciPy Conference 2025</a> in Tacoma, WA!'
-    )
     # "light_css_variables": {
     #     "color-brand-primary": "#f5f5f5"
     # },
