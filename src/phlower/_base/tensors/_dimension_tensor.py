@@ -236,7 +236,9 @@ def dimension_wrap_implements(torch_function: Callable) -> Callable:
 
 
 @dimension_wrap_implements(torch.mean)
-def mean(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+def mean(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
     return PhlowerDimensionTensor(inputs._tensor)
 
 
@@ -405,6 +407,27 @@ def stack(
     return PhlowerDimensionTensor(uniq_inputs[0]._tensor)
 
 
+@dimension_wrap_implements(torch.max)
+def max(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    return PhlowerDimensionTensor(inputs._tensor)
+
+
+@dimension_wrap_implements(torch.min)
+def min(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    return PhlowerDimensionTensor(inputs._tensor)
+
+
+@dimension_wrap_implements(torch.linalg.norm)
+def norm(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwards: Any
+) -> PhlowerDimensionTensor:
+    return PhlowerDimensionTensor(inputs._tensor)
+
+
 @dimension_wrap_implements(torch.nn.functional.mse_loss)
 def mse_loss(
     inputs: PhlowerDimensionTensor,
@@ -438,6 +461,15 @@ def concatenate(
     )
 
     return PhlowerDimensionTensor(uniq_inputs[0]._tensor)
+
+
+@dimension_wrap_implements(torch.exp)
+def exp(tensor: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    if not tensor.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply exp but {tensor}"
+        )
+    return tensor
 
 
 @dimension_wrap_implements(torch.tanh)

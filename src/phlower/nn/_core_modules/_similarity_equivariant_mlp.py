@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from typing_extensions import Self
 
+from phlower._base._functionals import unbatch
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
@@ -65,6 +66,11 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     normalize: bool
         If True, use eq (12) in https://arxiv.org/abs/2203.06442 when
         cross_interaction is True.
+    unbatch: bool
+        If True, perform unbatching. Set False when you call this module
+        from another module which perform unbaching. Note that this option
+        cannot be set from yaml.
+        Default: True
 
     Examples
     --------
@@ -83,7 +89,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     cross_interaction=False,
     ...     normalize=True,
     ... )
-    >>> similarity_equivariant_mlp(data)
+    >>> similarity_equivariant_mlp(data, field_data=field_data)
     """
 
     @classmethod
@@ -126,6 +132,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         coeff_amplify: float = 1.0,
         cross_interaction: bool = False,
         normalize: bool = True,
+        unbatch: bool = True,
     ) -> None:
         super().__init__()
 
@@ -136,6 +143,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self._centering = centering
         self._create_linear_weight = create_linear_weight
         self._coeff_amplify = coeff_amplify
+        self._unbatch = unbatch
 
         if self._disable_en_equivariance:
             self._mlp = MLP(
@@ -198,13 +206,31 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             raise PhlowerInvalidArgumentsError("Field data is required")
 
         h = data.unique_item()
+
+        if not h.has_dimension:
+            raise PhlowerDimensionRequiredError("Dimension is required")
+
+        if self._unbatch:
+            # NOTE: Assume length scale is always fed
+            n_nodes = field_data.get_batched_n_nodes(self._scale_names["L"])
+            unbatched_h = unbatch(h, n_nodes=n_nodes)
+            unbatched_field = unbatch(field_data, n_nodes=n_nodes)
+            return torch.cat(
+                [
+                    self._forward(_h, field_data=_f)
+                    for _h, _f in zip(unbatched_h, unbatched_field, strict=True)
+                ],
+                dim=0,
+            )
+        return self._forward(h, field_data=field_data)
+
+    def _forward(
+        self, h: PhlowerTensor, field_data: ISimulationField
+    ) -> PhlowerTensor:
         dict_scales = {
             scale_name: field_data[field_name]
             for scale_name, field_name in self._scale_names.items()
         }
-
-        if not h.has_dimension:
-            raise PhlowerDimensionRequiredError("Dimension is required")
         if len(dict_scales) == 0:
             raise PhlowerInvalidArgumentsError(
                 f"Scale inputs are required in fields. Given: {field_data}"

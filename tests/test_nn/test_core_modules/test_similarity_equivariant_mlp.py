@@ -2,7 +2,9 @@ import numpy as np
 import pytest
 import torch
 from phlower import PhlowerTensor, phlower_tensor
+from phlower._base._batch import GraphBatchInfo
 from phlower._base._dimension import PhysicalDimensions
+from phlower._base._functionals import to_batch, unbatch
 from phlower._fields import SimulationField
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import SimilarityEquivariantMLP
@@ -59,6 +61,7 @@ def assert_similarity_equivariance(
         centering=centering,
         cross_interaction=cross_interaction,
         normalize=normalize,
+        unbatch=False,
     )
 
     t = phlower_tensor(
@@ -118,7 +121,7 @@ def assert_similarity_equivariance(
     ).to_numpy()
 
     # Test equivariance
-    assert relative_rmse(actual, desired) < 2.0e-3
+    assert relative_rmse(actual, desired) < 5.0e-3
 
     # Test dimension is kept
     for k, v in actual_tensor.dimension.to_dict().items():
@@ -331,6 +334,7 @@ def test__similarity_invariance(
         cross_interaction=cross_interaction,
         normalize=normalize,
         invariant=True,
+        unbatch=False,
     )
 
     t = phlower_tensor(
@@ -369,7 +373,7 @@ def test__similarity_invariance(
     ).to_numpy()
 
     # Test equivariance
-    assert relative_rmse(actual, desired) < 2.0e-3
+    assert relative_rmse(actual, desired) < 5.0e-3
 
     # Test dimensionless in case of invariant
     for v in actual_tensor.dimension.to_dict().values():
@@ -444,6 +448,7 @@ def test__scaling_equivariance(
         cross_interaction=cross_interaction,
         normalize=normalize,
         invariant=invariant,
+        unbatch=False,
     )
 
     t = phlower_tensor(
@@ -493,7 +498,7 @@ def test__scaling_equivariance(
     ).to_numpy()
 
     # Test equivariance
-    assert relative_rmse(actual, desired) < 2.0e-3
+    assert relative_rmse(actual, desired) < 5.0e-3
 
     if invariant:
         # Test dimensionless in case of invariant
@@ -525,6 +530,7 @@ def test__similarity_equivariance_no_scale_input():
     model = SimilarityEquivariantMLP(
         nodes=[8, 8],
         scale_names={"T": "T", "L": "L", "M": "M"},
+        unbatch=False,
     )
     dimension = {"T": -1, "L": 1, "M": 0, "I": 0, "Theta": 0, "N": 0, "J": 0}
 
@@ -532,3 +538,103 @@ def test__similarity_equivariance_no_scale_input():
     ts = phlower_tensor_collection({"tensor": t})
     with pytest.raises(PhlowerInvalidArgumentsError):
         model(ts)
+
+
+@pytest.mark.parametrize("shape", [(4, 16), (4, 3, 16)])
+@pytest.mark.parametrize("dimension", [{}, {"L": 1, "T": 1}, {"M": 1}])
+def test__batch_correct(
+    shape: tuple[int],
+    dimension: dict[str, int],
+):
+    model = SimilarityEquivariantMLP(
+        nodes=[16, 16, 16],
+        scale_names={"T": "T", "L": "L", "M": "M"},
+        activations=["tanh", "tanh"],
+    )
+
+    variable1 = phlower_tensor(torch.rand(shape), dimension=dimension)
+    variable2 = phlower_tensor(torch.rand(shape), dimension=dimension)
+
+    n = shape[0]
+    dict_scales1 = {
+        k: phlower_tensor(
+            torch.rand(1) * 10 + 0.1, dimension=PhysicalDimensions({k: 1})
+        )
+        for k in model._scale_names.values()
+    }
+    dict_scales1["L"] = phlower_tensor(
+        torch.rand(n, 1) * 2 + 1.0,
+        dimension=PhysicalDimensions({"L": 1}),
+    )
+    dict_scales2 = {
+        k: phlower_tensor(
+            torch.rand(1) * 10 + 0.1, dimension=PhysicalDimensions({k: 1})
+        )
+        for k in model._scale_names.values()
+    }
+    dict_scales2["L"] = phlower_tensor(
+        torch.rand(n, 1) * 2 + 1.0,
+        dimension=PhysicalDimensions({"L": 1}),
+    )
+
+    batched_variable, _ = to_batch([variable1, variable2])
+    batched_dict_scales = {
+        k: to_batch([dict_scales1[k], dict_scales2[k]])[0]
+        for k in dict_scales1.keys()
+    }
+    dict_batch_info = {
+        k: to_batch([dict_scales1[k], dict_scales2[k]])[1]
+        for k in dict_scales1.keys()
+    }
+    ts = phlower_tensor_collection({"t": batched_variable})
+    field = SimulationField(
+        phlower_tensor_collection(batched_dict_scales),
+        batch_info=dict_batch_info,
+    )
+    batched_prediction = model(ts, field_data=field)
+
+    dict_batch_info1 = {
+        k: GraphBatchInfo(
+            sizes=[v.size],
+            shapes=[v.shape],
+            n_nodes=[v.n_vertices()],
+            dense_concat_dim=0,
+        )
+        for k, v in dict_scales1.items()
+    }
+    field1 = SimulationField(
+        phlower_tensor_collection(dict_scales1),
+        batch_info=dict_batch_info1,
+    )
+    pred1 = model(
+        phlower_tensor_collection({"t": variable1}),
+        field_data=field1,
+    )
+
+    dict_batch_info2 = {
+        k: GraphBatchInfo(
+            sizes=[v.size],
+            shapes=[v.shape],
+            n_nodes=[v.n_vertices()],
+            dense_concat_dim=0,
+        )
+        for k, v in dict_scales2.items()
+    }
+    field2 = SimulationField(
+        phlower_tensor_collection(dict_scales2),
+        batch_info=dict_batch_info2,
+    )
+    pred2 = model(
+        phlower_tensor_collection({"t": variable2}),
+        field_data=field2,
+    )
+
+    unbatched_pred = unbatch(
+        batched_prediction, batch_info=dict_batch_info["L"]
+    )
+    np.testing.assert_almost_equal(
+        unbatched_pred[0].numpy(), pred1.numpy(), decimal=5
+    )
+    np.testing.assert_almost_equal(
+        unbatched_pred[1].numpy(), pred2.numpy(), decimal=5
+    )

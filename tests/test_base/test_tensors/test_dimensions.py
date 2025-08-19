@@ -2,7 +2,7 @@ import pytest
 import torch
 from hypothesis import given
 from hypothesis import strategies as st
-from phlower import PhlowerDimensionTensor
+from phlower import PhlowerDimensionTensor, phlower_tensor
 from phlower.utils.exceptions import DimensionIncompatibleError
 
 
@@ -112,3 +112,19 @@ def test__div_with_float_and_non_dimensions(x: float):
 
     calculated = x / dimension
     assert calculated == dimension
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        torch.exp,
+        torch.tanh,
+        torch.sigmoid,
+    ],
+)
+def test__nonlinear_function_raises_when_not_dimensionless(op: callable):
+    t = phlower_tensor(torch.rand(5), dimension={"T": 1})
+    with pytest.raises(
+        DimensionIncompatibleError, match="Should be dimensionless to apply"
+    ):
+        op(t)

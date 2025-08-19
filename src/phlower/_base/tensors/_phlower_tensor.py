@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, TypeAlias, overload
+from typing import Any, NamedTuple, TypeAlias, overload
 
 import einops
 import numpy as np
@@ -482,6 +482,21 @@ class PhlowerTensor(IPhlowerTensor):
 
         return self._phlower_shape.get_n_vertices()
 
+    def is_global(self, n_batch: int) -> bool:
+        """
+        Returns True if the batched tensor is from global ones.
+
+        Args:
+            n_batch: int
+                The number of batches.
+
+        Returns:
+            bool: True if the batched tensor is from global ones.
+        """
+        if self.is_sparse:
+            return False
+        return self._phlower_shape.is_global(n_batch)
+
     def indices(self) -> torch.Tensor:
         """
         Returns the indices of the tensor.
@@ -675,7 +690,7 @@ class PhlowerTensor(IPhlowerTensor):
         types: list[type],
         args: tuple,
         kwargs: dict | None = None,
-    ) -> PhlowerTensor:
+    ) -> PhlowerTensor | NamedTuple[PhlowerTensor]:
         if func.__name__ in _UNSUPPORTED_FUNCTION_NAMES:
             raise PhlowerUnsupportedTorchFunctionError(
                 f"Unsupported function: {func.__name__}"
@@ -685,7 +700,8 @@ class PhlowerTensor(IPhlowerTensor):
 
         _tensors = _recursive_resolve(args, "_tensor")
 
-        ret: torch.Tensor = func(*_tensors, **kwargs)
+        # ret is tuple when torch.return_types.* is returned
+        ret: torch.Tensor | tuple = func(*_tensors, **kwargs)
 
         tensor_args = [
             a
@@ -699,19 +715,42 @@ class PhlowerTensor(IPhlowerTensor):
         is_time_series = np.any(list_is_time_series)
         is_voxel = np.any(list_is_voxel)
 
-        if not _has_dimension(args):
+        if _has_dimension(args):
+            _dimensions = _recursive_resolve(
+                args, "_dimension_tensor", allow_none=False
+            )
+            result_units = func(*_dimensions, **kwargs)
+        else:
             # Unit calculation is not considered when unit tensor is not found.
+            result_units = None
+
+        if isinstance(ret, torch.Tensor):
             return PhlowerTensor(
-                ret, is_time_series=is_time_series, is_voxel=is_voxel
+                ret,
+                result_units,
+                is_time_series=is_time_series,
+                is_voxel=is_voxel,
             )
 
-        _dimensions = _recursive_resolve(
-            args, "_dimension_tensor", allow_none=False
-        )
+        # Manage NamedTuple output from min or max function
+        if isinstance(ret, torch.return_types.max | torch.return_types.min):
+            extremum = PhlowerTensor(
+                ret.values,
+                result_units,
+                is_time_series=is_time_series,
+                is_voxel=is_voxel,
+            )
+            indices_unit = None if result_units is None else {}
+            indices = phlower_tensor(
+                ret.indices,
+                indices_unit,
+                is_time_series=is_time_series,
+                is_voxel=is_voxel,
+            )
+            return ret.__class__((extremum, indices))
 
-        result_units = func(*_dimensions, **kwargs)
-        return PhlowerTensor(
-            ret, result_units, is_time_series=is_time_series, is_voxel=is_voxel
+        raise PhlowerUnsupportedTorchFunctionError(
+            f"return type {ret.__class__} is not supported yet."
         )
 
 
@@ -752,7 +791,7 @@ def _recursive_resolve(
             return None
 
         raise DimensionIncompatibleError(
-            "Cannnot calcualte PhlowerTensor with physics dimension "
+            "Cannot calcualte PhlowerTensor with physics dimension "
             f"and PhlowerTensor without it. {args}"
         )
     return _val

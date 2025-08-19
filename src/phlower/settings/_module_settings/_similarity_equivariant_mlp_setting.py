@@ -32,6 +32,8 @@ class SimilarityEquivariantMLPSetting(
     cross_interaction: bool = Field(False, frozen=True)
     normalize: bool = Field(True, frozen=True)
 
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 
@@ -52,7 +54,7 @@ class SimilarityEquivariantMLPSetting(
         if len(vals) < 2:
             raise ValueError(
                 "size of nodes must be larger than 1 in "
-                "SimilarityEquivariantMLPSetting. input: {vals}"
+                f"SimilarityEquivariantMLPSetting. input: {vals}"
             )
 
         for i, v in enumerate(vals):

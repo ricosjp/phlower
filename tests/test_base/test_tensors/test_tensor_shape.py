@@ -214,3 +214,31 @@ def test__detech_shape_pattern_when_rearrange(
     assert actual.shape == to_shape
     assert actual.is_time_series is desired_time_series
     assert actual.is_voxel is desired_voxel
+
+
+@pytest.mark.parametrize(
+    "shape, is_time_series, n_batch, desired",
+    [
+        ((1,), False, 1, True),
+        ((2,), False, 2, True),
+        ((2,), False, 1, False),
+        ((4, 3, 16), False, 4, True),
+        ((4, 3, 16), False, 2, False),
+        ((10, 1), True, 1, True),
+        ((10, 2), True, 2, True),
+        ((10, 2), True, 1, False),
+        ((10, 4, 3, 16), True, 4, True),
+        ((10, 4, 3, 16), True, 2, False),
+    ],
+)
+def test__is_global(
+    shape: tuple[int],
+    is_time_series: bool,
+    n_batch: int,
+    desired: bool,
+):
+    shape = PhlowerShapePattern(
+        torch.Size(shape), is_time_series=is_time_series, is_voxel=False
+    )
+
+    assert shape.is_global(n_batch) == desired
