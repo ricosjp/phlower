@@ -59,6 +59,11 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
      and scaler is assumed to be the same as that of label variables.
     """
 
+    use_inference_mode: bool = True
+    """
+    If True, use torch.inference_mode() for prediction. Defaults to True.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 

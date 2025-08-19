@@ -5,12 +5,13 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
+import torch
 from phlower import PhlowerTensor
 from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.services.trainer import PhlowerTrainer
-from phlower.settings import PhlowerSetting
+from phlower.settings import PhlowerPredictorSetting, PhlowerSetting
 
 DATA_DIR = pathlib.Path(__file__).parent / "data"
 OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
@@ -203,3 +204,19 @@ def test__predict_with_onmemory_dataset(
     ):
         for k in result.prediction_data.keys():
             assert isinstance(result.prediction_data[k], np.ndarray)
+
+
+@pytest.mark.parametrize("use_inference_mode", [True, False])
+def test__predict_context_manager(
+    use_inference_mode: bool, simple_training: tuple[float, pathlib.Path]
+):
+    _, model_directory = simple_training
+    predictor_setting = PhlowerPredictorSetting(
+        selection_mode="best", use_inference_mode=use_inference_mode
+    )
+    predictor = PhlowerPredictor(
+        model_directory=model_directory, predict_setting=predictor_setting
+    )
+    with predictor._predict_context_manager():
+        assert torch.is_inference_mode_enabled() == use_inference_mode
+        assert not torch.is_grad_enabled()
