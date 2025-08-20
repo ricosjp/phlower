@@ -49,7 +49,7 @@ examples:
 	$(foreach file, \
 		$(wildcard examples/**/main.py), \
 		cd $(shell dirname $(file)); \
-		poetry run python3 main.py; \
+		poetry run python3 main.py || exit 1; \
 		cd -; \
 		)
 

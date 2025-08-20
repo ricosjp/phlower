@@ -239,6 +239,19 @@ class PhlowerShapePattern:
 
         return offset_time + offset_space
 
+    def is_global(self, n_batch: int) -> bool:
+        """
+        Returns True if the batched tensor is from global ones.
+
+        Args:
+            n_batch: int
+                The number of batches.
+
+        Returns:
+            bool: True if the batched tensor is from global ones.
+        """
+        return self.get_n_vertices() == n_batch
+
 
 def _check_shape_and_pattern(shape: torch.Size, patterns: list[str]) -> bool:
     if len(shape) == len(patterns):

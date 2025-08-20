@@ -10,6 +10,9 @@ class ISimulationField(metaclass=abc.ABCMeta):
     def __getitem__(self, name: str) -> PhlowerTensor: ...
 
     @abc.abstractmethod
+    def __contains__(self, name: str) -> bool: ...
+
+    @abc.abstractmethod
     def keys(self): ...
 
     @abc.abstractmethod
@@ -44,6 +47,9 @@ class SimulationField(ISimulationField):
         if name not in self._field_tensors:
             raise KeyError(f"{name} is not found in simulation field.")
         return self._field_tensors[name]
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._field_tensors
 
     def get_batch_info(self, name: str) -> GraphBatchInfo:
         if name not in self._batch_info:
