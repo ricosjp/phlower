@@ -500,7 +500,7 @@ class PhlowerTrainer:
                 )
                 _train_batch_pbar.update(
                     trick=self._setting.training.batch_size,
-                    desc=f"training loss: {train_last_loss:.3f}",
+                    desc=f"training loss: {train_last_loss:.3e}",
                 )
                 train_losses.append(train_last_loss)
                 train_loss_details.append(train_detail_losses)
@@ -664,7 +664,7 @@ def _evaluation(
 
     model.eval()
     for _batch in data_loader:
-        with torch.no_grad():
+        with torch.inference_mode():
             _batch: LumpedTensorData
             h = model.forward(_batch.x_data, field_data=_batch.field_data)
             val_losses = loss_function.calculate(
@@ -682,7 +682,7 @@ def _evaluation(
             results_details.append(val_losses.to_numpy())
         pbar.update(
             trick=_batch.n_data,
-            desc=f"{pbar_title}: {results[-1]:.3f}",
+            desc=f"{pbar_title}: {results[-1]:.3e}",
         )
     return np.average(results), _aggregate_loss_details(results_details)
 
