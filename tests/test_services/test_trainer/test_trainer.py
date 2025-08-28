@@ -23,17 +23,14 @@ _OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
 
 
-@pytest.fixture(scope="module")
-def prepare_sample_preprocessed_files():
+def create_sample_preprocessed_data(output_base_dir: pathlib.Path):
     random.seed(11)
     np.random.seed(11)
-    if _OUTPUT_DIR.exists():
-        shutil.rmtree(_OUTPUT_DIR)
-    _OUTPUT_DIR.mkdir()
-    if _OUTPUT_NAN_DIR.exists():
-        shutil.rmtree(_OUTPUT_NAN_DIR)
+    if output_base_dir.exists():
+        shutil.rmtree(output_base_dir)
+    output_base_dir.mkdir()
 
-    base_preprocessed_dir = _OUTPUT_DIR / "preprocessed"
+    base_preprocessed_dir = output_base_dir / "preprocessed"
     base_preprocessed_dir.mkdir()
 
     n_cases = 3
@@ -41,7 +38,7 @@ def prepare_sample_preprocessed_files():
     for i in range(n_cases):
         n_nodes = 100 * (i + 1)
         preprocessed_dir = base_preprocessed_dir / f"case_{i}"
-        preprocessed_dir.mkdir()
+        preprocessed_dir.mkdir(exist_ok=True)
 
         nodal_initial_u = np.random.rand(n_nodes, 3, 1)
         np.save(
@@ -72,9 +69,18 @@ def prepare_sample_preprocessed_files():
 
         (preprocessed_dir / "preprocessed").touch()
 
-    # Prepare data with NaN values
-    shutil.copytree(_OUTPUT_DIR, _OUTPUT_NAN_DIR)
+
+@pytest.fixture(scope="module")
+def prepare_sample_preprocessed_files():
+    create_sample_preprocessed_data(_OUTPUT_DIR)
+
+
+@pytest.fixture(scope="module")
+def prepare_sample_preprocessed_files_with_nan_values():
+    create_sample_preprocessed_data(_OUTPUT_NAN_DIR)
+
     u_file = _OUTPUT_NAN_DIR / "preprocessed/case_0/nodal_initial_u.npy"
+    assert u_file.exists()
     u = np.load(u_file)
     u[0] = np.nan
     np.save(u_file, u)
@@ -469,7 +475,9 @@ def test__dumped_details_training_log(
 # endregion
 
 
-def test__train_with_raise_nan_detected():
+def test__train_with_raise_nan_detected(
+    prepare_sample_preprocessed_files_with_nan_values: None,
+):
     phlower_path = PhlowerDirectory(_OUTPUT_NAN_DIR)
     preprocessed_directories = list(
         phlower_path.find_directory(
@@ -492,3 +500,108 @@ def test__train_with_raise_nan_detected():
             validation_directories=preprocessed_directories,
             output_directory=output_directory,
         )
+
+
+# region: test for time series sliding window
+
+
+@pytest.fixture(scope="module")
+def prepare_time_sliding_sample_preprocessed_files():
+    output_base_dir = _OUTPUT_DIR
+    random.seed(11)
+    np.random.seed(11)
+    if output_base_dir.exists():
+        shutil.rmtree(output_base_dir)
+    output_base_dir.mkdir()
+
+    base_preprocessed_dir = output_base_dir / "preprocessed"
+    base_preprocessed_dir.mkdir()
+
+    n_cases = 3
+    n_time_series = 10
+    dtype = np.float32
+    for i in range(n_cases):
+        n_nodes = 100 * (i + 1)
+        preprocessed_dir = base_preprocessed_dir / f"case_{i}"
+        preprocessed_dir.mkdir(exist_ok=True)
+
+        nodal_initial_u = np.random.rand(n_time_series, n_nodes, 3, 1)
+        np.save(
+            preprocessed_dir / "nodal_time_series_u.npy",
+            nodal_initial_u.astype(dtype),
+        )
+
+        nodal_u = np.random.rand(n_time_series, n_nodes, 3, 1)
+        np.save(preprocessed_dir / "nodal_u.npy", nodal_u.astype(dtype))
+
+        (preprocessed_dir / "preprocessed").touch()
+
+
+def test__train_with_sliding_window(
+    prepare_time_sliding_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        _SETTINGS_DIR / "train_for_time_series_sliding.yml"
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_sliding_window"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+
+def test__n_call_times_when_time_sliding(
+    prepare_time_sliding_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        _SETTINGS_DIR / "train_for_time_series_sliding.yml"
+    )
+
+    # --- check the setting
+    n_time_series = 10
+    n_offset = 2
+    n_size = 3
+    n_stride = 1
+    # ----
+
+    n_data = len(preprocessed_directories)
+    n_length = 1 + (n_time_series - n_offset - n_size) // n_stride
+    n_expected_called = setting.training.n_epoch * n_data * n_length
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_sliding_window"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    with mock.patch.object(trainer, "_training_batch_step_w_slide") as mocked:
+        mocked.side_effect = lambda x: (0.0, {})
+
+        trainer.train(
+            train_directories=preprocessed_directories,
+            validation_directories=preprocessed_directories,
+            output_directory=output_directory,
+        )
+        assert mocked.call_count == n_expected_called
+
+
+# endregion

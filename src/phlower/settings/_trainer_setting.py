@@ -13,6 +13,9 @@ from phlower.settings._handler_settings import (
     EarlyStoppingSetting,
     HandlerSettingType,
 )
+from phlower.settings._time_series_sliding_setting import (
+    TimeSeriesSlidingSetting,
+)
 from phlower.utils import OptimizerSelector, SchedulerSelector
 from phlower.utils.enums import TrainerInitializeType
 
@@ -226,6 +229,14 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     If True, data is loaded lazily.
     If False, all data is loaded at once.
     Defaults to True.
+    """
+
+    time_series_sliding: TimeSeriesSlidingSetting = Field(
+        default_factory=lambda: TimeSeriesSlidingSetting()
+    )
+    """
+    Setting for sliding window for time series data.
+    Defaults to inactive.
     """
 
     non_blocking: bool = False

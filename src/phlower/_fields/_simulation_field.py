@@ -40,7 +40,7 @@ class SimulationField(ISimulationField):
     def keys(self) -> Iterable[str]:
         return self._field_tensors.keys()
 
-    def items(self) -> ItemsView:
+    def items(self) -> ItemsView[str, PhlowerTensor]:
         return self._field_tensors.items()
 
     def __getitem__(self, name: str) -> PhlowerTensor:

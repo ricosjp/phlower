@@ -25,10 +25,12 @@ from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
+from phlower.services.trainer._sliding_window_helper import SlidingWindowHelper
 from phlower.settings import (
     PhlowerDataSetting,
     PhlowerSetting,
     PhlowerTrainerSetting,
+    SlidingWindowForStage,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
 from phlower.utils.enums import (
@@ -110,6 +112,7 @@ class _EvaluationRunner:
             pbar=train_pbar,
             pbar_title="batch train loss",
             handlers=self._handlers,
+            time_series_sliding=self._trainer_setting.time_series_sliding.training_window_settings,
         )
 
     def _evaluate_validation(
@@ -129,6 +132,7 @@ class _EvaluationRunner:
             pbar=validation_pbar,
             pbar_title="batch val loss",
             handlers=self._handlers,
+            time_series_sliding=self._trainer_setting.time_series_sliding.validation_window_settings,
         )
 
 
@@ -354,6 +358,20 @@ class PhlowerTrainer:
         return train_loader, validation_loader
 
     def _training_batch_step(
+        self, tr_batch: LumpedTensorData
+    ) -> tuple[float, dict[str, float]]:
+        helper = SlidingWindowHelper(
+            tr_batch,
+            self._setting.training.time_series_sliding.training_window_settings,
+        )
+        assert len(helper) > 0, "No sliding windows are generated."
+        for _slided_batch in helper:
+            last_loss, detached_losses = self._training_batch_step_w_slide(
+                _slided_batch
+            )
+        return last_loss, detached_losses
+
+    def _training_batch_step_w_slide(
         self, tr_batch: LumpedTensorData
     ) -> tuple[float, dict[str, float]]:
         self._scheduled_optimizer.zero_grad()
@@ -658,30 +676,37 @@ def _evaluation(
     pbar: PhlowerProgressBar,
     pbar_title: str,
     handlers: PhlowerHandlersRunner,
+    time_series_sliding: SlidingWindowForStage,
 ) -> tuple[float, dict[str, float] | None]:
     results: list[float] = []
     results_details: list[dict[str, np.ndarray]] = []
 
     model.eval()
-    for _batch in data_loader:
+    for batch in data_loader:
+        batch: LumpedTensorData
+        helper = SlidingWindowHelper(
+            batch,
+            time_series_sliding,
+        )
+
         with torch.inference_mode():
-            _batch: LumpedTensorData
-            h = model.forward(_batch.x_data, field_data=_batch.field_data)
-            val_losses = loss_function.calculate(
-                h,
-                _batch.y_data,
-                batch_info_dict=_batch.y_batch_info,
-            )
-            val_loss = loss_function.aggregate(val_losses)
-            detached_val_loss = val_loss.detach().to_tensor().float().item()
-            handlers.run(
-                detached_val_loss,
-                trigger=PhlowerHandlerTrigger.iteration_completed,
-            )
-            results.append(val_loss.detach().to_tensor().float().item())
-            results_details.append(val_losses.to_numpy())
+            for _batch in helper:
+                h = model.forward(_batch.x_data, field_data=_batch.field_data)
+                val_losses = loss_function.calculate(
+                    h,
+                    _batch.y_data,
+                    batch_info_dict=_batch.y_batch_info,
+                )
+                val_loss = loss_function.aggregate(val_losses)
+                detached_val_loss = val_loss.detach().to_tensor().float().item()
+                handlers.run(
+                    detached_val_loss,
+                    trigger=PhlowerHandlerTrigger.iteration_completed,
+                )
+                results.append(val_loss.detach().to_tensor().float().item())
+                results_details.append(val_losses.to_numpy())
         pbar.update(
-            trick=_batch.n_data,
+            trick=batch.n_data,
             desc=f"{pbar_title}: {results[-1]:.3e}",
         )
     return np.average(results), _aggregate_loss_details(results_details)
