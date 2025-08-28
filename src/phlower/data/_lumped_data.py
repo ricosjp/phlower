@@ -23,7 +23,7 @@ class LumpedTensorData:
     def __init__(
         self,
         x_data: IPhlowerTensorCollections,
-        field_data: IPhlowerTensorCollections,
+        field_data: IPhlowerTensorCollections | SimulationField,
         data_directories: list[PhlowerDirectory] | None = None,
         y_data: IPhlowerTensorCollections | None = None,
         x_batch_info: dict[str, GraphBatchInfo] | None = None,
@@ -37,9 +37,12 @@ class LumpedTensorData:
         self.x_batch_info = x_batch_info
         self.y_batch_info = y_batch_info
 
-        self.field_data = SimulationField(
-            field_tensors=field_data, batch_info=field_batch_info
-        )
+        if isinstance(field_data, SimulationField):
+            self.field_data = field_data
+        else:
+            self.field_data = SimulationField(
+                field_tensors=field_data, batch_info=field_batch_info
+            )
 
     @property
     def n_data(self) -> int:
