@@ -168,7 +168,12 @@ class PhlowerTrainer:
         ph_directory = PhlowerDirectory(model_directory)
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
         setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
-        trainer = cls.from_setting(setting)
+
+        # initialize model
+        setting.model.resolve()
+        trainer = PhlowerTrainer(setting)
+
+        # reinit for restart
         trainer._reinit_for_restart(model_directory, decrypt_key=decrypt_key)
         return trainer
 
@@ -660,7 +665,8 @@ class PhlowerTrainer:
         if self._setting.training.n_epoch == self._start_epoch:
             raise PhlowerRestartTrainingCompletedError(
                 "Checkpoint at last epoch exists. "
-                "Model to restart has already finished"
+                "Model to restart has already finished. "
+                f"{self._setting.training.n_epoch} epochs."
             )
 
         # self.loss = checkpoint['loss']

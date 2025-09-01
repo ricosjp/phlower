@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 import yaml
-from phlower.io import PhlowerDirectory, select_snapshot_file
+from phlower.io import PhlowerDirectory, PhlowerYamlFile, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
 from phlower.utils.exceptions import (
@@ -230,6 +230,38 @@ def test__last_epoch_is_update_after_restart(
     for v in df.loc[:, "elapsed_time"]:
         assert v > _prev
         _prev = v
+
+
+def test__not_recursive_load_restart_setting(
+    simple_training: float,
+):
+    dummy_reference_directory = _OUTPUT_DIR / "dummy_model"
+    if dummy_reference_directory.exists():
+        shutil.rmtree(dummy_reference_directory)
+    shutil.copytree(_OUTPUT_DIR / "model", dummy_reference_directory)
+
+    with open(_SETTINGS_DIR / "train.yml") as fr:
+        content = yaml.load(fr, Loader=yaml.SafeLoader)
+    content["training"]["n_epoch"] = 15
+    content["training"]["initializer_setting"] = {
+        "type_name": "restart",
+        "reference_directory": "dummy",
+    }
+    PhlowerYamlFile.save(
+        dummy_reference_directory,
+        "model",
+        content,
+        allow_overwrite=True,
+    )
+
+    with mock.patch.object(
+        PhlowerTrainer,
+        "restart_from",
+        wraps=PhlowerTrainer.restart_from,
+    ) as mocked_reinit:
+        _ = PhlowerTrainer.restart_from(dummy_reference_directory)
+
+        assert mocked_reinit.call_count == 1
 
 
 @pytest.fixture

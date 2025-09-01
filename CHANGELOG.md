@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.
 * Display details of losses at training process.
 
+### Fixed
+* Fix `restart` method not to load recursively previous restarted checkpoints.
+
 
 ## [0.2.2] - 2025-06-12
 
