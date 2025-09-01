@@ -378,6 +378,16 @@ def test__scalar_div_tensor(
     assert cp.dimension == phlower_dimension_tensor(desired_dim)
 
 
+def test__exp():
+    a = torch.tensor(np.random.rand(3, 10))
+    c = np.exp(a)
+
+    ap = phlower_tensor(a)
+    cp = torch.exp(ap)
+
+    np.testing.assert_array_almost_equal(cp.to_tensor(), c)
+
+
 def test__tanh():
     a = torch.tensor(np.random.rand(3, 10))
     c = np.tanh(a)
@@ -620,6 +630,29 @@ def test__stack_operation(
 
     torch_tensor = torch.stack([a.to_tensor(), b.to_tensor()], dim=dim)
     assert stacked_pht.shape == torch_tensor.shape
+
+
+@pytest.mark.parametrize("op", [torch.max, torch.min])
+@pytest.mark.parametrize("dim", [0, -1])
+@pytest.mark.parametrize("shape", [(2, 4), (2, 3, 4)])
+@pytest.mark.parametrize("dimension", [None, {"L": 3}])
+def test__min_max_operation_with_dim(
+    op: callable,
+    dim: int,
+    shape: tuple[int],
+    dimension: dict[str, int] | None,
+):
+    torch_tensor = torch.rand(shape)
+    tensor = phlower_tensor(torch_tensor, dimension=dimension)
+    ret = op(tensor, dim=dim)
+    desired = op(torch_tensor, dim=dim)
+    assert ret.values.dimension == tensor.dimension
+    np.testing.assert_almost_equal(ret.values.numpy(), desired.values.numpy())
+    np.testing.assert_almost_equal(ret.indices.numpy(), desired.indices.numpy())
+    if dimension is None:
+        assert ret.indices.dimension is None
+    else:
+        assert ret.indices.dimension.is_dimensionless
 
 
 # region Test for __getitem__

@@ -5,6 +5,9 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
+from phlower.io import PhlowerDirectory
+from phlower.services.trainer import PhlowerTrainer
+from phlower.settings import PhlowerSetting
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +23,7 @@ def prepare_sample_preprocessed_files_fixture() -> pathlib.Path:
     base_preprocessed_dir = output_base_directory / "preprocessed"
     base_preprocessed_dir.mkdir()
 
-    n_cases = 3
+    n_cases = 4
     dtype = np.float32
     for i in range(n_cases):
         n_nodes = 100 * (i + 1)
@@ -47,3 +50,31 @@ def prepare_sample_preprocessed_files_fixture() -> pathlib.Path:
         (preprocessed_dir / "preprocessed").touch()
 
     return output_base_directory
+
+
+@pytest.fixture(scope="module")
+def simple_training(
+    prepare_sample_preprocessed_files_fixture: pathlib.Path,
+) -> pathlib.Path:
+    output_dir = prepare_sample_preprocessed_files_fixture
+    phlower_path = PhlowerDirectory(output_dir)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/train.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = output_dir / "model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return output_directory

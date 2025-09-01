@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import numpy as np
 import torch
 from typing_extensions import Self
 
+from phlower._base._functionals import unbatch
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import (
@@ -20,7 +20,6 @@ from phlower.nn._interface_module import (
     IReadonlyReferenceGroup,
 )
 from phlower.settings._module_settings import SimilarityEquivariantMLPSetting
-from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import (
     PhlowerDimensionRequiredError,
     PhlowerInvalidArgumentsError,
@@ -36,6 +35,10 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ----------
     nodes: list[int]
         List of feature dimension sizes (The last value of tensor shape).
+    scale_names: dict[str, str]
+        Name of scales to be used to convert input features to dimensionless.
+        Keys should be PhysicalDimensionSymbolType (T, L, M, ...) and values
+        should be names of fields.
     activations: list[str] | None (optional)
         List of activation functions to apply to the output.
         Defaults to None.
@@ -57,11 +60,23 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Whether to center the output.
     coeff_amplify: float
         Coefficient to amplify the output.
+    cross_interaction: bool
+        If True, use interaction layer proposed by
+        https://arxiv.org/abs/2203.06442.
+    normalize: bool
+        If True, use eq (12) in https://arxiv.org/abs/2203.06442 when
+        cross_interaction is True.
+    unbatch: bool
+        If True, perform unbatching. Set False when you call this module
+        from another module which perform unbaching. Note that this option
+        cannot be set from yaml.
+        Default: True
 
     Examples
     --------
     >>> similarity_equivariant_mlp = SimilarityEquivariantMLP(
     ...     nodes=[10, 20, 30],
+    ...     scale_names={"T": "time", "L": "length"},
     ...     activations=["relu", "relu", "relu"],
     ...     dropouts=[0.1, 0.1, 0.1],
     ...     bias=True,
@@ -71,8 +86,10 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     invariant=False,
     ...     centering=False,
     ...     coeff_amplify=1.0,
+    ...     cross_interaction=False,
+    ...     normalize=True,
     ... )
-    >>> similarity_equivariant_mlp(data)
+    >>> similarity_equivariant_mlp(data, field_data=field_data)
     """
 
     @classmethod
@@ -103,6 +120,7 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     def __init__(
         self,
         nodes: list[int],
+        scale_names: dict[str, str],
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
         bias: bool = True,
@@ -112,15 +130,20 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         invariant: bool = False,
         centering: bool = False,
         coeff_amplify: float = 1.0,
+        cross_interaction: bool = False,
+        normalize: bool = True,
+        unbatch: bool = True,
     ) -> None:
         super().__init__()
 
         self._nodes = nodes
+        self._scale_names = scale_names
         self._disable_en_equivariance = disable_en_equivariance
         self._invariant = invariant
         self._centering = centering
         self._create_linear_weight = create_linear_weight
         self._coeff_amplify = coeff_amplify
+        self._unbatch = unbatch
 
         if self._disable_en_equivariance:
             self._mlp = MLP(
@@ -138,6 +161,8 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
                 bias=bias,
                 create_linear_weight=create_linear_weight,
                 norm_function_name=norm_function_name,
+                cross_interaction=cross_interaction,
+                normalize=normalize,
             )
             self._linear_weight = self._mlp._linear_weight
 
@@ -164,7 +189,6 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField | None = None,
-        dict_scales: dict[str, PhlowerTensor | float] | None = None,
         **kwards,
     ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
@@ -178,22 +202,38 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
+        if field_data is None:
+            raise PhlowerInvalidArgumentsError("Field data is required")
+
         h = data.unique_item()
+
         if not h.has_dimension:
             raise PhlowerDimensionRequiredError("Dimension is required")
-        if dict_scales is None or len(data) < 1:
-            raise PhlowerInvalidArgumentsError(
-                f"Scale inputs are required. Given: {dict_scales}, {kwards}"
+
+        if self._unbatch:
+            # NOTE: Assume length scale is always fed
+            n_nodes = field_data.get_batched_n_nodes(self._scale_names["L"])
+            unbatched_h = unbatch(h, n_nodes=n_nodes)
+            unbatched_field = unbatch(field_data, n_nodes=n_nodes)
+            return torch.cat(
+                [
+                    self._forward(_h, field_data=_f)
+                    for _h, _f in zip(unbatched_h, unbatched_field, strict=True)
+                ],
+                dim=0,
             )
-        if not np.all(
-            [
-                PhysicalDimensionSymbolType.is_exist(k)
-                for k in dict_scales.keys()
-            ]
-        ):
+        return self._forward(h, field_data=field_data)
+
+    def _forward(
+        self, h: PhlowerTensor, field_data: ISimulationField
+    ) -> PhlowerTensor:
+        dict_scales = {
+            scale_name: field_data[field_name]
+            for scale_name, field_name in self._scale_names.items()
+        }
+        if len(dict_scales) == 0:
             raise PhlowerInvalidArgumentsError(
-                "keys in dict_scales should be in "
-                "PhysicalDimensionSymbolType. Given: {dict_scales.keys()}"
+                f"Scale inputs are required in fields. Given: {field_data}"
             )
         dict_dimension = h.dimension.to_dict()
 
@@ -206,14 +246,14 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
             h = _functions.tensor_times_scalar(h, 1 / v)
 
         if self._centering:
-            volume = dict_dimension["L"] ** 3
-            mean = _functions.spatial_mean(
-                _functions.tensor_times_scalar(h, volume)
-            )
+            volume = dict_scales["L"] ** 3
+            mean = _functions.spatial_mean(h, volume)
             h = h - mean
 
         h = self._mlp(phlower_tensor_collection({"h": h * self._coeff_amplify}))
-        assert h.dimension.is_dimensionless
+        assert (
+            h.dimension.is_dimensionless
+        ), f"Feature cannot be converted to dimensionless: {h.dimension}"
 
         if self._centering:
             linear_mean = self._linear_weight(

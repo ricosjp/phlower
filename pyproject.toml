@@ -1,6 +1,6 @@
 [project]
 name = "phlower"
-version = "0.2.2-dev0"
+version = "0.2.2-dev1"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
 license="Apache-2.0"
 readme = "README.md"
@@ -55,7 +55,11 @@ addopts = [
 markers = [
     "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')",
     "gpu_test: marks tests as test using GPUs (deselect with '-m not gpu_test')",
-    "need_multicore: marks tests which need multiple cores"
+    "need_multicore: marks tests which need multiple cores",
+    "need_multigpu: marks tests which need multiple GPUs"
+]
+env = [
+    "NCCL_DEBUG=INFO",
 ]
 
 [build-system]
@@ -63,7 +67,7 @@ requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-include = ["pyproject.toml", "src/**/*.py", "tests/**/*.py"]
+include = ["pyproject.toml", "src/**/*.py", "tests/**/*.py", "examples/**/*.py"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [

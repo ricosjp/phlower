@@ -1,6 +1,8 @@
 import pathlib
 
 import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
 from tqdm import tqdm
 
 from phlower.io import PhlowerCheckpointFile
@@ -33,6 +35,9 @@ class LoggingRunner:
         tqdm.write(f"{torch.cuda.is_available()=}")
         tqdm.write(f"Log every {self._log_every_n_epoch} epoch")
         tqdm.write(f"Output directory: {self._output_directory}")
+        if dist.is_initialized():
+            tqdm.write(f"World size: {dist.get_world_size()}")
+            tqdm.write(f"Rank: {dist.get_rank()}")
         tqdm.write("-------------------------------")
         tqdm.write(self._record_io.get_header())
 
@@ -83,11 +88,14 @@ class LoggingRunner:
         self,
         info: AfterEvaluationOutput,
         *,
-        model: PhlowerGroupModule,
+        model: PhlowerGroupModule | DistributedDataParallel,
         scheduled_optimizer: PhlowerOptimizerWrapper,
         handlers: PhlowerHandlersRunner,
         encrypt_key: bytes | None = None,
     ) -> None:
+        if isinstance(model, DistributedDataParallel):
+            model = model.module
+
         data = {
             "epoch": info.epoch,
             "validation_loss": info.validation_eval_loss,

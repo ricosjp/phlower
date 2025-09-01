@@ -51,7 +51,7 @@ class AfterEvaluationOutput(NamedTuple):
 T = TypeVar("T", AfterEvaluationOutput, float)
 
 
-class PhlowerHandlerType(Generic[T], metaclass=abc.ABCMeta):
+class IPhlowerHandler(Generic[T], metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __call__(self, output: T) -> dict[str, Any]:
         """Run handler's program. If output dictionary conatins "TERMINATE" and

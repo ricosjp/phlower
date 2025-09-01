@@ -36,6 +36,12 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Whether to create a linear weight. Default is False.
     norm_function_name: str
         Name of the normalization function to apply to the output.
+    cross_interaction: bool
+        If True, use interaction layer proposed by
+        https://arxiv.org/abs/2203.06442.
+    normalize: bool
+        If True, use eq (12) in https://arxiv.org/abs/2203.06442 when
+        cross_interaction is True.
 
     Examples
     --------
@@ -45,7 +51,10 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
     ...     dropouts=[0.1, 0.1, 0.1],
     ...     bias=True,
     ...     create_linear_weight=True,
-    ...     norm_function_name="identity")
+    ...     norm_function_name="identity",
+    ...     cross_interaction=False,
+    ...     normalize=True,
+    ... )
     >>> en_equivariant_mlp(data)
     """
 
@@ -82,6 +91,8 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         bias: bool = True,
         create_linear_weight: bool = False,
         norm_function_name: str = "identity",
+        cross_interaction: bool = False,
+        normalize: bool = True,
     ) -> None:
         super().__init__()
 
@@ -90,9 +101,22 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         if dropouts is None:
             dropouts = []
 
-        self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
-        )
+        self._cross_interaction = cross_interaction
+        self._normalize = normalize
+        if self._cross_interaction:
+            self._chains = _utils.ExtendedLinearList(
+                nodes=[n**2 for n in nodes],
+                activations=activations,
+                dropouts=dropouts,
+                bias=bias,
+            )
+        else:
+            self._chains = _utils.ExtendedLinearList(
+                nodes=nodes,
+                activations=activations,
+                dropouts=dropouts,
+                bias=bias,
+            )
         self._nodes = nodes
         self._activations = activations
         self._create_linear_weight = create_linear_weight
@@ -102,6 +126,11 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         self._norm_function = _utils.ActivationSelector.select(
             self._norm_function_name
         )
+        if self._cross_interaction and self._norm_function_name == "sqrt":
+            raise ValueError(
+                "Cannot set norm_function_name to sqrt when "
+                "cross_interaction is True."
+            )
 
     def _init_linear_weight(self) -> Identity | Proportional:
         if not self._create_linear_weight:
@@ -139,6 +168,59 @@ class EnEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
+        if self._cross_interaction:
+            return self._forward_w_cross_interaction(data)
+
+        return self._forward_wo_cross_interaction(data)
+
+    def _forward_w_cross_interaction(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField | None = None,
+        **kwards,
+    ) -> PhlowerTensor:
+        x = data.unique_item()
+
+        linear_x = self._linear_weight(data)
+
+        inner_product = _functions.inner_product(x)
+        if self._normalize:
+            norm = (
+                torch.sqrt(
+                    _functions.einsum(
+                        "...f,...f->...",
+                        inner_product,
+                        inner_product,
+                        dimension=inner_product.dimension,
+                        is_time_series=inner_product.is_time_series,
+                        is_voxel=inner_product.is_voxel,
+                    )
+                )[..., None]
+                + 1e-5
+            )
+            inner_product = inner_product / norm
+
+        h = self._chains(self._norm_function(inner_product)).rearrange(
+            "... (f g) -> ... f g", f=self._nodes[-1]
+        )
+        components = "cdefghijklmnopqrstuvwxyz"[: x.rank()]
+        return _functions.einsum(
+            f"...{components}a,...ab->...{components}b",
+            linear_x,
+            h,
+            dimension=x.dimension,
+            is_time_series=x.is_time_series,
+            is_voxel=x.is_voxel,
+        )
+
+    def _forward_wo_cross_interaction(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField | None = None,
+        **kwards,
+    ) -> PhlowerTensor:
         x = data.unique_item()
         linear_x = self._linear_weight(data)
         h = self._chains(self._norm_function(_functions.contraction(x)))

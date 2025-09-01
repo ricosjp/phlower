@@ -1,0 +1,63 @@
+
+training:
+  batch_size: 1
+  random_seed: 0
+  n_epoch: 10
+  loss_setting:
+    name2loss:
+      u: "mse"
+  optimizer_setting:
+    optimizer: SGD
+    parameters:
+      lr: 0.0001
+  handler_settings:
+    - handler: EarlyStopping
+      parameters:
+        patience: 10
+  time_series_sliding:
+    validation_same_as_training: false  # This can be omitted since the default is false
+    training_window_settings: 
+      inputs:
+        offset: 2
+        size: 3
+        stride: 1
+      labels:
+        offset: 2
+        size: 3
+        stride: 1
+    validation_window_settings: 
+      is_active: false
+
+
+model:
+  inputs:
+    - name: nodal_u
+      is_time_series: true
+      members:
+        - name: nodal_time_series_u
+          n_last_dim: 1
+    
+  labels:
+    - name: u
+      is_time_series: true
+      members:
+        - name: nodal_u
+          n_last_dim: 1
+
+  network:
+    nn_type: GROUP
+    name: DEMO    
+    outputs:
+      - name: u
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - nodal_u
+        output_key: u
+        nn_parameters:
+          nodes: [-1, 16, 1]
+          activations: ["tanh", "tanh"]
+

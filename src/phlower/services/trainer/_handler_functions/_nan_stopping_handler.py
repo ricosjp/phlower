@@ -8,10 +8,10 @@ from phlower.utils.enums import (
     PhlowerHandlerTrigger,
 )
 from phlower.utils.exceptions import PhlowerNaNDetectedError
-from phlower.utils.typing import PhlowerHandlerType
+from phlower.utils.typing import IPhlowerHandler
 
 
-class NaNStoppingHandler(PhlowerHandlerType[float]):
+class NaNStoppingHandler(IPhlowerHandler[float]):
     """NaNStoppingHandler handler raises PhlowerNaNDetectedError when loss
     has NaN values.
     """

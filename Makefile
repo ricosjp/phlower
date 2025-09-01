@@ -44,6 +44,16 @@ lint:
 	# $(MAKE) mypy
 
 
+.PHONY: examples
+examples:
+	$(foreach file, \
+		$(wildcard examples/**/main.py), \
+		cd $(shell dirname $(file)); \
+		poetry run python3 main.py || exit 1; \
+		cd -; \
+		)
+
+
 .PHONY: document
 document:
 	rm -rf docs/build || true

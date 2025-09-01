@@ -39,6 +39,14 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     """
 
     non_blocking: bool = False
+    """
+    If True, the data transfer is non-blocking. Defaults to False.
+    """
+
+    pin_memory: bool = False
+    """
+    If True, the data loader uses pin_memory. Defaults to False.
+    """
 
     random_seed: int = 0
     """
@@ -57,6 +65,11 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     and the value is the name of variable which has the scaler to use.
     Defaults to empty dictionary, relationship between output variable
      and scaler is assumed to be the same as that of label variables.
+    """
+
+    use_inference_mode: bool = True
+    """
+    If True, use torch.inference_mode() for prediction. Defaults to True.
     """
 
     # special keyward to forbid extra fields in pydantic

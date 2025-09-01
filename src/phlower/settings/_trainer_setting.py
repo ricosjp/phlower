@@ -2,17 +2,26 @@ from __future__ import annotations
 
 import pathlib
 from collections.abc import Iterable
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import pydantic
 import pydantic.dataclasses as dc
+import torch
 from pydantic import Field
+from typing_extensions import Self
 
 from phlower.settings._handler_settings import (
     EarlyStoppingSetting,
     HandlerSettingType,
 )
-from phlower.utils import OptimizerSelector, SchedulerSelector
+from phlower.settings._time_series_sliding_setting import (
+    TimeSeriesSlidingSetting,
+)
+from phlower.utils import (
+    OptimizerSelector,
+    SchedulerSelector,
+    determine_max_process,
+)
 from phlower.utils.enums import TrainerInitializeType
 
 
@@ -152,6 +161,59 @@ class TrainerInitializerSetting(pydantic.BaseModel):
         return str(value)
 
 
+class ParallelSetting(pydantic.BaseModel):
+    is_active: bool = False
+    """
+    If True, parallel processing is activated. Defaults to False.
+    """
+    parallel_type: Literal["DDP"] = "DDP"
+    """
+    Parallel processing type. Currently, only DDP is supported.
+    """
+
+    world_size: int = 1
+    """
+    Number of processes to use. Defaults to 1.
+    """
+
+    backend: Literal["nccl", "gloo"] = "nccl"
+    """
+    Backend to use. Defaults to nccl.
+    """
+
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    @pydantic.model_validator(mode="after")
+    def check_n_processes_and_gpus(self) -> Self:
+        if not self.is_active:
+            return self
+
+        if self.parallel_type != "DDP":
+            raise ValueError(
+                f"Unsupported parallel_type {self.parallel_type}. "
+                "Currently, only ddp is supported."
+            )
+
+        if self.backend == "gloo":
+            return self
+
+        n_gpus = torch.cuda.device_count()
+        if n_gpus < self.world_size:
+            raise ValueError(
+                f"n_gpus {self.world_size} is larger than "
+                f"available gpus {n_gpus}"
+            )
+
+        n_processes = determine_max_process()
+        if n_processes < self.world_size:
+            raise ValueError(
+                f"n_gpus {self.world_size} is larger than "
+                f"available processes {n_processes}"
+            )
+
+        return self
+
+
 class PhlowerTrainerSetting(pydantic.BaseModel):
     loss_setting: LossSetting = Field(
         default_factory=lambda: LossSetting(name2loss={})
@@ -199,7 +261,8 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
 
     device: str = "cpu"
     """
-    device name. Defaults to cpu
+    device name. Defaults to cpu. When auto is set, device is automatically
+    set to gpu when available, otherwise cpu.
     """
 
     evaluation_for_training: bool = True
@@ -226,7 +289,32 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     Defaults to True.
     """
 
+    time_series_sliding: TimeSeriesSlidingSetting = Field(
+        default_factory=lambda: TimeSeriesSlidingSetting()
+    )
+    """
+    Setting for sliding window for time series data.
+    Defaults to inactive.
+    """
+
+    parallel_setting: ParallelSetting = Field(
+        default_factory=lambda: ParallelSetting(is_active=False)
+    )
+    """
+    Setting for parallel processing
+    """
+
     non_blocking: bool = False
+    """
+    If True, non_blocking transfer is used when data is transferred to device.
+    Defaults to False.
+    """
+
+    pin_memory: bool = False
+    """
+    If True, pin_memory is used in DataLoader.
+    Defaults to False.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
@@ -240,3 +328,26 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
             return setting.get_patience()
 
         return None
+
+    @pydantic.field_validator("device", mode="before")
+    @classmethod
+    def _resolve_device(cls, device: str) -> str:
+        if device != "auto":
+            return device
+
+        if torch.cuda.is_available():
+            return "cuda:0"
+
+        return "cpu"
+
+    def get_device(self, rank: int | None = None) -> torch.device:
+        if self.parallel_setting.is_active:
+            if self.parallel_setting.backend == "gloo":
+                return torch.device("cpu")
+            if rank is None:
+                raise ValueError(
+                    "rank must be specified in parallel processing"
+                )
+            return torch.device(f"cuda:{rank}")
+
+        return torch.device(self.device)

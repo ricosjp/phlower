@@ -1,0 +1,67 @@
+
+training:
+  batch_size: 1
+  random_seed: 0
+  device: "cuda:0"
+  loss_setting:
+    name2loss:
+      nodal_last_u: "mse"
+  optimizer_setting:
+    optimizer: SGD
+    parameters:
+      lr: 0.0001
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+  parallel_setting:
+    is_active: true
+    world_size: 2
+
+model:
+  inputs:
+    - name: nodal_initial_u
+      physical_dimension: {"L": 1, "T": -1}
+  labels:
+    - name: nodal_last_u
+      physical_dimension: {"L": 1, "T": -1}
+  
+  fields:
+    - name: "nodal_nadj"
+      physical_dimension: {}
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: nodal_initial_u
+        n_last_dim: 1
+    
+    outputs:
+      - name: nodal_last_u
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - nodal_initial_u
+        destinations:
+          - Reducer0
+        nn_parameters:
+          nodes: [-1, 16, 1]
+          activations: ["identity", "identity"]
+          bias: False
+
+      - name: Share0
+        nn_type: Share
+        destinations:
+          - Reducer0
+        nn_parameters:
+          reference_name: MLP0
+      
+      - name: Reducer0
+        nn_type: Reducer
+        output_key: nodal_last_u
+        nn_parameters:
+          operator: add
+

@@ -52,7 +52,7 @@ def test__save_and_load(setup_test_dir: pathlib.Path):
 
     assert saved_path.file_path.exists()
 
-    loaded_data = saved_path.load(device="cpu")
+    loaded_data = saved_path.load(map_location="cpu")
     np.testing.assert_array_almost_equal(loaded_data, sample_tensor)
 
 
@@ -70,7 +70,9 @@ def test__save_encrypted_and_load(setup_test_dir: pathlib.Path):
 
     assert saved_path.file_path.exists()
 
-    loaded_data = saved_path.load(device="cpu", decrypt_key=TEST_ENCRYPT_KEY)
+    loaded_data = saved_path.load(
+        map_location="cpu", decrypt_key=TEST_ENCRYPT_KEY
+    )
     np.testing.assert_array_almost_equal(loaded_data, sample_tensor)
 
 
@@ -88,8 +90,8 @@ def test__cannnot_load_without_key(setup_test_dir: pathlib.Path):
 
     assert saved_path.file_path.exists()
 
-    with pytest.raises(ValueError):
-        _ = saved_path.load(device="cpu")
+    with pytest.raises(ValueError, match="Feed key to load encrypted model"):
+        _ = saved_path.load(map_location="cpu")
 
 
 def test__save_not_allowed_overwrite(setup_test_dir: pathlib.Path):

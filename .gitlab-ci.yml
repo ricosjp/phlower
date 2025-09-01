@@ -67,8 +67,19 @@ gpu_test:
 e2e_test:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
   stage: test
+  variables:
+    NCCL_DEBUG: "INFO"
   script:
     - make e2e_test
+  tags:
+    - multi-gpu
+    - GenuineIntel
+
+examples:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
+  stage: test
+  script:
+    - make examples
   tags:
     - gpu
     - GenuineIntel

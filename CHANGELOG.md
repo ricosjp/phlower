@@ -11,10 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `attach_handler` method to `PhlowerTrainer` to add an extra handler at training process.
 * Add `lazy_load` parameter to `TrainingSetting` to load data lazily.
 * When `time_series_length` is -1, `PhlowerGroupModule` determines the time series length automatically from the input data.
+* Add `NaNStoppingHandler` to stop training when loss becomes NaN.
+* Add sliding window method for time series data in training process.
+* Add distributed data parallel (DDP) training.
 
 ### Changed
 * Time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.
 * Display details of losses at training process.
+* Default inference mode is changed to `torch.inference_mode` from `torch.no_grad`.
+
+### Fixed
+* Fix `restart` method not to load recursively previous restarted checkpoints.
 
 
 ## [0.2.2] - 2025-06-12

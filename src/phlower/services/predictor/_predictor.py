@@ -4,6 +4,7 @@ import pathlib
 from collections.abc import Iterator
 from typing import Literal, overload
 
+import torch
 from torch.utils.data import DataLoader
 
 from phlower._base import IPhlowerArray
@@ -109,6 +110,11 @@ class PhlowerPredictor:
             target_epoch=self._predict_setting.target_epoch,
             decrypt_key=decrypt_key,
         )
+
+        if self._predict_setting.use_inference_mode:
+            self._predict_context_manager = torch.inference_mode
+        else:
+            self._predict_context_manager = torch.no_grad
 
     def _determine_label_key_map(self) -> dict[str, str]:
         to_scaler_name: dict[str, str] = {}
@@ -293,6 +299,7 @@ class PhlowerPredictor:
         builder = DataLoaderBuilder.from_setting(self._predict_setting)
         data_loader = builder.create(
             dataset,
+            device=self._predict_setting.device,
             disable_dimensions=disable_dimensions,
             shuffle=False,
         )
@@ -338,7 +345,12 @@ class PhlowerPredictor:
 
             # HACK: Need to unbatch ?
             assert batch.n_data == 1
-            h = self._model.forward(batch.x_data, field_data=batch.field_data)
+            with self._predict_context_manager():
+                self._model.eval()
+                h = self._model.forward(
+                    batch.x_data,
+                    field_data=batch.field_data,
+                )
 
             if return_only_prediction:
                 yield PhlowerPredictionResult(prediction_data=h)
@@ -360,7 +372,12 @@ class PhlowerPredictor:
         for batch in data_loader:
             batch: LumpedTensorData
 
-            h = self._model.forward(batch.x_data, field_data=batch.field_data)
+            with self._predict_context_manager():
+                self._model.eval()
+                h = self._model.forward(
+                    batch.x_data,
+                    field_data=batch.field_data,
+                )
             h = h.to_phlower_arrays_dict()
             _logger.info("Finished prediction")
 
@@ -444,7 +461,7 @@ def _load_model(
         checkpoint_file=select_snapshot_file(
             model_directory, selection_mode, target_epoch=target_epoch
         ),
-        device=device,
+        map_location=device,
         decrypt_key=decrypt_key,
     )
     if device is not None:
