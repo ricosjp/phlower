@@ -1,39 +1,9 @@
 import pathlib
-import shutil
 
 import pytest
 from phlower.io import PhlowerDirectory
 from phlower.services.predictor import PhlowerPredictor
-from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
-
-
-@pytest.fixture(scope="module")
-def simple_training(
-    prepare_sample_preprocessed_files_fixture: pathlib.Path,
-) -> pathlib.Path:
-    output_dir = prepare_sample_preprocessed_files_fixture
-    phlower_path = PhlowerDirectory(output_dir)
-
-    preprocessed_directories = list(
-        phlower_path.find_directory(
-            required_filename="preprocessed", recursive=True
-        )
-    )
-
-    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/train.yml")
-
-    trainer = PhlowerTrainer.from_setting(setting)
-    output_directory = output_dir / "model"
-    if output_directory.exists():
-        shutil.rmtree(output_directory)
-
-    _ = trainer.train(
-        train_directories=preprocessed_directories,
-        validation_directories=preprocessed_directories,
-        output_directory=output_directory,
-    )
-    return output_directory
 
 
 @pytest.mark.e2e_test

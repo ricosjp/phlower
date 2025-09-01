@@ -93,25 +93,42 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
     def is_encrypted(self) -> bool:
         return self._ext_type == PhlowerFileExtType.PTHENC
 
-    def load(self, device: str, *, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
+    def load(
+        self,
+        map_location: str | dict,
+        weights_only: bool = False,
+        *,
+        decrypt_key: bytes = None,
+    ) -> Any:  # noqa: ANN401
         if self.is_encrypted:
-            return self._load_encrypted(device=device, decrypt_key=decrypt_key)
+            return self._load_encrypted(
+                map_location=map_location,
+                weights_only=weights_only,
+                decrypt_key=decrypt_key,
+            )
         else:
-            return self._load(device=device)
+            return self._load(
+                map_location=map_location, weights_only=weights_only
+            )
 
-    def _load(self, device: str) -> Any:  # noqa: ANN401
-        return torch.load(self._path, weights_only=False, map_location=device)
+    def _load(self, map_location: str | dict, weights_only: bool) -> Any:  # noqa: ANN401
+        return torch.load(
+            self._path, weights_only=weights_only, map_location=map_location
+        )
 
     def _load_encrypted(
-        self, device: str, decrypt_key: bytes | None = None
+        self,
+        map_location: str | dict,
+        weights_only: bool,
+        decrypt_key: bytes | None = None,
     ) -> dict:
         if decrypt_key is None:
             raise ValueError("Feed key to load encrypted model")
 
         checkpoint = torch.load(
             utils.decrypt_file(decrypt_key, self._path),
-            weights_only=False,
-            map_location=device,
+            weights_only=weights_only,
+            map_location=map_location,
         )
         return checkpoint
 

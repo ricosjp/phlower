@@ -310,10 +310,15 @@ class PhlowerGroupModule(
     def load_checkpoint_file(
         self,
         checkpoint_file: IPhlowerCheckpointFile,
-        device: str | None = None,
+        map_location: str | dict | None = None,
+        weights_only: bool = False,
         decrypt_key: bytes | None = None,
     ) -> None:
-        content = checkpoint_file.load(device=device, decrypt_key=decrypt_key)
+        content = checkpoint_file.load(
+            map_location=map_location,
+            weights_only=weights_only,
+            decrypt_key=decrypt_key,
+        )
 
         key_name = TrainerSavedKeyType.model_state_dict.value
         if key_name not in content:

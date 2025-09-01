@@ -55,7 +55,6 @@ def test__create_from_trainer_setting(setting: PhlowerTrainerSetting):
     dataloader = DataLoaderBuilder.from_setting(setting)
 
     assert dataloader._non_blocking == setting.non_blocking
-    assert dataloader._device == setting.device
     assert dataloader._random_seed == setting.random_seed
     assert dataloader._batch_size == setting.batch_size
     assert dataloader._num_workers == setting.num_workers
@@ -66,7 +65,6 @@ def test__create_from_predictor_setting(setting: PhlowerPredictorSetting):
     dataloader = DataLoaderBuilder.from_setting(setting)
 
     assert dataloader._non_blocking == setting.non_blocking
-    assert dataloader._device == setting.device
     assert dataloader._random_seed == setting.random_seed
     assert dataloader._batch_size == setting.batch_size
     assert dataloader._num_workers == setting.num_workers
@@ -109,7 +107,6 @@ def test__consider_batch_size(
 
     builder = DataLoaderBuilder(
         non_blocking=False,
-        device="cpu",
         random_seed=0,
         batch_size=batch_size,
         num_workers=1,
@@ -167,13 +164,13 @@ def test__consider_dimensions(
 
     builder = DataLoaderBuilder(
         non_blocking=False,
-        device="cpu",
         random_seed=0,
         batch_size=1,
         num_workers=1,
     )
     dataloader = builder.create(
         dataset,
+        device="cpu",
         disable_dimensions=disable_dimensions,
     )
 
@@ -227,13 +224,13 @@ def test__not_consider_dimensions(
 
     builder = DataLoaderBuilder(
         non_blocking=False,
-        device="cpu",
         random_seed=0,
         batch_size=1,
         num_workers=1,
     )
     dataloader = builder.create(
         dataset,
+        device="cpu",
         disable_dimensions=disable_dimensions,
     )
 

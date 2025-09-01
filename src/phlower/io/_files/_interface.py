@@ -69,7 +69,11 @@ class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def load(
-        self, device: str | None = None, *, decrypt_key: bytes = None
+        self,
+        map_location: str | dict,
+        weights_only: bool,
+        *,
+        decrypt_key: bytes = None,
     ) -> dict: ...
 
 

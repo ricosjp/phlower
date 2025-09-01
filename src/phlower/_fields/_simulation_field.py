@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import abc
 from collections.abc import ItemsView, Iterable
+
+import torch
 
 from phlower._base import GraphBatchInfo, PhlowerTensor
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -23,6 +27,11 @@ class ISimulationField(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_batched_n_nodes(self, name: str) -> list[int]: ...
+
+    @abc.abstractmethod
+    def to(
+        self, device: str | torch.device, non_blocking: bool = False
+    ) -> ISimulationField: ...
 
 
 class SimulationField(ISimulationField):
@@ -63,6 +72,16 @@ class SimulationField(ISimulationField):
         # NOTE: Assume that batch information is same among features.
         batch_info = self.get_batch_info(name)
         return batch_info.n_nodes
+
+    def to(
+        self, device: str | torch.device, non_blocking: bool = False
+    ) -> ISimulationField:
+        return SimulationField(
+            field_tensors=self._field_tensors.to(
+                device, non_blocking=non_blocking
+            ),
+            batch_info=self._batch_info,
+        )
 
     # HACK: Under construction
     # def calculate_laplacians(self, target: PhlowerTensor):

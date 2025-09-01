@@ -39,6 +39,14 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     """
 
     non_blocking: bool = False
+    """
+    If True, the data transfer is non-blocking. Defaults to False.
+    """
+
+    pin_memory: bool = False
+    """
+    If True, the data loader uses pin_memory. Defaults to False.
+    """
 
     random_seed: int = 0
     """

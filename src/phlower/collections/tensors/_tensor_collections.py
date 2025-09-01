@@ -121,6 +121,11 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
         """
         ...
 
+    @abc.abstractmethod
+    def to(
+        self, device: str | torch.device, non_blocking: bool = False
+    ) -> IPhlowerTensorCollections: ...
+
 
 def phlower_tensor_collection(
     values: dict[str, torch.Tensor | PhlowerTensor],
@@ -135,125 +140,125 @@ def phlower_tensor_collection(
 
 class PhlowerDictTensors(IPhlowerTensorCollections):
     def __init__(self, value: dict[str, torch.Tensor | PhlowerTensor]):
-        self._x = {k: phlower_tensor(v) for k, v in value.items()}
+        self._data = {k: phlower_tensor(v) for k, v in value.items()}
 
     def __lt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("compare", self.keys(), __value.keys())
-            return all(self._x[k] < __value[k] for k in self.keys())
+            return all(self._data[k] < __value[k] for k in self.keys())
 
-        return all(self._x[k] < __value for k in self.keys())
+        return all(self._data[k] < __value for k in self.keys())
 
     def __le__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("compare", self.keys(), __value.keys())
-            return all(self._x[k] <= __value[k] for k in self.keys())
+            return all(self._data[k] <= __value[k] for k in self.keys())
 
-        return all(self._x[k] <= __value for k in self.keys())
+        return all(self._data[k] <= __value for k in self.keys())
 
     def __gt__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("compare", self.keys(), __value.keys())
-            return all(self._x[k] > __value[k] for k in self.keys())
+            return all(self._data[k] > __value[k] for k in self.keys())
 
-        return all(self._x[k] > __value for k in self.keys())
+        return all(self._data[k] > __value for k in self.keys())
 
     def __ge__(self, __value: object) -> bool:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("compare", self.keys(), __value.keys())
-            return all(self._x[k] >= __value[k] for k in self.keys())
+            return all(self._data[k] >= __value[k] for k in self.keys())
 
-        return all(self._x[k] >= __value for k in self.keys())
+        return all(self._data[k] >= __value for k in self.keys())
 
     def __add__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("add", self.keys(), __value.keys())
             return PhlowerDictTensors(
-                {k: self._x[k] + __value[k] for k in self.keys()}
+                {k: self._data[k] + __value[k] for k in self.keys()}
             )
 
         return PhlowerDictTensors(
-            {k: self._x[k] + __value for k in self.keys()}
+            {k: self._data[k] + __value for k in self.keys()}
         )
 
     def __sub__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("substract", self.keys(), __value.keys())
             return PhlowerDictTensors(
-                {k: self._x[k] - __value[k] for k in self.keys()}
+                {k: self._data[k] - __value[k] for k in self.keys()}
             )
         return PhlowerDictTensors(
-            {k: self._x[k] - __value for k in self.keys()}
+            {k: self._data[k] - __value for k in self.keys()}
         )
 
     def __mul__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("multiple", self.keys(), __value.keys())
             return PhlowerDictTensors(
-                {k: self._x[k] * __value[k] for k in self.keys()}
+                {k: self._data[k] * __value[k] for k in self.keys()}
             )
         return PhlowerDictTensors(
-            {k: self._x[k] * __value for k in self.keys()}
+            {k: self._data[k] * __value for k in self.keys()}
         )
 
     def __truediv__(self, __value: object) -> IPhlowerTensorCollections:
         if isinstance(__value, PhlowerDictTensors):
             _check_same_keys("divide", self.keys(), __value.keys())
             return PhlowerDictTensors(
-                {k: self._x[k] / __value[k] for k in self.keys()}
+                {k: self._data[k] / __value[k] for k in self.keys()}
             )
         return PhlowerDictTensors(
-            {k: self._x[k] / __value for k in self.keys()}
+            {k: self._data[k] / __value for k in self.keys()}
         )
 
     def __str__(self) -> str:
         txt = ""
-        for k, v in self._x.items():
+        for k, v in self._data.items():
             txt += f"{k}: {v}, "
         return f"{self.__class__.__name__}" + "{" + txt + "}"
 
     def __contains__(self, key: str):
-        return key in self._x
+        return key in self._data
 
     def __len__(self) -> int:
-        return len(self._x)
+        return len(self._data)
 
     def values(self) -> ValuesView[PhlowerTensor]:
-        return self._x.values()
+        return self._data.values()
 
     def keys(self) -> KeysView[str]:
-        return self._x.keys()
+        return self._data.keys()
 
     def items(self) -> ItemsView[str, PhlowerTensor]:
-        return self._x.items()
+        return self._data.items()
 
     def pop(
         self, key: str, default: PhlowerTensor | None = None
     ) -> PhlowerTensor | None:
-        return self._x.pop(key, default)
+        return self._data.pop(key, default)
 
     def __getitem__(self, key: str) -> PhlowerTensor:
         if isinstance(key, str):
-            return self._x[key]
+            return self._data[key]
 
         raise NotImplementedError(f"key must be str. Input: {type(key)}")
 
     def reshape(self, shape: Sequence[int]) -> IPhlowerTensorCollections:
         return phlower_tensor_collection(
-            {k: v.reshape(shape) for k, v in self._x.items()}
+            {k: v.reshape(shape) for k, v in self._data.items()}
         )
 
     def slice(
         self, slice_range: tuple[slice, ...]
     ) -> IPhlowerTensorCollections:
-        tmp = {k: v.slice(slice_range) for k, v in self._x.items()}
+        tmp = {k: v.slice(slice_range) for k, v in self._data.items()}
         return phlower_tensor_collection(tmp)
 
     def send(self, device: str) -> None:
-        self._x = {k: v.send(device) for k, v in self._x.items()}
+        self._data = {k: v.send(device) for k, v in self._data.items()}
 
     def min_len(self) -> int:
-        return np.min([len(x) for x in self._x.values()])
+        return np.min([len(x) for x in self._data.values()])
 
     def to_numpy(self) -> dict[str, ArrayDataType]:
         return {
@@ -262,10 +267,10 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
 
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
         if weights is None:
-            return torch.sum(torch.stack(list(self._x.values())))
+            return torch.sum(torch.stack(list(self._data.values())))
 
         return torch.sum(
-            torch.stack([v * weights[k] for k, v in self._x.items()])
+            torch.stack([v * weights[k] for k, v in self._data.items()])
         )
 
     def unique_item(self) -> PhlowerTensor:
@@ -287,14 +292,14 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
                     "If you want to overwrite it, use overwrite=True"
                 )
 
-            self._x[k] = data[k]
+            self._data[k] = data[k]
 
     def mask(self, keys: list[str]) -> IPhlowerTensorCollections:
-        return PhlowerDictTensors({k: self._x[k] for k in keys})
+        return PhlowerDictTensors({k: self._data[k] for k in keys})
 
     def apply(self, function: Callable) -> IPhlowerTensorCollections:
         return PhlowerDictTensors(
-            {k: function(self._x[k]) for k in self.keys()}
+            {k: function(self._data[k]) for k in self.keys()}
         )
 
     def clone(self) -> IPhlowerTensorCollections:
@@ -325,6 +330,16 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             )
 
         return values.pop() if len(values) == 1 else 0
+
+    def to(
+        self, device: str | torch.device, non_blocking: bool = False
+    ) -> IPhlowerTensorCollections:
+        return phlower_tensor_collection(
+            {
+                k: v.to(device, non_blocking=non_blocking)
+                for k, v in self._data.items()
+            }
+        )
 
 
 def reduce_update(

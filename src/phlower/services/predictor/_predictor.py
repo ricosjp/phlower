@@ -299,6 +299,7 @@ class PhlowerPredictor:
         builder = DataLoaderBuilder.from_setting(self._predict_setting)
         data_loader = builder.create(
             dataset,
+            device=self._predict_setting.device,
             disable_dimensions=disable_dimensions,
             shuffle=False,
         )
@@ -460,7 +461,7 @@ def _load_model(
         checkpoint_file=select_snapshot_file(
             model_directory, selection_mode, target_epoch=target_epoch
         ),
-        device=device,
+        map_location=device,
         decrypt_key=decrypt_key,
     )
     if device is not None:

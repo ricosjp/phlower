@@ -1,19 +1,13 @@
 from __future__ import annotations
 
+import os
 import pathlib
-import random
 from typing import Literal, overload
 
-import numpy as np
 import torch
-from torch.utils.data import DataLoader
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
 
-from phlower.data import (
-    DataLoaderBuilder,
-    LazyPhlowerDataset,
-    LumpedTensorData,
-    OnMemoryPhlowerDataSet,
-)
 from phlower.io import (
     PhlowerCheckpointFile,
     PhlowerDirectory,
@@ -22,17 +16,20 @@ from phlower.io import (
 )
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
+from phlower.services.trainer._dataloader_helper import (
+    prepare_dataloader,
+    prepare_datasets,
+)
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
-from phlower.services.trainer._sliding_window_helper import SlidingWindowHelper
+from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
 from phlower.settings import (
     PhlowerDataSetting,
     PhlowerSetting,
     PhlowerTrainerSetting,
-    SlidingWindowForStage,
 )
-from phlower.utils import PhlowerProgressBar, StopWatch, get_logger
+from phlower.utils import PhlowerProgressBar, StopWatch, fix_seed, get_logger
 from phlower.utils.enums import (
     ModelSelectionType,
     PhlowerHandlerTrigger,
@@ -40,100 +37,8 @@ from phlower.utils.enums import (
     TrainerSavedKeyType,
 )
 from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
-from phlower.utils.typing import (
-    AfterEpochTrainingInfo,
-    AfterEvaluationOutput,
-)
 
 _logger = get_logger(__name__)
-
-
-class _EvaluationRunner:
-    def __init__(
-        self,
-        trainer_setting: PhlowerTrainerSetting,
-        loss_calculator: LossCalculator,
-        handlers: PhlowerHandlersRunner,
-    ):
-        self._trainer_setting = trainer_setting
-        self._loss_calculator = loss_calculator
-        self._handlers = handlers
-
-    def run(
-        self,
-        info: AfterEpochTrainingInfo,
-        *,
-        model: PhlowerGroupModule,
-        train_loader: DataLoader,
-        validation_loader: DataLoader,
-        train_pbar: PhlowerProgressBar,
-        validation_pbar: PhlowerProgressBar,
-        timer: StopWatch,
-    ) -> AfterEvaluationOutput:
-        train_eval_loss, train_loss_details = self._evaluate_training(
-            info, model=model, train_loader=train_loader, train_pbar=train_pbar
-        )
-
-        validation_eval_loss, validation_loss_details = (
-            self._evaluate_validation(
-                info,
-                model=model,
-                validation_loader=validation_loader,
-                validation_pbar=validation_pbar,
-            )
-        )
-
-        return AfterEvaluationOutput(
-            epoch=info.epoch,
-            train_eval_loss=train_eval_loss,
-            validation_eval_loss=validation_eval_loss,
-            elapsed_time=timer.watch(),
-            output_directory=info.output_directory,
-            train_loss_details=train_loss_details,
-            validation_loss_details=validation_loss_details,
-        )
-
-    def _evaluate_training(
-        self,
-        info: AfterEpochTrainingInfo,
-        model: PhlowerGroupModule,
-        train_loader: DataLoader,
-        train_pbar: PhlowerProgressBar,
-    ) -> tuple[float | None, dict[str, float] | None]:
-        if not self._trainer_setting.evaluation_for_training:
-            return np.average(info.train_losses), _aggregate_loss_details(
-                info.train_loss_details
-            )
-
-        return _evaluation(
-            model,
-            train_loader,
-            loss_function=self._loss_calculator,
-            pbar=train_pbar,
-            pbar_title="batch train loss",
-            handlers=self._handlers,
-            time_series_sliding=self._trainer_setting.time_series_sliding.training_window_settings,
-        )
-
-    def _evaluate_validation(
-        self,
-        info: AfterEpochTrainingInfo,
-        model: PhlowerGroupModule,
-        validation_loader: DataLoader | None = None,
-        validation_pbar: PhlowerProgressBar | None = None,
-    ) -> tuple[float | None, dict[str, float] | None]:
-        if validation_loader is None:
-            return None, None
-
-        return _evaluation(
-            model,
-            validation_loader,
-            loss_function=self._loss_calculator,
-            pbar=validation_pbar,
-            pbar_title="batch val loss",
-            handlers=self._handlers,
-            time_series_sliding=self._trainer_setting.time_series_sliding.validation_window_settings,
-        )
 
 
 class PhlowerTrainer:
@@ -154,7 +59,9 @@ class PhlowerTrainer:
 
     @classmethod
     def restart_from(
-        cls, model_directory: pathlib.Path, decrypt_key: bytes | None = None
+        cls,
+        model_directory: pathlib.Path,
+        decrypt_key: bytes | None = None,
     ) -> PhlowerTrainer:
         """Restart PhlowerTrainer from model directory
 
@@ -171,7 +78,7 @@ class PhlowerTrainer:
 
         # initialize model
         setting.model.resolve()
-        trainer = PhlowerTrainer(setting)
+        trainer = PhlowerTrainer(setting, restart_directory=model_directory)
 
         # reinit for restart
         trainer._reinit_for_restart(model_directory, decrypt_key=decrypt_key)
@@ -179,7 +86,9 @@ class PhlowerTrainer:
 
     @classmethod
     def from_setting(
-        cls, setting: PhlowerSetting, decrypt_key: bytes | None = None
+        cls,
+        setting: PhlowerSetting,
+        decrypt_key: bytes | None = None,
     ) -> PhlowerTrainer:
         """Create PhlowerTrainer from PhlowerSetting
 
@@ -205,20 +114,7 @@ class PhlowerTrainer:
         setting.model.resolve()
         trainer = PhlowerTrainer(setting)
 
-        if init_setting.type_name == TrainerInitializeType.none:
-            return trainer
-
-        if init_setting.type_name == TrainerInitializeType.pretrained:
-            trainer.load_pretrained(
-                model_directory=init_setting.reference_directory,
-                selection_mode="best",
-                decrypt_key=decrypt_key,
-            )
-            return trainer
-
-        raise NotImplementedError(
-            f"Initialize way for {init_setting.type_name} is not implemented."
-        )
+        return trainer
 
     def get_registered_trainer_setting(self) -> PhlowerTrainerSetting:
         """Get registered trainer setting
@@ -228,7 +124,11 @@ class PhlowerTrainer:
         """
         return self._setting.training
 
-    def __init__(self, setting: PhlowerSetting):
+    def __init__(
+        self,
+        setting: PhlowerSetting,
+        restart_directory: pathlib.Path | None = None,
+    ):
         """Initialize PhlowerTrainer without updating trainer's
          inner state.
         If you want to initialize PhlowerTrainer following to
@@ -247,15 +147,12 @@ class PhlowerTrainer:
             raise ValueError("setting content for training is not found.")
 
         # NOTE: Must Call at first
-        self._fix_seed(self._setting.training.random_seed)
+        fix_seed(self._setting.training.random_seed)
 
-        # initialize model
-        self._model = PhlowerGroupModule.from_setting(
-            self._setting.model.network
-        )
-        self._model.to(self._setting.training.device)
-        self._scheduled_optimizer = PhlowerOptimizerWrapper.from_setting(
-            self._setting.training, model=self._model
+        # initializer
+        self._state_setup = _TrainingStateSetup(
+            setting=self._setting,
+            restart_directory=restart_directory,
         )
 
         # initialize handler
@@ -267,7 +164,12 @@ class PhlowerTrainer:
         self._loss_calculator = LossCalculator.from_setting(
             self._setting.training
         )
-        self._evaluation_runner = _EvaluationRunner(
+        self._evaluation_runner = EvaluationRunner(
+            trainer_setting=self._setting.training,
+            loss_calculator=self._loss_calculator,
+            handlers=self._handlers,
+        )
+        self._training_runner = TrainingRunner(
             trainer_setting=self._setting.training,
             loss_calculator=self._loss_calculator,
             handlers=self._handlers,
@@ -276,6 +178,12 @@ class PhlowerTrainer:
         # Internal state
         self._start_epoch = 0
         self._offset_time = 0.0
+
+        # model and optimizer
+        # These are updated when training starts
+        self._model: PhlowerGroupModule | DistributedDataParallel = (
+            PhlowerGroupModule.from_setting(self._setting.model.network)
+        )
 
     def attach_handler(
         self,
@@ -300,106 +208,11 @@ class PhlowerTrainer:
         """
         return self._handlers.n_handlers
 
-    def _fix_seed(self, seed: int):
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-
     def _initialize_model(self) -> PhlowerGroupModule:
         _model = PhlowerGroupModule.from_setting(self._setting.model.network)
-        _model.to(self._setting.training.device)
-
-    def _prepare_dataloader(
-        self,
-        train_directories: list[pathlib.Path],
-        validation_directories: list[pathlib.Path] | None = None,
-        disable_dimensions: bool = False,
-        decrypt_key: bytes | None = None,
-    ) -> tuple[DataLoader, DataLoader | None]:
-        if self._setting.training.lazy_load:
-            train_dataset = LazyPhlowerDataset(
-                input_settings=self._setting.model.inputs,
-                label_settings=self._setting.model.labels,
-                field_settings=self._setting.model.fields,
-                directories=train_directories,
-                decrypt_key=decrypt_key,
-            )
-            validation_dataset = LazyPhlowerDataset(
-                input_settings=self._setting.model.inputs,
-                label_settings=self._setting.model.labels,
-                field_settings=self._setting.model.fields,
-                directories=validation_directories,
-                decrypt_key=decrypt_key,
-            )
-        else:
-            train_dataset = OnMemoryPhlowerDataSet.create(
-                input_settings=self._setting.model.inputs,
-                label_settings=self._setting.model.labels,
-                field_settings=self._setting.model.fields,
-                directories=train_directories,
-                decrypt_key=decrypt_key,
-            )
-            validation_dataset = OnMemoryPhlowerDataSet.create(
-                input_settings=self._setting.model.inputs,
-                label_settings=self._setting.model.labels,
-                field_settings=self._setting.model.fields,
-                directories=validation_directories,
-                decrypt_key=decrypt_key,
-            )
-
-        builder = DataLoaderBuilder.from_setting(self._setting.training)
-        train_loader = builder.create(
-            train_dataset,
-            disable_dimensions=disable_dimensions,
-        )
-
-        if len(validation_dataset) == 0:
-            return train_loader, None
-
-        validation_loader = builder.create(
-            validation_dataset,
-            disable_dimensions=disable_dimensions,
-        )
-        return train_loader, validation_loader
-
-    def _training_batch_step(
-        self, tr_batch: LumpedTensorData
-    ) -> tuple[float, dict[str, float]]:
-        helper = SlidingWindowHelper(
-            tr_batch,
-            self._setting.training.time_series_sliding.training_window_settings,
-        )
-        assert len(helper) > 0, "No sliding windows are generated."
-        for _slided_batch in helper:
-            last_loss, detached_losses = self._training_batch_step_w_slide(
-                _slided_batch
-            )
-        return last_loss, detached_losses
-
-    def _training_batch_step_w_slide(
-        self, tr_batch: LumpedTensorData
-    ) -> tuple[float, dict[str, float]]:
-        self._scheduled_optimizer.zero_grad()
-
-        h = self._model.forward(tr_batch.x_data, field_data=tr_batch.field_data)
-
-        losses = self._loss_calculator.calculate(
-            h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
-        )
-        detached_losses = {k: v.item() for k, v in losses.to_numpy().items()}
-        loss = self._loss_calculator.aggregate(losses)
-        loss.backward()
-
-        self._scheduled_optimizer.step_optimizer()
-        self._scheduled_optimizer.zero_grad()
-        _last_loss = loss.detach().to_tensor().float().item()
-
-        del loss
-        # NOTE: This is necessary to use less memory
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-        return _last_loss, detached_losses
+        if not self._setting.training.parallel_setting.is_active:
+            _model.to(self._setting.training.device)
+        return _model
 
     @overload
     def train(
@@ -492,48 +305,49 @@ class PhlowerTrainer:
         train_directories = data_setting.training
         validation_directories = data_setting.validation
 
-        train_loader, validation_loader = self._prepare_dataloader(
+        train_dataset, validation_dataset = prepare_datasets(
+            setting=self._setting,
             train_directories=train_directories,
             validation_directories=validation_directories,
-            disable_dimensions=disable_dimensions,
             decrypt_key=decrypt_key,
+        )
+        train_loader, validation_loader = prepare_dataloader(
+            setting=self._setting,
+            train_dataset=train_dataset,
+            validation_dataset=validation_dataset,
+            disable_dimensions=disable_dimensions,
         )
 
         train_last_loss: float | None = None
 
-        _timer = StopWatch(offset=self._offset_time)
-        _timer.start()
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
         logging_runner.show_overview(device=self._setting.training.device)
 
+        self._model = self._state_setup.setup_model(
+            model=self._model,
+            device=self._setting.training.device,
+            map_location=self._setting.training.device,
+            decrypt_key=decrypt_key,
+        )
+        _scheduled_optimizer = self._state_setup.setup_scheduled_optimizer(
+            model=self._model,
+            decrypt_key=decrypt_key,
+        )
+
+        _timer = StopWatch(offset=self._offset_time)
+        _timer.start()
         for epoch in range(self._start_epoch, self._setting.training.n_epoch):
             self._model.train()
-            train_losses: list[float] = []
-            train_loss_details: list[dict[str, float]] = []
 
-            for tr_batch in train_loader:
-                train_last_loss, train_detail_losses = (
-                    self._training_batch_step(tr_batch)
-                )
-                self._handlers.run(
-                    train_last_loss,
-                    trigger=PhlowerHandlerTrigger.iteration_completed,
-                )
-                _train_batch_pbar.update(
-                    trick=self._setting.training.batch_size,
-                    desc=f"training loss: {train_last_loss:.3e}",
-                )
-                train_losses.append(train_last_loss)
-                train_loss_details.append(train_detail_losses)
-
-            self._scheduled_optimizer.step_scheduler()
-            info = AfterEpochTrainingInfo(
-                epoch=epoch,
-                train_losses=train_losses,
-                train_loss_details=train_loss_details,
+            info = self._training_runner.run(
+                epoch,
                 output_directory=output_directory,
+                model=self._model,
+                train_loader=train_loader,
+                scheduled_optimizer=_scheduled_optimizer,
+                train_pbar=_train_batch_pbar,
             )
 
             output = self._evaluation_runner.run(
@@ -549,10 +363,12 @@ class PhlowerTrainer:
             logging_runner.run(
                 output=output,
                 model=self._model,
-                scheduled_optimizer=self._scheduled_optimizer,
+                scheduled_optimizer=_scheduled_optimizer,
                 handlers=self._handlers,
                 encrypt_key=encrypt_key,
             )
+
+            train_last_loss = output.train_eval_loss
 
             # Call handlers
             self._handlers.run(
@@ -563,6 +379,169 @@ class PhlowerTrainer:
                 _logger.info("Training process is killed by handler.")
                 break
 
+        return train_last_loss
+
+    def train_ddp(
+        self,
+        rank: int,
+        world_size: int,
+        output_directory: pathlib.Path,
+        train_directories: list[pathlib.Path] | None = None,
+        validation_directories: list[pathlib.Path] | None = None,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> float:
+        """
+        Train the model with Distributed Data Parallel (DDP)
+
+        Parameters
+        ----------
+        rank : int
+            Rank of the current process
+        world_size : int
+            Total number of processes
+        output_directory : pathlib.Path
+            Output directory
+        train_directories : list[pathlib.Path] | None, optional
+            List of directories containing training data.
+            If None, directories defined in the setting are used.
+            Default is None.
+        validation_directories : list[pathlib.Path] | None, optional
+            List of directories containing validation data.
+            If None, directories defined in the setting are used.
+            Default is None.
+        disable_dimensions : bool, optional
+            Disable dimensions. Default is False.
+        decrypt_key : bytes | None, optional
+            Key used for decrypting data files, if necessary. Default is None.
+        encrypt_key : bytes | None, optional
+            Key used for encrypting output files, if necessary. Default is None.
+
+        Examples
+        --------
+        >>> import torch.multiprocessing as mp
+        >>> trainer = PhlowerTrainer.from_setting(setting)
+        >>> mp.spawn(
+        ...     trainer.train_ddp,
+        ...     args=(world_size, output_directory),
+        ...     nprocs=world_size,
+        ...     join=True
+        ... )
+        """
+
+        _setup_parallel(
+            rank, world_size, self._setting.training.parallel_setting.backend
+        )
+
+        data_setting = self._setting.data.upgrade(
+            training=train_directories, validation=validation_directories
+        )
+        if data_setting.is_empty():
+            raise ValueError(
+                "No training or validation directories are found. "
+                "Please check the setting file."
+            )
+
+        if rank == 0:
+            logging_runner = LoggingRunner(
+                output_directory,
+                log_every_n_epoch=self._setting.training.log_every_n_epoch,
+                loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+            )
+
+            # when restart training, skip is allowed
+            self._save_setting_if_necessary(
+                output_directory,
+                encrypt_key=encrypt_key,
+                data_setting=data_setting,
+                skip_if_exist=(self._start_epoch > 0),
+            )
+
+        train_directories = data_setting.training
+        validation_directories = data_setting.validation
+
+        train_dataset, validation_dataset = prepare_datasets(
+            setting=self._setting,
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            decrypt_key=decrypt_key,
+        )
+        train_loader, validation_loader = prepare_dataloader(
+            setting=self._setting,
+            train_dataset=train_dataset,
+            validation_dataset=validation_dataset,
+            disable_dimensions=disable_dimensions,
+            run_distributed=True,
+        )
+
+        train_last_loss: float | None = None
+
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
+
+        self._model = self._state_setup.setup_ddp_model(
+            model=self._model, rank=rank, decrypt_key=decrypt_key
+        )
+        _scheduled_optimizer = self._state_setup.setup_scheduled_optimizer(
+            model=self._model,
+            rank=rank,
+            decrypt_key=decrypt_key,
+        )
+
+        if rank == 0:
+            _timer = StopWatch(offset=self._offset_time)
+            _timer.start()
+            logging_runner.show_overview(device=self._setting.training.device)
+        else:
+            _timer = None
+
+        for epoch in range(self._start_epoch, self._setting.training.n_epoch):
+            self._model.train()
+
+            info = self._training_runner.parallel_run(
+                rank,
+                epoch,
+                output_directory=output_directory,
+                model=self._model,
+                train_loader=train_loader,
+                scheduled_optimizer=_scheduled_optimizer,
+                train_pbar=_train_batch_pbar,
+            )
+
+            output = self._evaluation_runner.parallel_run(
+                rank=rank,
+                info=info,
+                model=self._model,
+                train_loader=train_loader,
+                validation_loader=validation_loader,
+                train_pbar=_train_batch_pbar,
+                validation_pbar=_val_batch_pbar,
+                timer=_timer,
+            )
+
+            # Valid output object is returned only from rank 0
+            if rank == 0:
+                logging_runner.run(
+                    output=output,
+                    model=self._model,
+                    scheduled_optimizer=_scheduled_optimizer,
+                    handlers=self._handlers,
+                    encrypt_key=encrypt_key,
+                )
+
+                train_last_loss = output.train_eval_loss
+
+                # Call handlers
+                self._handlers.run(
+                    output,
+                    trigger=PhlowerHandlerTrigger.epoch_completed,
+                )
+                if self._handlers.terminate_training:
+                    _logger.info("Training process is killed by handler.")
+                    break
+
+        _cleanup_parallel()
         return train_last_loss
 
     def _save_setting_if_necessary(
@@ -595,20 +574,21 @@ class PhlowerTrainer:
             output_directory: pathlib.Path
                 Output directory
         """
-        self._model.draw(output_directory=output_directory)
+        if isinstance(self._model, DistributedDataParallel):
+            self._model.module.draw(output_directory=output_directory)
+        else:
+            self._model.draw(output_directory=output_directory)
 
     def _reinit_for_restart(
         self,
         restart_directory: pathlib.Path,
-        device: str | None = None,
         decrypt_key: bytes | None = None,
     ) -> None:
-        # Restore model and optimizer and tqdm
         snapshot_file = select_snapshot_file(
             restart_directory, selection_mode=ModelSelectionType.LATEST.value
         )
-        self._load_state(
-            snapshot_file=snapshot_file, device=device, decrypt_key=decrypt_key
+        self._load_internal_state(
+            snapshot_file=snapshot_file, decrypt_key=decrypt_key
         )
 
     def load_pretrained(
@@ -616,7 +596,7 @@ class PhlowerTrainer:
         model_directory: pathlib.Path,
         selection_mode: Literal["best", "latest", "train_best", "specified"],
         target_epoch: int | None = None,
-        device: str | None = None,
+        map_location: str | dict | None = None,
         decrypt_key: bytes | None = None,
     ) -> None:
         """Load pretrained model
@@ -639,24 +619,22 @@ class PhlowerTrainer:
             target_epoch=target_epoch,
         )
         self._model.load_checkpoint_file(
-            checkpoint_file, device=device, decrypt_key=decrypt_key
+            checkpoint_file, map_location=map_location, decrypt_key=decrypt_key
         )
 
-    def _load_state(
+    def _load_internal_state(
         self,
         snapshot_file: PhlowerCheckpointFile,
         device: str | None = None,
         decrypt_key: bytes | None = None,
     ) -> None:
         # Restore model and optimizer and tqdm
-        checkpoint = snapshot_file.load(device=device, decrypt_key=decrypt_key)
+        checkpoint = snapshot_file.load(
+            map_location=device,
+            weights_only=False,
+            decrypt_key=decrypt_key,
+        )
 
-        self._model.load_state_dict(
-            checkpoint[TrainerSavedKeyType.model_state_dict.value]
-        )
-        self._scheduled_optimizer.load_state_dict(
-            checkpoint[TrainerSavedKeyType.scheduled_optimizer.value]
-        )
         self._handlers.load_state_dict(checkpoint["handler_runners"])
 
         self._start_epoch = int(checkpoint["epoch"]) + 1
@@ -675,65 +653,168 @@ class PhlowerTrainer:
         )
 
 
-def _evaluation(
-    model: PhlowerGroupModule,
-    data_loader: DataLoader | None,
-    loss_function: LossCalculator,
-    pbar: PhlowerProgressBar,
-    pbar_title: str,
-    handlers: PhlowerHandlersRunner,
-    time_series_sliding: SlidingWindowForStage,
-) -> tuple[float, dict[str, float] | None]:
-    results: list[float] = []
-    results_details: list[dict[str, np.ndarray]] = []
+def _setup_parallel(rank: int, world_size: int, backend: str = "nccl") -> None:
+    # set the address and port for the process group
+    # This setting assumes that all processes are running on the same machine.
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
 
-    model.eval()
-    for batch in data_loader:
-        batch: LumpedTensorData
-        helper = SlidingWindowHelper(
-            batch,
-            time_series_sliding,
-        )
+    # initialize the process group
+    if backend == "nccl":
+        torch.cuda.set_device(rank)
+    dist.init_process_group(backend, rank=rank, world_size=world_size)
 
-        with torch.inference_mode():
-            for _batch in helper:
-                h = model.forward(_batch.x_data, field_data=_batch.field_data)
-                val_losses = loss_function.calculate(
-                    h,
-                    _batch.y_data,
-                    batch_info_dict=_batch.y_batch_info,
+    _logger.info(f"Rank: {rank} initialized")
+
+
+def _cleanup_parallel():
+    dist.destroy_process_group()
+
+
+class _TrainingStateSetup:
+    def __init__(
+        self,
+        setting: PhlowerSetting,
+        restart_directory: pathlib.Path | None = None,
+    ):
+        self._setting = setting
+        self._restart_directory = restart_directory
+        self._checkpoint_file = self._determine_checkpoint_file()
+
+    def _determine_checkpoint_file(self) -> PhlowerCheckpointFile | None:
+        init_setting = self._setting.training.initializer_setting
+        match init_setting.type_name:
+            case TrainerInitializeType.none:
+                return None
+            case TrainerInitializeType.pretrained:
+                assert init_setting.reference_directory is not None
+                return select_snapshot_file(
+                    directory=init_setting.reference_directory,
+                    selection_mode="best",
                 )
-                val_loss = loss_function.aggregate(val_losses)
-                detached_val_loss = val_loss.detach().to_tensor().float().item()
-                handlers.run(
-                    detached_val_loss,
-                    trigger=PhlowerHandlerTrigger.iteration_completed,
+            case TrainerInitializeType.restart:
+                assert self._restart_directory is not None
+                return select_snapshot_file(
+                    self._restart_directory, selection_mode="latest"
                 )
-                results.append(val_loss.detach().to_tensor().float().item())
-                results_details.append(val_losses.to_numpy())
-        pbar.update(
-            trick=batch.n_data,
-            desc=f"{pbar_title}: {results[-1]:.3e}",
+            case _:
+                raise NotImplementedError(
+                    f"Initialize way for {init_setting.type_name} "
+                    "is not implemented."
+                )
+
+    def setup_model(
+        self,
+        model: PhlowerGroupModule,
+        device: str,
+        map_location: str | dict | None = None,
+        decrypt_key: bytes | None = None,
+    ) -> PhlowerGroupModule:
+        model.to(device, non_blocking=self._setting.training.non_blocking)
+
+        init_setting = self._setting.training.initializer_setting
+        match init_setting.type_name:
+            case TrainerInitializeType.none:
+                return model
+            case TrainerInitializeType.pretrained:
+                model.load_checkpoint_file(
+                    self._checkpoint_file,
+                    map_location=map_location,
+                    decrypt_key=decrypt_key,
+                )
+                return model
+            case TrainerInitializeType.restart:
+                model.load_checkpoint_file(
+                    self._checkpoint_file,
+                    map_location=map_location,
+                    decrypt_key=decrypt_key,
+                )
+                return model
+            case _:
+                raise NotImplementedError(
+                    f"Initialize way for {init_setting.type_name} "
+                    "is not implemented."
+                )
+
+    def setup_scheduled_optimizer(
+        self,
+        model: PhlowerGroupModule,
+        rank: int | None = None,
+        decrypt_key: bytes | None = None,
+    ) -> PhlowerOptimizerWrapper:
+        _scheduled_optimizer = PhlowerOptimizerWrapper.from_setting(
+            self._setting.training, model=model
         )
-    return np.average(results), _aggregate_loss_details(results_details)
+        init_setting = self._setting.training.initializer_setting
 
+        map_location = self._get_map_location(rank)
+        match init_setting.type_name:
+            case TrainerInitializeType.none:
+                return _scheduled_optimizer
 
-def _aggregate_loss_details(
-    loss_details: list[dict[str, np.ndarray]],
-) -> dict[str, float]:
-    """Aggregate loss details from list of loss details
+            case TrainerInitializeType.pretrained:
+                return _scheduled_optimizer
 
-    Args:
-        loss_details (list[dict[str, float]]): List of loss details
+            case TrainerInitializeType.restart:
+                assert self._restart_directory is not None
+                _checkpoint = self._checkpoint_file.load(
+                    map_location=map_location,
+                    weights_only=False,
+                    decrypt_key=decrypt_key,
+                )
+                _scheduled_optimizer.load_state_dict(
+                    _checkpoint[TrainerSavedKeyType.scheduled_optimizer.value]
+                )
+                return _scheduled_optimizer
 
-    Returns:
-        dict[str, float]: Aggregated loss details
-    """
-    if len(loss_details) == 0:
-        return {}
+    def setup_ddp_model(
+        self,
+        model: PhlowerGroupModule,
+        rank: int,
+        decrypt_key: bytes | None = None,
+    ) -> DistributedDataParallel:
+        parallel_setting = self._setting.training.parallel_setting
+        assert parallel_setting.is_active
 
-    assert all(len(v) == len(loss_details[0]) for v in loss_details)
-    keys = loss_details[0].keys()
-    aggregated = {k: np.mean([v[k] for v in loss_details]).item() for k in keys}
+        match parallel_setting.backend:
+            case "nccl":
+                map_location = self._get_map_location(rank)
+                model = self.setup_model(
+                    model=model,
+                    device=f"cuda:{rank}",
+                    map_location=map_location,
+                    decrypt_key=decrypt_key,
+                )
+                return DistributedDataParallel(
+                    model,
+                    device_ids=[rank],
+                )
+            case "gloo":
+                model = self.setup_model(
+                    model=model,
+                    device="cpu",
+                    decrypt_key=decrypt_key,
+                )
+                return DistributedDataParallel(model)
+            case _:
+                raise NotImplementedError(
+                    f"Backend {parallel_setting.backend} is not implemented."
+                )
 
-    return aggregated
+    def _get_map_location(
+        self,
+        rank: int | None = None,
+    ) -> str | dict | None:
+        if rank is None:
+            return self._setting.training.device
+
+        parallel_setting = self._setting.training.parallel_setting
+        match parallel_setting.backend:
+            case "nccl":
+                return {"cuda:0": f"cuda:{rank}"}
+            case "gloo":
+                return "cpu"
+            case _:
+                raise NotImplementedError(
+                    f"Backend {parallel_setting.backend} is not implemented."
+                )
