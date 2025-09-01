@@ -10,3 +10,4 @@ from phlower.utils._multiprocessor import PhlowerMultiprocessor
 from phlower.utils._timer import StopWatch
 from phlower.utils._optimizer import OptimizerSelector
 from phlower.utils._schedulers import SchedulerSelector
+from phlower.utils._random import fix_seed

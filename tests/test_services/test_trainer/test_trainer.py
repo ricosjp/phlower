@@ -8,10 +8,12 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
+import torch.multiprocessing as mp
 import yaml
 from phlower.io import PhlowerDirectory, PhlowerYamlFile, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
+from phlower.settings._trainer_setting import TrainerInitializerSetting
 from phlower.utils.exceptions import (
     PhlowerNaNDetectedError,
     PhlowerRestartTrainingCompletedError,
@@ -20,20 +22,28 @@ from phlower.utils.typing import IPhlowerHandler
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
 _OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
+_OUTPUT_SLIDING_DIR = pathlib.Path(__file__).parent / "_out_time_series"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
+
+
+def _initialize_tmp_output_directory(output_dir: pathlib.Path):
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir()
+
+    with (output_dir / ".gitignore").open("w") as fw:
+        fw.write("*")
 
 
 def create_sample_preprocessed_data(output_base_dir: pathlib.Path):
     random.seed(11)
     np.random.seed(11)
-    if output_base_dir.exists():
-        shutil.rmtree(output_base_dir)
-    output_base_dir.mkdir()
+    _initialize_tmp_output_directory(output_base_dir)
 
     base_preprocessed_dir = output_base_dir / "preprocessed"
     base_preprocessed_dir.mkdir()
 
-    n_cases = 3
+    n_cases = 4
     dtype = np.float32
     for i in range(n_cases):
         n_nodes = 100 * (i + 1)
@@ -539,12 +549,10 @@ def test__train_with_raise_nan_detected(
 
 @pytest.fixture(scope="module")
 def prepare_time_sliding_sample_preprocessed_files():
-    output_base_dir = _OUTPUT_DIR
+    output_base_dir = _OUTPUT_SLIDING_DIR
     random.seed(11)
     np.random.seed(11)
-    if output_base_dir.exists():
-        shutil.rmtree(output_base_dir)
-    output_base_dir.mkdir()
+    _initialize_tmp_output_directory(output_base_dir)
 
     base_preprocessed_dir = output_base_dir / "preprocessed"
     base_preprocessed_dir.mkdir()
@@ -572,7 +580,7 @@ def prepare_time_sliding_sample_preprocessed_files():
 def test__train_with_sliding_window(
     prepare_time_sliding_sample_preprocessed_files: None,
 ):
-    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
     preprocessed_directories = list(
         phlower_path.find_directory(
             required_filename="preprocessed", recursive=True
@@ -584,7 +592,7 @@ def test__train_with_sliding_window(
     )
 
     trainer = PhlowerTrainer.from_setting(setting)
-    output_directory = _OUTPUT_DIR / "model_sliding_window"
+    output_directory = _OUTPUT_SLIDING_DIR / "model_sliding_window"
     if output_directory.exists():
         shutil.rmtree(output_directory)
 
@@ -598,7 +606,7 @@ def test__train_with_sliding_window(
 def test__n_call_times_when_time_sliding(
     prepare_time_sliding_sample_preprocessed_files: None,
 ):
-    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
     preprocessed_directories = list(
         phlower_path.find_directory(
             required_filename="preprocessed", recursive=True
@@ -621,12 +629,14 @@ def test__n_call_times_when_time_sliding(
     n_expected_called = setting.training.n_epoch * n_data * n_length
 
     trainer = PhlowerTrainer.from_setting(setting)
-    output_directory = _OUTPUT_DIR / "model_sliding_window"
+    output_directory = _OUTPUT_SLIDING_DIR / "model_sliding_window"
     if output_directory.exists():
         shutil.rmtree(output_directory)
 
-    with mock.patch.object(trainer, "_training_batch_step_w_slide") as mocked:
-        mocked.side_effect = lambda x: (0.0, {})
+    with mock.patch(
+        "phlower.services.trainer._runners._trainer._training_batch_step_w_slide"
+    ) as mocked:
+        mocked.side_effect = lambda x, y, z, w: (0.0, {})
 
         trainer.train(
             train_directories=preprocessed_directories,
@@ -634,6 +644,117 @@ def test__n_call_times_when_time_sliding(
             output_directory=output_directory,
         )
         assert mocked.call_count == n_expected_called
+
+
+# endregion
+
+
+# region: test for parallel training
+
+
+@pytest.fixture(scope="module")
+def simple_distributed_parallel_training(
+    prepare_sample_preprocessed_files: None,
+) -> pathlib.Path:
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR / "preprocessed")
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_ddp_gloo.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_ddp_gloo"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    world_size = setting.training.parallel_setting.world_size
+    mp.spawn(
+        trainer.train_ddp,
+        args=(
+            world_size,
+            output_directory,
+            preprocessed_directories,
+            preprocessed_directories,
+        ),
+        nprocs=world_size,
+        join=True,
+    )
+    assert (output_directory / "log.csv").exists()
+    return output_directory
+
+
+def test__ddp_training_loss(
+    simple_distributed_parallel_training: pathlib.Path,
+):
+    output_directory = simple_distributed_parallel_training
+
+    df = pd.read_csv(
+        output_directory / "log.csv", skipinitialspace=True, header=0
+    )
+    first_loss = df.loc[0, "train_loss"]
+    last_loss = df.loc[df.index[-1], "train_loss"]
+    assert first_loss > last_loss
+
+
+def test__start_pretrained_training_after_dpp_training(
+    prepare_sample_preprocessed_files: None,
+    simple_distributed_parallel_training: pathlib.Path,
+) -> None:
+    ddp_output_dir = simple_distributed_parallel_training
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR / "preprocessed")
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_ddp_gloo.yml")
+    setting = setting.model_copy(
+        update={
+            "training": setting.training.model_copy(
+                update={
+                    "initializer_setting": TrainerInitializerSetting(
+                        type_name="pretrained",
+                        reference_directory=ddp_output_dir,
+                    ),
+                }
+            )
+        }
+    )
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "pretrained_ddp_model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    world_size = setting.training.parallel_setting.world_size
+    mp.spawn(
+        trainer.train_ddp,
+        args=(
+            world_size,
+            output_directory,
+            preprocessed_directories,
+            preprocessed_directories,
+        ),
+        nprocs=world_size,
+        join=True,
+    )
+
+    df_pretrained = pd.read_csv(
+        output_directory / "log.csv", skipinitialspace=True, header=0
+    )
+    df_ddp = pd.read_csv(
+        ddp_output_dir / "log.csv", skipinitialspace=True, header=0
+    )
+
+    assert (
+        df_pretrained.loc[:, "validation_loss"].min()
+        < df_ddp.loc[:, "validation_loss"].min()
+    )
 
 
 # endregion
