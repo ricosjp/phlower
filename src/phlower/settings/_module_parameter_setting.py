@@ -10,8 +10,10 @@ from pydantic import (
 
 from phlower.settings._module_settings import (
     IPhlowerLayerParameters,
-    _name_to_setting,
+    _layer_settings,
 )
+
+_name_to_setting = {s.get_nn_type(): s for s in _layer_settings}
 
 
 def _validate(vals: dict, info: ValidationInfo) -> IPhlowerLayerParameters:

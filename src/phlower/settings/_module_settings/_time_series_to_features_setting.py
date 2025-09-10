@@ -18,6 +18,10 @@ class TimeSeriesToFeaturesSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "TimeSeriesToFeatures"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 

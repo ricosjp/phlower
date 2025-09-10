@@ -20,6 +20,10 @@ class EinsumSetting(pydantic.BaseModel, IPhlowerLayerParameters):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Einsum"
+
     def gather_input_dims(self, *input_dims: int) -> int:
         assert len(input_dims) > 0
         sum_dim = sum(v for v in input_dims)

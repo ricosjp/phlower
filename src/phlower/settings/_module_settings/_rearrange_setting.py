@@ -23,6 +23,10 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Rearrange"
+
     @pydantic.field_validator("output_feature_dim", mode="before")
     def check__valid_output_feature_dim(cls, value: int) -> int:
         if value < 1:
