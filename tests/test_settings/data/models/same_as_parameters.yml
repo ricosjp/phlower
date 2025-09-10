@@ -1,0 +1,64 @@
+misc:
+
+  tests:
+    MLP0: [10, 20, 10]
+    MLP1: [10, 20, 10]
+    Concat0: [20, 20]
+    MLP2: [20, 20, 5]
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 10
+
+  network:
+    nn_type: GROUP
+    name: SAMPLE_MODEL    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature1
+        output_key: mlp0
+        destinations:
+          - Concat0
+        nn_parameters:
+          nodes: [-1, 20, 10]
+          activations: ["Identity", "identity"]
+
+      - nn_type: MLP
+        name: SAME_MLP0
+        input_keys:
+          - feature0
+        output_key: mlp1
+        destinations:
+          - Concat0
+        nn_parameters_same_as: MLP0
+
+      - nn_type: Concatenator
+        name: Concat0
+        input_keys:
+          - mlp0
+          - mlp1
+        output_key: concat0
+        destinations:
+          - MLP2
+
+      - nn_type: MLP
+        name: MLP2
+        input_keys:
+          - concat0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 20, 5]

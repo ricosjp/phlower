@@ -7,6 +7,11 @@ class IReadOnlyReferenceGroupSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def search_module_setting(self, name: str) -> IPhlowerLayerParameters: ...
 
+    @abc.abstractmethod
+    def search_group_setting(
+        self, name: str
+    ) -> IReadOnlyReferenceGroupSetting: ...
+
 
 class IModuleSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod

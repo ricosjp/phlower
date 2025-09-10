@@ -25,7 +25,8 @@ def parse_file(file_name: str) -> dict:
 
 
 def _recursive_check(
-    setting: GroupModuleSetting, desired: dict[str, int | dict[str, int]]
+    setting: GroupModuleSetting,
+    desired: dict[str, int | dict[str, int | list[int]]],
 ):
     """check first n dims recursively"""
 
@@ -37,7 +38,12 @@ def _recursive_check(
         model = setting.find_module(k)
         assert isinstance(model, ModuleSetting)
 
-        assert model.nn_parameters.get_n_nodes()[0] == v
+        if isinstance(v, list):
+            assert model.nn_parameters.get_n_nodes() == v
+            continue
+        else:
+            assert isinstance(v, int)
+            assert model.nn_parameters.get_n_nodes()[0] == v
 
 
 @pytest.mark.parametrize(
@@ -198,3 +204,24 @@ def test__input_time_series(file_name: str):
             continue
 
         assert item.time_slice_object == slice(*desired_labels_slice[item.name])
+
+
+def test__same_as_parameters():
+    data = parse_file("same_as_parameters.yml")
+
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
+
+    misc = data["misc"]["tests"]
+    for module in setting.network.modules:
+        if module.name in misc:
+            assert module.nn_parameters.nodes == misc[module.name]
+
+
+def test__same_modules_in_different_groups():
+    data = parse_file("simple_same_group.yml")
+
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
+
+    _recursive_check(setting.network, data["misc"]["tests"])

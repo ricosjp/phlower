@@ -78,6 +78,11 @@ class GroupModuleSetting(
     definition of output variables
     """
 
+    modules_same_as: str | None = Field(None)
+    """
+    name of another group to copy modules.
+    """
+
     modules: list[
         Annotated[
             Annotated[GroupModuleSetting, Tag(_DiscriminatorTag.GROUP.name)]
@@ -137,7 +142,7 @@ class GroupModuleSetting(
     """
 
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
     @pydantic.field_validator("inputs", "outputs")
     @classmethod
@@ -184,6 +189,20 @@ class GroupModuleSetting(
         # it is not supposed to be reached here
         raise NotImplementedError()
 
+    @pydantic.model_validator(mode="after")
+    def _check_modules_instance(self) -> Self:
+        if self.modules_same_as is None:
+            return self
+
+        if len(self.modules) != 0:
+            raise ValueError(
+                "modules and modules_same_as cannot be set simultaneously. "
+                f"Input: modules={self.modules}, "
+                f"modules_same_as={self.modules_same_as}"
+            )
+
+        return self
+
     def get_name(self) -> str:
         return self.name
 
@@ -199,6 +218,16 @@ class GroupModuleSetting(
     def get_output_info(self) -> dict[str, int]:
         return {output.name: output.n_last_dim for output in self.outputs}
 
+    def search_group_setting(self, name: str) -> IReadOnlyReferenceGroupSetting:
+        for module in self.modules:
+            if module.name == name and isinstance(module, GroupModuleSetting):
+                return module
+
+        raise KeyError(
+            f"GroupModuleSetting {name} is not found "
+            f"in GroupSetting {self.name}."
+        )
+
     def search_module_setting(self, name: str) -> IPhlowerLayerParameters:
         for module in self.modules:
             if module.name == name:
@@ -212,12 +241,20 @@ class GroupModuleSetting(
         self,
         *resolved_outputs: dict[str, int],
         is_first: bool = False,
+        parent: IReadOnlyReferenceGroupSetting | None = None,
         **kwards,
     ) -> None:
         if not is_first:
             self._check_inputs(*resolved_outputs)
 
         input_info = {v.name: v.n_last_dim for v in self.inputs}
+
+        if self.modules_same_as is not None:
+            ref = parent.search_group_setting(self.modules_same_as)
+            assert isinstance(ref, pydantic.BaseModel)
+            # Overwrite
+            self.modules_same_as = None
+            self.modules = ref.model_dump()["modules"]
 
         try:
             results = resolve_modules(input_info, self.modules, self)

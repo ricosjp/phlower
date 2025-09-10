@@ -74,6 +74,8 @@ class PhlowerSetting(pydantic.BaseModel):
         cls,
         data: dict,
     ) -> PhlowerSetting:
+        """Read dictionary and parse to PhlowerSetting object."""
+
         try:
             return PhlowerSetting(**data)
         except pydantic.ValidationError as ex:
