@@ -97,6 +97,10 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "IsoGCN"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         input_keys = self_module.get_input_keys()
         if not self.neumann_setting.use_neumann:

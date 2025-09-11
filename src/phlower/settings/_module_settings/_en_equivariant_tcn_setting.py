@@ -24,6 +24,10 @@ class EnEquivariantTCNSetting(pydantic.BaseModel, IPhlowerLayerParameters):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "EnEquivariantTCN"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         if not self.create_linear_weight:
             if self.nodes[0] != self.nodes[-1]:

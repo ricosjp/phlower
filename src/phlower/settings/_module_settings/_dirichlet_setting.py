@@ -19,6 +19,10 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Dirichlet"
+
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 2:
             raise ValueError("num of input should be 2 in Dirichlet.")

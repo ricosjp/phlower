@@ -55,6 +55,11 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     A Flag not to calculate gradient. Defauls to False.
     """
 
+    nn_parameters_same_as: str | None = Field(None)
+    """
+    name of another module to copy nn_parameters.
+    """
+
     nn_parameters: PhlowerModuleParameters = Field(
         default_factory=dict, validate_default=True
     )
@@ -77,7 +82,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
-        extra="forbid", arbitrary_types_allowed=True
+        extra="forbid", arbitrary_types_allowed=True, validate_assignment=True
     )
 
     def get_name(self) -> str:
@@ -100,6 +105,12 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         try:
             self._check_keys(*resolved_outputs)
 
+            if self.nn_parameters_same_as is not None:
+                ref = parent.search_module_setting(self.nn_parameters_same_as)
+                assert isinstance(ref, pydantic.BaseModel)
+                self.nn_parameters_same_as = None
+                self.nn_parameters = ref.model_dump()
+
             if self.nn_parameters.need_reference:
                 self.nn_parameters.get_reference(parent)
 
@@ -111,6 +122,7 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
                 self.output_key = f"OUT_{self.name}"
             self.nn_parameters.confirm(self)
         except (
+            KeyError,
             PhlowerModuleDuplicateKeyError,
             PhlowerModuleKeyError,
             PhlowerModuleNodeDimSizeError,

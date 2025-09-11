@@ -25,7 +25,8 @@ def parse_file(file_name: str) -> dict:
 
 
 def _recursive_check(
-    setting: GroupModuleSetting, desired: dict[str, int | dict[str, int]]
+    setting: GroupModuleSetting,
+    desired: dict[str, int | dict[str, int | list[int]]],
 ):
     """check first n dims recursively"""
 
@@ -35,9 +36,14 @@ def _recursive_check(
             continue
 
         model = setting.find_module(k)
-        assert isinstance(model, ModuleSetting)
+        assert isinstance(model, ModuleSetting), f"{k} is not found."
 
-        assert model.nn_parameters.get_n_nodes()[0] == v
+        if isinstance(v, list):
+            assert model.nn_parameters.get_n_nodes() == v
+            continue
+        else:
+            assert isinstance(v, int)
+            assert model.nn_parameters.get_n_nodes()[0] == v
 
 
 @pytest.mark.parametrize(
@@ -198,3 +204,75 @@ def test__input_time_series(file_name: str):
             continue
 
         assert item.time_slice_object == slice(*desired_labels_slice[item.name])
+
+
+@pytest.mark.parametrize("file_name", ["same_as_parameters.yml"])
+def test__same_as_parameters(file_name: str):
+    data = parse_file(file_name)
+
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
+
+    _recursive_check(setting.network, data["misc"]["tests"])
+
+    # check that same_as parameters are replaced after serialization.
+    dumped = setting.model_dump()
+
+    def _recursive_check_nn_parameters_same_as(
+        target: GroupModuleSetting | ModuleSetting,
+    ):
+        if isinstance(target, GroupModuleSetting):
+            for m in target.modules:
+                _recursive_check_nn_parameters_same_as(m)
+            return
+
+        assert target.nn_parameters_same_as is None
+
+    restored = PhlowerModelSetting(**dumped)
+    _recursive_check_nn_parameters_same_as(restored.network)
+
+
+@pytest.mark.parametrize("file_name", ["simple_same_group.yml"])
+def test__same_modules_in_different_groups(file_name: str):
+    data = parse_file(file_name)
+
+    setting = PhlowerModelSetting(**data["model"])
+    setting.resolve()
+
+    _recursive_check(setting.network, data["misc"]["tests"])
+
+    # check that same_as parameters are replaced after serialization.
+    dumped = setting.model_dump()
+
+    def _recursive_check_modules_same_as(
+        target: GroupModuleSetting | ModuleSetting,
+    ):
+        if isinstance(target, GroupModuleSetting):
+            assert target.modules_same_as is None
+            for m in target.modules:
+                _recursive_check_modules_same_as(m)
+
+    restored = PhlowerModelSetting(**dumped)
+    _recursive_check_modules_same_as(restored.network)
+
+
+@pytest.mark.parametrize("file_name", ["invalid_same_as_parameters.yml"])
+def test__invalid_same_as_parameters(file_name: str):
+    data = parse_file(file_name)
+
+    with pytest.raises(
+        ValueError,
+        match="nn_parameters must be empty when nn_parameters_same_as is set.",
+    ):
+        PhlowerModelSetting(**data["model"]).resolve()
+
+
+@pytest.mark.parametrize("file_name", ["invalid_simple_same_group.yml"])
+def test__invalid_same_as_modules(file_name: str):
+    data = parse_file(file_name)
+
+    with pytest.raises(
+        ValueError,
+        match="modules and modules_same_as cannot be set simultaneously.",
+    ):
+        PhlowerModelSetting(**data["model"]).resolve()

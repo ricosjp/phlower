@@ -20,6 +20,10 @@ class ShareSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         extra="forbid", arbitrary_types_allowed=True
     )
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Share"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 

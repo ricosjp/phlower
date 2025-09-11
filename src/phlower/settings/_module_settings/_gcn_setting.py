@@ -24,6 +24,10 @@ class GCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "GCN"
+
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
     def gather_input_dims(self, *input_dims: int) -> int:

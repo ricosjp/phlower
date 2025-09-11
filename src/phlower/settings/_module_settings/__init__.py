@@ -43,31 +43,27 @@ from phlower.settings._module_settings._time_series_to_features_setting import (
     TimeSeriesToFeaturesSetting,
 )
 
-_name_to_setting: dict[str, IPhlowerLayerParameters] = {
-    "Accessor": AccessorSetting,
-    "Concatenator": ConcatenatorSetting,
-    "DeepSets": DeepSetsSetting,
-    "Dirichlet": DirichletSetting,
-    "Contraction": ContractionSetting,
-    "EnEquivariantTCN": EnEquivariantTCNSetting,
-    "EnEquivariantMLP": EnEquivariantMLPSetting,
-    "Einsum": EinsumSetting,
-    "GCN": GCNSetting,
-    "Identity": IdentitySetting,
-    "IsoGCN": IsoGCNSetting,
-    "MLP": MLPSetting,
-    "PInvMLP": PInvMLPSetting,
-    "Proportional": ProportionalSetting,
-    "Rearrange": RearrangeSetting,
-    "Reducer": ReducerSetting,
-    "Share": ShareSetting,
-    "SimilarityEquivariantMLP": SimilarityEquivariantMLPSetting,
-    "SPMM": SPMMSetting,
-    "TCN": TCNSetting,
-    "TimeSeriesToFeatures": TimeSeriesToFeaturesSetting,
-    "Pooling": PoolingSetting,
-}
-
-
-def check_exist_module(name: str) -> bool:
-    return name in _name_to_setting
+_layer_settings: list[type[IPhlowerLayerParameters]] = [
+    AccessorSetting,
+    ConcatenatorSetting,
+    DeepSetsSetting,
+    DirichletSetting,
+    ContractionSetting,
+    EnEquivariantTCNSetting,
+    EnEquivariantMLPSetting,
+    EinsumSetting,
+    GCNSetting,
+    IdentitySetting,
+    IsoGCNSetting,
+    MLPSetting,
+    PInvMLPSetting,
+    ProportionalSetting,
+    RearrangeSetting,
+    ReducerSetting,
+    ShareSetting,
+    SimilarityEquivariantMLPSetting,
+    SPMMSetting,
+    TCNSetting,
+    TimeSeriesToFeaturesSetting,
+    PoolingSetting,
+]

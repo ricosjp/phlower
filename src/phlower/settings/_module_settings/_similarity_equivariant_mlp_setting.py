@@ -34,6 +34,10 @@ class SimilarityEquivariantMLPSetting(
 
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "SimilarityEquivariantMLP"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 

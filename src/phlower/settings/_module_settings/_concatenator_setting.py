@@ -18,6 +18,10 @@ class ConcatenatorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Concatenator"
+
     def gather_input_dims(self, *input_dims: int) -> int:
         assert len(input_dims) > 0
         return sum(v for v in input_dims)

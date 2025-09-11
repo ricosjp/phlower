@@ -16,12 +16,16 @@ class ProportionalSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
 
+    @classmethod
+    def get_nn_type(cls) -> str:
+        return "Proportional"
+
     def confirm(self, self_module: IModuleSetting) -> None:
         return
 
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) != 1:
-            raise ValueError("Only one input is allowed in EnEquivariantMLP.")
+            raise ValueError("Only one input is allowed in Proportional.")
         return input_dims[0]
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:

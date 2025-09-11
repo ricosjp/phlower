@@ -2,8 +2,6 @@ from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._contraction import Contraction
 from phlower.nn._core_modules._deepsets import DeepSets
-
-# from phlower.nn._core_modules._deepsets import DeepSets
 from phlower.nn._core_modules._dirichlet import Dirichlet
 from phlower.nn._core_modules._einsum import Einsum
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
@@ -26,7 +24,6 @@ from phlower.nn._core_modules._tcn import TCN
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
-from phlower.nn._functionals._activations import ActivationSelector
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[type[IPhlowerCoreModule]] = [
@@ -59,3 +56,6 @@ _name2model = {cls.get_nn_name(): cls for cls in _all_models}
 
 def get_module(name: str) -> type[IPhlowerCoreModule]:
     return _name2model[name]
+
+
+__all__ = list(_name2model.keys()) + ["get_module"]

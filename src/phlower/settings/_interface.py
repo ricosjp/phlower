@@ -7,6 +7,11 @@ class IReadOnlyReferenceGroupSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def search_module_setting(self, name: str) -> IPhlowerLayerParameters: ...
 
+    @abc.abstractmethod
+    def search_group_setting(
+        self, name: str
+    ) -> IReadOnlyReferenceGroupSetting: ...
+
 
 class IModuleSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -30,6 +35,16 @@ class IModuleSetting(metaclass=abc.ABCMeta):
 
 
 class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
+    @classmethod
+    @abc.abstractmethod
+    def get_nn_type(cls) -> str:
+        """Return the type of neural network layer
+
+        Returns:
+            str: type of neural network layer
+        """
+        ...
+
     @abc.abstractmethod
     def gather_input_dims(self, *input_dims: int) -> int:
         """Gather feature dimensions of input tensors

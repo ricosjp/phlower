@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 import pydantic
 from pydantic import (
@@ -10,11 +10,24 @@ from pydantic import (
 
 from phlower.settings._module_settings import (
     IPhlowerLayerParameters,
-    _name_to_setting,
+    _layer_settings,
 )
 
+_name_to_setting = {s.get_nn_type(): s for s in _layer_settings}
 
-def _validate(vals: dict, info: ValidationInfo) -> IPhlowerLayerParameters:
+EmptyDict: TypeAlias = dict
+
+
+def _validate(
+    vals: dict, info: ValidationInfo
+) -> IPhlowerLayerParameters | EmptyDict:
+    if info.data["nn_parameters_same_as"] is not None:
+        if len(vals) != 0:
+            raise ValueError(
+                "nn_parameters must be empty when nn_parameters_same_as is set."
+            )
+        return {}
+
     if "nn_type" not in info.data:
         raise ValueError(f"nn_type is not defined in {info.data['name']}")
     name = info.data["nn_type"]
@@ -34,7 +47,7 @@ def _serialize(
 
 
 PhlowerModuleParameters = Annotated[
-    IPhlowerLayerParameters,
+    IPhlowerLayerParameters | EmptyDict,
     PlainValidator(_validate),
     PlainSerializer(_serialize),
 ]
