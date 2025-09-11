@@ -58,9 +58,6 @@ markers = [
     "need_multicore: marks tests which need multiple cores",
     "need_multigpu: marks tests which need multiple GPUs"
 ]
-env = [
-    "NCCL_DEBUG=INFO",
-]
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]

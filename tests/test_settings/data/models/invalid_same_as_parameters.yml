@@ -2,7 +2,7 @@ misc:
 
   tests:
     MLP0: [10, 20, 10]
-    SAME_MLP0: [10, 20, 10]
+    MLP1: [10, 20, 10]
     Concat0: [20, 20]
     MLP2: [20, 20, 5]
 
@@ -45,6 +45,10 @@ model:
         destinations:
           - Concat0
         nn_parameters_same_as: MLP0
+        # This is invalid because nn_parameters is also provided
+        nn_parameters:
+          nodes: [-1, 20, 10]
+          activations: ["Identity", "identity"]
 
       - nn_type: Concatenator
         name: Concat0
