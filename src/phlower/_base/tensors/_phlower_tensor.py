@@ -700,7 +700,7 @@ class PhlowerTensor(IPhlowerTensor):
         types: list[type],
         args: tuple,
         kwargs: dict | None = None,
-    ) -> PhlowerTensor | NamedTuple[PhlowerTensor]:
+    ) -> PhlowerTensor | NamedTuple[IPhlowerTensor]:
         if func.__name__ in _UNSUPPORTED_FUNCTION_NAMES:
             raise PhlowerUnsupportedTorchFunctionError(
                 f"Unsupported function: {func.__name__}"
