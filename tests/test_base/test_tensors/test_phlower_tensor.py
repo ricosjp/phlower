@@ -655,6 +655,44 @@ def test__min_max_operation_with_dim(
         assert ret.indices.dimension.is_dimensionless
 
 
+@pytest.mark.parametrize("dimension", [None, {}, {"L": 3}])
+def test__setitem_with_scalar(dimension: dict[str, int] | None):
+    t = phlower_tensor(torch.rand(5), dimension=dimension)
+    s = np.random.rand()
+    t[2:] = s
+
+    np.testing.assert_almost_equal(t[2:].numpy(), s)
+
+    if dimension is None:
+        assert t.dimension is None
+    else:
+        assert t.dimension == phlower_dimension_tensor(dimension)
+
+
+@pytest.mark.parametrize("dimension", [None, {}, {"L": 3}])
+def test__setitem_with_phlower_tensor(dimension: dict[str, int] | None):
+    t = phlower_tensor(torch.rand(5), dimension=dimension)
+    s = phlower_tensor(torch.rand(5), dimension=dimension)
+    t[2:] = s[2:]
+
+    np.testing.assert_almost_equal(t[2:].numpy(), s[2:].numpy())
+
+    if dimension is None:
+        assert t.dimension is None
+    else:
+        assert t.dimension == phlower_dimension_tensor(dimension)
+
+
+@pytest.mark.parametrize("dimension", [None, {}, {"L": 3}])
+def test__setitem_raise_dimension_incompatible_error(
+    dimension: dict[str, int] | None,
+):
+    t = phlower_tensor(torch.rand(5), dimension=dimension)
+    s = phlower_tensor(torch.rand(5), dimension={"L": 2})
+    with pytest.raises(DimensionIncompatibleError):
+        t[2:] = s[2:]
+
+
 # region Test for __getitem__
 
 

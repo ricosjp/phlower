@@ -360,10 +360,20 @@ class PhlowerTensor(IPhlowerTensor):
 
     @functools.wraps(torch.Tensor.__setitem__)
     def __setitem__(self, key: Any, value: Any) -> Self:
-        if isinstance(key, PhlowerTensor):
-            self._tensor[key.to_tensor()] = value
+        if isinstance(value, PhlowerTensor):
+            if self.dimension != value.dimension:
+                raise DimensionIncompatibleError(
+                    "Dimension incompatible: "
+                    f"{self.dimension} vs {value.dimension}"
+                )
+            value_to_set = value.to_tensor()
         else:
-            self._tensor[key] = value
+            value_to_set = value
+
+        if isinstance(key, PhlowerTensor):
+            self._tensor[key.to_tensor()] = value_to_set
+        else:
+            self._tensor[key] = value_to_set
         return self
 
     def __len__(self) -> int:
