@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import socket
 from collections.abc import Iterable
+from functools import cached_property
 from typing import Any, Literal, cast
 
 import pydantic
@@ -21,8 +23,11 @@ from phlower.utils import (
     OptimizerSelector,
     SchedulerSelector,
     determine_max_process,
+    get_logger,
 )
 from phlower.utils.enums import TrainerInitializeType
+
+_logger = get_logger(__name__)
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
@@ -183,6 +188,17 @@ class ParallelSetting(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
 
+    @cached_property
+    def tcp_port(self) -> int:
+        port: int = -1
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("localhost", 0))
+            addr = s.getsockname()
+            port = addr[1]
+
+        assert port != -1
+        return port
+
     @pydantic.model_validator(mode="after")
     def check_n_processes_and_gpus(self) -> Self:
         if not self.is_active:
@@ -314,6 +330,15 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     """
     If True, pin_memory is used in DataLoader.
     Defaults to False.
+    """
+
+    evaluate_context_manager: Literal["inference_mode", "no_grad"] = (
+        "inference_mode"
+    )
+    """
+    Context manager to use during evaluation.
+    Choose from "no_grad" or "inference_mode".
+    Defaults to "inference_mode".
     """
 
     # special keyward to forbid extra fields in pydantic

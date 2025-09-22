@@ -544,6 +544,35 @@ def test__train_with_raise_nan_detected(
         )
 
 
+def test__run_inplace_operation_with_inference_mode(
+    prepare_sample_preprocessed_files: None,
+):
+    # This test checks if inplace operation works without error
+    # If torch.inference_mode() is called after DataLoader,
+    # this test fails.
+
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_inplace.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_w_inplace"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+
 # region: test for time series sliding window
 
 

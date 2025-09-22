@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `NaNStoppingHandler` to stop training when loss becomes NaN.
 * Add sliding window method for time series data in training process.
 * Add distributed data parallel (DDP) training.
+* Add `evaluate_context_manager` parameter to `TrainerSetting` to choose context manager during evaluation.
 
 ### Changed
 * Time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.
@@ -22,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix `restart` method not to load recursively previous restarted checkpoints.
-
+* Fix to set empty tcp port for DDP
 
 ## [0.2.2] - 2025-06-12
 

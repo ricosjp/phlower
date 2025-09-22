@@ -1,6 +1,6 @@
 # 3.10, 3.11, 3.12
 ARG USE_PYTHON_VERSION=3.11
-FROM pytorch/pytorch:2.5.0-cuda12.4-cudnn9-runtime AS builder
+FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update \
       && apt install -y make \
@@ -15,7 +15,7 @@ WORKDIR /workspace
 RUN poetry config virtualenvs.in-project true && make install
 
 
-FROM pytorch/pytorch:2.5.0-cuda12.4-cudnn9-runtime
+FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
 ARG USE_PYTHON_VERSION
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /workspace

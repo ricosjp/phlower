@@ -185,6 +185,14 @@ class PhlowerTrainer:
             PhlowerGroupModule.from_setting(self._setting.model.network)
         )
 
+        if self._setting.training.parallel_setting.is_active:
+            tcp_port = self._setting.training.parallel_setting.tcp_port
+            # set the address and port for the process group
+            # This setting assumes that all processes are
+            #  running on the same machine.
+            os.environ["MASTER_ADDR"] = "localhost"
+            os.environ["MASTER_PORT"] = str(tcp_port)
+
     def attach_handler(
         self,
         name: str,
@@ -431,7 +439,9 @@ class PhlowerTrainer:
         """
 
         _setup_parallel(
-            rank, world_size, self._setting.training.parallel_setting.backend
+            rank,
+            world_size,
+            backend=self._setting.training.parallel_setting.backend,
         )
 
         data_setting = self._setting.data.upgrade(
@@ -654,11 +664,6 @@ class PhlowerTrainer:
 
 
 def _setup_parallel(rank: int, world_size: int, backend: str = "nccl") -> None:
-    # set the address and port for the process group
-    # This setting assumes that all processes are running on the same machine.
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
-
     # initialize the process group
     if backend == "nccl":
         torch.cuda.set_device(rank)

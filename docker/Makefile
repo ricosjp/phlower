@@ -12,9 +12,10 @@ endif
 
 .PHONY: prepare
 prepare:
-	cp -f ../README.md dist
-	cp -f ../pyproject.toml dist
-	cp -f ../Makefile dist
+	mkdir dist
+	cp -f ../README.md dist/
+	cp -f ../pyproject.toml dist/
+	cp -f ../Makefile dist/
 
 
 .PHONY: push_cpu_images

@@ -177,6 +177,20 @@ class EvaluationRunner:
             )
         return np.average(results), _aggregate_loss_details(results_details)
 
+    def _determine_context_manager(
+        self,
+    ) -> type[torch.inference_mode] | type[torch.no_grad]:
+        match self._trainer_setting.evaluate_context_manager:
+            case "inference_mode":
+                return torch.inference_mode
+            case "no_grad":
+                return torch.no_grad
+            case _:
+                raise ValueError(
+                    "Unknown evaluate_context_manager: "
+                    f"{self._trainer_setting.evaluate_context_manager}"
+                )
+
     def _parallel_evaluation(
         self,
         epoch: int,
@@ -192,43 +206,45 @@ class EvaluationRunner:
 
         model.eval()
 
-        # It is necessary to set epoch for each process
-        # when using DistributedSampler
-        data_loader.sampler.set_epoch(epoch)
-        device = self._trainer_setting.get_device(rank)
-        for batch in data_loader:
-            batch = batch.to(
-                device=device,
-                non_blocking=self._trainer_setting.non_blocking,
-            )
-            helper = SlidingWindowHelper(
-                batch,
-                self._trainer_setting.time_series_sliding.validation_window_settings,
-            )
+        context_manager = self._determine_context_manager()
+        with context_manager():
+            # It is necessary to set epoch for each process
+            # when using DistributedSampler
+            data_loader.sampler.set_epoch(epoch)
+            device = self._trainer_setting.get_device(rank)
+            for batch in data_loader:
+                batch = batch.to(
+                    device=device,
+                    non_blocking=self._trainer_setting.non_blocking,
+                )
+                helper = SlidingWindowHelper(
+                    batch,
+                    self._trainer_setting.time_series_sliding.validation_window_settings,
+                )
 
-            _loss_list, _loss_details = _evaluation_batch_step(
-                helper,
-                model,
-                loss_function,
-                self._handlers,
-            )
+                _loss_list, _loss_details = _evaluation_batch_step(
+                    helper,
+                    model,
+                    loss_function,
+                    self._handlers,
+                )
 
-            pbar.update(
-                trick=batch.n_data,
-                desc=f"{pbar_title}: {_loss_list[-1]:.3e}",
-            )
+                pbar.update(
+                    trick=batch.n_data,
+                    desc=f"{pbar_title}: {_loss_list[-1]:.3e}",
+                )
 
-            # Communicate losses from all processes
-            # It is implicitly assumed that all processes
-            #  have the same number of time sliding windows
-            gathered_loss = gather_losses_across_processes(_loss_list)
-            gathered_details = gather_loss_details_across_processes(
-                _loss_details
-            )
+                # Communicate losses from all processes
+                # It is implicitly assumed that all processes
+                #  have the same number of time sliding windows
+                gathered_loss = gather_losses_across_processes(_loss_list)
+                gathered_details = gather_loss_details_across_processes(
+                    _loss_details
+                )
 
-            if rank == 0:
-                results.extend(gathered_loss)
-                results_details.extend(gathered_details)
+                if rank == 0:
+                    results.extend(gathered_loss)
+                    results_details.extend(gathered_details)
 
         return np.average(results), _aggregate_loss_details(results_details)
 
@@ -251,27 +267,26 @@ def _evaluation_batch_step(
     results: list[float] = []
     results_details: list[dict[str, np.ndarray]] = []
 
-    with torch.inference_mode():
-        for _batch in sliding_window_helper:
-            h = model.forward(_batch.x_data, field_data=_batch.field_data)
-            val_losses = loss_calculator.calculate(
-                h,
-                _batch.y_data,
-                batch_info_dict=_batch.y_batch_info,
-            )
-            detached_val_loss = (
-                loss_calculator.aggregate(val_losses)
-                .detach()
-                .to_tensor()
-                .float()
-                .item()
-            )
-            handlers.run(
-                detached_val_loss,
-                trigger=PhlowerHandlerTrigger.iteration_completed,
-            )
-            results.append(detached_val_loss)
-            results_details.append(val_losses.to_numpy())
+    for _batch in sliding_window_helper:
+        h = model.forward(_batch.x_data, field_data=_batch.field_data)
+        val_losses = loss_calculator.calculate(
+            h,
+            _batch.y_data,
+            batch_info_dict=_batch.y_batch_info,
+        )
+        detached_val_loss = (
+            loss_calculator.aggregate(val_losses)
+            .detach()
+            .to_tensor()
+            .float()
+            .item()
+        )
+        handlers.run(
+            detached_val_loss,
+            trigger=PhlowerHandlerTrigger.iteration_completed,
+        )
+        results.append(detached_val_loss)
+        results_details.append(val_losses.to_numpy())
     return results, results_details
 
 
