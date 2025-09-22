@@ -197,3 +197,19 @@ def test__detect_insufficient_cpus(
                 "world_size": 15,
             }
         )
+
+
+def test__check_tcp_port_range():
+    setting = PhlowerTrainerSetting(
+        parallel_setting={
+            "is_active": False,
+            "parallel_type": "DDP",
+            "world_size": 15,
+        }
+    )
+
+    tcp_port = setting.parallel_setting.tcp_port
+    assert 1024 <= tcp_port < 65536
+
+    tcp_port_2 = setting.parallel_setting.tcp_port
+    assert tcp_port == tcp_port_2
