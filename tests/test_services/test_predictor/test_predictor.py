@@ -113,6 +113,33 @@ def simple_training(
     return loss, output_directory
 
 
+@pytest.fixture(scope="module")
+def inplace_simple_training(
+    perform_scaling: pathlib.Path,
+) -> tuple[float, pathlib.Path]:
+    phlower_path = PhlowerDirectory(OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(DATA_DIR / "train_inplace.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = OUTPUT_DIR / "model_inplace"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return loss, output_directory
+
+
 def test__predict_with_inverse_scaling(
     simple_training: tuple[float, pathlib.Path],
 ):
@@ -220,3 +247,31 @@ def test__predict_context_manager(
     with predictor._predict_context_manager():
         assert torch.is_inference_mode_enabled() == use_inference_mode
         assert not torch.is_grad_enabled()
+
+
+def test__predict_inplace_model(
+    inplace_simple_training: tuple[float, pathlib.Path],
+):
+    _, model_directory = inplace_simple_training
+
+    predictor = PhlowerPredictor.from_pathes(
+        model_directory=model_directory,
+        predict_setting_yaml=DATA_DIR / "predict.yml",
+        scaling_setting_yaml=OUTPUT_DIR / "preprocessed/preprocess.yml",
+    )
+    phlower_path = PhlowerDirectory(model_directory.parent)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    for result in predictor.predict(
+        preprocessed_data=preprocessed_directories, perform_inverse_scaling=True
+    ):
+        for k in result.prediction_data.keys():
+            assert isinstance(result.prediction_data[k], np.ndarray)
+
+        for k in result.input_data.keys():
+            assert isinstance(result.input_data[k], np.ndarray)
