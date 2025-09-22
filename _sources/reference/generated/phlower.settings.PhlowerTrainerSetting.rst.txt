@@ -1,0 +1,104 @@
+﻿:orphan:
+
+phlower.settings.PhlowerTrainerSetting
+======================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerTrainerSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerTrainerSetting.get_device
+   
+   
+      ~PhlowerTrainerSetting.get_early_stopping_patience
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerTrainerSetting.model_computed_fields
+      ~PhlowerTrainerSetting.model_config
+      ~PhlowerTrainerSetting.model_extra
+      ~PhlowerTrainerSetting.model_fields
+      ~PhlowerTrainerSetting.model_fields_set
+      ~PhlowerTrainerSetting.loss_setting
+      ~PhlowerTrainerSetting.optimizer_setting
+      ~PhlowerTrainerSetting.scheduler_settings
+      ~PhlowerTrainerSetting.handler_settings
+      ~PhlowerTrainerSetting.n_epoch
+      ~PhlowerTrainerSetting.random_seed
+      ~PhlowerTrainerSetting.batch_size
+      ~PhlowerTrainerSetting.num_workers
+      ~PhlowerTrainerSetting.device
+      ~PhlowerTrainerSetting.evaluation_for_training
+      ~PhlowerTrainerSetting.log_every_n_epoch
+      ~PhlowerTrainerSetting.initializer_setting
+      ~PhlowerTrainerSetting.lazy_load
+      ~PhlowerTrainerSetting.time_series_sliding
+      ~PhlowerTrainerSetting.parallel_setting
+      ~PhlowerTrainerSetting.non_blocking
+      ~PhlowerTrainerSetting.pin_memory
+      ~PhlowerTrainerSetting.evaluate_context_manager
+   
+   

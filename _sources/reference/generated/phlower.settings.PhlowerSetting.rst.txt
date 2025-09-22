@@ -1,0 +1,95 @@
+﻿:orphan:
+
+phlower.settings.PhlowerSetting
+===============================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+      ~PhlowerSetting.check_version
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerSetting.read_dictionary
+   
+   
+      ~PhlowerSetting.read_yaml
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerSetting.model_computed_fields
+      ~PhlowerSetting.model_config
+      ~PhlowerSetting.model_extra
+      ~PhlowerSetting.model_fields
+      ~PhlowerSetting.model_fields_set
+      ~PhlowerSetting.version
+      ~PhlowerSetting.data
+      ~PhlowerSetting.training
+      ~PhlowerSetting.model
+      ~PhlowerSetting.scaling
+      ~PhlowerSetting.prediction
+   
+   

@@ -1,0 +1,1002 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>phlower.PhlowerTensor - phlower v0.2.2-dev2</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=6f7ac79e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">phlower v0.2.2-dev2</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo.png" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../index.html">Module Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Module Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../nn.html">nn</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of nn</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Accessor.html">phlower.nn.Accessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Concatenator.html">phlower.nn.Concatenator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Dirichlet.html">phlower.nn.Dirichlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Contraction.html">phlower.nn.Contraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.DeepSets.html">phlower.nn.DeepSets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.EnEquivariantMLP.html">phlower.nn.EnEquivariantMLP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.EnEquivariantTCN.html">phlower.nn.EnEquivariantTCN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Einsum.html">phlower.nn.Einsum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.GCN.html">phlower.nn.GCN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Identity.html">phlower.nn.Identity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.IsoGCN.html">phlower.nn.IsoGCN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.MLP.html">phlower.nn.MLP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.PInvMLP.html">phlower.nn.PInvMLP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Proportional.html">phlower.nn.Proportional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Rearrange.html">phlower.nn.Rearrange</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Reducer.html">phlower.nn.Reducer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.Share.html">phlower.nn.Share</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.SimilarityEquivariantMLP.html">phlower.nn.SimilarityEquivariantMLP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.SPMM.html">phlower.nn.SPMM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.TCN.html">phlower.nn.TCN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.nn.TimeSeriesToFeatures.html">phlower.nn.TimeSeriesToFeatures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tensors.html">PhlowerTensor</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../services.html">service</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of service</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="phlower.services.trainer.PhlowerTrainer.html">phlower.services.trainer.PhlowerTrainer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.services.preprocessing.PhlowerScalingService.html">phlower.services.preprocessing.PhlowerScalingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.services.predictor.PhlowerPredictor.html">phlower.services.predictor.PhlowerPredictor</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../settings.html">settings</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of settings</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerSetting.html">phlower.settings.PhlowerSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerTrainerSetting.html">phlower.settings.PhlowerTrainerSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerPredictorSetting.html">phlower.settings.PhlowerPredictorSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerModelSetting.html">phlower.settings.PhlowerModelSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.GroupModuleSetting.html">phlower.settings.GroupModuleSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.ModuleSetting.html">phlower.settings.ModuleSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.PhlowerScalingSetting.html">phlower.settings.PhlowerScalingSetting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.ScalerInputParameters.html">phlower.settings.ScalerInputParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="phlower.settings.ScalerResolvedParameter.html">phlower.settings.ScalerResolvedParameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorial</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../../_sources/reference/generated/phlower.PhlowerTensor.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="phlower-phlowertensor">
+<h1>phlower.PhlowerTensor<a class="headerlink" href="#phlower-phlowertensor" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">phlower.</span></span><span class="sig-name descname"><span class="pre">PhlowerTensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension_tensor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_time_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_voxel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IPhlowerTensor</span></code></p>
+<p>PhlowerTensor is a wrapper of torch.Tensor with a physical dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>(</strong><strong>torch.Tensor</strong><strong>)</strong> (<em>tensor</em>) – Tensor to be wrapped.</p></li>
+<li><p><strong>(</strong><strong>PhlowerDimensionTensor</strong> (<em>dimension_tensor</em>) – Physical dimension tensor.</p></li>
+<li><p><strong>optional</strong><strong>)</strong> – Physical dimension tensor.</p></li>
+<li><p><strong>(</strong><strong>bool</strong> (<em>is_voxel</em>) – Whether the tensor is a time series.</p></li>
+<li><p><strong>optional</strong><strong>)</strong> – Whether the tensor is a time series.</p></li>
+<li><p><strong>(</strong><strong>bool</strong> – Whether the tensor is a voxel.</p></li>
+<li><p><strong>optional</strong><strong>)</strong> – Whether the tensor is a voxel.</p></li>
+<li><p><strong>tensor</strong> (<em>torch.Tensor</em>)</p></li>
+<li><p><strong>dimension_tensor</strong> (<a class="reference internal" href="phlower.PhlowerDimensionTensor.html#phlower.PhlowerDimensionTensor" title="phlower.PhlowerDimensionTensor"><em>PhlowerDimensionTensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>is_time_series</strong> (<em>bool</em>)</p></li>
+<li><p><strong>is_voxel</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">phlower_tensor</span> <span class="o">=</span> <span class="n">PhlowerTensor</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">tensor</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dimension_tensor</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">is_time_series</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">is_voxel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">phlower_tensor</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>(tensor[, dimension_tensor, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.as_pattern" title="phlower.PhlowerTensor.as_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_pattern</span></code></a>(pattern)</p></td>
+<td><p>Convert the tensor to a pattern.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.backward" title="phlower.PhlowerTensor.backward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backward</span></code></a>()</p></td>
+<td><p>Backward the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.clone" title="phlower.PhlowerTensor.clone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code></a>()</p></td>
+<td><p>Clone the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.coalesce" title="phlower.PhlowerTensor.coalesce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coalesce</span></code></a>()</p></td>
+<td><p>Coalesce the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.detach" title="phlower.PhlowerTensor.detach"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detach</span></code></a>()</p></td>
+<td><p>Detach the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pattern</span></code>(tensor[, dimension_tensor, pattern])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.indices" title="phlower.PhlowerTensor.indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">indices</span></code></a>()</p></td>
+<td><p>Returns the indices of the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.is_global" title="phlower.PhlowerTensor.is_global"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_global</span></code></a>(n_batch)</p></td>
+<td><p>Returns True if the batched tensor is from global ones.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.n_vertices" title="phlower.PhlowerTensor.n_vertices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_vertices</span></code></a>()</p></td>
+<td><p>Returns the number of vertices.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.numel" title="phlower.PhlowerTensor.numel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numel</span></code></a>()</p></td>
+<td><p>Number of elements in the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.rank" title="phlower.PhlowerTensor.rank"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rank</span></code></a>()</p></td>
+<td><p>Returns the tensor rank.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.rearrange" title="phlower.PhlowerTensor.rearrange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rearrange</span></code></a>(pattern, **axes_length)</p></td>
+<td><p>Rearrange the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.reshape" title="phlower.PhlowerTensor.reshape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape</span></code></a>(shape[, is_time_series, is_voxel])</p></td>
+<td><p>Reshape the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.size" title="phlower.PhlowerTensor.size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">size</span></code></a>()</p></td>
+<td><p>Size of the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.slice_time" title="phlower.PhlowerTensor.slice_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_time</span></code></a>(indices[, keep_time_series])</p></td>
+<td><p>Slice the time series tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.to" title="phlower.PhlowerTensor.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>([device, non_blocking, dtype])</p></td>
+<td><p>Convert the tensor to a different device or data type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.to_numpy" title="phlower.PhlowerTensor.to_numpy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_numpy</span></code></a>()</p></td>
+<td><p>Convert to numpy.ndarray.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_phlower_array</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.to_tensor" title="phlower.PhlowerTensor.to_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_tensor</span></code></a>()</p></td>
+<td><p>Convert to torch.Tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.to_vertexwise" title="phlower.PhlowerTensor.to_vertexwise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_vertexwise</span></code></a>()</p></td>
+<td><p>Convert to vertexwise 2D tensor which has (n_vertices, -1) shape.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.transpose" title="phlower.PhlowerTensor.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>(dim0, dim1)</p></td>
+<td><p>Transpose the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.values" title="phlower.PhlowerTensor.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a>()</p></td>
+<td><p>Returns the values of the tensor.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Attributes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.device" title="phlower.PhlowerTensor.device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">device</span></code></a></p></td>
+<td><p>Device of the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.dimension" title="phlower.PhlowerTensor.dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimension</span></code></a></p></td>
+<td><p>Physical dimension tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.dtype" title="phlower.PhlowerTensor.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<td><p>Data type of the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.has_dimension" title="phlower.PhlowerTensor.has_dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_dimension</span></code></a></p></td>
+<td><p>Whether the tensor has a physical dimension.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.is_sparse" title="phlower.PhlowerTensor.is_sparse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_sparse</span></code></a></p></td>
+<td><p>Whether the tensor is a sparse tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.is_time_series" title="phlower.PhlowerTensor.is_time_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_time_series</span></code></a></p></td>
+<td><p>Whether the tensor is a time series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.is_voxel" title="phlower.PhlowerTensor.is_voxel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_voxel</span></code></a></p></td>
+<td><p>Whether the tensor is a voxel.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.shape" title="phlower.PhlowerTensor.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
+<td><p>Shape of the tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.shape_pattern" title="phlower.PhlowerTensor.shape_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape_pattern</span></code></a></p></td>
+<td><p>Shape pattern of the tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phlower.PhlowerTensor.time_series_length" title="phlower.PhlowerTensor.time_series_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_series_length</span></code></a></p></td>
+<td><p>Length of the time series.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.as_pattern">
+<span class="sig-name descname"><span class="pre">as_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.as_pattern"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.as_pattern" title="Link to this definition">¶</a></dt>
+<dd><p>Convert the tensor to a pattern.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Patterned tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pattern</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.backward">
+<span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.backward" title="Link to this definition">¶</a></dt>
+<dd><p>Backward the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.clone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.clone" title="Link to this definition">¶</a></dt>
+<dd><p>Clone the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Cloned tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.coalesce">
+<span class="sig-name descname"><span class="pre">coalesce</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.coalesce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.coalesce" title="Link to this definition">¶</a></dt>
+<dd><p>Coalesce the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Coalesced tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.detach">
+<span class="sig-name descname"><span class="pre">detach</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.detach"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.detach" title="Link to this definition">¶</a></dt>
+<dd><p>Detach the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Detached tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.device">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">device</span></em><a class="headerlink" href="#phlower.PhlowerTensor.device" title="Link to this definition">¶</a></dt>
+<dd><p>Device of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Device of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.device</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.dimension">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimension</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="phlower.PhlowerDimensionTensor.html#phlower.PhlowerDimensionTensor" title="phlower._base.tensors._dimension_tensor.PhlowerDimensionTensor"><span class="pre">PhlowerDimensionTensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#phlower.PhlowerTensor.dimension" title="Link to this definition">¶</a></dt>
+<dd><p>Physical dimension tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Physical dimension tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="phlower.PhlowerDimensionTensor.html#phlower.PhlowerDimensionTensor" title="phlower.PhlowerDimensionTensor">PhlowerDimensionTensor</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dtype</span></em><a class="headerlink" href="#phlower.PhlowerTensor.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Data type of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Data type of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.dtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.has_dimension">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_dimension</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#phlower.PhlowerTensor.has_dimension" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the tensor has a physical dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether the tensor has a physical dimension.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.indices">
+<span class="sig-name descname"><span class="pre">indices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.indices" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the indices of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Indices of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.is_global">
+<span class="sig-name descname"><span class="pre">is_global</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.is_global"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.is_global" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if the batched tensor is from global ones.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n_batch</strong> (<em>int</em>) – int
+The number of batches.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the batched tensor is from global ones.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.is_sparse">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_sparse</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#phlower.PhlowerTensor.is_sparse" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the tensor is a sparse tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether the tensor is a sparse tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.is_time_series">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_time_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#phlower.PhlowerTensor.is_time_series" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the tensor is a time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether the tensor is a time series.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.is_voxel">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_voxel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#phlower.PhlowerTensor.is_voxel" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the tensor is a voxel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether the tensor is a voxel.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.n_vertices">
+<span class="sig-name descname"><span class="pre">n_vertices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.n_vertices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.n_vertices" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the number of vertices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of vertices.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.numel">
+<span class="sig-name descname"><span class="pre">numel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.numel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.numel" title="Link to this definition">¶</a></dt>
+<dd><p>Number of elements in the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of elements in the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.rank">
+<span class="sig-name descname"><span class="pre">rank</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.rank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.rank" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the tensor rank.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor rank.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.rearrange">
+<span class="sig-name descname"><span class="pre">rearrange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">axes_length</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.rearrange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.rearrange" title="Link to this definition">¶</a></dt>
+<dd><p>Rearrange the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rearranged tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pattern</strong> (<em>str</em>)</p></li>
+<li><p><strong>axes_length</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.reshape">
+<span class="sig-name descname"><span class="pre">reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_time_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_voxel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.reshape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.reshape" title="Link to this definition">¶</a></dt>
+<dd><p>Reshape the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Reshaped tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>Sequence</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>is_time_series</strong> (<em>bool</em>)</p></li>
+<li><p><strong>is_voxel</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Size</span></em><a class="headerlink" href="#phlower.PhlowerTensor.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Shape of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Shape of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.shape_pattern">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape_pattern</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PhlowerShapePattern</span></em><a class="headerlink" href="#phlower.PhlowerTensor.shape_pattern" title="Link to this definition">¶</a></dt>
+<dd><p>Shape pattern of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Shape pattern of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>PhlowerShapePattern</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.size">
+<span class="sig-name descname"><span class="pre">size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.size" title="Link to this definition">¶</a></dt>
+<dd><p>Size of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.slice_time">
+<span class="sig-name descname"><span class="pre">slice_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_time_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.slice_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.slice_time" title="Link to this definition">¶</a></dt>
+<dd><p>Slice the time series tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sliced tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>indices</strong> (<em>int</em><em> | </em><em>slice</em><em> | </em><em>list</em><em>[</em><em>int</em><em>] </em><em>| </em><em>ndarray</em><em> | </em><em>Tensor</em>)</p></li>
+<li><p><strong>keep_time_series</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.time_series_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time_series_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#phlower.PhlowerTensor.time_series_length" title="Link to this definition">¶</a></dt>
+<dd><p>Length of the time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Length of the time series.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.to" title="Link to this definition">¶</a></dt>
+<dd><p>Convert the tensor to a different device or data type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Converted tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<em>str</em><em> | </em><em>device</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>non_blocking</strong> (<em>bool</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>dtype</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.to_numpy">
+<span class="sig-name descname"><span class="pre">to_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.to_numpy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.to_numpy" title="Link to this definition">¶</a></dt>
+<dd><p>Convert to numpy.ndarray.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.to_tensor">
+<span class="sig-name descname"><span class="pre">to_tensor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.to_tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.to_tensor" title="Link to this definition">¶</a></dt>
+<dd><p>Convert to torch.Tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.to_vertexwise">
+<span class="sig-name descname"><span class="pre">to_vertexwise</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.to_vertexwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.to_vertexwise" title="Link to this definition">¶</a></dt>
+<dd><p>Convert to vertexwise 2D tensor which has (n_vertices, -1) shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>PhlowerTensor</dt><dd><p>Vertexwise PhlowerTensor object.</p>
+</dd>
+<dt>resultant_pattern<span class="classifier">str</span></dt><dd><p>Pattern of the resultant shape. Can be used for rearrange.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>vertexwise_tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.transpose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.transpose" title="Link to this definition">¶</a></dt>
+<dd><p>Transpose the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Transposed tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#phlower.PhlowerTensor" title="phlower.PhlowerTensor">PhlowerTensor</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim0</strong> (<em>int</em>)</p></li>
+<li><p><strong>dim1</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phlower.PhlowerTensor.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/phlower/_base/tensors/_phlower_tensor.html#PhlowerTensor.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phlower.PhlowerTensor.values" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the values of the tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Values of the tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, RICOS
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">phlower.PhlowerTensor</a><ul>
+<li><a class="reference internal" href="#phlower.PhlowerTensor"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor</span></code></a><ul>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.as_pattern"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.as_pattern()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.backward"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.backward()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.clone"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.clone()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.coalesce"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.coalesce()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.detach"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.detach()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.device"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.device</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.dimension"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.dimension</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.dtype"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.dtype</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.has_dimension"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.has_dimension</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.indices"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.indices()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.is_global"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.is_global()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.is_sparse"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.is_sparse</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.is_time_series"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.is_time_series</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.is_voxel"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.is_voxel</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.n_vertices"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.n_vertices()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.numel"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.numel()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.rank"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.rank()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.rearrange"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.rearrange()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.reshape"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.reshape()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.shape"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.shape</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.shape_pattern"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.shape_pattern</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.size"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.size()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.slice_time"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.slice_time()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.time_series_length"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.time_series_length</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.to"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.to()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.to_numpy"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.to_numpy()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.to_tensor"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.to_tensor()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.to_vertexwise"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.to_vertexwise()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.transpose"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.transpose()</span></code></a></li>
+<li><a class="reference internal" href="#phlower.PhlowerTensor.values"><code class="docutils literal notranslate"><span class="pre">PhlowerTensor.values()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=b99f352c"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    </body>
+</html>
