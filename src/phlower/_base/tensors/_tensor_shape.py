@@ -386,7 +386,7 @@ class _IndexKeyWrapper:
                 return False
             case slice():
                 count = len(range(self._shapes[index])[key])
-                return count > 1
+                return count >= 1
             case torch.Tensor():
                 return key.numel() > 1
             case np.ndarray():
