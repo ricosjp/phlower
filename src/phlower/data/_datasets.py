@@ -297,22 +297,20 @@ def _apply_setting(
             _arr = _arr.to_numpy()
 
         if member.n_last_dim is None:
-            member_arrs.append(_arr)
-            continue
-
-        if _arr.shape[-1] == member.n_last_dim:
-            member_arrs.append(_arr)
-            continue
-
-        if member.n_last_dim == 1:
+            pass
+        elif _arr.shape[-1] == member.n_last_dim:
+            pass
+        elif member.n_last_dim == 1:
             _arr = _arr[..., np.newaxis]
-            member_arrs.append(_arr)
-            continue
+        else:
+            raise ValueError(
+                "Last dimension does not match. "
+                f"setting: {member.n_last_dim}, actual: {_arr.shape[-1]}"
+            )
 
-        raise ValueError(
-            "Last dimension does not match. "
-            f"setting: {member.n_last_dim}, actual: {_arr.shape[-1]}"
-        )
+        if member.index_first_dim is not None:
+            _arr = _arr[member.index_first_dim]
+        member_arrs.append(_arr)
 
     if len(member_arrs) == 0:
         if allow_missing:
