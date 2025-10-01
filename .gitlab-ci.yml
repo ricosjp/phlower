@@ -83,6 +83,9 @@ examples:
   tags:
     - gpu
     - GenuineIntel
+    - mem-ge-64gb
+    - io-high
+    - avx2
 
 pages_test:
   stage: document_test

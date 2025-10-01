@@ -13,7 +13,21 @@ from phlower.settings._group_setting import GroupModuleSetting
 
 class _MemberSetting(pydantic.BaseModel):
     name: str
+    """
+    Name of this feature array
+    """
+
     n_last_dim: int | None = None
+    """
+    Number of feature dimensions in the last axis.
+    If None is set, the dimension is not fixed.
+    """
+
+    index_first_dim: int | None = None
+    """
+    If set, this feature array is extracted by indexing the first axis
+    with this value. Otherwise, the whole array is used.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
