@@ -29,7 +29,13 @@ from phlower.settings import (
     PhlowerSetting,
     PhlowerTrainerSetting,
 )
-from phlower.utils import PhlowerProgressBar, StopWatch, fix_seed, get_logger
+from phlower.utils import (
+    PhlowerProgressBar,
+    StopWatch,
+    determine_max_process,
+    fix_seed,
+    get_logger,
+)
 from phlower.utils.enums import (
     ModelSelectionType,
     PhlowerHandlerTrigger,
@@ -148,6 +154,9 @@ class PhlowerTrainer:
 
         # NOTE: Must Call at first
         fix_seed(self._setting.training.random_seed)
+
+        # check environment
+        _check_environment(self._setting)
 
         # initializer
         self._state_setup = _TrainingStateSetup(
@@ -823,3 +832,31 @@ class _TrainingStateSetup:
                 raise NotImplementedError(
                     f"Backend {parallel_setting.backend} is not implemented."
                 )
+
+
+def _check_environment(setting: PhlowerSetting) -> None:
+    if setting.training.device == "cpu":
+        return
+
+    if torch.cuda.is_available() is False:
+        raise ValueError(
+            "CUDA is not available. Please check your environment."
+        )
+
+    parallel_setting = setting.training.parallel_setting
+    if parallel_setting.is_active is False:
+        return
+
+    n_gpus = torch.cuda.device_count()
+    if n_gpus < parallel_setting.world_size:
+        raise ValueError(
+            f"n_gpus {parallel_setting.world_size} is larger than "
+            f"available gpus {n_gpus}"
+        )
+
+    n_processes = determine_max_process()
+    if n_processes < parallel_setting.world_size:
+        raise ValueError(
+            f"n_gpus {parallel_setting.world_size} is larger than "
+            f"available processes {n_processes}"
+        )

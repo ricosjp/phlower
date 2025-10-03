@@ -169,34 +169,16 @@ def test__device_auto_when_cuda_is_not_available(mocked: mock.MagicMock):
     assert setting.device == "cpu"
 
 
-@mock.patch("torch.cuda.device_count")
-def test__detect_insufficient_gpus(mocked: mock.MagicMock):
-    mocked.return_value = 2
-    with pytest.raises(ValueError, match="is larger than available gpus"):
-        _ = PhlowerTrainerSetting(
-            parallel_setting={
-                "is_active": True,
-                "parallel_type": "DDP",
-                "world_size": 1000,
-            }
-        )
-
-
-@mock.patch("torch.cuda.device_count")
-@mock.patch("phlower.settings._trainer_setting.determine_max_process")
-def test__detect_insufficient_cpus(
-    mocked_cpu: mock.MagicMock, mocked_gpu: mock.MagicMock
-):
-    mocked_cpu.return_value = 10
-    mocked_gpu.return_value = 20
-    with pytest.raises(ValueError, match="is larger than available processes"):
-        _ = PhlowerTrainerSetting(
-            parallel_setting={
-                "is_active": True,
-                "parallel_type": "DDP",
-                "world_size": 15,
-            }
-        )
+def test__not_raise_error_when_invalid_env():
+    # This test prevents error in prediction environment
+    #  where cuda is not available.
+    _ = PhlowerTrainerSetting(
+        parallel_setting={
+            "is_active": True,
+            "parallel_type": "DDP",
+            "world_size": 1000,
+        }
+    )
 
 
 def test__check_tcp_port_range():
