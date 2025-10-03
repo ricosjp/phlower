@@ -13,7 +13,10 @@ import yaml
 from phlower.io import PhlowerDirectory, PhlowerYamlFile, select_snapshot_file
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting
-from phlower.settings._trainer_setting import TrainerInitializerSetting
+from phlower.settings._trainer_setting import (
+    ParallelSetting,
+    TrainerInitializerSetting,
+)
 from phlower.utils.exceptions import (
     PhlowerNaNDetectedError,
     PhlowerRestartTrainingCompletedError,
@@ -784,6 +787,70 @@ def test__start_pretrained_training_after_dpp_training(
         df_pretrained.loc[:, "validation_loss"].min()
         < df_ddp.loc[:, "validation_loss"].min()
     )
+
+
+@mock.patch("torch.cuda.is_available")
+@mock.patch("torch.cuda.device_count")
+def test__detect_insufficient_gpus(
+    mocked: mock.MagicMock, mocked_env: mock.MagicMock
+):
+    mocked_env.return_value = True
+    mocked.return_value = 2
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_ddp_gloo.yml")
+    setting = setting.model_copy(
+        update={
+            "training": setting.training.model_copy(
+                update={
+                    "device": "cuda:0",
+                    "parallel_setting": ParallelSetting(
+                        **{
+                            "is_active": True,
+                            "parallel_type": "DDP",
+                            "world_size": 1000,
+                        }
+                    ),
+                }
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="is larger than available gpus"):
+        PhlowerTrainer.from_setting(setting)
+
+
+@mock.patch("torch.cuda.is_available")
+@mock.patch("torch.cuda.device_count")
+@mock.patch("phlower.services.trainer._trainer.determine_max_process")
+def test__detect_insufficient_cpus(
+    mocked_cpu: mock.MagicMock,
+    mocked_gpu: mock.MagicMock,
+    mocked_env: mock.MagicMock,
+):
+    mocked_env.return_value = True
+    mocked_cpu.return_value = 10
+    mocked_gpu.return_value = 20
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_ddp_gloo.yml")
+    setting = setting.model_copy(
+        update={
+            "training": setting.training.model_copy(
+                update={
+                    "device": "cuda:0",
+                    "parallel_setting": ParallelSetting(
+                        **{
+                            "is_active": True,
+                            "parallel_type": "DDP",
+                            "world_size": 15,
+                        }
+                    ),
+                }
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="is larger than available processes"):
+        PhlowerTrainer.from_setting(setting)
 
 
 # endregion

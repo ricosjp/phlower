@@ -22,7 +22,6 @@ from phlower.settings._time_series_sliding_setting import (
 from phlower.utils import (
     OptimizerSelector,
     SchedulerSelector,
-    determine_max_process,
     get_logger,
 )
 from phlower.utils.enums import TrainerInitializeType
@@ -207,25 +206,11 @@ class ParallelSetting(pydantic.BaseModel):
         if self.parallel_type != "DDP":
             raise ValueError(
                 f"Unsupported parallel_type {self.parallel_type}. "
-                "Currently, only ddp is supported."
+                "Currently, only DDP is supported."
             )
 
         if self.backend == "gloo":
             return self
-
-        n_gpus = torch.cuda.device_count()
-        if n_gpus < self.world_size:
-            raise ValueError(
-                f"n_gpus {self.world_size} is larger than "
-                f"available gpus {n_gpus}"
-            )
-
-        n_processes = determine_max_process()
-        if n_processes < self.world_size:
-            raise ValueError(
-                f"n_gpus {self.world_size} is larger than "
-                f"available processes {n_processes}"
-            )
 
         return self
 
