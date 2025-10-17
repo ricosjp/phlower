@@ -19,6 +19,7 @@ nn
     GCN
     Identity
     IsoGCN
+    LayerNorm
     MLP
     PInvMLP
     Proportional
