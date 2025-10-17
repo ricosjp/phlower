@@ -60,9 +60,11 @@ gpu_test:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
   stage: test
   script:
+    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make gpu_test
   tags:
     - gpu
+    - sm_75
 
 e2e_test:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
@@ -70,22 +72,23 @@ e2e_test:
   variables:
     NCCL_DEBUG: "INFO"
   script:
+    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make e2e_test
   tags:
     - multi-gpu
     - GenuineIntel
+    - sm_75
 
 examples:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
   stage: test
   script:
+    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make examples
   tags:
     - gpu
     - GenuineIntel
-    - mem-ge-64gb
-    - io-high
-    - avx2
+    - sm_75
 
 pages_test:
   stage: document_test
