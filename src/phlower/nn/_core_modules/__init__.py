@@ -9,6 +9,7 @@ from phlower.nn._core_modules._en_equivariant_tcn import EnEquivariantTCN
 from phlower.nn._core_modules._gcn import GCN
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._iso_gcn import IsoGCN
+from phlower.nn._core_modules._layer_norm import LayerNorm
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._pinv_mlp import PInvMLP
 from phlower.nn._core_modules._pooling import Pooling
@@ -38,6 +39,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     GCN,
     Identity,
     IsoGCN,
+    LayerNorm,
     MLP,
     PInvMLP,
     Pooling,

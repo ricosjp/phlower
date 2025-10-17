@@ -23,6 +23,9 @@ from phlower.settings._module_settings._en_equivariant_tcn_setting import (
 from phlower.settings._module_settings._gcn_setting import GCNSetting
 from phlower.settings._module_settings._identity_setting import IdentitySetting
 from phlower.settings._module_settings._isogcn_setting import IsoGCNSetting
+from phlower.settings._module_settings._layer_norm_setting import (
+    LayerNormSetting,
+)
 from phlower.settings._module_settings._mlp_setting import MLPSetting
 from phlower.settings._module_settings._pinv_mlp_setting import PInvMLPSetting
 from phlower.settings._module_settings._pooling_setting import PoolingSetting
@@ -55,6 +58,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     GCNSetting,
     IdentitySetting,
     IsoGCNSetting,
+    LayerNormSetting,
     MLPSetting,
     PInvMLPSetting,
     ProportionalSetting,
