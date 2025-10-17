@@ -64,23 +64,29 @@ def test__get_loss_function(
 
 
 @pytest.mark.parametrize(
-    "losses, name2weight, desired",
+    "losses, name2weight, aggregation_method, desired",
     [
-        ({"u": 1.0, "p": 1.5}, None, 2.5),
-        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 0.0}, 1.0),
-        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 2.0}, 4.0),
+        ({"u": 1.0, "p": 1.5}, None, "sum", 2.5),
+        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 0.0}, "sum", 1.0),
+        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 2.0}, "sum", 4.0),
+        ({"u": 1.0, "p": 1.5}, None, "mean", 1.25),
+        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 0.0}, "mean", 1.0),
+        ({"u": 1.0, "p": 1.5}, {"u": 1.0, "p": 2.0}, "mean", 4.0 / 3.0),
     ],
 )
 def test__aggregate(
     losses: dict[str, float],
     name2weight: dict[str, float] | None,
+    aggregation_method: str,
     desired: float,
 ):
     losses = phlower_tensor_collection(
         {k: torch.tensor(v) for k, v in losses.items()}
     )
     calculator = LossCalculator(
-        name2loss={"u": "mse", "p": "mse"}, name2weight=name2weight
+        name2loss={"u": "mse", "p": "mse"},
+        name2weight=name2weight,
+        aggregation_method=aggregation_method,
     )
     actual = calculator.aggregate(losses)
 

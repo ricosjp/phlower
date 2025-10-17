@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add sliding window method for time series data in training process.
 * Add distributed data parallel (DDP) training.
 * Add `evaluate_context_manager` parameter to `TrainerSetting` to choose context manager during evaluation.
+* Add `LayerNorm` module in `phlower.nn`
+* Add `aggregation_method` parameter to `LossCalculator` to choose aggregation method of losses. (sum or mean)
 
 ### Changed
 * Time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.

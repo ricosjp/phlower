@@ -148,6 +148,7 @@ def test__default_trainer_setting():
     setting = PhlowerTrainerSetting()
 
     assert setting.loss_setting.name2loss == {}
+    assert setting.loss_setting.aggregation_method == "sum"
     assert setting.optimizer_setting.optimizer == "Adam"
     assert len(setting.scheduler_settings) == 0
     assert setting.initializer_setting.type_name == "none"
@@ -195,3 +196,17 @@ def test__check_tcp_port_range():
 
     tcp_port_2 = setting.parallel_setting.tcp_port
     assert tcp_port == tcp_port_2
+
+
+@pytest.mark.parametrize("aggregation_method", ["sum", "mean"])
+def test__loss_setting_aggregation(aggregation_method: str):
+    training_setting = PhlowerTrainerSetting(
+        loss_setting={
+            "name2loss": {"output": "MSELoss"},
+            "aggregation_method": aggregation_method,
+        }
+    )
+
+    assert (
+        training_setting.loss_setting.aggregation_method == aggregation_method
+    )

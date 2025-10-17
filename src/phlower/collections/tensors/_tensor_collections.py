@@ -74,6 +74,9 @@ class IPhlowerTensorCollections(metaclass=abc.ABCMeta):
     def sum(self, weights: dict[str, float] = None) -> PhlowerTensor: ...
 
     @abc.abstractmethod
+    def mean(self, weights: dict[str, float] = None) -> PhlowerTensor: ...
+
+    @abc.abstractmethod
     def reshape(self, shape: Sequence[int]) -> IPhlowerTensorCollections: ...
 
     @abc.abstractmethod
@@ -265,12 +268,24 @@ class PhlowerDictTensors(IPhlowerTensorCollections):
             k: v.to_tensor().detach().cpu().numpy() for k, v in self.items()
         }
 
-    def sum(self, weights: dict[str, float] = None) -> PhlowerTensor:
+    def sum(self, weights: dict[str, float] | None = None) -> PhlowerTensor:
         if weights is None:
             return torch.sum(torch.stack(list(self._data.values())))
 
         return torch.sum(
             torch.stack([v * weights[k] for k, v in self._data.items()])
+        )
+
+    def mean(self, weights: dict[str, float] | None = None) -> PhlowerTensor:
+        if weights is None:
+            return torch.mean(torch.stack(list(self._data.values())))
+
+        total_weight = sum(weights.values())
+        return (
+            torch.sum(
+                torch.stack([v * weights[k] for k, v in self._data.items()])
+            )
+            / total_weight
         )
 
     def unique_item(self) -> PhlowerTensor:
