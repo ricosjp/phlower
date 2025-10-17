@@ -43,6 +43,12 @@ class LossSetting:
      as summation of all loss values.
     """
 
+    aggregation_method: Literal["sum", "mean"] = "sum"
+    """
+    Method to aggregate loss values for all variables.
+    Choose from "sum" or "mean". Defaults to "sum".
+    """
+
     def loss_names(self) -> Iterable[str]:
         """get registered loss names
 

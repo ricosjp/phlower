@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from typing import Literal
 
 import torch
 
@@ -77,19 +78,17 @@ class LossCalculator(ILossCalculator):
         cls,
         setting: PhlowerTrainerSetting,
     ) -> LossCalculator:
-        loss_setting = setting.loss_setting
-        return LossCalculator(
-            name2loss=loss_setting.name2loss,
-            name2weight=loss_setting.name2weight,
-        )
+        return LossCalculator(**setting.loss_setting.__dict__)
 
     def __init__(
         self,
         name2loss: dict[str, str],
         name2weight: dict[str, float] | None = None,
+        aggregation_method: Literal["sum", "mean"] = "sum",
     ):
         self._name2loss = name2loss
         self._name2weight = name2weight
+        self._aggregation_method = aggregation_method
         self._check_loss_function_exists()
 
     def get_loss_function(self, variable_name: str) -> LossFunctionType:
@@ -107,10 +106,16 @@ class LossCalculator(ILossCalculator):
                 raise ValueError(f"Unknown loss function name: {loss_name}")
 
     def aggregate(self, losses: IPhlowerTensorCollections) -> PhlowerTensor:
-        if self._name2weight is None:
-            return losses.sum()
-
-        return losses.sum(weights=self._name2weight)
+        match self._aggregation_method:
+            case "sum":
+                return losses.sum(weights=self._name2weight)
+            case "mean":
+                return losses.mean(weights=self._name2weight)
+            case _:
+                raise ValueError(
+                    f"Unknown aggregation method: {self._aggregation_method}. "
+                    'Choose from "sum" or "mean".'
+                )
 
     def calculate(
         self,

@@ -664,3 +664,98 @@ def test__snapshot_content(
                 np.testing.assert_array_almost_equal(
                     collection[k].numpy(), snapped_collectiton[k].numpy()
                 )
+
+
+@pytest.mark.parametrize(
+    "weights, desired_keys, desired_coeff",
+    [
+        (None, ["a", "b", "c"], 1.0),
+        ({"a": 1.0, "b": 1.0, "c": 1.0}, ["a", "b", "c"], 1.0),
+        ({"a": 1.0, "b": 2.0, "c": 1.0}, ["a", "b", "b", "c"], 1.0),
+        ({"a": 0.0, "b": 1.0, "c": 0.0}, ["b"], 1.0),
+        ({"a": 0.5, "b": 0.5, "c": 0.0}, ["a", "b"], 0.5),
+    ],
+)
+def test__collections_sum_with_weights(
+    weights: dict[str, float],
+    desired_keys: list[str],
+    desired_coeff: float,
+):
+    data = phlower_tensor_collection(
+        {
+            "a": torch.rand(1),
+            "b": torch.rand(1),
+            "c": torch.rand(1),
+        }
+    )
+
+    actual = data.sum(weights=weights)
+
+    if weights is None:
+        weights = {k: 1.0 for k in data.keys()}
+    desired = sum(data[k] for k in desired_keys) * desired_coeff
+    np.testing.assert_array_almost_equal(
+        actual.numpy(),
+        desired.numpy(),
+    )
+
+
+@pytest.mark.parametrize(
+    "weights",
+    [
+        {"a": 0.2, "b": 0.3, "c": 0.5},
+        {"a": 1.0, "b": 0.0, "c": 0.0},
+        {"a": 0.0, "b": 0.0, "c": 1.0},
+    ],
+)
+def test__collections_same_value_mean_and_weight(
+    weights: dict[str, float],
+):
+    data = phlower_tensor_collection(
+        {
+            "a": torch.rand(1),
+            "b": torch.rand(1),
+            "c": torch.rand(1),
+        }
+    )
+
+    sum_actual = data.sum(weights=weights)
+    mean_actual = data.mean(weights=weights)
+
+    np.testing.assert_array_almost_equal(
+        mean_actual.numpy(),
+        sum_actual.numpy(),
+    )
+
+
+@pytest.mark.parametrize(
+    "weights, desired_keys",
+    [
+        (None, ["a", "b", "c"]),
+        ({"a": 1.0, "b": 1.0, "c": 1.0}, ["a", "b", "c"]),
+        ({"a": 1.0, "b": 2.0, "c": 1.0}, ["a", "b", "b", "c"]),
+        ({"a": 0.0, "b": 1.0, "c": 0.0}, ["b"]),
+        ({"a": 0.5, "b": 0.5, "c": 0.0}, ["a", "b"]),
+        ({"a": 2.0, "b": 3.0, "c": 1.0}, ["a", "a", "b", "b", "b", "c"]),
+    ],
+)
+def test__collections_mean_with_weights(
+    weights: dict[str, float], desired_keys: list[str]
+):
+    data = phlower_tensor_collection(
+        {
+            "a": torch.rand(1),
+            "b": torch.rand(1),
+            "c": torch.rand(1),
+        }
+    )
+
+    actual = data.mean(weights=weights)
+
+    if weights is None:
+        weights = {k: 1.0 for k in data.keys()}
+    desired = torch.mean(torch.stack([data[k] for k in desired_keys]))
+    np.testing.assert_array_almost_equal(
+        actual.numpy(),
+        desired.numpy(),
+    )
