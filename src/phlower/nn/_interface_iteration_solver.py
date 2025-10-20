@@ -28,7 +28,10 @@ class IOptimizeProblem(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def gradient(
-        self, h: IPhlowerTensorCollections, target_keys: list[str]
+        self,
+        h: IPhlowerTensorCollections,
+        target_keys: list[str],
+        operator_keys: list[str] | None = None,
     ) -> IPhlowerTensorCollections:
         """gradient value of optimize problem
 

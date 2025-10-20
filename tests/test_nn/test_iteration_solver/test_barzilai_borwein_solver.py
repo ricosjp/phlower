@@ -13,6 +13,9 @@ from phlower.nn._iteration_solvers._barzilai_borwein_solver import (
     AlphaCalculator,
     BarzilaiBorweinSolver,
 )
+from phlower.settings._nonlinear_solver_setting import (
+    BarzilaiBoweinSolverSetting,
+)
 
 
 class QuadraticProblem(IOptimizeProblem):
@@ -48,7 +51,10 @@ class QuadraticProblem(IOptimizeProblem):
         return phlower_tensor_collection({"x": h})
 
     def gradient(
-        self, value: IPhlowerTensorCollections, target_keys: list[str]
+        self,
+        value: IPhlowerTensorCollections,
+        target_keys: list[str],
+        operator_keys: list[str] | None = None,
     ) -> IPhlowerTensorCollections:
         x = value["x"]
         h = self._A @ x - self._b
@@ -73,7 +79,7 @@ def test__can_converge_quadratic_equation(
         max_iterations=10000,
         convergence_threshold=0.00001,
         divergence_threshold=100000,
-        target_keys=["x"],
+        update_keys=["x"],
         bb_type=bb_type,
     )
 
@@ -176,3 +182,39 @@ def test__not_hanlding_denominator_of_alpha(
 
 
 # endregion
+
+
+@pytest.mark.parametrize("bb_type", ["long", "short"])
+@pytest.mark.parametrize(
+    "target_keys, update_keys, operator_keys, expected_operator_keys",
+    [
+        (["a"], None, None, ["a"]),
+        (None, ["a"], ["ga"], ["ga"]),
+        (None, ["a", "b"], ["ga", "gb"], ["ga", "gb"]),
+        (None, ["a", "b"], [], []),
+    ],
+)
+def test__initialize_from_setting(
+    bb_type: str,
+    target_keys: list[str] | None,
+    update_keys: list[str] | None,
+    operator_keys: list[str] | None,
+    expected_operator_keys: list[str],
+):
+    setting = BarzilaiBoweinSolverSetting(
+        convergence_threshold=0.01,
+        max_iterations=100,
+        divergence_threshold=100,
+        bb_type=bb_type,
+        target_keys=target_keys or [],
+        update_keys=update_keys or [],
+        operator_keys=operator_keys or [],
+    )
+
+    solver = BarzilaiBorweinSolver.from_setting(setting)
+
+    assert solver._operator_keys == expected_operator_keys
+    assert solver._keys == update_keys or target_keys
+    assert solver._convergence_threshold == 0.01
+    assert solver._max_iterations == 100
+    assert solver._divergence_threshold == 100

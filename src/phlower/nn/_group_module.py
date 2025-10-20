@@ -57,18 +57,27 @@ class _GroupOptimizeProblem(IOptimizeProblem):
         return self._step_forward(h)
 
     def gradient(
-        self, h: IPhlowerTensorCollections, target_keys: list[str]
+        self,
+        h: IPhlowerTensorCollections,
+        update_keys: list[str],
+        operator_keys: list[str] | None = None,
     ) -> IPhlowerTensorCollections:
-        operator_value = self._step_forward(h)
+        if operator_keys:
+            operator_value = self._step_forward(h).mask(operator_keys)
+        else:
+            operator_value = self._step_forward(h).mask(update_keys) - h.mask(
+                update_keys
+            )
+
         if self._steady_mode:
             # R(u) = - D[u] dt
-            residuals = operator_value.mask(target_keys) * -1.0
+            residuals = operator_value * -1.0
         else:
             # R(u) = v - u(t) - D[u] dt
             residuals = (
-                h.mask(target_keys)
-                - self._fixed_initials.mask(target_keys)
-                - operator_value.mask(target_keys)
+                h.mask(update_keys)
+                - self._fixed_initials.mask(update_keys)
+                - operator_value
             )
 
         return residuals
