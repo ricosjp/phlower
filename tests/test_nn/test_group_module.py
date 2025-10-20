@@ -13,6 +13,7 @@ from phlower.collections import (
     phlower_tensor_collection,
 )
 from phlower.nn import PhlowerGroupModule
+from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.settings import PhlowerSetting
 
 _SAMPLE_SETTING_DIR = pathlib.Path(__file__).parent / "data/group"
@@ -242,3 +243,73 @@ def test__snapshot_input_when_time_series_forward(
         for args in mocked.call_args_list:
             arg: IPhlowerTensorCollections = args.args[0]
             assert arg.get_time_series_length() == 0
+
+
+@pytest.mark.parametrize(
+    "dict_data_shapes",
+    [
+        {
+            "a": (10, 4),
+            "b": (10, 3, 4),
+        }
+    ],
+)
+@pytest.mark.parametrize(
+    "target_keys",
+    [
+        ["a"],
+        ["b"],
+        ["a", "b"],
+    ],
+)
+@pytest.mark.parametrize("steady_mode", [True, False])
+def test__subtract_input_for_gradient(
+    dict_data_shapes: dict[str, tuple[int]],
+    target_keys: list[str],
+    steady_mode: bool,
+):
+    initial = phlower_tensor_collection(
+        {k: phlower_tensor(torch.rand(v)) for k, v in dict_data_shapes.items()}
+    )
+    input_ = phlower_tensor_collection(
+        {k: phlower_tensor(torch.rand(v)) for k, v in dict_data_shapes.items()}
+    )
+    diff = phlower_tensor_collection(
+        {k: phlower_tensor(torch.rand(v)) for k, v in dict_data_shapes.items()}
+    )
+
+    def step_forward_wo_input(
+        input_: IPhlowerTensorCollections,
+    ) -> IPhlowerTensorCollections:
+        return diff
+
+    def step_forward_w_input(
+        input_: IPhlowerTensorCollections,
+    ) -> IPhlowerTensorCollections:
+        return input_ + diff
+
+    problem_wo_subtract = _GroupOptimizeProblem(
+        initials=initial,
+        step_forward=step_forward_wo_input,
+        steady_mode=steady_mode,
+    )
+    desired_gradient = problem_wo_subtract.gradient(
+        input_, update_keys=target_keys, operator_keys=target_keys
+    )
+
+    problem_w_subtract = _GroupOptimizeProblem(
+        initials=initial,
+        step_forward=step_forward_w_input,
+        steady_mode=steady_mode,
+    )
+    actual_gradient = problem_w_subtract.gradient(
+        input_, update_keys=target_keys
+    )
+
+    for (actual_key, actual_value), (desired_key, desired_value) in zip(
+        actual_gradient.items(), desired_gradient.items(), strict=True
+    ):
+        assert actual_key == desired_key
+        np.testing.assert_almost_equal(
+            actual_value.numpy(), desired_value.numpy()
+        )

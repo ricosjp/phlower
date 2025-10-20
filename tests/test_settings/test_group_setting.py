@@ -107,3 +107,11 @@ def test__raise_error_when_invalid_time_series_length(
             _ = GroupModuleSetting(**data["network"])
 
         assert "time_series_length must be -1 or larger" in str(ex.value)
+
+
+def test__subtract_setting_loaded():
+    setting = GroupModuleSetting(**parse_file("subtract.yml")["network"])
+    # Check solver parameters
+    assert setting.solver_type == "bb"
+    assert setting.solver_parameters.operator_keys == []
+    assert setting.solver_parameters.update_keys == ["feature0"]

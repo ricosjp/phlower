@@ -99,4 +99,32 @@ def test__raise_error_when_invalid_bb_type(bb_type: str):
         _ = BarzilaiBoweinSolverSetting(target_keys=["aaa"], bb_type=bb_type)
 
 
+def test__target_keys_is_deprecated_and_correctly_passed():
+    setting = BarzilaiBoweinSolverSetting(
+        target_keys=["a", "b", "c"],
+        convergence_threshold=0.1,
+        max_iterations=10,
+        divergence_threshold=50,
+    )
+
+    assert setting.update_keys == ["a", "b", "c"]
+    assert setting.operator_keys == ["a", "b", "c"]
+
+    with pytest.deprecated_call():
+        _ = setting.target_keys
+
+
+def test__update_and_residual_keys():
+    setting = BarzilaiBoweinSolverSetting(
+        update_keys=["a", "b"],
+        operator_keys=["c", "d", "e"],
+        convergence_threshold=0.1,
+        max_iterations=10,
+        divergence_threshold=50,
+    )
+
+    assert setting.update_keys == ["a", "b"]
+    assert setting.operator_keys == ["c", "d", "e"]
+
+
 # endregion

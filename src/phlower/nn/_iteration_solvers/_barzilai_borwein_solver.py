@@ -61,27 +61,29 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         cls, setting: IPhlowerIterationSolverSetting
     ) -> BarzilaiBorweinSolver:
         assert isinstance(setting, BarzilaiBoweinSolverSetting)
-        return BarzilaiBorweinSolver(**setting.__dict__)
+        return BarzilaiBorweinSolver(**setting.model_dump())
 
     def __init__(
         self,
         max_iterations: int,
         convergence_threshold: float,
         divergence_threshold: float,
-        target_keys: list[str],
+        update_keys: list[str],
         alpha_component_wise: bool = False,
         bb_type: Literal["long", "short"] = "long",
+        operator_keys: list[str] | None = None,
     ) -> None:
         self._max_iterations = max_iterations
         self._convergence_threshold = convergence_threshold
         self._divergence_threshold = divergence_threshold
-        self._keys = target_keys
+        self._keys = update_keys
 
         self._alpha_calculator = AlphaCalculator(
             component_wise=alpha_component_wise,
             bb_type=bb_type,
         )
 
+        self._operator_keys = operator_keys
         # internal status
         self._n_iterated = 0
         self._is_converged = False
@@ -125,7 +127,11 @@ class BarzilaiBorweinSolver(IFIterationSolver):
                 # NOTE: update only considered variables
                 h_inputs.update(v_next, overwrite=True)
 
-            gradient = problem.gradient(h_inputs, self._keys)
+            gradient = problem.gradient(
+                h_inputs,
+                target_keys=self._keys,
+                operator_keys=self._operator_keys,
+            )
 
             v_history.append(v_next)
             gradients_history.append(gradient)
