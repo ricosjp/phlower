@@ -86,6 +86,187 @@ def test__spmm_with_not_squared_sparse_matrix(
 
 
 @pytest.mark.parametrize(
+    "size, is_time_series, is_voxel, expected_bnf_shape",
+    [
+        # Non-time series, non-voxel
+        ((10, 1), False, False, (1, 10, 1)),
+        ((10, 16), False, False, (1, 10, 16)),
+        ((10, 3, 16), False, False, (3, 10, 16)),
+        ((10, 3, 3, 16), False, False, (9, 10, 16)),
+        # Time series, non-voxel
+        ((4, 10, 1), True, False, (4, 10, 1)),
+        ((4, 10, 16), True, False, (4, 10, 16)),
+        ((4, 10, 3, 16), True, False, (12, 10, 16)),
+        ((4, 10, 3, 3, 16), True, False, (36, 10, 16)),
+        # Non-time series, voxel
+        ((10, 10, 10, 1), False, True, (1, 1000, 1)),
+        ((10, 10, 10, 16), False, True, (1, 1000, 16)),
+        ((10, 10, 10, 3, 16), False, True, (3, 1000, 16)),
+        ((10, 10, 10, 3, 3, 16), False, True, (9, 1000, 16)),
+        # Time series, voxel
+        ((4, 10, 10, 10, 1), True, True, (4, 1000, 1)),
+        ((4, 10, 10, 10, 16), True, True, (4, 1000, 16)),
+        ((4, 10, 10, 10, 3, 16), True, True, (12, 1000, 16)),
+        ((4, 10, 10, 10, 3, 3, 16), True, True, (36, 1000, 16)),
+    ],
+)
+@pytest.mark.parametrize(
+    "dimension",
+    [
+        None,
+        [[-1], [2], [0], [0], [0], [0], [0]],
+        [[1], [0], [1], [0], [0], [0], [0]],
+        [[-1], [-1], [2], [0], [1], [0], [0]],
+    ],
+)
+def test__to_batch_node_feature(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    expected_bnf_shape: tuple[int, int, int],
+    dimension: list[list[int]] | None,
+):
+    torch_tensor = torch.rand(*size)
+    x = phlower_tensor(
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+
+    bnf_tensor, restore_info = phlower.nn.functional.to_batch_node_feature(x)
+
+    # Check BNF shape
+    assert bnf_tensor.shape == expected_bnf_shape
+
+    # Check restore_info
+    assert restore_info.original_pattern == x.shape_pattern.get_pattern()
+    if dimension is not None:
+        np.testing.assert_almost_equal(
+            restore_info.dimension._tensor.numpy(),
+            np.array(dimension),
+        )
+    else:
+        assert restore_info.dimension is None
+
+
+@pytest.mark.parametrize(
+    "size, is_time_series, is_voxel",
+    [
+        # Non-time series, non-voxel
+        ((10, 1), False, False),
+        ((10, 16), False, False),
+        ((10, 3, 16), False, False),
+        ((10, 3, 3, 16), False, False),
+        # Time series, non-voxel
+        ((4, 10, 1), True, False),
+        ((4, 10, 16), True, False),
+        ((4, 10, 3, 16), True, False),
+        ((4, 10, 3, 3, 16), True, False),
+        # Non-time series, voxel
+        ((10, 10, 10, 1), False, True),
+        ((10, 10, 10, 16), False, True),
+        ((10, 10, 10, 3, 16), False, True),
+        ((10, 10, 10, 3, 3, 16), False, True),
+        # Time series, voxel
+        ((4, 10, 10, 10, 1), True, True),
+        ((4, 10, 10, 10, 16), True, True),
+        ((4, 10, 10, 10, 3, 16), True, True),
+        ((4, 10, 10, 10, 3, 3, 16), True, True),
+    ],
+)
+@pytest.mark.parametrize(
+    "dimension",
+    [
+        None,
+        [[-1], [2], [0], [0], [0], [0], [0]],
+        [[1], [0], [1], [0], [0], [0], [0]],
+        [[-1], [-1], [2], [0], [1], [0], [0]],
+    ],
+)
+def test__from_batch_node_feature(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    dimension: list[list[int]] | None,
+):
+    torch_tensor = torch.rand(*size)
+    x = phlower_tensor(
+        torch_tensor,
+        dimension=dimension,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+
+    bnf_tensor, restore_info = phlower.nn.functional.to_batch_node_feature(x)
+    restored = phlower.nn.functional.from_batch_node_feature(
+        bnf_tensor, restore_info
+    )
+
+    # Check shape
+    assert restored.shape == x.shape
+
+    # Check values
+    np.testing.assert_almost_equal(restored.to_numpy(), x.to_numpy())
+
+    # Check metadata
+    assert restored.is_time_series == is_time_series
+    assert restored.is_voxel == is_voxel
+    assert restored.shape_pattern.get_pattern() == x.shape_pattern.get_pattern()
+
+    # Check dimension
+    if dimension is not None:
+        np.testing.assert_almost_equal(
+            restored.dimension._tensor.numpy(), x.dimension._tensor.numpy()
+        )
+    else:
+        assert restored.dimension is None
+
+
+@pytest.mark.parametrize(
+    "size, is_time_series, is_voxel, new_feature_size",
+    [
+        ((10, 16), False, False, 32),
+        ((10, 3, 16), False, False, 64),
+        ((4, 10, 16), True, False, 8),
+        ((4, 10, 3, 16), True, False, 128),
+        ((10, 10, 10, 16), False, True, 24),
+        ((4, 10, 10, 10, 3, 16), True, True, 48),
+    ],
+)
+def test__bnf_roundtrip_with_feature_dimension_change(
+    size: tuple[int],
+    is_time_series: bool,
+    is_voxel: bool,
+    new_feature_size: int,
+):
+    torch_tensor = torch.rand(*size)
+    x = phlower_tensor(
+        torch_tensor,
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+
+    bnf_tensor, restore_info = phlower.nn.functional.to_batch_node_feature(x)
+
+    # Simulate transformation with feature dimension change
+    batch_size, node_size, _ = bnf_tensor.shape
+    transformed_bnf = torch.rand(batch_size, node_size, new_feature_size)
+
+    restored = phlower.nn.functional.from_batch_node_feature(
+        transformed_bnf, restore_info
+    )
+
+    # Check shape
+    assert restored.shape[:-1] == x.shape[:-1]
+    assert restored.shape[-1] == new_feature_size
+
+    # Check metadata
+    assert restored.is_time_series == is_time_series
+    assert restored.is_voxel == is_voxel
+
+
+@pytest.mark.parametrize(
     "size, is_time_series, is_voxel, desired_pattern",
     [
         ((10, 1), False, False, "n...f,n...f->nf"),
