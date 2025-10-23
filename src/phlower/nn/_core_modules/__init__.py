@@ -25,6 +25,9 @@ from phlower.nn._core_modules._tcn import TCN
 from phlower.nn._core_modules._time_series_to_features import (
     TimeSeriesToFeatures,
 )
+from phlower.nn._core_modules._transolver_attention import (
+    TransolverAttention,
+)
 from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[type[IPhlowerCoreModule]] = [
@@ -51,6 +54,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     SPMM,
     TCN,
     TimeSeriesToFeatures,
+    TransolverAttention,
 ]
 
 _name2model = {cls.get_nn_name(): cls for cls in _all_models}

@@ -1,7 +1,9 @@
+from typing import NamedTuple
+
 import einops
 import torch
 
-from phlower._base.tensors import phlower_tensor
+from phlower._base.tensors import PhlowerDimensionTensor, phlower_tensor
 from phlower._base.tensors._interface import IPhlowerTensor
 from phlower._base.tensors._phlower_tensor import PhysicDimensionLikeObject
 from phlower.utils.exceptions import PhlowerIncompatibleTensorError
@@ -76,6 +78,103 @@ def time_series_to_features(arg: IPhlowerTensor) -> IPhlowerTensor:
 
     return phlower_tensor(
         _to_tensor, dimension=arg.dimension, pattern=resultant_pattern
+    )
+
+
+class BNFRestoreInfo(NamedTuple):
+    """Contains information for restoring original shape pattern
+    from batch-node-feature (BNF) format.
+    """
+
+    original_pattern: str
+    bnf_pattern: str
+    restore_axes_length: str
+    dimension: PhlowerDimensionTensor | None
+
+    @property
+    def restore_pattern(self) -> str:
+        return f"{self.bnf_pattern} -> {self.original_pattern}"
+
+
+def to_batch_node_feature(
+    arg: IPhlowerTensor,
+) -> tuple[torch.Tensor, BNFRestoreInfo]:
+    """Convert tensor's shape to batch-node-feature (BNF) format.
+
+    Collapses time and rank dimensions into a single batch dimension,
+    resulting in a 3D tensor: (batch, nodes, features).
+
+    Args:
+        arg: IPhlowerTensor
+            Input tensor.
+
+    Returns:
+        resultant_tensor: torch.Tensor
+            Resultant tensor.
+        restore_info: BNFRestoreInfo
+            Information for restoring original shape.
+
+    Examples:
+        >>> # Input tensor of shape (5, 100, 2, 2, 3) with pattern 't n d0 d1 f'
+        >>> result, pattern, axes = to_batch_node_feature(tensor)
+        >>> result.shape  # (20, 100, 3) with pattern '(t d0 d1) n f'
+    """
+    original_pattern = arg.shape_pattern.get_pattern()
+    restore_axes_length = arg.shape_pattern.get_pattern_to_size()
+
+    time_pattern = arg.shape_pattern.time_series_pattern
+    space_pattern = arg.shape_pattern.get_space_pattern()
+    ranks_pattern = arg.shape_pattern.get_feature_pattern(drop_last=True)
+    feature_pattern = arg.shape_pattern.feature_pattern_symbol
+
+    # The feature dimension can change when restoring
+    restore_axes_length.pop(feature_pattern)
+
+    # Combine time and ranks into batch dimension
+    batch_components = [x for x in [time_pattern, ranks_pattern] if x]
+    batch_pattern = " ".join(batch_components) if batch_components else "1"
+
+    bnf_pattern = f"({batch_pattern}) ({space_pattern}) ({feature_pattern})"
+    pattern = f"{original_pattern} -> {bnf_pattern}"
+    _to_tensor = einops.rearrange(arg.to_tensor(), pattern)
+
+    return (
+        _to_tensor,
+        BNFRestoreInfo(
+            original_pattern,
+            bnf_pattern,
+            restore_axes_length,
+            arg.dimension,
+        ),
+    )
+
+
+def from_batch_node_feature(
+    arg: torch.Tensor, restore_info: BNFRestoreInfo
+) -> IPhlowerTensor:
+    """Convert back tensor's shape from batch-node-feature (BNF)
+    to original format.
+    To use after `to_batch_node_feature` to get back original shape.
+
+    Args:
+        arg: torch.Tensor
+            Input tensor.
+        restore_info: BNFRestoreInfo
+            Information for restoring original pattern.
+
+    Returns:
+        resultant_tensor: IPhlowerTensor
+            Resultant tensor.
+    """
+    original_pattern = restore_info.original_pattern
+    pattern = restore_info.restore_pattern
+    axes_length = restore_info.restore_axes_length
+    dimension = restore_info.dimension
+
+    _to_tensor = einops.rearrange(arg, pattern, **axes_length)
+
+    return phlower_tensor(
+        _to_tensor, dimension=dimension, pattern=original_pattern
     )
 
 

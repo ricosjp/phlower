@@ -45,6 +45,9 @@ from phlower.settings._module_settings._tcn_setting import TCNSetting
 from phlower.settings._module_settings._time_series_to_features_setting import (
     TimeSeriesToFeaturesSetting,
 )
+from phlower.settings._module_settings._transolver_attention_setting import (
+    TransolverAttentionSetting,
+)
 
 _layer_settings: list[type[IPhlowerLayerParameters]] = [
     AccessorSetting,
@@ -69,5 +72,6 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     SPMMSetting,
     TCNSetting,
     TimeSeriesToFeaturesSetting,
+    TransolverAttentionSetting,
     PoolingSetting,
 ]
