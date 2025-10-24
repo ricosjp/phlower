@@ -4,7 +4,7 @@ import phlower
 import pytest
 import torch
 from hypothesis import given
-from phlower import phlower_tensor
+from phlower import PhlowerTensor, phlower_tensor
 from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
 from phlower.utils.exceptions import DimensionIncompatibleError
@@ -74,3 +74,10 @@ def test_smooth_leaky_relu_inverse():
     f = phlower.nn.functional.SmoothLeakyReLU()
     y = f.inverse(f(x))
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)
+
+
+def test__gelu_with_phlower_tensor():
+    x = phlower_tensor(np.random.rand(100))
+    y = phlower.nn.functional.gelu(x)
+    assert isinstance(y, PhlowerTensor)
+    assert y.shape == x.shape

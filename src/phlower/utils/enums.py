@@ -50,6 +50,7 @@ class PhlowerScalerName(Enum):
 
 
 class ActivationType(str, Enum):
+    gelu = "gelu"
     identity = "identity"
     inversed_leaky_relu0p5 = "inversed_leaky_relu0p5"
     inversed_smooth_leaky_relu = "inversed_smooth_leaky_relu"
