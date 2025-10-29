@@ -76,6 +76,24 @@ def test_smooth_leaky_relu_inverse():
     np.testing.assert_almost_equal(x.to_numpy(), y.to_numpy(), decimal=5)
 
 
+def test_leaky_relum0p5():
+    x = phlower_tensor(np.random.rand(100))
+    y = phlower.nn.functional.leaky_relum0p5(x)
+    assert isinstance(y, PhlowerTensor)
+    assert y.shape == x.shape
+
+
+def test_leaky_relum0p5_inverse_leaky_relu0p5():
+    x = phlower_tensor(np.random.rand(100)) * 4 - 2
+    y = phlower.nn.functional.leaky_relum0p5(
+        phlower.nn.functional.inversed_leaky_relu0p5(x)
+    )
+    np.testing.assert_almost_equal(
+        torch.nn.functional.leaky_relu(x, negative_slope=-1.0).to_numpy(),
+        y.to_numpy(),
+    )
+
+
 def test__gelu_with_phlower_tensor():
     x = phlower_tensor(np.random.rand(100))
     y = phlower.nn.functional.gelu(x)
