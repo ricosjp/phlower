@@ -17,6 +17,11 @@ def leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
     return torch.nn.functional.leaky_relu(x, negative_slope=0.5)
 
 
+def leaky_relum0p5(x: torch.Tensor) -> torch.Tensor:
+    """Leaky ReLU with the negative slope = -0.5."""
+    return torch.nn.functional.leaky_relu(x, negative_slope=-0.5)
+
+
 def inversed_leaky_relu0p5(x: torch.Tensor) -> torch.Tensor:
     """Inverse of leaky_relu0p5."""
     return torch.nn.functional.leaky_relu(x, negative_slope=2)
@@ -69,6 +74,7 @@ class ActivationSelector:
         "inversed_leaky_relu0p5": inversed_leaky_relu0p5,
         "inversed_smooth_leaky_relu": _SMOOTH_LEAKY_RELU.inverse,
         "leaky_relu0p5": leaky_relu0p5,
+        "leaky_relum0p5": leaky_relum0p5,
         "relu": torch.relu,
         "sigmoid": torch.sigmoid,
         "smooth_leaky_relu": _SMOOTH_LEAKY_RELU,

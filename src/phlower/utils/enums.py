@@ -55,6 +55,7 @@ class ActivationType(str, Enum):
     inversed_leaky_relu0p5 = "inversed_leaky_relu0p5"
     inversed_smooth_leaky_relu = "inversed_smooth_leaky_relu"
     leaky_relu0p5 = "leaky_relu0p5"
+    leaky_relum0p5 = "leaky_relum0p5"
     relu = "relu"
     sigmoid = "sigmoid"
     smooth_leaky_relu = "smooth_leaky_relu"
