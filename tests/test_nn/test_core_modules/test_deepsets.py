@@ -384,9 +384,15 @@ def test__permutation_NOT_equivariance_over_different_batch_tensor(
 
     # Calculate for randomly permutated tensor
     # indexes are completely random across batch region intentionally.
-    _permuted_indexes = np.random.permutation(
-        _tensor.shape_pattern.get_n_vertices()
-    )
+    while True:
+        _permuted_indexes = np.random.permutation(
+            _tensor.shape_pattern.get_n_vertices()
+        )
+        n_first_batch = input_shapes[0][0]
+        if np.min(_permuted_indexes[n_first_batch:]) < n_first_batch:
+            # NOTE: Ensure that at least one index is swapped over batch
+            break
+
     _permuted = _tensor[_permuted_indexes, ...]
     result2 = model.forward(
         phlower_tensor_collection({"input": _permuted}), field_data=field
