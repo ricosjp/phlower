@@ -4,6 +4,7 @@ import functools
 from collections.abc import Callable
 from typing import Any
 
+import numpy as np
 import torch
 from pipe import uniq
 
@@ -206,6 +207,14 @@ class PhlowerDimensionTensor:
             bool: True if the tensor is dimensionless.
         """
         return torch.sum(torch.abs(self._tensor)) < 1e-5
+
+    def numpy(self) -> np.ndarray:
+        """Convert to numpy array
+
+        Returns:
+            np.ndarray: numpy array
+        """
+        return self._tensor.detach().numpy()
 
     @classmethod
     def __torch_function__(
@@ -583,5 +592,23 @@ def _torch_relu(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
 
 
 @dimension_wrap_implements(torch.squeeze)
-def _torch_squeeze(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+def _torch_squeeze(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.where)
+def _torch_where(
+    inputs: PhlowerDimensionTensor, *args: Any, **kwargs: Any
+) -> PhlowerDimensionTensor:
+    return inputs
+
+
+@dimension_wrap_implements(torch.sin)
+def _torch_sin(inputs: PhlowerDimensionTensor) -> PhlowerDimensionTensor:
+    if not inputs.is_dimensionless:
+        raise DimensionIncompatibleError(
+            f"Should be dimensionless to apply sin but {inputs}"
+        )
     return inputs

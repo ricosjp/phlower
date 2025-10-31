@@ -315,6 +315,9 @@ class PhlowerTensor(IPhlowerTensor):
     def __sub__(self, other: PhlowerTensor):
         return torch.sub(self, other)
 
+    def __rsub__(self, other: PhlowerTensor):
+        return torch.sub(other, self)
+
     def __neg__(self):
         return -1 * self
 
