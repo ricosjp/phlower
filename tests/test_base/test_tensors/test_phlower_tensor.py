@@ -186,6 +186,27 @@ def test__sub_tensor_content_with_dimension(
 
 
 @given(
+    shape=st.lists(
+        st.integers(min_value=1, max_value=10), min_size=1, max_size=5
+    )
+)
+@pytest.mark.parametrize("dimension", [None, {}])
+def test__rsub_tensor_content_with_dimension(
+    shape: tuple[int, ...],
+    dimension: dict | None,
+):
+    a = phlower_tensor(torch.rand(shape), dimension=dimension)
+    b = torch.rand(shape)
+
+    cp = b - a
+    desired = b.numpy() - a.numpy()
+
+    np.testing.assert_array_almost_equal(cp.numpy(), desired)
+
+    assert cp.dimension == a.dimension
+
+
+@given(
     random_phlower_tensors_with_same_dimension_and_shape(
         shape=st.lists(
             st.integers(min_value=1, max_value=10), min_size=1, max_size=5
