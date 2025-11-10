@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pydantic
 from pydantic import Field
+from typing_extensions import Self
 
 from phlower.settings._interface import (
     IModuleSetting,
@@ -14,7 +15,9 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     # This property only overwritten when resolving.
     nodes: list[int] | None = Field(None)
     activation: str = Field("identity", frozen=True)
-    index: int = Field(...)
+    index: list[int] | int = Field(...)
+    dim: int = Field(0)
+    keepdim: bool = Field(False)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -33,15 +36,31 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         n_dim = self.gather_input_dims(*input_dims)
-        return [n_dim, n_dim]
+        if self.dim != -1:
+            return [n_dim, n_dim]
+        if not self.keepdim:
+            raise ValueError(
+                "access to the last dimension is invalid when keepdim=False"
+            )
+        new_size = 1
+        if isinstance(self.index, list):
+            new_size = len(self.index)
+        return [n_dim, new_size]
 
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
-        if vals is None:
-            return vals
-
         return vals
+
+    @pydantic.model_validator(mode="after")
+    def check_keepdim(self) -> Self:
+        if not self.keepdim:
+            if isinstance(self.index, list):
+                if len(self.index) > 1:
+                    raise ValueError(
+                        "multiple indices is invalid when keepdim=False"
+                    )
+        return self
 
     @property
     def need_reference(self) -> bool:

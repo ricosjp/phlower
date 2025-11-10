@@ -69,13 +69,17 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         self,
         nodes: list[int] | None = None,
         activation: str = "identity",
-        index: int = 0,
+        index: list[int] | int = 0,
+        dim: int = 0,
+        keepdim: bool = False,
     ) -> None:
         super().__init__()
         self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
         self._index = index
+        self._dim = dim
+        self._keepdim = keepdim
 
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
@@ -102,4 +106,28 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        return self._activation_func(data.unique_item()[self._index])
+        original_shape = data.unique_item().shape
+
+        if self._dim == len(original_shape) - 1:
+            raise ValueError(
+                "access to the last features is invalid except dim=-1"
+            )
+
+        indices = self._index
+        if isinstance(self._index, int):
+            indices = [self._index]
+
+        arg = data.unique_item()
+
+        indices = [
+            index if index >= 0 else index + arg._tensor.shape[self._dim]
+            for index in indices
+        ]
+        indices_torch = torch.tensor(indices)
+
+        new_tensor = torch.index_select(arg._tensor, self._dim, indices_torch)
+
+        if not self._keepdim:
+            new_tensor = torch.squeeze(new_tensor, self._dim)
+
+        return self._activation_func(new_tensor)
