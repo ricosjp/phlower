@@ -66,6 +66,14 @@ def test__raise_error_invalid_input_dims(input_dims: list[int]):
         _ = setting.gather_input_dims(*input_dims)
 
 
+@pytest.mark.parametrize("index", [([0, 1])])
+def test__raise_error_invalid_keepdim_index(index: list[int]):
+    with pytest.raises(ValueError):
+        _ = AccessorSetting(
+            nodes=[10, 20], activation="identity", index=index, keepdim=False
+        )
+
+
 @st.composite
 def same_length_lists(draw: Callable) -> tuple[list[int], list[int]]:
     n_elements = draw(st.integers(min_value=2, max_value=10))
