@@ -209,3 +209,68 @@ def test__dpp_training_same_as_single_batch_training(
     loss_batch = batch_df.loc[:, "validation_loss"].to_numpy()
 
     np.testing.assert_array_almost_equal(loss_ddp, loss_batch, decimal=5)
+
+
+# region FSDP (Fully Shard Distributed Parallel) tests
+
+
+@pytest.fixture(scope="module")
+def simple_distributed_fsdp_parallel_training(
+    prepare_sample_preprocessed_files_fixture: pathlib.Path,
+) -> pathlib.Path:
+    output_dir = prepare_sample_preprocessed_files_fixture
+    phlower_path = PhlowerDirectory(output_dir / "preprocessed")
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml("tests/e2e_tests/data/train_fsdp.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = output_dir / "model_fsdp"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    world_size = setting.training.parallel_setting.world_size
+    mp.spawn(
+        trainer.train_fsdp,
+        args=(
+            world_size,
+            output_directory,
+            preprocessed_directories,
+            preprocessed_directories,
+        ),
+        nprocs=world_size,
+        join=True,
+    )
+    assert (output_directory / "log.csv").exists()
+    return output_directory
+
+
+@pytest.mark.need_multigpu
+@pytest.mark.e2e_test
+def test__fsdp_training_is_enable(
+    # simple_training: pathlib.Path,
+    simple_distributed_fsdp_parallel_training: pathlib.Path,
+) -> None:
+    # single_df = pd.read_csv(
+    #     simple_training / "log.csv", skipinitialspace=True, header=0
+    # )
+    ddp_df = pd.read_csv(
+        simple_distributed_fsdp_parallel_training / "log.csv",
+        skipinitialspace=True,
+        header=0,
+    )
+
+    assert not ddp_df.empty
+    # elapsed_single = single_df.loc[:, "elapsed_time"].to_numpy()[-1]
+    # elapsed_ddp = ddp_df.loc[:, "elapsed_time"].to_numpy()[-1]
+
+    # # at least 2 times faster
+    # assert elapsed_ddp < elapsed_single
+
+
+# endregion

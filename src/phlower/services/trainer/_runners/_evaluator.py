@@ -41,6 +41,7 @@ class EvaluationRunner:
 
     def run(
         self,
+        rank: int,
         info: AfterEpochTrainingInfo,
         *,
         model: PhlowerGroupModule,
@@ -57,6 +58,7 @@ class EvaluationRunner:
             )
         else:
             train_eval_loss, train_loss_details = self._evaluation(
+                rank=rank,
                 model=model,
                 data_loader=train_loader,
                 loss_function=self._loss_calculator,
@@ -69,6 +71,7 @@ class EvaluationRunner:
             validation_loss_details = None
         else:
             validation_eval_loss, validation_loss_details = self._evaluation(
+                rank=rank,
                 model=model,
                 data_loader=validation_loader,
                 loss_function=self._loss_calculator,
@@ -80,7 +83,7 @@ class EvaluationRunner:
             epoch=info.epoch,
             train_eval_loss=train_eval_loss,
             validation_eval_loss=validation_eval_loss,
-            elapsed_time=timer.watch(),
+            elapsed_time=timer.watch() if timer is not None else None,
             output_directory=info.output_directory,
             train_loss_details=train_loss_details,
             validation_loss_details=validation_loss_details,
@@ -142,6 +145,7 @@ class EvaluationRunner:
 
     def _evaluation(
         self,
+        rank: int,
         model: PhlowerGroupModule,
         data_loader: DataLoader,
         loss_function: LossCalculator,
@@ -155,7 +159,7 @@ class EvaluationRunner:
 
         for batch in data_loader:
             batch = batch.to(
-                device=self._trainer_setting.device,
+                device=self._trainer_setting.get_device(rank),
                 non_blocking=self._trainer_setting.non_blocking,
             )
             helper = SlidingWindowHelper(

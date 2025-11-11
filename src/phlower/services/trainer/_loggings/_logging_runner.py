@@ -2,6 +2,11 @@ import pathlib
 
 import torch
 import torch.distributed as dist
+from torch.distributed.checkpoint.state_dict import (
+    StateDictOptions,
+    get_model_state_dict,
+)
+from torch.distributed.fsdp import FullyShardedDataParallel
 from torch.nn.parallel import DistributedDataParallel
 from tqdm import tqdm
 
@@ -19,12 +24,14 @@ class LoggingRunner:
         output_directory: pathlib.Path,
         log_every_n_epoch: int,
         loss_keys: list[str],
+        parallel_mode: str = "None",
     ):
         self._output_directory = output_directory
         self._record_io = LogRecordIO(
             file_path=output_directory / "log.csv", loss_keys=loss_keys
         )
         self._log_every_n_epoch = log_every_n_epoch
+        self._parallel_mode = parallel_mode
 
     def get_weight_directory(self) -> pathlib.Path:
         return self._output_directory / "weights"
@@ -38,6 +45,7 @@ class LoggingRunner:
         if dist.is_initialized():
             tqdm.write(f"World size: {dist.get_world_size()}")
             tqdm.write(f"Rank: {dist.get_rank()}")
+            tqdm.write(f"Parallel type: {self._parallel_mode}")
         tqdm.write("-------------------------------")
         tqdm.write(self._record_io.get_header())
 
@@ -49,12 +57,15 @@ class LoggingRunner:
         scheduled_optimizer: PhlowerOptimizerWrapper,
         handlers: PhlowerHandlersRunner,
         encrypt_key: bytes | None = None,
+        fsdp_sharded: bool = False,
+        rank: int = 0,
     ):
         if output.epoch % self._log_every_n_epoch != 0:
             return
 
-        self._show_loss_to_console(output)
-        self._dump_loss(output)
+        if rank == 0:
+            self._show_loss_to_console(output)
+            self._dump_loss(output)
 
         self._save_checkpoint(
             output,
@@ -62,6 +73,8 @@ class LoggingRunner:
             scheduled_optimizer=scheduled_optimizer,
             handlers=handlers,
             encrypt_key=encrypt_key,
+            fsdp_sharded=fsdp_sharded,
+            rank=rank,
         )
 
         return
@@ -92,6 +105,8 @@ class LoggingRunner:
         scheduled_optimizer: PhlowerOptimizerWrapper,
         handlers: PhlowerHandlersRunner,
         encrypt_key: bytes | None = None,
+        fsdp_sharded: bool = False,
+        rank: int = 0,
     ) -> None:
         if isinstance(model, DistributedDataParallel):
             model = model.module
@@ -99,17 +114,42 @@ class LoggingRunner:
         data = {
             "epoch": info.epoch,
             "validation_loss": info.validation_eval_loss,
-            "model_state_dict": model.state_dict(),
-            "scheduled_optimizer": scheduled_optimizer.state_dict(),
+            "model_state_dict": _get_model_state_dict(
+                model, fsdp_sharded=fsdp_sharded
+            ),
+            # "scheduled_optimizer": scheduled_optimizer.state_dict(),
             "elapsed_time": info.elapsed_time,
             "handler_runners": handlers.state_dict(),
         }
-        prefix = PhlowerCheckpointFile.get_fixed_prefix()
-        file_basename = f"{prefix}{info.epoch}"
-        PhlowerCheckpointFile.save(
-            output_directory=self.get_weight_directory(),
-            file_basename=file_basename,
-            data=data,
-            encrypt_key=encrypt_key,
-        )
+
+        if rank == 0:
+            prefix = PhlowerCheckpointFile.get_fixed_prefix()
+            file_basename = f"{prefix}{info.epoch}"
+            PhlowerCheckpointFile.save(
+                output_directory=self.get_weight_directory(),
+                file_basename=file_basename,
+                data=data,
+                encrypt_key=encrypt_key,
+            )
         return
+
+
+def _get_model_state_dict(
+    model: PhlowerGroupModule
+    | DistributedDataParallel
+    | FullyShardedDataParallel,
+    fsdp_sharded: bool = True,
+) -> dict[str, torch.Tensor]:
+    if not fsdp_sharded:
+        if isinstance(model, DistributedDataParallel):
+            model = model.module
+        return model.state_dict()
+
+    model_state_dict = get_model_state_dict(
+        model=model,
+        options=StateDictOptions(
+            full_state_dict=True,
+            cpu_offload=True,
+        ),
+    )
+    return model_state_dict

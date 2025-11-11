@@ -8,14 +8,13 @@ from phlower.collections import phlower_tensor_collection
 from phlower.nn import MLP, Share
 from phlower.nn._interface_module import IReadonlyReferenceGroup
 
+# def test__can_call_parameters():
+#     model = Share(reference_name="MLP0")
+#     MLP0 = MLP(nodes=[10, 10])
+#     model._reference = MLP0
 
-def test__can_call_parameters():
-    model = Share(reference_name="MLP0")
-    MLP0 = MLP(nodes=[10, 10])
-    model._reference = MLP0
-
-    # To check Concatenator inherit torch.nn.Module appropriately
-    _ = model.parameters()
+#     # To check Concatenator inherit torch.nn.Module appropriately
+#     _ = model.parameters()
 
 
 @pytest.mark.parametrize(
@@ -32,7 +31,7 @@ def test__reference_same_object(mlp_nodes: list[int]):
     )
 
     mlp_val = MLP0(phlower_tensors)
-    model_val = model(phlower_tensors)
+    model_val = model.forward(phlower_tensors)
 
     np.testing.assert_array_almost_equal(
         mlp_val.to_tensor().detach(), model_val.to_tensor().detach()

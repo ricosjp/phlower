@@ -23,7 +23,7 @@ from phlower.settings._debug_parameter_setting import (
 from phlower.settings._group_setting import ModuleSetting
 
 
-class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
+class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
     """This layer handles common attributes for all PhlowerLayers.
     Example: no_grad
     """
@@ -54,8 +54,9 @@ class PhlowerModuleAdapter(IPhlowerModuleAdapter, torch.nn.Module):
         n_nodes: list[int],
         coeff: float,
         debug_parameters: PhlowerModuleDebugParameters,
+        **kwards,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwards)
         self._layer = layer
         self._name = name
         self._no_grad = no_grad

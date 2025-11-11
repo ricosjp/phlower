@@ -14,7 +14,7 @@ from phlower.nn._interface_module import (
 from phlower.settings._module_settings import AccessorSetting
 
 
-class Accessor(IPhlowerCoreModule, torch.nn.Module):
+class Accessor(torch.nn.Module, IPhlowerCoreModule):
     """Accessor is a neural network module that provides access to specific
     tensor data with optional activation.
 
@@ -72,8 +72,9 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         index: list[int] | int = 0,
         dim: int = 0,
         keepdim: bool = False,
+        **kwards,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwards)
         self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)

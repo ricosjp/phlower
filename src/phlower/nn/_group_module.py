@@ -84,10 +84,10 @@ class _GroupOptimizeProblem(IOptimizeProblem):
 
 
 class PhlowerGroupModule(
+    torch.nn.Module,
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
     IPhlowerGroup,
-    torch.nn.Module,
 ):
     @classmethod
     def from_setting(cls, setting: GroupModuleSetting) -> PhlowerGroupModule:
@@ -130,8 +130,9 @@ class PhlowerGroupModule(
         is_steady_problem: bool = False,
         iteration_solver: IFIterationSolver | None = None,
         time_series_length: int | None = None,
+        **kwards,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwards)
         if iteration_solver is None:
             iteration_solver = EmptySolver()
 

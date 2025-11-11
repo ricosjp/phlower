@@ -14,7 +14,7 @@ from phlower.nn._interface_module import (
 from phlower.settings._module_settings import MLPSetting
 
 
-class MLP(IPhlowerCoreModule, torch.nn.Module):
+class MLP(torch.nn.Module, IPhlowerCoreModule):
     """Multi Layer Perceptron
 
     Parameters

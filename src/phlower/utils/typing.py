@@ -41,7 +41,7 @@ class AfterEvaluationOutput(NamedTuple):
 
     epoch: int
     train_eval_loss: float
-    elapsed_time: float
+    elapsed_time: float | None
     output_directory: pathlib.Path | None = None
     validation_eval_loss: float | None = None
     train_loss_details: dict[str, float] | None = None

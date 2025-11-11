@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import torch
-
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -13,7 +11,7 @@ from phlower.settings._module_settings import ShareSetting
 from phlower.utils.exceptions import NotFoundReferenceModuleError
 
 
-class Share(IPhlowerCoreModule, torch.nn.Module):
+class Share(IPhlowerCoreModule):
     """Share module have same operations as the reference module.
 
     Parameters

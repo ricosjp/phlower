@@ -60,8 +60,10 @@ class Concatenator(IPhlowerCoreModule, torch.nn.Module):
     def need_reference(cls) -> bool:
         return False
 
-    def __init__(self, activation: str, nodes: list[int] = None):
-        super().__init__()
+    def __init__(
+        self, activation: str, nodes: list[int] | None = None, **kwards
+    ) -> None:
+        super().__init__(**kwards)
         self._nodes = nodes
         self._activation_name = activation
         self._activation_func = _utils.ActivationSelector.select(activation)
