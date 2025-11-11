@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import torch
-from phlower import PhlowerTensor
+from phlower import phlower_tensor
 from phlower.collections import phlower_tensor_collection
 from phlower.nn import Accessor
 
@@ -35,68 +35,127 @@ def test__accessed_tensor_shape(
     dim: int,
     keepdim: bool,
 ):
-    phlower_tensor = PhlowerTensor(
-        torch.from_numpy(np.random.rand(*input_shape))
-    )
-    phlower_tensors = phlower_tensor_collection({"tensor": phlower_tensor})
+    ph_tensor = phlower_tensor(torch.from_numpy(np.random.rand(*input_shape)))
+    phlower_tensors = phlower_tensor_collection({"tensor": ph_tensor})
 
     model = Accessor(
         activation=activation, index=index, dim=dim, keepdim=keepdim
     )
 
-    actual: PhlowerTensor = model(phlower_tensors)
+    actual = model.forward(phlower_tensors)
 
     assert actual.shape == desired_shape
 
-    if activation == "identity":
-        if dim == 0:
-            if keepdim:
-                np.testing.assert_almost_equal(
-                    phlower_tensors.to_numpy()["tensor"][index : index + 1],
-                    actual.to("cpu").detach().numpy().copy(),
-                )
-            else:
-                np.testing.assert_almost_equal(
-                    phlower_tensors.to_numpy()["tensor"][index],
-                    actual.to("cpu").detach().numpy().copy(),
-                )
-        elif dim == 1:
-            if keepdim:
-                np.testing.assert_almost_equal(
-                    phlower_tensors.to_numpy()["tensor"][
-                        :, index : index + 1, :
-                    ],
-                    actual.to("cpu").detach().numpy().copy(),
-                )
-            else:
-                np.testing.assert_almost_equal(
-                    phlower_tensors.to_numpy()["tensor"][:, index, :],
-                    actual.to("cpu").detach().numpy().copy(),
-                )
-        elif dim == 2:
-            if keepdim:
-                if isinstance(index, int):
-                    index = [index]
-                ans = phlower_tensors.to_numpy()["tensor"][
-                    :, :, index[0] : index[0] + 1
-                ]
-                for i in range(1, len(index)):
-                    ans = np.concatenate(
-                        (
-                            ans,
-                            phlower_tensors.to_numpy()["tensor"][
-                                :, :, index[i] : index[i] + 1
-                            ],
-                        ),
-                        axis=-1,
-                    )
 
-                np.testing.assert_almost_equal(
-                    ans,
-                    actual.to("cpu").detach().numpy().copy(),
-                )
-            else:
-                np.testing.assert_almost_equal(
-                    phlower_tensors.to_numpy()["tensor"][:, :, index],
-                    actual.to("cpu").detach().numpy().copy(),
-                )
+@pytest.mark.parametrize(
+    "input_shape, index, dim, keepdim, desired_indices",
+    [
+        ((5, 5, 16), 0, 0, False, [0, ...]),
+        ((4, 2, 16), -1, 0, False, [-1, ...]),
+        ((5, 2, 3, 4), 1, 0, False, [1, ...]),
+        ((3, 2, 1), 2, 0, False, [2, ...]),
+        ((2, 3, 4), 1, 1, False, [slice(None), 1, ...]),
+        ((2, 3, 4), 1, 0, True, [slice(1, 2), ...]),
+        ((2, 3, 4), 1, 1, True, [slice(None), slice(1, 2), ...]),
+        ((2, 3, 4), 1, -1, True, [..., slice(1, 2)]),
+        ((2, 3, 4), [0, 1], -1, True, [..., slice(0, 2)]),
+    ],
+)
+def test__accessed_tensor_value(
+    input_shape: tuple[int],
+    index: int | list[int],
+    dim: int,
+    keepdim: bool,
+    desired_indices: list[int | slice],
+):
+    ph_tensor = phlower_tensor(torch.from_numpy(np.random.rand(*input_shape)))
+    phlower_tensors = phlower_tensor_collection({"tensor": ph_tensor})
+
+    model = Accessor(
+        activation="identity", index=index, dim=dim, keepdim=keepdim
+    )
+
+    actual = model.forward(phlower_tensors)
+
+    desired = phlower_tensors["tensor"].to_tensor()[desired_indices]
+
+    np.testing.assert_array_almost_equal(
+        desired.numpy(),
+        actual.numpy(),
+    )
+
+
+@pytest.mark.parametrize(
+    "index, dim, keepdim, is_time_series, desired",
+    [
+        (0, 0, False, False, False),
+        (0, 0, False, True, False),
+        (0, 0, True, True, True),
+        ([0, 1], 0, True, True, True),
+        (0, 1, False, True, True),
+        (2, 1, True, True, True),
+        (2, 1, False, True, True),
+    ],
+)
+def test__time_series_properly_handled(
+    index: int,
+    dim: int,
+    keepdim: bool,
+    is_time_series: bool,
+    desired: bool,
+):
+    input_shape = (4, 3, 2)
+    ph_tensor = phlower_tensor(
+        torch.from_numpy(np.random.rand(*input_shape)),
+        is_time_series=is_time_series,
+    )
+    phlower_tensors = phlower_tensor_collection({"tensor": ph_tensor})
+
+    model = Accessor(
+        activation="identity", index=index, dim=dim, keepdim=keepdim
+    )
+    actual = model.forward(phlower_tensors)
+
+    assert actual.is_time_series == desired
+    assert actual.is_voxel is False
+
+
+@pytest.mark.parametrize(
+    "index, dim, keepdim, is_time_series, is_voxel, "
+    "desired_time_series, desired_voxel",
+    [
+        (0, 0, False, False, True, False, False),
+        (0, 0, True, False, True, False, True),
+        (1, 0, False, True, True, False, True),
+        (1, 0, True, True, True, True, True),
+        ([0, 1], 0, False, True, True, True, True),
+        ([0, 1], 1, False, True, True, True, True),
+        ([0, 1], 2, False, True, True, True, True),
+        ([0, 1], 3, False, True, True, True, True),
+        ([0, 1], 4, True, True, True, True, True),
+    ],
+)
+def test__voxel_properly_handled(
+    index: int,
+    dim: int,
+    keepdim: bool,
+    is_time_series: bool,
+    is_voxel: bool,
+    desired_time_series: bool,
+    desired_voxel: bool,
+):
+    input_shape = (4, 3, 5, 2, 2)
+    ph_tensor = phlower_tensor(
+        torch.from_numpy(np.random.rand(*input_shape)),
+        is_time_series=is_time_series,
+        is_voxel=is_voxel,
+    )
+    phlower_tensors = phlower_tensor_collection({"tensor": ph_tensor})
+
+    model = Accessor(
+        activation="identity", index=index, dim=dim, keepdim=keepdim
+    )
+    actual = model.forward(phlower_tensors)
+
+    assert actual.is_time_series is desired_time_series
+    assert actual.is_voxel is desired_voxel

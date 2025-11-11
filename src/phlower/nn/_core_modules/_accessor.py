@@ -7,6 +7,7 @@ from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
+from phlower.nn._functionals import squeeze
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -32,6 +33,11 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         Defaults to "identity" (no activation).
     index: int (optional)
         The index to access from the input tensor. Defaults to 0.
+    dim: int (optional)
+        The dimension along which to access the index. Defaults to 0.
+    keepdim: bool (optional)
+        Whether to retain the reduced dimension in the output tensor.
+        Defaults to False.
 
     Examples
     --------
@@ -108,14 +114,12 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         """
         original_shape = data.unique_item().shape
 
-        if self._dim == len(original_shape) - 1:
-            raise ValueError(
-                "access to the last features is invalid except dim=-1"
-            )
+        if self._dim == -1 or (self._dim == len(original_shape) - 1):
+            assert (
+                self._keepdim
+            ), "access to the last dimension is invalid when keepdim=False"
 
-        indices = self._index
-        if isinstance(self._index, int):
-            indices = [self._index]
+        indices = [self._index] if isinstance(self._index, int) else self._index
 
         arg = data.unique_item()
 
@@ -125,9 +129,9 @@ class Accessor(IPhlowerCoreModule, torch.nn.Module):
         ]
         indices_torch = torch.tensor(indices)
 
-        new_tensor = torch.index_select(arg._tensor, self._dim, indices_torch)
+        new_tensor = torch.index_select(arg, self._dim, indices_torch)
 
         if not self._keepdim:
-            new_tensor = torch.squeeze(new_tensor, self._dim)
+            new_tensor = squeeze(new_tensor, self._dim)
 
         return self._activation_func(new_tensor)

@@ -20,7 +20,7 @@ def _mse(pred: PhlowerTensor, answer: PhlowerTensor) -> PhlowerTensor:
     # NOTE: To avoid shape mismatch
     # Ex. (1, N, 3, 1) and (N, 3, 1)
     return torch.nn.functional.mse_loss(
-        torch.squeeze(pred), torch.squeeze(answer)
+        torch.squeeze(pred.to_tensor()), torch.squeeze(answer.to_tensor())
     )
 
 
