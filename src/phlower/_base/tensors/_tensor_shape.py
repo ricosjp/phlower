@@ -252,6 +252,31 @@ class PhlowerShapePattern:
         """
         return self.get_n_vertices() == n_batch
 
+    def squeeze(self, dim: int | None = None) -> PhlowerShapePattern:
+        """Return a new PhlowerShapePattern with squeezed shape.
+
+        Returns:
+            PhlowerShapePattern: A new instance with squeezed shape.
+        """
+
+        if dim is None:
+            indexes = [slice(None) if s != 1 else 0 for s in self._shape]
+            to_shape = torch.Size([s for s in self._shape if s != 1])
+        else:
+            indexes = [
+                slice(None) if (i != dim) or (s != 1) else 0
+                for i, s in enumerate(self._shape)
+            ]
+            to_shape = torch.Size(
+                [
+                    s
+                    for i, s in enumerate(self._shape)
+                    if not (i == dim and s == 1)
+                ]
+            )
+
+        return self.resolve_index_access(indexes, to_shape=to_shape)
+
 
 def _check_shape_and_pattern(shape: torch.Size, patterns: list[str]) -> bool:
     if len(shape) == len(patterns):

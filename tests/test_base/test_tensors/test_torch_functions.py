@@ -7,6 +7,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as extra_np
 from phlower import PhlowerTensor, phlower_tensor
+from phlower.nn._functionals import squeeze
 from phlower.utils.enums import PhysicalDimensionSymbolType
 from phlower.utils.exceptions import DimensionIncompatibleError
 
@@ -119,9 +120,9 @@ def test__torch_squeeze(
         dimension=[1.0 for _ in range(len(PhysicalDimensionSymbolType))],
     )
     if dim is not None:
-        actual: PhlowerTensor = torch.squeeze(value, dim=dim)
+        actual: PhlowerTensor = squeeze(value, dim=dim)
     else:
-        actual: PhlowerTensor = torch.squeeze(value)
+        actual: PhlowerTensor = squeeze(value)
 
     desired = torch.rand(desired_shape)
     assert actual.shape == desired.shape

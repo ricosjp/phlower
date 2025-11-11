@@ -470,3 +470,30 @@ def spatial_mean(
     return spatial_sum(tensor_times_scalar(tensor, weight)) / spatial_sum(
         weight
     )
+
+
+def squeeze(input: IPhlowerTensor, dim: int | None = None) -> IPhlowerTensor:
+    """
+    Squeeze the input tensor along the specified dimension.
+
+    Args:
+        input: IPhlowerTensor
+            Input tensor.
+        dim: int | None, optional
+            Dimension to squeeze. If None, squeezes all dimensions of size 1.
+            The default is None.
+
+    Returns:
+        IPhlowerTensor:
+            Squeezed tensor.
+    """
+
+    kwards = {"dim": dim} if dim is not None else {}
+    val = torch.squeeze(input.to_tensor(), **kwards)
+    pattern = input.shape_pattern.squeeze(dim=dim)
+
+    return phlower_tensor(
+        val,
+        dimension=input.dimension,
+        pattern=pattern,
+    )

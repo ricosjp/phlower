@@ -54,12 +54,14 @@ class AccessorSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
     @pydantic.model_validator(mode="after")
     def check_keepdim(self) -> Self:
-        if not self.keepdim:
-            if isinstance(self.index, list):
-                if len(self.index) > 1:
-                    raise ValueError(
-                        "multiple indices is invalid when keepdim=False"
-                    )
+        if self.keepdim:
+            return self
+
+        if isinstance(self.index, list):
+            if len(self.index) > 1:
+                raise ValueError(
+                    "multiple indices is invalid when keepdim=False"
+                )
         return self
 
     @property

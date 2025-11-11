@@ -17,6 +17,7 @@ from phlower.nn._functionals._functions import (
     spatial_mean,
     spatial_sum,
     spmm,
+    squeeze,
     tensor_product,
     tensor_times_scalar,
     time_series_to_features,

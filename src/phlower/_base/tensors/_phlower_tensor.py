@@ -35,10 +35,7 @@ PhysicDimensionLikeObject: TypeAlias = (
     | tuple[float]
 )
 
-_UNSUPPORTED_FUNCTION_NAMES = [
-    "einsum",
-    "reshape",
-]
+_UNSUPPORTED_FUNCTION_NAMES = ["einsum", "reshape", "squeeze"]
 
 
 logger = get_logger(__name__)
@@ -706,10 +703,12 @@ class PhlowerTensor(IPhlowerTensor):
     ) -> PhlowerTensor | NamedTuple[IPhlowerTensor]:
         if func.__name__ in _UNSUPPORTED_FUNCTION_NAMES:
             raise PhlowerUnsupportedTorchFunctionError(
-                f"Unsupported function: {func.__name__}"
+                f"Unsupported function: {func.__name__}."
+                "Please use corresponding functional in "
+                "`phlower.nn._functionals` modules."
             )
-        if kwargs is None:
-            kwargs = {}
+
+        kwargs = kwargs or {}
 
         _tensors = _recursive_resolve(args, "_tensor")
 
@@ -725,8 +724,8 @@ class PhlowerTensor(IPhlowerTensor):
 
         list_is_time_series = _recursive_resolve(tensor_args, "is_time_series")
         list_is_voxel = _recursive_resolve(tensor_args, "is_voxel")
-        is_time_series = np.any(list_is_time_series)
-        is_voxel = np.any(list_is_voxel)
+        is_time_series = np.any(list_is_time_series).item()
+        is_voxel = np.any(list_is_voxel).item()
 
         if _has_dimension(args):
             _dimensions = _recursive_resolve(
