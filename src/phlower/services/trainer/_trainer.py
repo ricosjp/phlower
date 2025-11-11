@@ -2,10 +2,21 @@ from __future__ import annotations
 
 import os
 import pathlib
+from datetime import timedelta
 from typing import Literal, overload
 
 import torch
 import torch.distributed as dist
+from torch.distributed.checkpoint.state_dict import (
+    StateDictOptions,
+    set_model_state_dict,
+)
+from torch.distributed.device_mesh import init_device_mesh
+from torch.distributed.fsdp import (
+    FullyShardedDataParallel,
+    fully_shard,
+    register_fsdp_forward_method,
+)
 from torch.nn.parallel import DistributedDataParallel
 
 from phlower.io import (
@@ -188,19 +199,15 @@ class PhlowerTrainer:
         self._start_epoch = 0
         self._offset_time = 0.0
 
-        # model and optimizer
-        # These are updated when training starts
-        self._model: PhlowerGroupModule | DistributedDataParallel = (
-            PhlowerGroupModule.from_setting(self._setting.model.network)
-        )
+        # NOTE: If this consumes too much memory,
+        # we may need to wrap this method with `with init_empty_weights():`
+        # and use FSDP2
+        self._model = PhlowerGroupModule.from_setting(setting.model.network)
 
+        self._tcp_port: int | None = None
         if self._setting.training.parallel_setting.is_active:
-            tcp_port = self._setting.training.parallel_setting.tcp_port
-            # set the address and port for the process group
-            # This setting assumes that all processes are
-            #  running on the same machine.
-            os.environ["MASTER_ADDR"] = "localhost"
-            os.environ["MASTER_PORT"] = str(tcp_port)
+            # NOTE: Ensure tcp_port is determined before calling mp.spawn
+            self._tcp_port = self._setting.training.parallel_setting.tcp_port
 
     def attach_handler(
         self,
@@ -368,6 +375,7 @@ class PhlowerTrainer:
             )
 
             output = self._evaluation_runner.run(
+                rank=0,
                 info=info,
                 model=self._model,
                 train_loader=train_loader,
@@ -447,9 +455,12 @@ class PhlowerTrainer:
         ... )
         """
 
-        _setup_parallel(
+        # setup for parallel training if necessary
+        assert self._tcp_port is not None, "tcp_port is not set."
+        _setup_parallel_env(
             rank,
             world_size,
+            tcp_port=self._tcp_port,
             backend=self._setting.training.parallel_setting.backend,
         )
 
@@ -467,6 +478,7 @@ class PhlowerTrainer:
                 output_directory,
                 log_every_n_epoch=self._setting.training.log_every_n_epoch,
                 loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+                parallel_mode=self._setting.training.parallel_setting.parallel_type,
             )
 
             # when restart training, skip is allowed
@@ -499,7 +511,7 @@ class PhlowerTrainer:
         _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
         _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
 
-        self._model = self._state_setup.setup_ddp_model(
+        self._model = self._state_setup.setup_parallel_model(
             model=self._model, rank=rank, decrypt_key=decrypt_key
         )
         _scheduled_optimizer = self._state_setup.setup_scheduled_optimizer(
@@ -552,6 +564,187 @@ class PhlowerTrainer:
                 train_last_loss = output.train_eval_loss
 
                 # Call handlers
+                self._handlers.run(
+                    output,
+                    trigger=PhlowerHandlerTrigger.epoch_completed,
+                )
+                if self._handlers.terminate_training:
+                    _logger.info("Training process is killed by handler.")
+                    break
+
+        _cleanup_parallel()
+        return train_last_loss
+
+    def train_fsdp(
+        self,
+        rank: int,
+        world_size: int,
+        output_directory: pathlib.Path,
+        train_directories: list[pathlib.Path] | None = None,
+        validation_directories: list[pathlib.Path] | None = None,
+        disable_dimensions: bool = False,
+        decrypt_key: bytes | None = None,
+        encrypt_key: bytes | None = None,
+    ) -> float:
+        """
+        Train the model with Fully Shard Data Parallel (FSDP)
+
+        Parameters
+        ----------
+        rank : int
+            Rank of the current process
+        world_size : int
+            Total number of processes
+        output_directory : pathlib.Path
+            Output directory
+        train_directories : list[pathlib.Path] | None, optional
+            List of directories containing training data.
+            If None, directories defined in the setting are used.
+            Default is None.
+        validation_directories : list[pathlib.Path] | None, optional
+            List of directories containing validation data.
+            If None, directories defined in the setting are used.
+            Default is None.
+        disable_dimensions : bool, optional
+            Disable dimensions. Default is False.
+        decrypt_key : bytes | None, optional
+            Key used for decrypting data files, if necessary. Default is None.
+        encrypt_key : bytes | None, optional
+            Key used for encrypting output files, if necessary. Default is None.
+
+        Examples
+        --------
+        >>> import torch.multiprocessing as mp
+        >>> trainer = PhlowerTrainer.from_setting(setting)
+        >>> mp.spawn(
+        ...     trainer.train_fsdp,
+        ...     args=(world_size, output_directory),
+        ...     nprocs=world_size,
+        ...     join=True
+        ... )
+        """
+
+        # NOTE: This function is almost same as train_ddp.
+        # To avoid unintended mistake, we keep two functions separately so far.
+        # In future, we may refactor these functions.
+
+        assert self._setting.training.parallel_setting.parallel_type == "FSDP2"
+
+        # setup for parallel training if necessary
+        assert self._tcp_port is not None, "tcp_port is not set."
+        _setup_parallel_env(
+            rank,
+            world_size,
+            tcp_port=self._tcp_port,
+            device=self._setting.training.get_device(rank),
+            backend=self._setting.training.parallel_setting.backend,
+        )
+
+        data_setting = self._setting.data.upgrade(
+            training=train_directories, validation=validation_directories
+        )
+        if data_setting.is_empty():
+            raise ValueError(
+                "No training or validation directories are found. "
+                "Please check the setting file."
+            )
+
+        logging_runner = LoggingRunner(
+            output_directory,
+            log_every_n_epoch=self._setting.training.log_every_n_epoch,
+            loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+            parallel_mode=self._setting.training.parallel_setting.parallel_type,
+        )
+
+        if rank == 0:
+            # when restart training, skip is allowed
+            self._save_setting_if_necessary(
+                output_directory,
+                encrypt_key=encrypt_key,
+                data_setting=data_setting,
+                skip_if_exist=(self._start_epoch > 0),
+            )
+
+        train_directories = data_setting.training
+        validation_directories = data_setting.validation
+
+        train_dataset, validation_dataset = prepare_datasets(
+            setting=self._setting,
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            decrypt_key=decrypt_key,
+        )
+        train_loader, validation_loader = prepare_dataloader(
+            setting=self._setting,
+            train_dataset=train_dataset,
+            validation_dataset=validation_dataset,
+            disable_dimensions=disable_dimensions,
+            run_distributed=True,
+        )
+
+        train_last_loss: float | None = None
+
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
+
+        self._model = self._state_setup.setup_parallel_model(
+            model=self._model, rank=rank, decrypt_key=decrypt_key
+        )
+        _scheduled_optimizer = self._state_setup.setup_scheduled_optimizer(
+            model=self._model,
+            rank=rank,
+            decrypt_key=decrypt_key,
+        )
+
+        if rank == 0:
+            _timer = StopWatch(offset=self._offset_time)
+            _timer.start()
+            logging_runner.show_overview(device=self._setting.training.device)
+        else:
+            _timer = None
+
+        register_fsdp_forward_method(self._model, "forward")
+        for v in self._model._phlower_modules:
+            register_fsdp_forward_method(v, "forward")
+
+        for epoch in range(self._start_epoch, self._setting.training.n_epoch):
+            info = self._training_runner.parallel_run(
+                rank,
+                epoch,
+                output_directory=output_directory,
+                model=self._model,
+                train_loader=train_loader,
+                scheduled_optimizer=_scheduled_optimizer,
+                train_pbar=_train_batch_pbar,
+            )
+
+            output = self._evaluation_runner.parallel_run(
+                rank=rank,
+                info=info,
+                model=self._model,
+                train_loader=train_loader,
+                validation_loader=validation_loader,
+                train_pbar=_train_batch_pbar,
+                validation_pbar=_val_batch_pbar,
+                timer=_timer,
+            )
+
+            logging_runner.run(
+                output=output,
+                model=self._model,
+                scheduled_optimizer=_scheduled_optimizer,
+                handlers=self._handlers,
+                encrypt_key=encrypt_key,
+                fsdp_sharded=True,
+                rank=rank,
+            )
+
+            train_last_loss = output.train_eval_loss
+
+            if rank == 0:
+                # Call handlers
+                # HACK: NEED TO FIX
+                # Currently, some handlers may not support FSDP properly.
                 self._handlers.run(
                     output,
                     trigger=PhlowerHandlerTrigger.epoch_completed,
@@ -672,13 +865,35 @@ class PhlowerTrainer:
         )
 
 
-def _setup_parallel(rank: int, world_size: int, backend: str = "nccl") -> None:
+def _setup_parallel_env(
+    rank: int,
+    world_size: int,
+    tcp_port: int,
+    device: torch.device | None = None,
+    backend: str = "nccl",
+) -> None:
     # initialize the process group
     if backend == "nccl":
         torch.cuda.set_device(rank)
-    dist.init_process_group(backend, rank=rank, world_size=world_size)
+
+    # set the address and port for the process group
+    # This setting assumes that all processes are
+    #  running on the same machine.
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = str(tcp_port)
+    os.environ["RANK"] = str(0)
+    os.environ["LOCAL_RANK"] = str(rank)
+    os.environ["WORLD_SIZE"] = str(world_size)
 
     _logger.info(f"Rank: {rank} initialized")
+
+    dist.init_process_group(
+        backend,
+        device_id=device,
+        rank=rank,
+        world_size=world_size,
+        timeout=timedelta(seconds=30),
+    )
 
 
 def _cleanup_parallel():
@@ -781,7 +996,84 @@ class _TrainingStateSetup:
                 )
                 return _scheduled_optimizer
 
-    def setup_ddp_model(
+    def setup_parallel_model(
+        self,
+        model: PhlowerGroupModule,
+        rank: int,
+        decrypt_key: bytes | None = None,
+    ) -> DistributedDataParallel | FullyShardedDataParallel:
+        parallel_setting = self._setting.training.parallel_setting
+        match parallel_setting.parallel_type:
+            case "DDP":
+                return self._setup_ddp_model(
+                    model=model, rank=rank, decrypt_key=decrypt_key
+                )
+            case "FSDP2":
+                return self._setup_fsdp2_model(
+                    model=model, rank=rank, decrypt_key=decrypt_key
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Parallel type {parallel_setting.parallel_type} "
+                    "is not implemented."
+                )
+
+    def _setup_fsdp2_model(
+        self,
+        model: PhlowerGroupModule,
+        rank: int,
+        decrypt_key: bytes | None = None,
+    ) -> FullyShardedDataParallel:
+        parallel_setting = self._setting.training.parallel_setting
+        assert parallel_setting.is_active
+        assert parallel_setting.parallel_type == "FSDP2"
+
+        world_size = parallel_setting.world_size
+        device = f"cuda:{rank}"
+        mesh = init_device_mesh("cuda", (world_size,))
+
+        # So far, only reshard_after_forward is supported
+        fsdp_kwargs = {
+            "mesh": mesh,
+            "reshard_after_forward": parallel_setting.reshard_after_forward,
+        }
+
+        # Only children modules under top GROUP module are wrapped with FSDP
+        for i, module in enumerate(model._phlower_modules):
+            model._phlower_modules[i] = fully_shard(
+                module,
+                **fsdp_kwargs,
+            )
+        model = fully_shard(model, **fsdp_kwargs)
+
+        init_setting = self._setting.training.initializer_setting
+        if init_setting.type_name == TrainerInitializeType.none:
+            model.to(device, non_blocking=self._setting.training.non_blocking)
+            return model
+
+        if rank == 0:
+            model = self.setup_model(
+                model=model,
+                device=device,
+                map_location="cpu",
+                decrypt_key=decrypt_key,
+            )
+            state_dict = model.state_dict()
+        else:
+            state_dict = None
+
+        set_model_state_dict(
+            model,
+            model_state_dict=state_dict,
+            options=StateDictOptions(
+                full_state_dict=True,
+                broadcast_from_rank0=True,
+            ),
+        )
+
+        return model
+
+    def _setup_ddp_model(
         self,
         model: PhlowerGroupModule,
         rank: int,
@@ -789,6 +1081,7 @@ class _TrainingStateSetup:
     ) -> DistributedDataParallel:
         parallel_setting = self._setting.training.parallel_setting
         assert parallel_setting.is_active
+        assert parallel_setting.parallel_type == "DDP"
 
         match parallel_setting.backend:
             case "nccl":

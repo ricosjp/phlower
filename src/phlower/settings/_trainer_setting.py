@@ -10,7 +10,6 @@ import pydantic
 import pydantic.dataclasses as dc
 import torch
 from pydantic import Field
-from typing_extensions import Self
 
 from phlower.settings._handler_settings import (
     EarlyStoppingSetting,
@@ -172,13 +171,14 @@ class TrainerInitializerSetting(pydantic.BaseModel):
 
 
 class ParallelSetting(pydantic.BaseModel):
-    is_active: bool = False
+    is_active: bool = True
     """
-    If True, parallel processing is activated. Defaults to False.
+    If True, parallel processing is activated.
     """
-    parallel_type: Literal["DDP"] = "DDP"
+
+    parallel_type: Literal["DDP", "FSDP2"] = "DDP"
     """
-    Parallel processing type. Currently, only DDP is supported.
+    Parallel processing type. Defaults to DDP.
     """
 
     world_size: int = 1
@@ -188,7 +188,16 @@ class ParallelSetting(pydantic.BaseModel):
 
     backend: Literal["nccl", "gloo"] = "nccl"
     """
-    Backend to use. Defaults to nccl.
+    Backend to use. Defaults to nccl
+    """
+
+    reshard_after_forward: Literal[False] = False
+    """
+    If True, reshard parameters after forward pass. Defaults to False.
+    This controls the parameter behavior after forward and can trade
+    off memory and communication.
+    This parameter is only used when parallel_type is FSDP2.
+    See: https://docs.pytorch.org/docs/2.9/distributed.fsdp.fully_shard.html
     """
 
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
@@ -201,24 +210,8 @@ class ParallelSetting(pydantic.BaseModel):
             addr = s.getsockname()
             port = addr[1]
 
-        assert port != -1
+        assert port != -1, "Failed to get free tcp port"
         return port
-
-    @pydantic.model_validator(mode="after")
-    def check_n_processes_and_gpus(self) -> Self:
-        if not self.is_active:
-            return self
-
-        if self.parallel_type != "DDP":
-            raise ValueError(
-                f"Unsupported parallel_type {self.parallel_type}. "
-                "Currently, only DDP is supported."
-            )
-
-        if self.backend == "gloo":
-            return self
-
-        return self
 
 
 class PhlowerTrainerSetting(pydantic.BaseModel):

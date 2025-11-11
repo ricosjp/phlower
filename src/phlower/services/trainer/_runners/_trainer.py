@@ -55,7 +55,7 @@ class TrainingRunner:
         train_loss_details: list[dict[str, float]] = []
         for tr_batch in train_loader:
             tr_batch = tr_batch.to(
-                device=self._trainer_setting.device,
+                device=self._trainer_setting.get_device(),
                 non_blocking=self._trainer_setting.non_blocking,
             )
             train_last_loss, train_detail_losses = training_batch_step(
@@ -99,6 +99,7 @@ class TrainingRunner:
         #  for sampler at the beginning of each epoch
         train_loader.sampler.set_epoch(epoch)
         device = self._trainer_setting.get_device(rank)
+        model.train()
         for tr_batch in train_loader:
             tr_batch: LumpedTensorData
             tr_batch = tr_batch.to(
