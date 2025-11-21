@@ -354,7 +354,7 @@ class GroupModuleSetting(
         input_keys = self.get_input_keys()
         output_keys = self.get_output_keys()
 
-        for key in self.solver_parameters.get_target_keys():
+        for key in self.solver_parameters.get_update_keys():
             if key not in input_keys:
                 raise PhlowerIterationSolverSettingError(
                     f"{key} is missing in inputs. Group: {self.name}"

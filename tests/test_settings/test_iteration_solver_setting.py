@@ -1,16 +1,39 @@
 import pydantic
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+from phlower.settings import GroupModuleSetting
 from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,
     ConjugateGradientSolverSetting,
     EmptySolverSetting,
     SimpleSolverSetting,
 )
+from phlower.utils.enums import PhlowerIterationSolverType
 
 
 def test__empty_setting():
     setting = EmptySolverSetting()
-    assert len(setting.get_target_keys()) == 0
+    assert len(setting.get_update_keys()) == 0
+
+
+@given(solver_type=st.sampled_from(PhlowerIterationSolverType))
+def test__all_iteration_solver_type_are_mapped(
+    solver_type: PhlowerIterationSolverType,
+):
+    if solver_type == PhlowerIterationSolverType.none:
+        solver_parameters = {}
+    else:
+        solver_parameters = {"update_keys": ["a"]}
+
+    _ = GroupModuleSetting(
+        name="test",
+        solver_type=solver_type,
+        solver_parameters=solver_parameters,
+    )
+
+
+# region test for Simple solver setting
 
 
 @pytest.mark.parametrize(
@@ -37,6 +60,32 @@ def test__raise_error_when_empty_targets_in_simple_setting():
         )
 
         assert "Set at least one target item" in str(ex)
+
+
+def test__simple_target_keys_is_deprecated_and_correctly_passed():
+    setting = SimpleSolverSetting(
+        target_keys=["a", "b", "c"],
+        convergence_threshold=0.1,
+        max_iterations=10,
+    )
+
+    assert setting.update_keys == ["a", "b", "c"]
+
+    with pytest.deprecated_call():
+        _ = setting.target_keys
+
+
+def test__simple_raise_error_when_both_update_and_target_keys_are_set():
+    with pytest.raises(
+        ValueError, match="Cannot set both target_keys and update_keys"
+    ):
+        _ = SimpleSolverSetting(
+            update_keys=["a", "b"],
+            target_keys=["c", "d"],
+        )
+
+
+# endregion
 
 
 # region test for Barazilai Borwein setting
@@ -126,6 +175,26 @@ def test__update_and_residual_keys():
 
     assert setting.update_keys == ["a", "b"]
     assert setting.operator_keys == ["c", "d", "e"]
+
+
+def test__raise_error_when_both_update_and_target_keys_are_set():
+    with pytest.raises(
+        ValueError, match="Cannot set both target_keys and update_keys"
+    ):
+        _ = BarzilaiBoweinSolverSetting(
+            update_keys=["a", "b"],
+            target_keys=["c", "d"],
+        )
+
+
+def test__raise_error_when_both_operator_and_target_keys_are_set():
+    with pytest.raises(
+        ValueError, match="Cannot set both target_keys and operator_keys"
+    ):
+        _ = BarzilaiBoweinSolverSetting(
+            operator_keys=["a", "b"],
+            target_keys=["c", "d"],
+        )
 
 
 # endregion

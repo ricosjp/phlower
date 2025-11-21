@@ -24,17 +24,17 @@ class SimpleIterationSolver(IFIterationSolver):
         cls, setting: IPhlowerIterationSolverSetting
     ) -> IFIterationSolver:
         assert isinstance(setting, SimpleSolverSetting)
-        return SimpleIterationSolver(**setting.__dict__)
+        return SimpleIterationSolver(**setting.model_dump())
 
     def __init__(
         self,
         max_iterations: int,
         convergence_threshold: float,
-        target_keys: list[str],
+        update_keys: list[str],
     ) -> None:
         self._max_iterations = max_iterations
         self._convergence_threshold = convergence_threshold
-        self._targets = target_keys
+        self._targets = update_keys
         self._is_converged = False
 
     def zero_residuals(self) -> None:
