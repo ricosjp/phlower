@@ -17,11 +17,11 @@ from phlower.utils.enums import PhlowerIterationSolverType
 
 class IPhlowerIterationSolverSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def get_target_keys(self) -> list[str]: ...
+    def get_update_keys(self) -> list[str]: ...
 
 
 class EmptySolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
-    def get_target_keys(self) -> list[str]:
+    def get_update_keys(self) -> list[str]:
         return []
 
     # special keyward to forbid extra fields in pydantic
@@ -29,32 +29,69 @@ class EmptySolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
 
 
 class SimpleSolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
-    target_keys: list[str] = pydantic.Field(default_factory=list)
-    convergence_threshold: float = 100
-    max_iterations: int = 100
+    target_keys: list[str] = pydantic.Field(
+        default_factory=list,
+        deprecated=deprecated(
+            "target_keys is deprecated. "
+            "Use update_keys and residual_keys instead."
+        ),
+        exclude=True,
+    )
+    """
+    Deprecated: List of variable names to be optimized.
+    Use update_keys and residual_keys instead.
+    """
+
+    convergence_threshold: float = pydantic.Field(100, gt=0)
+    """
+    Convergence threshold for the solver.
+    """
+
+    max_iterations: int = pydantic.Field(100, gt=0)
+    """
+    Maximum number of iterations for the solver.
+    """
+
+    update_keys: list[str] = pydantic.Field(default_factory=list)
+    """
+    List of variable names to be updated by the solver.
+    If empty list is given, update_keys are set to be same as target_keys.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
-    @pydantic.field_validator("convergence_threshold", "max_iterations")
-    @classmethod
-    def must_be_positive_value(
-        cls, value: float | int, info: pydantic.ValidationInfo
-    ) -> float | int:
-        assert value > 0, f"{info.field_name} must be positive value."
-        return value
+    @pydantic.model_validator(mode="before")
+    def pass_target_keys_to_update_and_residual_keys(
+        cls, vals: dict[str, Any]
+    ) -> dict[str, Any]:
+        if not vals.get("target_keys"):
+            # None or empty target_keys
+            return vals
 
-    @pydantic.field_validator("target_keys")
-    @classmethod
-    def empty_list_is_not_allowed(cls, value: list[str]) -> list[str]:
+        target_keys = vals["target_keys"]
+        if vals.get("update_keys"):
+            raise ValueError(
+                "Cannot set both target_keys and update_keys. "
+                "target_keys is deprecated. "
+                "Use update_keys instead."
+            )
+
+        vals["update_keys"] = target_keys
+        vals.pop("target_keys")
+
+        return vals
+
+    @pydantic.model_validator(mode="after")
+    def empty_list_is_not_allowed(self) -> Self:
         assert (
-            len(value) > 0
+            len(self.update_keys) > 0
         ), "Set at least one target item for target_keys in solver settings"
 
-        return value
+        return self
 
-    def get_target_keys(self) -> list[str]:
-        return self.target_keys
+    def get_update_keys(self) -> list[str]:
+        return self.update_keys
 
 
 class BarzilaiBoweinSolverSetting(
@@ -155,7 +192,7 @@ class BarzilaiBoweinSolverSetting(
         ), "convergence threshold must be less than divergence_threshold"
         return self
 
-    def get_target_keys(self) -> list[str]:
+    def get_update_keys(self) -> list[str]:
         return self.update_keys
 
 
@@ -225,7 +262,7 @@ class ConjugateGradientSolverSetting(
         ), "convergence threshold must be less than divergence_threshold"
         return self
 
-    def get_target_keys(self) -> list[str]:
+    def get_update_keys(self) -> list[str]:
         return self.update_keys
 
 
@@ -233,6 +270,7 @@ _name_to_setting: dict[str, IPhlowerIterationSolverSetting] = {
     PhlowerIterationSolverType.none.value: EmptySolverSetting,
     PhlowerIterationSolverType.simple.value: SimpleSolverSetting,
     PhlowerIterationSolverType.bb.value: BarzilaiBoweinSolverSetting,
+    PhlowerIterationSolverType.cg.value: ConjugateGradientSolverSetting,
 }
 
 
