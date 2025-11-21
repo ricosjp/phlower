@@ -15,7 +15,7 @@ from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,
 )
-from phlower.settings._nonlinear_solver_setting import (
+from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,
     IPhlowerIterationSolverSetting,
 )
@@ -129,7 +129,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
 
             gradient = problem.gradient(
                 h_inputs,
-                target_keys=self._keys,
+                update_keys=self._keys,
                 operator_keys=self._operator_keys,
             )
 

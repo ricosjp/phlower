@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 
 from phlower.collections import IPhlowerTensorCollections
-from phlower.settings._nonlinear_solver_setting import (
+from phlower.settings._iteration_solver_setting import (
     IPhlowerIterationSolverSetting,
 )
 
@@ -30,7 +30,7 @@ class IOptimizeProblem(metaclass=abc.ABCMeta):
     def gradient(
         self,
         h: IPhlowerTensorCollections,
-        target_keys: list[str],
+        update_keys: list[str],
         operator_keys: list[str] | None = None,
     ) -> IPhlowerTensorCollections:
         """gradient value of optimize problem
@@ -39,7 +39,13 @@ class IOptimizeProblem(metaclass=abc.ABCMeta):
 
         Args:
             h (IPhlowerTensorCollections): collection of inputs
-            target_keys (list[str]): keys of target variables
+            update_keys (list[str]): keys of update variables
+            operator_keys (list[str]): keys of operator variables.
+                If fed, the values of the keys are directly used as the
+                output values of the operator, i.e., D[u] = NN[u].
+                If not, compute values of update keys subtracted from the
+                initial values to obtain the output values of the
+                operator, i.e., D[u] = NN[u] - u.
 
         Returns:
             IPhlowerTensorCollections: collection of outputs

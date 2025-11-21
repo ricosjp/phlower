@@ -104,6 +104,7 @@ class PhlowerIterationSolverType(str, Enum):
     none = "none"
     simple = "simple"
     bb = "bb"  # barzilai_borwein
+    cg = "cg"  # conjugate gradient
 
 
 class PhlowerHandlerRegisteredKey(str, Enum):

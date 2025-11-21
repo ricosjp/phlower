@@ -13,7 +13,7 @@ from phlower.nn._iteration_solvers._barzilai_borwein_solver import (
     AlphaCalculator,
     BarzilaiBorweinSolver,
 )
-from phlower.settings._nonlinear_solver_setting import (
+from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,
 )
 
@@ -53,7 +53,7 @@ class QuadraticProblem(IOptimizeProblem):
     def gradient(
         self,
         value: IPhlowerTensorCollections,
-        target_keys: list[str],
+        update_keys: list[str],
         operator_keys: list[str] | None = None,
     ) -> IPhlowerTensorCollections:
         x = value["x"]
