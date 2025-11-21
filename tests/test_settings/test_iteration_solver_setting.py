@@ -1,7 +1,8 @@
 import pydantic
 import pytest
-from phlower.settings._nonlinear_solver_setting import (
+from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,
+    ConjugateGradientSolverSetting,
     EmptySolverSetting,
     SimpleSolverSetting,
 )
@@ -125,6 +126,28 @@ def test__update_and_residual_keys():
 
     assert setting.update_keys == ["a", "b"]
     assert setting.operator_keys == ["c", "d", "e"]
+
+
+# endregion
+
+# region test for conjugate gradient setting
+
+
+def test__cg_empty_list_is_not_allowed():
+    with pytest.raises(pydantic.ValidationError, match="update_keys"):
+        ConjugateGradientSolverSetting(update_keys=[])
+
+
+def test__cg_convergence_must_be_less_than_divergence():
+    with pytest.raises(
+        pydantic.ValidationError,
+        match="convergence threshold must be",
+    ):
+        ConjugateGradientSolverSetting(
+            update_keys=["a"],
+            convergence_threshold=0.1,
+            divergence_threshold=0.01,
+        )
 
 
 # endregion

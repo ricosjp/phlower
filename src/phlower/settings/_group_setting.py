@@ -15,8 +15,8 @@ from phlower.settings._interface import (
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
+from phlower.settings._iteration_solver_setting import SolverParameters
 from phlower.settings._module_setting import ModuleSetting
-from phlower.settings._nonlinear_solver_setting import SolverParameters
 from phlower.settings._resolver import resolve_modules
 from phlower.utils.exceptions import (
     PhlowerIterationSolverSettingError,

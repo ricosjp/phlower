@@ -168,3 +168,6 @@ uv.lock
 # data
 
 tests/data
+
+# Misc
+.DS_Store

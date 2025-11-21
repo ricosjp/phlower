@@ -5,7 +5,7 @@ from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,
 )
-from phlower.settings._nonlinear_solver_setting import (
+from phlower.settings._iteration_solver_setting import (
     EmptySolverSetting,
     IPhlowerIterationSolverSetting,
 )
