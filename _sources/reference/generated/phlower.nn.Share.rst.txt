@@ -1,0 +1,40 @@
+﻿:orphan:
+
+phlower.nn.Share
+================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Share
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+      ~Share.forward
+   
+   
+      ~Share.from_setting
+   
+   
+      ~Share.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   
