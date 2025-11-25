@@ -13,7 +13,7 @@ Phlower offers a way to define models and its order by yaml file.
 ###################################################################################################
 # First of all, we would like to load sample yaml data. Please download sample sample yaml.
 # `data.yml
-# <https://github.com/ricosjp/phlower/tutorials/basic_usages/sample_data/model/model.yml>`_
+# <https://github.com/ricosjp/phlower/blob/main/tutorials/basic_usages/sample_data/model/model.yml>`_
 #
 # we construct PhlowerSetting object from yaml file.
 
