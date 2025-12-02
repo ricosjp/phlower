@@ -1,0 +1,68 @@
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  fields:
+    - name: support1
+      is_time_series: false
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    
+    modules:
+      - nn_type: PresetGroup
+        preset_type: Identity
+        name: Identity0
+        inputs:
+          - name: feature0
+            n_last_dim: 1
+        outputs:
+          - name: feature1
+            n_last_dim: 1
+        destinations:
+          - Identity1
+        nn_parameters:
+          input_to_output_map:
+            feature0: feature1
+
+      - nn_type: PresetGroup
+        preset_type: Identity
+        name: Identity1
+        inputs:
+          - name: feature1
+            n_last_dim: 1
+        outputs:
+          - name: feature2
+            n_last_dim: 1
+        destinations:
+          - Identity2
+        nn_parameters:
+          input_to_output_map:
+            feature1: feature2
+
+      - nn_type: PresetGroup
+        preset_type: Identity
+        name: Identity2
+        inputs:
+          - name: feature2
+            n_last_dim: 1
+        outputs:
+          - name: feature0
+            n_last_dim: 1
+        destinations:
+          - Identity0
+        nn_parameters:
+          input_to_output_map:
+            feature2: feature0
+
+

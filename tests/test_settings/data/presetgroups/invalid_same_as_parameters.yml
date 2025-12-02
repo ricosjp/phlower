@@ -1,0 +1,50 @@
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 10
+
+  network:
+    nn_type: GROUP
+    name: SAMPLE_MODEL    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: PresetGroup
+        preset_type: Identity
+        name: Identity0
+        inputs:
+          - name: feature0
+            n_last_dim: 10
+        outputs:
+          - name: feature1
+            n_last_dim: 10
+        destinations:
+          - Identity1
+        nn_parameters:
+          input_to_output_map:
+            feature0: feature1
+
+      - nn_type: PresetGroup
+        preset_type: fake_Identity
+        name: Identity1
+        inputs:
+          - name: feature1
+            n_last_dim: 10
+        outputs:
+          - name: feature2
+            n_last_dim: 10
+
+        # So far, nn_parameters_same_as not allowed
+        nn_parameters_same_as: Identity0
+
+

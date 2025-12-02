@@ -27,8 +27,12 @@ from phlower.nn._interface_module import (
 )
 from phlower.nn._iteration_solvers import EmptySolver, get_iteration_solver
 from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
+from phlower.nn._preset_group_module_adapter import (
+    PhlowerPresetGroupModuleAdapter,
+)
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
+from phlower.settings._preset_group_setting import PresetGroupModuleSetting
 from phlower.utils.enums import TrainerSavedKeyType
 
 TargetFunctionType = Callable[
@@ -98,6 +102,11 @@ class PhlowerGroupModule(
                 _modules.append(_layer)
                 continue
 
+            if isinstance(_setting, PresetGroupModuleSetting):
+                _layer = PhlowerPresetGroupModuleAdapter.from_setting(_setting)
+                _modules.append(_layer)
+                continue
+
             if isinstance(_setting, ModuleSetting):
                 _layer = PhlowerModuleAdapter.from_setting(_setting)
                 _modules.append(_layer)
@@ -164,7 +173,7 @@ class PhlowerGroupModule(
             f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
         )
 
-    def get_n_nodes(self) -> list[int]:
+    def get_n_nodes(self) -> list[int] | None:
         return None
 
     def resolve(

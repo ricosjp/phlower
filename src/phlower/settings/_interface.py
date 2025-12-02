@@ -5,7 +5,9 @@ import abc
 
 class IReadOnlyReferenceGroupSetting(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def search_module_setting(self, name: str) -> IPhlowerLayerParameters: ...
+    def search_module_setting(
+        self, name: str
+    ) -> IPhlowerLayerParameters | IPhlowerPresetGroupParameters: ...
 
     @abc.abstractmethod
     def search_group_setting(
@@ -102,6 +104,30 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
         Args:
             parent (IReadOnlyReferenceGroupSetting):
                 Reference to group setting of its parent
+        """
+        ...
+
+    @abc.abstractmethod
+    def confirm(self, self_module: IModuleSetting) -> None:
+        """Chenck and confirm parameters. This functions is
+         called after all values of parameters are established.
+         Write scripts to check its state at last.
+
+        Args:
+            input_keys (list[str]): keys to input this parameters
+            **kwards: information of parent module
+        """
+        ...
+
+
+class IPhlowerPresetGroupParameters(metaclass=abc.ABCMeta):
+    @classmethod
+    @abc.abstractmethod
+    def get_preset_type(cls) -> str:
+        """Return the type of preset group
+
+        Returns:
+            str: type of preset group
         """
         ...
 

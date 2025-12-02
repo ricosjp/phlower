@@ -17,6 +17,7 @@ from phlower.settings._interface import (
 )
 from phlower.settings._iteration_solver_setting import SolverParameters
 from phlower.settings._module_setting import ModuleSetting
+from phlower.settings._preset_group_setting import PresetGroupModuleSetting
 from phlower.settings._resolver import resolve_modules
 from phlower.utils.exceptions import (
     PhlowerIterationSolverSettingError,
@@ -37,6 +38,7 @@ class GroupIOSetting:
 class _DiscriminatorTag(str, Enum):
     GROUP = "GROUP"
     MODULE = "MODULE"
+    PRESETGROUP = "PRESETGROUP"
 
 
 def _custom_discriminator(value: object) -> str:
@@ -52,6 +54,8 @@ def _custom_discriminator(value: object) -> str:
 
     if nn_type.upper() == _DiscriminatorTag.GROUP:
         return _DiscriminatorTag.GROUP.name
+    elif nn_type.upper() == _DiscriminatorTag.PRESETGROUP:
+        return _DiscriminatorTag.PRESETGROUP.name
     else:
         return _DiscriminatorTag.MODULE.name
 
@@ -86,6 +90,10 @@ class GroupModuleSetting(
     modules: list[
         Annotated[
             Annotated[GroupModuleSetting, Tag(_DiscriminatorTag.GROUP.name)]
+            | Annotated[
+                PresetGroupModuleSetting,
+                Tag(_DiscriminatorTag.PRESETGROUP.name),
+            ]
             | Annotated[ModuleSetting, Tag(_DiscriminatorTag.MODULE.name)],
             Discriminator(
                 _custom_discriminator,
@@ -271,7 +279,7 @@ class GroupModuleSetting(
 
     def find_module(
         self, name: str
-    ) -> ModuleSetting | GroupModuleSetting | None:
+    ) -> ModuleSetting | GroupModuleSetting | PresetGroupModuleSetting | None:
         for v in self.modules:
             if v.name == name:
                 return v
