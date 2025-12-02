@@ -1,0 +1,37 @@
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+        - name: feature0_missing
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+
+    modules:
+      - nn_type: PresetGroup
+        name: Identity0
+        preset_type: Identity
+        inputs:
+          - name: feature0
+            n_last_dim: -1
+          - name: feature1
+            n_last_dim: -1
+        outputs:
+          - name: out_feature0
+            n_last_dim: 10
+          - name: out_feature1
+            n_last_dim: 12
+        nn_parameters:
+          input_to_output_map:
+            feature0: out_feature0
+            feature1: out_feature1
+

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import pathlib
+from typing import Generic, TypeVar
 
 from typing_extensions import Self
 
@@ -9,12 +10,18 @@ from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._module_settings import IPhlowerLayerParameters
+from phlower.settings._preset_group_parameter_setting import (
+    IPhlowerPresetGroupParameters,
+)
+
+T1 = TypeVar("T1", IPhlowerLayerParameters, IPhlowerPresetGroupParameters)
+T2 = TypeVar("T2", PhlowerTensor, IPhlowerTensorCollections)
 
 
-class IPhlowerCoreModule(metaclass=abc.ABCMeta):
+class IGenericPhlowerCoreModule(Generic[T1, T2], metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
-    def from_setting(cls, setting: IPhlowerLayerParameters) -> Self: ...
+    def from_setting(cls, setting: T1) -> Self: ...
 
     @classmethod
     @abc.abstractmethod
@@ -35,10 +42,18 @@ class IPhlowerCoreModule(metaclass=abc.ABCMeta):
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField | None = None,
-    ) -> PhlowerTensor: ...
+    ) -> T2: ...
 
     @abc.abstractmethod
     def get_reference_name(self) -> str | None: ...
+
+
+IPhlowerCoreModule = IGenericPhlowerCoreModule[
+    IPhlowerLayerParameters, PhlowerTensor
+]
+IPhlowerCorePresetGroupModule = IGenericPhlowerCoreModule[
+    IPhlowerPresetGroupParameters, IPhlowerTensorCollections
+]
 
 
 class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
@@ -80,7 +95,7 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def get_destinations(self) -> list[str]: ...
 
     @abc.abstractmethod
-    def get_n_nodes(self) -> list[int]: ...
+    def get_n_nodes(self) -> list[int] | None: ...
 
     @abc.abstractmethod
     def get_display_info(self) -> str: ...
@@ -89,4 +104,6 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def draw(self, output_directory: pathlib.Path, recursive: bool): ...
 
     @abc.abstractmethod
-    def get_core_module(self) -> IPhlowerCoreModule: ...
+    def get_core_module(
+        self,
+    ) -> IGenericPhlowerCoreModule: ...

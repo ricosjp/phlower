@@ -1,0 +1,33 @@
+misc:
+  tests:
+    Identity0: [10]
+
+model:
+
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+  fields:
+    - name: support1
+      is_time_series: false
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    
+    modules:
+      - nn_type: PresetGroup
+        preset_type: Identity
+        name: Identity0
+        inputs:
+          - name: feature0
+        outputs:
+          - name: feature1
+            n_last_dim: 1
+        nn_parameters:
+          input_to_output_map:
+            feature0: feature1
+

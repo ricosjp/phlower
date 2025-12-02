@@ -2,6 +2,7 @@ from phlower.settings._data_setting import PhlowerDataSetting
 from phlower.settings._group_setting import (
     GroupModuleSetting,
     ModuleSetting,
+    PresetGroupModuleSetting,
 )
 from phlower.settings._model_setting import (
     ModelIOSetting,
