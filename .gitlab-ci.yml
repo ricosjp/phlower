@@ -7,6 +7,8 @@ stages:
   - document_test
   - deploy
 
+# NOTE: Ideally, we would like to install dependencies, not to use pre-built images.
+# However, installing dependencies takes time, so we use pre-built images here.
 default:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py312-cpu
   before_script:

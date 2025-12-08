@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## UnReleased
+
+## [0.3.0] - 2025-12-08
+
 ### Added
 * Add `attach_handler` method to `PhlowerTrainer` to add an extra handler at training process.
 * Add `lazy_load` parameter to `TrainingSetting` to load data lazily.
@@ -17,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `evaluate_context_manager` parameter to `TrainerSetting` to choose context manager during evaluation.
 * Add `LayerNorm` module in `phlower.nn`
 * Add `aggregation_method` parameter to `LossCalculator` to choose aggregation method of losses. (sum or mean)
+* Add `cg` mode in iteration solver of `PhlowerGroupModule`.
+* Add `PhlowerPresetGroupModule` as a preset group.
 
 ### Changed
 * Time series tensor is splitted into each time step when forwarding with `time_series_length` in `PhlowerGroupModule`.
