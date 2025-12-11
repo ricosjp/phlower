@@ -128,7 +128,9 @@ class Accessor(torch.nn.Module, IPhlowerCoreModule):
             index if index >= 0 else index + arg._tensor.shape[self._dim]
             for index in indices
         ]
-        indices_torch = torch.tensor(indices)
+        indices_torch = torch.tensor(
+            indices, dtype=torch.long, device=arg._tensor.device
+        )
 
         new_tensor = torch.index_select(arg, self._dim, indices_torch)
 
