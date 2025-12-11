@@ -159,3 +159,49 @@ def test__voxel_properly_handled(
 
     assert actual.is_time_series is desired_time_series
     assert actual.is_voxel is desired_voxel
+
+
+@pytest.mark.gpu_test
+@pytest.mark.parametrize(
+    "input_shape, activation, index, desired_shape, dim, keepdim",
+    [
+        ((5, 5, 16), "identity", 0, (5, 16), 0, False),
+        ((4, 2, 16), "identity", -1, (2, 16), 0, False),
+        ((5, 2, 3, 4), "tanh", 1, (2, 3, 4), 0, False),
+        ((3, 2, 1), "relu", 2, (2, 1), 0, False),
+        ((2, 3, 4), "identity", 1, (2, 4), 1, False),
+        ((2, 3, 4), "identity", 1, (1, 3, 4), 0, True),
+        ((2, 3, 4), "identity", 1, (2, 1, 4), 1, True),
+        ((2, 3, 4), "identity", 1, (2, 3, 1), -1, True),
+        ((2, 3, 4), "identity", [0, 1], (2, 3, 2), -1, True),
+    ],
+)
+def test__aceess_item_in_gpu_env(
+    input_shape: tuple[int],
+    activation: str,
+    index: int | list[int],
+    desired_shape: tuple[int],
+    dim: int,
+    keepdim: bool,
+):
+    # Issue gitlab-41
+    # This test is same as test__accessed_tensor_shape
+    # HACK: We need to make it simple and apply other nn modules.
+    # For example, custom decorator is a good option.
+    # (See requires_deep_recursion in Numpy)
+
+    ph_tensor = phlower_tensor(
+        torch.from_numpy(np.random.rand(*input_shape)).to(
+            device=torch.device("cuda:0")
+        )
+    )
+    phlower_tensors = phlower_tensor_collection({"tensor": ph_tensor})
+
+    model = Accessor(
+        activation=activation, index=index, dim=dim, keepdim=keepdim
+    )
+
+    actual = model.forward(phlower_tensors)
+
+    assert actual.shape == desired_shape
+    assert actual.device == torch.device("cuda:0")
