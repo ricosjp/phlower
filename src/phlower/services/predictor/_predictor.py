@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from phlower._base import IPhlowerArray
+from phlower.collections import IPhlowerTensorCollections
 from phlower.data import (
     DataLoaderBuilder,
     IPhlowerDataset,
@@ -22,6 +23,7 @@ from phlower.services.predictor._result import (
     PhlowerPredictionResult,
 )
 from phlower.services.preprocessing import PhlowerScalingService
+from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
 from phlower.settings import (
     PhlowerModelSetting,
     PhlowerPredictorSetting,
@@ -343,14 +345,15 @@ class PhlowerPredictor:
         with self._predict_context_manager():
             for batch in data_loader:
                 batch: LumpedTensorData
-
                 # HACK: Need to unbatch ?
                 assert batch.n_data == 1
-                self._model.eval()
-                h = self._model.forward(
-                    batch.x_data,
-                    field_data=batch.field_data,
+
+                helper = SlidingWindowHelper(
+                    batch,
+                    self._predict_setting.time_series_sliding,
                 )
+                self._model.eval()
+                h = _batch_forward(self._model, helper)
 
                 if return_only_prediction:
                     yield PhlowerPredictionResult(prediction_data=h)
@@ -372,12 +375,13 @@ class PhlowerPredictor:
         with self._predict_context_manager():
             for batch in data_loader:
                 batch: LumpedTensorData
-
-                self._model.eval()
-                h = self._model.forward(
-                    batch.x_data,
-                    field_data=batch.field_data,
+                helper = SlidingWindowHelper(
+                    batch,
+                    self._predict_setting.time_series_sliding,
                 )
+                self._model.eval()
+                h = _batch_forward(self._model, helper)
+
                 h = h.to_phlower_arrays_dict()
                 _logger.info("Finished prediction")
 
@@ -469,3 +473,18 @@ def _load_model(
     if device is not None:
         _model.to(device)
     return _model
+
+
+def _batch_forward(
+    model: PhlowerGroupModule,
+    helper: SlidingWindowHelper,
+) -> IPhlowerTensorCollections:
+    predicted: list[IPhlowerTensorCollections] = []
+    for _slided_batch in helper:
+        h = model.forward(
+            _slided_batch.x_data,
+            field_data=_slided_batch.field_data,
+        )
+        predicted.append(h)
+
+    return merge_slided_outputs(predicted)

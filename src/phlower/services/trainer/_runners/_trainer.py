@@ -12,7 +12,7 @@ from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
-from phlower.services.trainer._sliding_window_helper import SlidingWindowHelper
+from phlower.services.utils import SlidingWindowHelper
 from phlower.settings import (
     PhlowerTrainerSetting,
 )

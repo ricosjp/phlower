@@ -30,6 +30,7 @@ def prepare_sample_preprocessed_files_fixture() -> pathlib.Path:
     base_interim_dir = OUTPUT_DIR / "interim"
     base_interim_dir.mkdir()
 
+    n_times = 10
     n_cases = 3
     dtype = np.float32
     for i in range(n_cases):
@@ -37,15 +38,25 @@ def prepare_sample_preprocessed_files_fixture() -> pathlib.Path:
         preprocessed_dir = base_interim_dir / f"case_{i}"
         preprocessed_dir.mkdir()
 
-        nodal_initial_u = np.random.rand(n_nodes, 3, 1)
+        nodal_u = np.random.rand(n_times, n_nodes, 3, 1)
         np.save(
-            preprocessed_dir / "nodal_initial_u.npy",
-            nodal_initial_u.astype(dtype),
+            preprocessed_dir / "nodal_u.npy",
+            nodal_u.astype(dtype),
         )
 
-        # nodal_last_u = np.random.rand(n_nodes, 3, 1)
         np.save(
-            preprocessed_dir / "nodal_last_u.npy", nodal_initial_u.astype(dtype)
+            preprocessed_dir / "nodal_initial_u.npy",
+            nodal_u[0].astype(dtype),
+        )
+
+        np.save(
+            preprocessed_dir / "nodal_last_u.npy", nodal_u[-1].astype(dtype)
+        )
+
+        generated_nodal_u = np.random.rand(n_times, n_nodes, 3, 1)
+        np.save(
+            preprocessed_dir / "generated_nodal_u.npy",
+            generated_nodal_u.astype(dtype),
         )
 
         rng = np.random.default_rng()
@@ -129,6 +140,35 @@ def inplace_simple_training(
 
     trainer = PhlowerTrainer.from_setting(setting)
     output_directory = OUTPUT_DIR / "model_inplace"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return loss, output_directory
+
+
+@pytest.fixture(scope="module")
+def simple_training_time_series(
+    perform_scaling: pathlib.Path,
+) -> tuple[float, pathlib.Path]:
+    phlower_path = PhlowerDirectory(OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        DATA_DIR / "simple_train_time_series.yml"
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = OUTPUT_DIR / "model_time_series"
     if output_directory.exists():
         shutil.rmtree(output_directory)
 
@@ -275,3 +315,41 @@ def test__predict_inplace_model(
 
         for k in result.input_data.keys():
             assert isinstance(result.input_data[k], np.ndarray)
+
+
+def test__predict_with_time_series_sliding_window(
+    simple_training_time_series: tuple[float, pathlib.Path],
+):
+    """
+    time series sliding window test
+
+    inputs: time series data with 10 time steps
+    sliding window setting: offset=0 size=3, stride=2
+    expected number of outputs: (10 - 3) / 2 + 1 = 4
+    each output has 3 time steps
+    thus, total time steps in output = 4 * 3 = 12
+    """
+
+    _, model_directory = simple_training_time_series
+
+    predictor = PhlowerPredictor.from_pathes(
+        model_directory=model_directory,
+        predict_setting_yaml=DATA_DIR / "predict_time_series_sliding.yml",
+        scaling_setting_yaml=OUTPUT_DIR / "preprocessed/preprocess.yml",
+    )
+    phlower_path = PhlowerDirectory(model_directory.parent)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    for result in predictor.predict(
+        preprocessed_data=preprocessed_directories, perform_inverse_scaling=True
+    ):
+        for k in result.prediction_data.keys():
+            assert isinstance(result.prediction_data[k], np.ndarray)
+            assert (
+                result.prediction_data[k].shape[0] == 12
+            )  # expected time steps

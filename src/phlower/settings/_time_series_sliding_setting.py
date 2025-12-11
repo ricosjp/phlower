@@ -1,4 +1,5 @@
 import pydantic
+from typing_extensions import Self
 
 from phlower.utils.sliding_window import SlidingWindow
 
@@ -79,6 +80,19 @@ class TimeSeriesSlidingSetting(pydantic.BaseModel):
     Settings for sliding window for validation data.
     """
 
+    @pydantic.model_validator(mode="after")
+    def _check_same_as_windows(self) -> Self:
+        if not self.validation_same_as_training:
+            return self
+
+        if self.validation_window_settings != self.training_window_settings:
+            raise ValueError(
+                "validation_window_settings must be the same as "
+                "training_window_settings "
+                "when validation_same_as_training is True."
+            )
+        return self
+
     @pydantic.model_validator(mode="before")
     @classmethod
     def _sync_validation_settings(cls, values: dict) -> dict:
@@ -86,10 +100,7 @@ class TimeSeriesSlidingSetting(pydantic.BaseModel):
             return values
 
         if values.get("validation_window_settings", None) is not None:
-            raise ValueError(
-                "validation_window_settings must be None "
-                "when validation_same_as_training is True."
-            )
+            return values
 
         values["validation_window_settings"] = values.get(
             "training_window_settings", None

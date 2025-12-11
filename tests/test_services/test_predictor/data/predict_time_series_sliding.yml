@@ -1,0 +1,13 @@
+
+prediction:
+  selection_mode: best
+  time_series_sliding:
+    is_active: true
+    inputs:
+      offset: 0
+      size: 3
+      stride: 2
+    labels:
+      offset: 0
+      size: 3
+      stride: 2

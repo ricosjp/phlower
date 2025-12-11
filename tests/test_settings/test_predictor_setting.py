@@ -50,3 +50,32 @@ def test__raise_error_target_epoch_is_invalid_when_specified(target_epoch: int):
             selection_mode="specified", target_epoch=target_epoch
         )
     assert "target_epoch should be non-negative value" in str(ex.value)
+
+
+@pytest.mark.parametrize(
+    "time_series_sliding, desired_active",
+    [
+        (None, False),
+        (
+            {
+                "is_active": True,
+                "inputs": {"offset": 0, "size": 5, "stride": 1},
+                "labels": {"offset": 0, "size": 2, "stride": 1},
+            },
+            True,
+        ),
+    ],
+)
+def test__predict_setting(
+    time_series_sliding: dict | None, desired_active: bool
+):
+    if time_series_sliding is None:
+        setting = PhlowerPredictorSetting(
+            selection_mode="best",
+        )
+    else:
+        setting = PhlowerPredictorSetting(
+            selection_mode="best",
+            time_series_sliding=time_series_sliding,
+        )
+    assert setting.time_series_sliding.is_active == desired_active

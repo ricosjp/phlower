@@ -1,6 +1,13 @@
+from collections import defaultdict
 from collections.abc import Iterator
 
-from phlower.collections import IPhlowerTensorCollections
+import torch
+
+from phlower._base import PhlowerTensor, phlower_tensor
+from phlower.collections import (
+    IPhlowerTensorCollections,
+    phlower_tensor_collection,
+)
 from phlower.data import LumpedTensorData
 from phlower.settings._time_series_sliding_setting import (
     SlidingWindowForStage,
@@ -72,6 +79,40 @@ class SlidingWindowHelper:
                 x_batch_info=self._lumped_data.x_batch_info,
                 y_batch_info=self._lumped_data.y_batch_info,
             )
+
+
+def merge_slided_outputs(
+    slided_outputs: list[IPhlowerTensorCollections],
+) -> IPhlowerTensorCollections:
+    if len(slided_outputs) == 1:
+        return slided_outputs[0]
+
+    _results: dict[str, list[PhlowerTensor]] = defaultdict(list)
+    for collection in slided_outputs:
+        for k, v in collection.items():
+            _results[k].append(v)
+
+    result = {k: _cat_time_series_tensors(v) for k, v in _results.items()}
+    return phlower_tensor_collection(result)
+
+
+def _cat_time_series_tensors(
+    tensors: list[PhlowerTensor],
+) -> PhlowerTensor:
+    if tensors[0].is_time_series is False:
+        return phlower_tensor(
+            torch.stack(tensors),
+            dimension=tensors[0].dimension,
+            is_time_series=True,
+            is_voxel=tensors[0].is_voxel,
+        )
+    else:
+        return phlower_tensor(
+            torch.cat(tensors, dim=0),
+            dimension=tensors[0].dimension,
+            is_time_series=True,
+            is_voxel=tensors[0].is_voxel,
+        )
 
 
 def _check_length(
