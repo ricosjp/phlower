@@ -250,6 +250,7 @@ def simple_distributed_fsdp_parallel_training(
     return output_directory
 
 
+@pytest.mark.skip(reason="Share module is not available in FSDP.")
 @pytest.mark.need_multigpu
 @pytest.mark.e2e_test
 def test__fsdp_training_is_enable(

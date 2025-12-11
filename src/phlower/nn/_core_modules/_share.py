@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import torch
+
 from phlower._base.tensors import PhlowerTensor
 from phlower._fields import ISimulationField
 from phlower.collections.tensors import IPhlowerTensorCollections
@@ -11,7 +13,12 @@ from phlower.settings._module_settings import ShareSetting
 from phlower.utils.exceptions import NotFoundReferenceModuleError
 
 
-class Share(IPhlowerCoreModule):
+# HACK: When we use Share moduel in FSDP training,
+# we delete `torch.nn.Module` inheritance.
+# It seems parameters in Share module are not considered as reshard parameters.
+# When we disable this inheritance, we make sure how to handle
+# `load_state_dict`.
+class Share(IPhlowerCoreModule, torch.nn.Module):
     """Share module have same operations as the reference module.
 
     Parameters
