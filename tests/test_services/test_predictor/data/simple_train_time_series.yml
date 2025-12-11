@@ -4,20 +4,13 @@ scaling:
     nodal_nadj: std_scale
     generated_nodal_u: std_scale
     nodal_u: std_scale
-    nodal_initial_u:
-      same_as: nodal_u
-      join_fitting: false
-    nodal_last_u:
-      same_as: nodal_u
-      join_fitting: false
-
 
 training:
   batch_size: 1
   random_seed: 0
   loss_setting:
     name2loss:
-      nodal_last_u: "mse"
+      nodal_u: "mse"
   optimizer_setting:
     optimizer: SGD
     parameters:
@@ -26,11 +19,13 @@ training:
 
 model:
   inputs:
-    - name: nodal_initial_u
+    - name: generated_nodal_u
       physical_dimension: {"L": 1, "T": -1}
+      is_time_series: true
   labels:
-    - name: nodal_last_u
+    - name: nodal_u
       physical_dimension: {"L": 1, "T": -1}
+      is_time_series: true
   
   fields:
     - name: "nodal_nadj"
@@ -40,20 +35,19 @@ model:
     nn_type: GROUP
     name: DEMO
     inputs:
-      - name: nodal_initial_u
+      - name: generated_nodal_u
         n_last_dim: 1
-    
     outputs:
-      - name: nodal_last_u
+      - name: nodal_u
         n_last_dim: 1
 
     modules:
       - nn_type: MLP
-        name: MLP0
+        name: Encoder
         input_keys:
-          - nodal_initial_u
+          - generated_nodal_u
         destinations:
-          - Reducer0
+          - Share0
         nn_parameters:
           nodes: [-1, 16, 1]
           activations: ["identity", "identity"]
@@ -62,13 +56,15 @@ model:
       - name: Share0
         nn_type: Share
         destinations:
-          - Reducer0
+          - Decoder
         nn_parameters:
-          reference_name: MLP0
+          reference_name: Encoder
       
-      - name: Reducer0
-        nn_type: Reducer
-        output_key: nodal_last_u
+      - name: Decoder
+        nn_type: MLP
+        output_key: nodal_u
         nn_parameters:
-          operator: add
+          nodes: [-1, 16, 1]
+          activations: ["identity", "identity"]
+          bias: False
 

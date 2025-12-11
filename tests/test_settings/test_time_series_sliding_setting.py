@@ -24,18 +24,17 @@ def test__set_validation_same_as_training():
     )
 
     assert (
-        setting.validation_window_settings.inputs
-        == setting.training_window_settings.inputs
-    )
-    assert (
-        setting.validation_window_settings.labels
-        == setting.training_window_settings.labels
+        setting.validation_window_settings == setting.training_window_settings
     )
 
 
 def test__raise_error_when_validation_same_as_training():
     with pytest.raises(
-        ValueError, match="validation_window_settings must be None"
+        ValueError,
+        match=(
+            "validation_window_settings must be the same "
+            "as training_window_settings"
+        ),
     ):
         TimeSeriesSlidingSetting(
             training_window_settings=SlidingWindowForStage(
@@ -76,3 +75,18 @@ def test__sliding_window_parameters_when_dict():
 
     with pytest.raises(KeyError):
         setting.get_window("key3")
+
+
+def test__reload_dumped_data_when_validation_same_as_training():
+    setting = TimeSeriesSlidingSetting(
+        training_window_settings=SlidingWindowForStage(
+            inputs=SlidingWindow(offset=0, size=2, stride=1),
+            labels=SlidingWindow(offset=0, size=2, stride=1),
+        ),
+        validation_same_as_training=True,
+    )
+
+    dumped = setting.model_dump()
+    reloaded = TimeSeriesSlidingSetting.model_validate(dumped)
+
+    assert setting == reloaded

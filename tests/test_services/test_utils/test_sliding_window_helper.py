@@ -4,7 +4,7 @@ import torch
 from phlower import phlower_tensor
 from phlower.collections import phlower_tensor_collection
 from phlower.data import LumpedTensorData
-from phlower.services.trainer._sliding_window_helper import SlidingWindowHelper
+from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
 from phlower.settings._time_series_sliding_setting import (
     TimeSeriesSlidingSetting,
 )
@@ -187,3 +187,72 @@ def test__iterate_sliding_window(
             np.testing.assert_array_almost_equal(
                 v.numpy(), lumped_data_sample.field_data[k].numpy()
             )
+
+
+@pytest.mark.parametrize(
+    "names, input_time_series, desired_time_series",
+    [
+        (["a", "b", "c"], [(3, 0, 1), (3, 0, 1)], (6, 2, 2)),
+        (["a", "b", "c"], [(2, 1, 2), (2, 1, 2)], (4, 2, 4)),
+        (["a", "b", "c"], [(0, 0, 0), (0, 0, 0)], (2, 2, 2)),
+    ],
+)
+def test__merge_slided_outputs(
+    names: list[str],
+    input_time_series: list[tuple[int]],
+    desired_time_series: tuple[int],
+):
+    assert len(names) == len(desired_time_series)
+    slided_outputs = []
+    n_nodes = 100
+    for _inputs in input_time_series:
+        _outputs = {}
+        for i, v in enumerate(_inputs):
+            _shape = (v,) + (n_nodes, 1)  # (time_series, n_nodes, features)
+            _shape = [s for s in _shape if s > 0]
+            _outputs[names[i]] = phlower_tensor(
+                torch.rand(*_shape), is_time_series=(v >= 1)
+            )
+        slided_outputs.append(phlower_tensor_collection(_outputs))
+
+    merged = merge_slided_outputs(slided_outputs)
+
+    for i, name in enumerate(names):
+        actual = merged[name]
+        assert actual.is_time_series is True
+        assert actual.time_series_length == desired_time_series[i]
+
+
+@pytest.mark.parametrize(
+    "names, input_time_series, desired_time_series",
+    [
+        (["a", "b", "c"], (3, 0, 1), (3, 0, 1)),
+        (["a", "b", "c"], (2, 2, 1), (2, 2, 1)),
+    ],
+)
+def test__merge_slided_outputs_for_single_outputs(
+    names: list[str],
+    input_time_series: tuple[int],
+    desired_time_series: tuple[int],
+):
+    assert len(names) == len(desired_time_series)
+    slided_outputs = []
+    n_nodes = 100
+    _outputs = {}
+    for i, v in enumerate(input_time_series):
+        _shape = (v,) + (n_nodes, 1)  # (time_series, n_nodes, features)
+        _shape = [s for s in _shape if s > 0]
+        _outputs[names[i]] = phlower_tensor(
+            torch.rand(*_shape), is_time_series=(v >= 1)
+        )
+    slided_outputs.append(phlower_tensor_collection(_outputs))
+
+    merged = merge_slided_outputs(slided_outputs)
+
+    for i, name in enumerate(names):
+        actual = merged[name]
+        if desired_time_series[i] == 0:
+            assert actual.is_time_series is False
+        else:
+            assert actual.is_time_series is True
+            assert actual.time_series_length == desired_time_series[i]

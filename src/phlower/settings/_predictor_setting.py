@@ -3,6 +3,11 @@ from __future__ import annotations
 import pydantic
 from typing_extensions import Self
 
+from phlower.settings._time_series_sliding_setting import (
+    SlidingWindow,
+    SlidingWindowForStage,
+    SlidingWindowParameters,
+)
 from phlower.utils.enums import ModelSelectionType
 
 
@@ -70,6 +75,22 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     use_inference_mode: bool = True
     """
     If True, use torch.inference_mode() for prediction. Defaults to True.
+    """
+
+    time_series_sliding: SlidingWindowForStage = pydantic.Field(
+        default_factory=lambda: SlidingWindowForStage(
+            is_active=False,
+            inputs=SlidingWindowParameters(
+                root=SlidingWindow(offset=0, size=1, stride=1)
+            ),
+            labels=SlidingWindowParameters(
+                root=SlidingWindow(offset=0, size=1, stride=1)
+            ),
+        )
+    )
+    """
+    Setting for sliding window for time series data.
+    Defaults to inactive.
     """
 
     # special keyward to forbid extra fields in pydantic
