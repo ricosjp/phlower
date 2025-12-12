@@ -1,7 +1,8 @@
 import pathlib
 
-import phlower
 import tomli
+
+import phlower
 
 
 def test__version_same_as_pyproject_toml():

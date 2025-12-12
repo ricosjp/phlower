@@ -2,6 +2,7 @@ import pathlib
 import secrets
 
 import pytest
+
 from phlower.io import PhlowerYamlFile
 
 TEST_ENCRYPT_KEY = secrets.token_bytes(32)

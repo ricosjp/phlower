@@ -5,13 +5,16 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import torch
-from phlower import phlower_tensor
-from phlower._base import phlower_array
-from phlower._fields import SimulationField
-from phlower.collections import (
+from phlower_tensor import (
+    SimulationField,
+    phlower_array,
+    phlower_tensor,
+)
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn import PhlowerGroupModule
 from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.settings import PhlowerSetting

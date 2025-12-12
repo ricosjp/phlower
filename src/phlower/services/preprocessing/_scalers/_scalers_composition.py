@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pathlib
 
-from phlower._base import IPhlowerArray
+from phlower_tensor import IPhlowerArray
+
 from phlower.io import PhlowerFileBuilder
 from phlower.io._files import PhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (

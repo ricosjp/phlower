@@ -17,7 +17,7 @@ Usually, physics values have physics dimensions. Phlower can consider it.
 # Following to the SI standard, physical dimensions and corresponding dimension symbols are shown blelow.
 #
 # time (T), length (L), mass (M), electric current (I), absolute temperature (Θ), amount of substance (N) and luminous intensity (J).
-from phlower.utils.enums import PhysicalDimensionSymbolType
+from phlower_tensor.utils.enums import PhysicalDimensionSymbolType
 
 print(f"{[str(v) for v in PhysicalDimensionSymbolType]}")
 
@@ -29,7 +29,7 @@ print(f"{[str(v) for v in PhysicalDimensionSymbolType]}")
 
 import torch
 
-from phlower import phlower_tensor
+from phlower_tensor import phlower_tensor
 
 sample_velocity = torch.rand(3, 4)
 dimension = {"L": 1, "T": -1}

@@ -6,14 +6,14 @@ from functools import partial
 
 import dagstream
 import torch
-
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import (
+from phlower_tensor import ISimulationField
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
     reduce_stack,
     reduce_update,
 )
+
 from phlower.io._files import IPhlowerCheckpointFile
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,

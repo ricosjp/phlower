@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+from typing import Self
+
 import einops
 import torch
-from typing_extensions import Self
-
-from phlower._base._functionals import unbatch
-from phlower._base.tensors import (
-    PhlowerTensor,
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import IPhlowerTensorCollections
+from phlower_tensor.functionals import (
+    from_batch_node_feature,
+    to_batch_node_feature,
+    unbatch,
 )
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._functionals import _functions
+
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -177,7 +178,7 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         )
 
     def _forward(self, x_ph: PhlowerTensor) -> PhlowerTensor:
-        x, restore_info = _functions.to_batch_node_feature(x_ph)
+        x, restore_info = to_batch_node_feature(x_ph)
 
         ### (1) Slice
         # Project to keys
@@ -218,5 +219,5 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         out_x = einops.rearrange(out_x, "b h n f -> b n (h f)")
         out_x = self._to_out(out_x)
 
-        out_x_ph = _functions.from_batch_node_feature(out_x, restore_info)
+        out_x_ph = from_batch_node_feature(out_x, restore_info)
         return out_x_ph

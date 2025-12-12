@@ -3,12 +3,12 @@ from __future__ import annotations
 import pathlib
 
 import torch
-
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import (
+from phlower_tensor import ISimulationField
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn._core_preset_group_modules import (
     get_preset_group_module,
 )

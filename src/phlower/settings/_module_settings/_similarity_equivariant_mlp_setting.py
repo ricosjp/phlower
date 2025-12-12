@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from typing import Self
+
 import pydantic
+from phlower_tensor.utils.enums import PhysicalDimensionSymbolType
 from pydantic import Field
-from typing_extensions import Self
 
 from phlower.settings._interface import (
     IModuleSetting,
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
-from phlower.utils.enums import PhysicalDimensionSymbolType
 
 
 class SimilarityEquivariantMLPSetting(

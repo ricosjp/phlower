@@ -5,11 +5,15 @@ import numpy as np
 import pytest
 import torch
 from hypothesis import given
-from phlower import PhlowerTensor, phlower_tensor
-from phlower._base import phlower_dimension_tensor
-from phlower._base._functionals import is_same_dimensions, to_batch, unbatch
-from phlower._fields import SimulationField
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import (
+    PhlowerTensor,
+    SimulationField,
+    phlower_dimension_tensor,
+    phlower_tensor,
+)
+from phlower_tensor.collections import phlower_tensor_collection
+from phlower_tensor.functionals import is_same_dimensions, to_batch, unbatch
+
 from phlower.nn import ActivationSelector, DeepSets, MLPConfiguration
 from phlower.settings._module_settings import DeepSetsSetting
 from phlower.utils.enums import ActivationType, PoolingType

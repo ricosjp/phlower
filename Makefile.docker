@@ -1,5 +1,6 @@
 CI_REGISTRY_IMAGE ?= registry.ritc.jp/ricos/machine_learning/phlower
-VERSION ?= 
+# This version is different from that of phlower itself
+VERSION ?= 1.0.0
 
 
 login:
@@ -10,43 +11,29 @@ else
 endif
 
 
-.PHONY: prepare
-prepare:
-	mkdir dist
-	cp -f ../README.md dist/
-	cp -f ../pyproject.toml dist/
-	cp -f ../Makefile dist/
-
-
 .PHONY: push_cpu_images
-push_cpu_images: prepare
-	docker build \
-		-t $(CI_REGISTRY_IMAGE):$(VERSION)-py310-cpu \
-		--build-arg USE_PYTHON_VERSION=3.10 \
-		-f cpu.Dockerfile \
-		.
-	docker push $(CI_REGISTRY_IMAGE):$(VERSION)-py310-cpu
-
+push_cpu_images:
 	docker build \
 		-t $(CI_REGISTRY_IMAGE):$(VERSION)-py311-cpu \
 		--build-arg USE_PYTHON_VERSION=3.11 \
-		-f cpu.Dockerfile \
+		-f docker/cpu.Dockerfile \
 		.
 	docker push $(CI_REGISTRY_IMAGE):$(VERSION)-py311-cpu
 
 	docker build \
 		-t $(CI_REGISTRY_IMAGE):$(VERSION)-py312-cpu \
 		--build-arg USE_PYTHON_VERSION=3.12 \
-		-f cpu.Dockerfile \
+		-f docker/cpu.Dockerfile \
 		.
 	docker push $(CI_REGISTRY_IMAGE):$(VERSION)-py312-cpu
 
 
 .PHONY: build_gpu_image
-build_gpu_image: prepare
+build_gpu_image:
 	docker build \
 		-t $(CI_REGISTRY_IMAGE):$(VERSION)-py311-cu124 \
-		-f gpu.Dockerfile \
+		--build-arg USE_PYTHON_VERSION=3.11 \
+		-f docker/gpu.Dockerfile \
 		.
 
 .PHONY: push_gpu_image

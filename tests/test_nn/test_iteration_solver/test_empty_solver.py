@@ -6,11 +6,12 @@ import pytest
 import torch
 from hypothesis import given
 from hypothesis.extra import numpy as extra_np
-from phlower._base import phlower_tensor
-from phlower.collections import (
+from phlower_tensor import phlower_tensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn._interface_iteration_solver import IOptimizeProblem
 from phlower.nn._iteration_solvers import EmptySolver
 

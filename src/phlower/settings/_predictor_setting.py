@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from typing import Self
+
 import pydantic
-from typing_extensions import Self
 
 from phlower.settings._time_series_sliding_setting import (
     SlidingWindow,

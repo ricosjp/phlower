@@ -3,8 +3,9 @@ import pytest
 import torch
 from hypothesis import given
 from hypothesis import strategies as st
-from phlower import PhlowerTensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhlowerTensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import Proportional
 from phlower.settings._module_settings import ProportionalSetting
 

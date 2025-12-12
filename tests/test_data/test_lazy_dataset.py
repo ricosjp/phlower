@@ -7,7 +7,8 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import yaml
-from phlower._base import IPhlowerArray
+from phlower_tensor import IPhlowerArray
+
 from phlower.data import LazyPhlowerDataset
 from phlower.io import PhlowerNumpyFile
 from phlower.settings import ModelIOSetting, PhlowerModelSetting

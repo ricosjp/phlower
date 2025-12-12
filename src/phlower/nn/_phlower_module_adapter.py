@@ -4,13 +4,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-from phlower._base import IPhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import (
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn._core_modules import get_module
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
@@ -139,14 +138,14 @@ class _DebugHelper:
     def need_debug(self) -> bool:
         return self._debug_parameters.output_tensor_shape is not None
 
-    def debug(self, name: str, result: IPhlowerTensor) -> None:
+    def debug(self, name: str, result: PhlowerTensor) -> None:
         if self._debug_parameters.output_tensor_shape:
             self._check_output_tensor_shape(name, result)
 
         return
 
     def _check_output_tensor_shape(
-        self, name: str, result: IPhlowerTensor
+        self, name: str, result: PhlowerTensor
     ) -> None:
         if len(self._debug_parameters.output_tensor_shape) != len(result.shape):
             raise ValueError(

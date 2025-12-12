@@ -1,11 +1,12 @@
 import numpy as np
+import phlower_tensor.functionals as _functions
 import pytest
 import torch
-from phlower import PhlowerTensor
-from phlower.collections import phlower_tensor_collection
-from phlower.nn import EnEquivariantMLP
-from phlower.nn._functionals import _functions
+from phlower_tensor import PhlowerTensor
+from phlower_tensor.collections import phlower_tensor_collection
 from scipy.stats import ortho_group
+
+from phlower.nn import EnEquivariantMLP
 
 
 def assert_en_equivariance(

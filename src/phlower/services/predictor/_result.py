@@ -1,8 +1,7 @@
 from typing import NamedTuple
 
 import numpy as np
-
-from phlower.collections.tensors import IPhlowerTensorCollections
+from phlower_tensor.collections import IPhlowerTensorCollections
 
 
 class PhlowerInverseScaledPredictionResult(NamedTuple):

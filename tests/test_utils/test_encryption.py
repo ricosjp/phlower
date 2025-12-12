@@ -4,6 +4,7 @@ import secrets
 import shutil
 
 import pytest
+
 from phlower.utils import decrypt_file, encrypt_file
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp/_encryption"

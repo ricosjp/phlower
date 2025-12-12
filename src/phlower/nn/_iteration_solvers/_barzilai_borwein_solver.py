@@ -4,13 +4,13 @@ from collections import deque
 from typing import Generic, Literal, TypeVar
 
 import torch
-
-from phlower._base.tensors import PhlowerTensor
-from phlower.collections import (
+from phlower_tensor import PhlowerTensor
+from phlower_tensor import functionals as functions
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower.nn._functionals import _functions as functions
+
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,

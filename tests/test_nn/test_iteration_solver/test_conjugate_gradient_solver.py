@@ -1,13 +1,16 @@
 import numpy as np
-import phlower
 import pytest
 import pyvista as pv
 import torch
-from phlower._base import PhlowerTensor, phlower_tensor
-from phlower.collections import (
+from phlower_tensor import PhlowerTensor, phlower_tensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from phlower_tensor.functionals import spmm
+from scipy import sparse as sp
+from scipy.spatial import KDTree
+
 from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.nn._iteration_solvers._conjugate_gradient_solver import (
     ConjugateGradientSolver,
@@ -15,8 +18,6 @@ from phlower.nn._iteration_solvers._conjugate_gradient_solver import (
 from phlower.settings._iteration_solver_setting import (
     ConjugateGradientSolverSetting,
 )
-from scipy import sparse as sp
-from scipy.spatial import KDTree
 
 
 class PoissonModel:
@@ -76,7 +77,7 @@ class PoissonModel:
         self, x: IPhlowerTensorCollections
     ) -> IPhlowerTensorCollections:
         return phlower_tensor_collection(
-            {k: phlower.nn.functional.spmm(self.sp_d, x[k]) for k in self.keys}
+            {k: spmm(self.sp_d, x[k]) for k in self.keys}
         )
 
 

@@ -1,6 +1,7 @@
 import pathlib
 
 import pytest
+
 from phlower.io import PhlowerDirectory
 from phlower.services.predictor import PhlowerPredictor
 from phlower.settings import PhlowerSetting

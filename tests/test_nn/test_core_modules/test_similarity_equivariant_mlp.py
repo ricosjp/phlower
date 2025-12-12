@@ -1,19 +1,23 @@
 import numpy as np
+import phlower_tensor.functionals as _functions
 import pytest
 import torch
-from phlower import PhlowerTensor, phlower_tensor
-from phlower._base._batch import GraphBatchInfo
-from phlower._base._dimension import PhysicalDimensions
-from phlower._base._functionals import to_batch, unbatch
-from phlower._fields import SimulationField
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import (
+    GraphBatchInfo,
+    PhlowerTensor,
+    PhysicalDimensions,
+    SimulationField,
+    phlower_tensor,
+)
+from phlower_tensor.collections import phlower_tensor_collection
+from phlower_tensor.functionals import to_batch, unbatch
+from scipy.stats import ortho_group
+
 from phlower.nn import SimilarityEquivariantMLP
-from phlower.nn._functionals import _functions
 from phlower.utils.exceptions import (
     PhlowerDimensionRequiredError,
     PhlowerInvalidArgumentsError,
 )
-from scipy.stats import ortho_group
 
 
 def relative_rmse(actual: np.ndarray, desired: np.ndarray) -> float:

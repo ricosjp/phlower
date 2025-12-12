@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from phlower.services.preprocessing._scalers.scale_functions import (
     MaxAbsPoweredScaler,
 )

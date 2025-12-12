@@ -1,19 +1,64 @@
 variables:
-  PHLOWER_VERSION: 0.2.2-dev2
+  PHLOWER_IMAGE_VERSION: 1.0.0
   PHLOWER_IMAGE_REGISTRY: registry.ritc.jp/ricos/machine_learning/phlower
+  GIT_STRATEGY: fetch
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DEPTH: 0
 
 stages:
+  - setup
   - test
   - document_test
   - deploy
 
-# NOTE: Ideally, we would like to install dependencies, not to use pre-built images.
-# However, installing dependencies takes time, so we use pre-built images here.
 default:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py312-cpu
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cpu
   before_script:
-    - source /workspace/.venv/bin/activate
-    - poetry run python3 -m pip install -e .
+    - tar -xzf venv.tar.gz || true
+
+setup_cpu_env_py311:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cpu
+  stage: setup
+  before_script: []
+  script:
+    - make install CUDA_TAG="cpu"
+    - tar -czf venv.tar.gz .venv
+  tags:
+    - no-gpu
+  artifacts:
+    paths:
+      - venv.tar.gz
+  dependencies: []
+
+
+setup_cpu_env_py312:
+  stage: setup
+  before_script: []
+  script:
+    - make install CUDA_TAG="cpu"
+    - tar -czf venv.tar.gz .venv
+  tags:
+    - no-gpu
+  artifacts:
+    paths:
+      - venv.tar.gz
+  dependencies: []
+
+
+setup_gpu_env_py311:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+  stage: setup
+  before_script: []
+  script:
+    - make install CUDA_TAG="cu124"
+    - tar -czf venv.tar.gz .venv
+  tags:
+    - no-gpu
+  artifacts:
+    paths:
+      - venv.tar.gz
+  dependencies: []
+
 
 lint:
   stage: test
@@ -21,14 +66,16 @@ lint:
     - make lint
   tags:
     - no-gpu
-  dependencies: []
+  needs:
+    - job: setup_cpu_env_py312
+      artifacts: true
 
 pytest_with_py312:
   stage: test
   script:
     - make test
-    - poetry run python3 -m coverage html -d coverage
-    - poetry run python3 -m coverage xml
+    - uv run coverage html -d coverage
+    - uv run coverage xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expose_as: coverage
@@ -41,60 +88,55 @@ pytest_with_py312:
   tags:
     - no-gpu
     - GenuineIntel
-  dependencies: []
+  needs:
+    - job: setup_cpu_env_py312
+      artifacts: true
 
 
 pytest_with_py311:
   stage: test
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cpu
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cpu
   script:
     - make test
-  dependencies: []
+  needs:
+    - job: setup_cpu_env_py311
+      artifacts: true
 
-pytest_with_py310:
-  stage: test
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py310-cpu
-  script:
-    - make test
-  dependencies: []
-
-gpu_test:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
-  stage: test
-  script:
-    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
-    - make gpu_test
-  tags:
-    - gpu
-    - sm_75
 
 e2e_test:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
   stage: test
   variables:
     NCCL_DEBUG: "INFO"
   script:
-    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
+    - uv run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make e2e_test
   tags:
     - multi-gpu
     - GenuineIntel
     - sm_75
+  needs:
+    - job: setup_gpu_env_py311
+      artifacts: true
 
 examples:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_VERSION}-py311-cu124
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
   stage: test
   script:
-    - poetry run python3 -c "import torch; print(torch.cuda.get_arch_list())"
+    - uv run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make examples
   tags:
     - gpu
     - GenuineIntel
     - sm_75
+  needs:
+    - job: setup_gpu_env_py311
+      artifacts: true
 
 pages_test:
   stage: document_test
   script:
+    - uv sync --extra cpu --group docs
     - make document
   tags:
     - no-gpu
@@ -102,6 +144,9 @@ pages_test:
   artifacts:
     paths:
       - docs/build/html/
+  needs:
+    - job: setup_cpu_env_py312
+      artifacts: true
 
 pages:
   stage: deploy
@@ -111,8 +156,11 @@ pages:
   artifacts:
     paths:
       - public
-  dependencies:
-    - pages_test
+  needs:
+    - job: pages_test
+      artifacts: true
+    - job: setup_cpu_env_py312
+      artifacts: true
   only:
     - main
     - develop
@@ -121,18 +169,16 @@ pages:
 .deploy:wheel:
   stage: deploy
   script:
-    - poetry version $VERSION
-    - poetry config repositories.ricos https://pypi.ritc.jp
-    - poetry build -f wheel
-    - poetry publish --username ricos --password $RICOS_PYPI_KEY -r ricos --no-ansi -n -v
-    - poetry publish --username __token__ --password $PYPI_PUBLISH_TOKEN --no-ansi -n -v
+    - uv version $VERSION
+    - uv build
+    - uv publish --username __token__ --password $PYPI_PUBLISH_TOKEN -n -v
 
 
 deploy:wheel:tags:
   image: python:3.11-slim
   extends: .deploy:wheel
   before_script:
-    - pip install poetry
+    - pip install uv
     - export VERSION=$CI_COMMIT_REF_NAME
   only:
     - tags

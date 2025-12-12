@@ -5,6 +5,7 @@ import hypothesis.strategies as st
 import pytest
 import yaml
 from hypothesis import assume, given, settings
+
 from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import EnEquivariantMLPSetting
 from phlower.utils.enums import ActivationType

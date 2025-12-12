@@ -1,0 +1,3 @@
+[submodule "libs/phlower_tensor"]
+	path = libs/phlower_tensor
+	url = ../phlower-tensor.git

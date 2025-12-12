@@ -59,7 +59,7 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
                 return ext
 
         raise NotImplementedError(
-            f"Unknown file extension. {path}." ".pth or .pth.enc is allowed"
+            f"Unknown file extension. {path}..pth or .pth.enc is allowed"
         )
 
     def __str__(self) -> str:

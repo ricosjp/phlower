@@ -5,6 +5,7 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from phlower.io import PhlowerDirectory
 from phlower.services.trainer import PhlowerTrainer
 from phlower.settings import PhlowerSetting

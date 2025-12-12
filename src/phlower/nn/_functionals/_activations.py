@@ -2,8 +2,8 @@ from collections.abc import Callable
 from typing import TypeVar
 
 import torch
+from phlower_tensor import PhlowerTensor
 
-from phlower._base import IPhlowerTensor
 from phlower.utils.enums import ActivationType
 from phlower.utils.exceptions import PhlowerInvalidActivationError
 
@@ -62,7 +62,7 @@ def gelu(x: torch.Tensor, approximate: str = "none") -> torch.Tensor:
     return torch.nn.functional.gelu(x, approximate=approximate)
 
 
-_TensorLike = TypeVar("_TensorLike", torch.Tensor, IPhlowerTensor)
+_TensorLike = TypeVar("_TensorLike", torch.Tensor, PhlowerTensor)
 
 
 class ActivationSelector:

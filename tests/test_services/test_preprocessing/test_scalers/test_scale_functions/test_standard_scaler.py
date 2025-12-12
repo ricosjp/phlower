@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from phlower.services.preprocessing._scalers.scale_functions import (
     StandardScaler,
 )

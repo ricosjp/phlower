@@ -6,9 +6,9 @@ from functools import reduce
 from typing import Literal
 
 import numpy as np
+from phlower_tensor import IPhlowerArray, phlower_array
 from torch.utils.data import Dataset
 
-from phlower._base.array import IPhlowerArray, phlower_array
 from phlower.data._lumped_data import LumpedArrayData
 from phlower.io import PhlowerDirectory
 from phlower.settings import ModelIOSetting

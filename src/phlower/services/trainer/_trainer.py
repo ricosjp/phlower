@@ -861,7 +861,7 @@ class PhlowerTrainer:
 
         # self.loss = checkpoint['loss']
         _logger.info(
-            f"{snapshot_file.file_path} is successfully " "loaded for restart."
+            f"{snapshot_file.file_path} is successfully loaded for restart."
         )
 
 

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import torch
+from phlower_tensor import GraphBatchInfo, IPhlowerArray
+from phlower_tensor._fields import SimulationField
+from phlower_tensor.collections import IPhlowerTensorCollections
 
-from phlower import IPhlowerArray
-from phlower._base import GraphBatchInfo
-from phlower._fields import SimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.io import PhlowerDirectory
 
 

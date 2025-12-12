@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-import torch
-from typing_extensions import Self
+from typing import Self
 
-from phlower._base._functionals import unbatch
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import (
+import torch
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from phlower_tensor.functionals import (
+    spatial_mean,
+    tensor_times_scalar,
+    unbatch,
+)
+
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._proportional import Proportional
-from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -243,17 +246,17 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
 
         # Make h dimensionless
         for v in dict_scales_for_convert.values():
-            h = _functions.tensor_times_scalar(h, 1 / v)
+            h = tensor_times_scalar(h, 1 / v)
 
         if self._centering:
             volume = dict_scales["L"] ** 3
-            mean = _functions.spatial_mean(h, volume)
+            mean = spatial_mean(h, volume)
             h = h - mean
 
         h = self._mlp(phlower_tensor_collection({"h": h * self._coeff_amplify}))
-        assert (
-            h.dimension.is_dimensionless
-        ), f"Feature cannot be converted to dimensionless: {h.dimension}"
+        assert h.dimension.is_dimensionless, (
+            f"Feature cannot be converted to dimensionless: {h.dimension}"
+        )
 
         if self._centering:
             linear_mean = self._linear_weight(
@@ -266,6 +269,6 @@ class SimilarityEquivariantMLP(IPhlowerCoreModule, torch.nn.Module):
 
         # Come back to the original dimension
         for v in dict_scales_for_convert.values():
-            h = _functions.tensor_times_scalar(h, v)
+            h = tensor_times_scalar(h, v)
 
         return h

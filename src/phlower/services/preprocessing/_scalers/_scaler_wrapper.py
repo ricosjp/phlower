@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from phlower._base.array import IPhlowerArray, phlower_array
+from phlower_tensor import IPhlowerArray, phlower_array
+
 from phlower.io._files import IPhlowerNumpyFile
 from phlower.services.preprocessing._scalers import (
     scale_functions,

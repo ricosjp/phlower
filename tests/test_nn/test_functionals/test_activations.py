@@ -1,13 +1,14 @@
 import hypothesis.strategies as st
 import numpy as np
-import phlower
 import pytest
 import torch
 from hypothesis import given
-from phlower import PhlowerTensor, phlower_tensor
+from phlower_tensor import PhlowerTensor, phlower_tensor
+from phlower_tensor.utils.exceptions import DimensionIncompatibleError
+
+import phlower
 from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
-from phlower.utils.exceptions import DimensionIncompatibleError
 
 
 @given(activation_type=st.sampled_from(ActivationType))

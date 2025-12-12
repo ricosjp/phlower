@@ -4,6 +4,7 @@ import secrets
 import numpy as np
 import pytest
 import torch
+
 from phlower.io import PhlowerCheckpointFile
 
 TEST_ENCRYPT_KEY = secrets.token_bytes(32)

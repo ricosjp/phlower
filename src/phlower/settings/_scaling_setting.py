@@ -3,13 +3,12 @@ from __future__ import annotations
 import abc
 import pathlib
 from collections import defaultdict
-from typing import Any
+from typing import Any, Self
 
 import pydantic
 import yaml
 from pipe import select, where
 from pydantic import dataclasses as dc
-from typing_extensions import Self
 
 import phlower.utils as utils
 from phlower.io import PhlowerDirectory
@@ -215,7 +214,7 @@ def _validate_isoam(setting: ScalerResolvedParameter):
     other_components = setting.parameters.get("other_components", [])
     if len(other_components) == 0:
         raise ValueError(
-            "To use IsoAMScaler, feed other_components: " f"{other_components}"
+            f"To use IsoAMScaler, feed other_components: {other_components}"
         )
 
     if len(other_components) + 1 != len(setting.fitting_members):

@@ -1,5 +1,6 @@
+from typing import Self
+
 import pydantic
-from typing_extensions import Self
 
 from phlower.utils.sliding_window import SlidingWindow
 

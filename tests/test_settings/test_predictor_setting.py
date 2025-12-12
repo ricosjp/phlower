@@ -1,6 +1,7 @@
 import hypothesis.strategies as st
 import pytest
 from hypothesis import assume, given
+
 from phlower.settings._predictor_setting import PhlowerPredictorSetting
 from phlower.utils.enums import ModelSelectionType
 

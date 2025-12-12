@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
 import torch
-from phlower import phlower_tensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import phlower_tensor
+from phlower_tensor.collections import (
+    phlower_tensor_collection,
+)
+
 from phlower.data import LumpedTensorData
 from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
 from phlower.settings._time_series_sliding_setting import (

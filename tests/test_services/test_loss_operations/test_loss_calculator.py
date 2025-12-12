@@ -3,13 +3,13 @@ import pathlib
 import numpy as np
 import pytest
 import torch
-from phlower import PhlowerTensor, phlower_tensor
-from phlower._base import GraphBatchInfo
-from phlower._base._functionals import to_batch
-from phlower.collections import (
+from phlower_tensor import GraphBatchInfo, PhlowerTensor, phlower_tensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from phlower_tensor.functionals import to_batch
+
 from phlower.services.loss_operations import (
     LossCalculator,
     PhlowerLossFunctionsFactory,

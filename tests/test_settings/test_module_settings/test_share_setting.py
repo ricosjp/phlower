@@ -5,6 +5,7 @@ import hypothesis.strategies as st
 import pytest
 import yaml
 from hypothesis import given, settings
+
 from phlower.settings import PhlowerModelSetting, PhlowerSetting
 from phlower.settings._module_settings import ShareSetting
 

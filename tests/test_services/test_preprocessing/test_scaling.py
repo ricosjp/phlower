@@ -5,6 +5,7 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from phlower.services.preprocessing import PhlowerScalingService
 
 OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"

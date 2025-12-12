@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import torch
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import IPhlowerTensorCollections
+from phlower_tensor.functionals import contraction
 
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
-from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -93,4 +92,4 @@ class Contraction(IPhlowerCoreModule, torch.nn.Module):
         Returns:
             PhlowerTensor: Tensor object
         """
-        return self._activation_func(_functions.contraction(*data.values()))
+        return self._activation_func(contraction(*data.values()))

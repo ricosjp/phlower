@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import torch
+from phlower_tensor.collections import IPhlowerTensorCollections
 
-from phlower.collections import IPhlowerTensorCollections
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+
 from phlower.io import select_snapshot_file
 from phlower.io._model_selector import ModelSelectorBuilder
 from phlower.utils.enums import ModelSelectionType
