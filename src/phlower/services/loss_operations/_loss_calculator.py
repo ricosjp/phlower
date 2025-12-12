@@ -4,14 +4,13 @@ import abc
 from typing import Literal
 
 import torch
-
-from phlower._base import GraphBatchInfo
-from phlower._base._functionals import unbatch
-from phlower._base.tensors import PhlowerTensor
-from phlower.collections.tensors import (
+from phlower_tensor import GraphBatchInfo, PhlowerTensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from phlower_tensor.functionals import unbatch
+
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
 from phlower.utils.typing import LossFunctionType
 

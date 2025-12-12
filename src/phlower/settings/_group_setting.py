@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import functools
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 import pydantic
 from dagstream.utils.errors import DagStreamCycleError
 from pydantic import Discriminator, Field, Tag
 from pydantic import dataclasses as dc
-from typing_extensions import Self
 
 from phlower.settings._interface import (
     IModuleSetting,
@@ -190,8 +189,7 @@ class GroupModuleSetting(
                 _names.discard(_name)
                 continue
             raise PhlowerModuleDuplicateNameError(
-                f"Duplicate module name '{_name}' is detected "
-                f"in {self.name}"
+                f"Duplicate module name '{_name}' is detected in {self.name}"
             )
 
         # it is not supposed to be reached here

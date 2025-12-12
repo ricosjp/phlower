@@ -1,4 +1,5 @@
 import pytest
+
 from phlower.settings._time_series_sliding_setting import (
     SlidingWindowForStage,
     SlidingWindowParameters,

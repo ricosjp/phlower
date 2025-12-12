@@ -4,12 +4,11 @@ from collections.abc import Callable
 from typing import Literal
 
 import torch
+from phlower_tensor import ISimulationField, PhlowerTensor, phlower_tensor
+from phlower_tensor import functionals as _functions
+from phlower_tensor.collections import IPhlowerTensorCollections
 
-from phlower._base.tensors import PhlowerTensor, phlower_tensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
-from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -245,9 +244,9 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor:
                 Tensor object
         """
-        assert (
-            len(data) <= 2
-        ), f"At most two inputs are allowed. input: {len(data)}"
+        assert len(data) <= 2, (
+            f"At most two inputs are allowed. input: {len(data)}"
+        )
 
         supports = [field_data[name] for name in self._isoam_names]
         neumann_value = data.pop(self._neumann_input_name, None)

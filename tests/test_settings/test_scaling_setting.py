@@ -3,6 +3,8 @@ from unittest import mock
 
 import pydantic
 import pytest
+from pipe import where
+
 from phlower.io import PhlowerDirectory
 from phlower.settings import PhlowerScalingSetting
 from phlower.settings._scaling_setting import (
@@ -10,7 +12,6 @@ from phlower.settings._scaling_setting import (
     ScalerInputParameters,
     ScalerResolvedParameter,
 )
-from pipe import where
 
 # region test for ScalerInputParameters
 

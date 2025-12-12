@@ -4,9 +4,9 @@ import pathlib
 from functools import partial
 from typing import overload
 
+from phlower_tensor import IPhlowerArray
 from pipe import chain, select, where
 
-from phlower._base.array import IPhlowerArray
 from phlower.io._files import (
     IPhlowerNumpyFile,
     PhlowerNumpyFile,

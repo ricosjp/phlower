@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Self
+
 import pydantic
 from pydantic import Field
-from typing_extensions import Self
 
 from phlower.settings._interface import (
     IModuleSetting,

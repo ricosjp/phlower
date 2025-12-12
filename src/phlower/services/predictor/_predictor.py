@@ -5,10 +5,10 @@ from collections.abc import Iterator
 from typing import Literal, overload
 
 import torch
+from phlower_tensor import IPhlowerArray
+from phlower_tensor.collections import IPhlowerTensorCollections
 from torch.utils.data import DataLoader
 
-from phlower._base import IPhlowerArray
-from phlower.collections import IPhlowerTensorCollections
 from phlower.data import (
     DataLoaderBuilder,
     IPhlowerDataset,

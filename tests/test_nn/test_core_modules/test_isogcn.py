@@ -4,9 +4,9 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from phlower import PhlowerTensor, phlower_tensor
-from phlower._fields import SimulationField
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhlowerTensor, SimulationField, phlower_tensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import IsoGCN
 from phlower.settings._module_settings import IsoGCNSetting
 

@@ -8,9 +8,9 @@ from typing import Any, get_args
 
 import numpy as np
 import scipy.sparse as sp
+from phlower_tensor import IPhlowerArray, phlower_array
 
 from phlower import utils
-from phlower._base.array import IPhlowerArray, phlower_array
 from phlower.io._files._interface import IPhlowerNumpyFile, to_pathlib_object
 from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerFileExtType
@@ -247,7 +247,7 @@ class _NpzFileIO(INumpyFileIOCore):
 
 class _NpzEncFileIO(INumpyFileIOCore):
     @classmethod
-    def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401:
+    def load(cls, path: pathlib.Path, decrypt_key: bytes = None) -> Any:  # noqa: ANN401
         if decrypt_key is None:
             raise ValueError("Key is None. Cannot decrypt encrypted file.")
 

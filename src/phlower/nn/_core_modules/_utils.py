@@ -4,8 +4,8 @@ from typing import Any, NamedTuple, TypeVar
 
 import numpy as np
 import torch
+from phlower_tensor import PhlowerTensor
 
-from phlower._base.tensors import PhlowerTensor
 from phlower.nn._functionals._activations import ActivationSelector
 from phlower.utils.enums import ActivationType
 

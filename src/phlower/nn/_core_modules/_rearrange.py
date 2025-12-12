@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from typing import Self
+
 import einops
 import torch
-from typing_extensions import Self
+from phlower_tensor import ISimulationField, PhlowerTensor, phlower_tensor
+from phlower_tensor.collections import IPhlowerTensorCollections
 
-from phlower._base.tensors import IPhlowerTensor, phlower_tensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -92,7 +92,7 @@ class Rearrange(IPhlowerCoreModule, torch.nn.Module):
         *,
         field_data: ISimulationField | None = None,
         **kwards,
-    ) -> IPhlowerTensor:
+    ) -> PhlowerTensor:
         """forward function which overloads torch.nn.Module
 
         Args:

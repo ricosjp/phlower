@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import abc
 
-from phlower.collections import IPhlowerTensorCollections
+from phlower_tensor.collections import IPhlowerTensorCollections
+
 from phlower.settings._iteration_solver_setting import (
     IPhlowerIterationSolverSetting,
 )

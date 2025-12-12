@@ -50,8 +50,7 @@ class DirichletSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         if len(vals) != 2:
             raise ValueError(
-                "Size of nodes must be 2 in DirichletSettings."
-                f" input: {vals}"
+                f"Size of nodes must be 2 in DirichletSettings. input: {vals}"
             )
         return vals
 

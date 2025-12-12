@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+
 from phlower.settings import PhlowerTrainerSetting
 from phlower.utils import OptimizerSelector, SchedulerSelector
 

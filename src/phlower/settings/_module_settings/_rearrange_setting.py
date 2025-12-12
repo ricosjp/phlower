@@ -31,7 +31,7 @@ class RearrangeSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def check__valid_output_feature_dim(cls, value: int) -> int:
         if value < 1:
             raise ValueError(
-                "output_feature_dim must be positive value. " f"Input: {value}"
+                f"output_feature_dim must be positive value. Input: {value}"
             )
         return value
 

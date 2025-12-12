@@ -41,8 +41,7 @@ class LayerNormSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def check_n_nodes(cls, vals: list[int]) -> list[int]:
         if len(vals) != 2:
             raise ValueError(
-                "size of nodes must be 2 in LayerNormSettings."
-                f" input: {vals}"
+                f"size of nodes must be 2 in LayerNormSettings. input: {vals}"
             )
 
         if vals[1] <= 0:

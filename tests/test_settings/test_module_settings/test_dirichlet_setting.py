@@ -6,6 +6,7 @@ import pydantic
 import pytest
 import yaml
 from hypothesis import assume, given, settings
+
 from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import DirichletSetting
 

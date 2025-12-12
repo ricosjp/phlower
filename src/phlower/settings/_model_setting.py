@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import itertools
 from functools import cached_property
+from typing import Self
 
 import pydantic
+from phlower_tensor import PhysicalDimensions
 from pipe import select, uniq
-from typing_extensions import Self
 
-from phlower._base import PhysicalDimensions, PhysicalDimensionsClass
 from phlower.settings._group_setting import GroupModuleSetting
+from phlower.utils._dimensions_class import PhysicalDimensionsClass
 
 
 class _MemberSetting(pydantic.BaseModel):

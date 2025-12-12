@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections.abc import KeysView
 
 import torch
-
-from phlower.collections import (
+from phlower_tensor import functionals as functions
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn._core_modules import Dirichlet
-from phlower.nn._functionals import _functions as functions
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,

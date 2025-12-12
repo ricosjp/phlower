@@ -2,8 +2,9 @@ import pathlib
 
 import pytest
 import yaml
+from phlower_tensor.utils.enums import PhysicalDimensionSymbolType
+
 from phlower.settings import PhlowerModelSetting
-from phlower.utils.enums import PhysicalDimensionSymbolType
 
 # region E2E tests only for EnEquivariantMLPSettings
 

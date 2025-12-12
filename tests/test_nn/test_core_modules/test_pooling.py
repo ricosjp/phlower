@@ -3,11 +3,15 @@ import numpy as np
 import pytest
 import torch
 from hypothesis import given
-from phlower import PhlowerTensor, phlower_tensor
-from phlower._base import phlower_dimension_tensor
-from phlower._base._functionals import to_batch
-from phlower._fields import SimulationField
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import (
+    PhlowerTensor,
+    SimulationField,
+    phlower_dimension_tensor,
+    phlower_tensor,
+)
+from phlower_tensor.collections import phlower_tensor_collection
+from phlower_tensor.functionals import to_batch
+
 from phlower.nn import Pooling
 from phlower.settings._module_settings import PoolingSetting
 from phlower.utils.enums import PoolingType

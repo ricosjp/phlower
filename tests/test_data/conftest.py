@@ -5,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from phlower.io import PhlowerNumpyFile
 from phlower.utils.typing import ArrayDataType
 

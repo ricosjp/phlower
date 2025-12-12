@@ -3,8 +3,9 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from phlower import PhlowerTensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhlowerTensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import MLP, Share
 from phlower.nn._interface_module import IReadonlyReferenceGroup
 

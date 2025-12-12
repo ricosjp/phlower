@@ -2,6 +2,7 @@ import pathlib
 import shutil
 
 import pytest
+
 from phlower.io import PhlowerDirectory
 
 TEST_DATA_DIR = pathlib.Path(__file__).parent / "tmp"

@@ -1,8 +1,8 @@
 import io
 import pathlib
+from typing import Self
 
 import yaml
-from typing_extensions import Self
 
 from phlower import utils
 from phlower.io._files._interface import IPhlowerYamlFile, to_pathlib_object

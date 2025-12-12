@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from phlower.services.preprocessing._scalers import (
     PhlowerScalerWrapper,
     scale_functions,
@@ -28,7 +29,7 @@ def sample_data() -> np.ndarray:
 
 @pytest.fixture
 def sample_sparse_data() -> sp.csc_matrix:
-    return sp.csc_matrix(np.random.rand(100, 3))
+    return sp.coo_matrix(np.random.rand(100, 3))
 
 
 @pytest.mark.parametrize(

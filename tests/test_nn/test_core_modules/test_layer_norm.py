@@ -2,8 +2,9 @@ import hypothesis.strategies as st
 import pytest
 import torch
 from hypothesis import given
-from phlower import PhlowerTensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhlowerTensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import LayerNorm
 from phlower.settings._module_settings import LayerNormSetting
 

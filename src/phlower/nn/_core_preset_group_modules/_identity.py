@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import torch
-from typing_extensions import Self
+from typing import Self
 
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import (
+import torch
+from phlower_tensor import ISimulationField
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn._interface_module import (
     IPhlowerCorePresetGroupModule,
     IReadonlyReferenceGroup,

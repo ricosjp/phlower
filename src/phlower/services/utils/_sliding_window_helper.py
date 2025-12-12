@@ -2,12 +2,12 @@ from collections import defaultdict
 from collections.abc import Iterator
 
 import torch
-
-from phlower._base import PhlowerTensor, phlower_tensor
-from phlower.collections import (
+from phlower_tensor import PhlowerTensor, phlower_tensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.data import LumpedTensorData
 from phlower.settings._time_series_sliding_setting import (
     SlidingWindowForStage,
@@ -129,7 +129,7 @@ def _check_length(
 
     if len(_lengths) > 1:
         raise ValueError(
-            "Inconsistent lengths after applying sliding window: " f"{_lengths}"
+            f"Inconsistent lengths after applying sliding window: {_lengths}"
         )
 
     return _lengths.pop() if _lengths else 0

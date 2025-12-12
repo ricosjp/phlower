@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import torch
-from typing_extensions import Self
+from typing import Self
 
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
+import torch
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import IPhlowerTensorCollections
+
 from phlower.nn._core_modules import _utils
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,

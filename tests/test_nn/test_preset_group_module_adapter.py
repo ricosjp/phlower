@@ -2,12 +2,12 @@ import pathlib
 
 import pytest
 import torch
-from phlower import phlower_tensor
-from phlower._fields import ISimulationField
-from phlower.collections import (
+from phlower_tensor import ISimulationField, phlower_tensor
+from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+
 from phlower.nn import PhlowerGroupModule, PhlowerPresetGroupModuleAdapter
 from phlower.settings import PhlowerSetting
 

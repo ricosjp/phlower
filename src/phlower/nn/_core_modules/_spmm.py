@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import torch
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import (
+    IPhlowerTensorCollections,
+)
+from phlower_tensor.functionals import spmm
 
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
-from phlower.nn._functionals import _functions
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IReadonlyReferenceGroup,
@@ -106,5 +107,5 @@ class SPMM(torch.nn.Module, IPhlowerCoreModule):
     ) -> PhlowerTensor:
         if self._transpose:
             support = torch.transpose(support, 0, 1)
-        h = _functions.spmm(support * self._factor, x, repeat=self._repeat)
+        h = spmm(support * self._factor, x, repeat=self._repeat)
         return h

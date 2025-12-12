@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 import torch
 from hypothesis import given
-from phlower import phlower_tensor
-from phlower._base import PhysicalDimensions
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhysicalDimensions, phlower_tensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import TCN
 from phlower.settings._module_settings import TCNSetting
 from phlower.utils.enums import ActivationType

@@ -1,4 +1,5 @@
 import pytest
+
 from phlower.services.trainer._handler_functions import EarlyStopping
 from phlower.utils.enums import PhlowerHandlerTrigger
 from phlower.utils.typing import AfterEvaluationOutput

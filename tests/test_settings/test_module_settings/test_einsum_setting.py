@@ -4,6 +4,7 @@ import hypothesis.strategies as st
 import pytest
 import yaml
 from hypothesis import given
+
 from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import EinsumSetting
 

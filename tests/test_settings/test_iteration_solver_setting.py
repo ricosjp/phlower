@@ -2,6 +2,7 @@ import pydantic
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+
 from phlower.settings import GroupModuleSetting
 from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,

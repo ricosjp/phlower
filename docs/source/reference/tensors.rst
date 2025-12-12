@@ -4,9 +4,5 @@
 PhlowerTensor
 =============
 
-.. autosummary::
-    :toctree: generated
-    :template: autosummary/class.rst
+PhlowerTensor is managed in a separate package, `phlower_tensor`.
 
-   PhlowerTensor
-   PhlowerDimensionTensor

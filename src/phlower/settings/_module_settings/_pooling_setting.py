@@ -38,7 +38,7 @@ class PoolingSetting(IPhlowerLayerParameters, pydantic.BaseModel):
 
         if len(vals) != 2:
             raise ValueError(
-                "size of nodes must be 2 in PoolingSetting." f" input: {vals}"
+                f"size of nodes must be 2 in PoolingSetting. input: {vals}"
             )
         return vals
 
@@ -54,7 +54,7 @@ class PoolingSetting(IPhlowerLayerParameters, pydantic.BaseModel):
             return value
 
         if value not in PoolingType.__members__:
-            raise ValueError(f"Pooling operator {value} " "is not implemented.")
+            raise ValueError(f"Pooling operator {value} is not implemented.")
         return PoolingType[value]
 
     def gather_input_dims(self, *input_dims: int) -> int:

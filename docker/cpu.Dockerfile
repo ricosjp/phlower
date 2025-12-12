@@ -1,31 +1,23 @@
-# 3.10, 3.11, 3.12
-ARG USE_PYTHON_VERSION
+# 3.11, 3.12
+ARG USE_PYTHON_VERSION=3.12
 
-FROM python:${USE_PYTHON_VERSION}-slim AS builder
-ENV DEBIAN_FRONTEND=noninteractive
-ARG USE_PYTHON_VERSION
-
-RUN apt update \
-      && apt install -y make \
-      && pip install poetry
-
-# Copy the project into the image
-COPY dist/pyproject.toml /workspace/
-COPY dist/Makefile /workspace/
-
-# Sync the project into a new environment, using the frozen lockfile
-WORKDIR /workspace
-RUN poetry config virtualenvs.in-project true && make install
+# ----- 1. uv builder stage
+FROM ubuntu:20.04 AS uv_builder
+# The installer requires curl (and certificates) to download the release archive
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
 
 
+# -----2. final stage
 FROM python:${USE_PYTHON_VERSION}-slim
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USE_PYTHON_VERSION
 WORKDIR /workspace
 
-COPY --from=builder /usr/bin/make /usr/bin/
-COPY --from=builder /usr/local/bin/poetry /usr/local/bin
-COPY --from=builder /usr/local/lib/python${USE_PYTHON_VERSION}/site-packages /usr/local/lib/python${USE_PYTHON_VERSION}/site-packages
-COPY --from=builder /workspace /workspace
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends make git \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x ./.venv/bin/activate
+ # Enable to use uv
+COPY --from=uv_builder /root/.local/bin/uv /root/.local/bin/uvx /bin/

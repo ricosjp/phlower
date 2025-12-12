@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from phlower.collections import IPhlowerTensorCollections
+from phlower_tensor.collections import IPhlowerTensorCollections
+
 from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,

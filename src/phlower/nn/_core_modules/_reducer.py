@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from functools import reduce
+from typing import Self
 
 import torch
-from typing_extensions import Self
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import IPhlowerTensorCollections
+from phlower_tensor.functionals import broadcast_to
 
-from phlower._base._functionals import broadcast_to
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.nn._core_modules import _utils
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,

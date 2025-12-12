@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 import pydantic
 from pydantic import (
@@ -10,7 +10,7 @@ from pydantic import (
     SerializationInfo,
     ValidationInfo,
 )
-from typing_extensions import Self, deprecated
+from typing_extensions import deprecated
 
 from phlower.utils.enums import PhlowerIterationSolverType
 
@@ -84,9 +84,9 @@ class SimpleSolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
 
     @pydantic.model_validator(mode="after")
     def empty_list_is_not_allowed(self) -> Self:
-        assert (
-            len(self.update_keys) > 0
-        ), "Set at least one target item for target_keys in solver settings"
+        assert len(self.update_keys) > 0, (
+            "Set at least one target item for target_keys in solver settings"
+        )
 
         return self
 
@@ -179,17 +179,17 @@ class BarzilaiBoweinSolverSetting(
 
     @pydantic.model_validator(mode="after")
     def empty_list_is_not_allowed(self) -> list[str]:
-        assert (
-            len(self.update_keys) > 0
-        ), "Set at least one target item for target_keys in solver settings"
+        assert len(self.update_keys) > 0, (
+            "Set at least one target item for target_keys in solver settings"
+        )
 
         return self
 
     @pydantic.model_validator(mode="after")
     def convergence_must_be_less_than_divergence(self) -> Self:
-        assert (
-            self.convergence_threshold < self.divergence_threshold
-        ), "convergence threshold must be less than divergence_threshold"
+        assert self.convergence_threshold < self.divergence_threshold, (
+            "convergence threshold must be less than divergence_threshold"
+        )
         return self
 
     def get_update_keys(self) -> list[str]:
@@ -249,17 +249,17 @@ class ConjugateGradientSolverSetting(
 
     @pydantic.model_validator(mode="after")
     def empty_list_is_not_allowed(self) -> list[str]:
-        assert (
-            len(self.update_keys) > 0
-        ), "Set at least one update item for update_keys in solver settings"
+        assert len(self.update_keys) > 0, (
+            "Set at least one update item for update_keys in solver settings"
+        )
 
         return self
 
     @pydantic.model_validator(mode="after")
     def convergence_must_be_less_than_divergence(self) -> Self:
-        assert (
-            self.convergence_threshold < self.divergence_threshold
-        ), "convergence threshold must be less than divergence_threshold"
+        assert self.convergence_threshold < self.divergence_threshold, (
+            "convergence threshold must be less than divergence_threshold"
+        )
         return self
 
     def get_update_keys(self) -> list[str]:

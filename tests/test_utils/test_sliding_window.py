@@ -1,4 +1,5 @@
 import pytest
+
 from phlower.utils.sliding_window import SlidingWindow
 
 

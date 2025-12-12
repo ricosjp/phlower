@@ -1,7 +1,6 @@
-from typing import Any
+from typing import Any, Self
 
 import pydantic
-from typing_extensions import Self
 
 
 class EarlyStoppingSetting(pydantic.BaseModel):

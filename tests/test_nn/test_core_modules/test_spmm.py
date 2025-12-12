@@ -3,8 +3,9 @@ import numpy as np
 import pytest
 import torch
 from hypothesis import given
-from phlower import PhlowerTensor, phlower_tensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import PhlowerTensor, phlower_tensor
+from phlower_tensor.collections import phlower_tensor_collection
+
 from phlower.nn import SPMM
 from phlower.settings._module_settings import SPMMSetting
 

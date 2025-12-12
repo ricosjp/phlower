@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import pathlib
 
-from phlower._base import IPhlowerArray
+from phlower_tensor import IPhlowerArray
 
 
 class IPhlowerBaseFile(metaclass=abc.ABCMeta):

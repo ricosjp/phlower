@@ -2,6 +2,7 @@ import pathlib
 
 import pytest
 import yaml
+
 from phlower.settings import (
     GroupModuleSetting,
     ModuleSetting,

@@ -4,7 +4,7 @@ from collections.abc import Callable
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from phlower._base import PhysicalDimensions
+
 from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
@@ -15,6 +15,7 @@ from phlower.settings import (
     PhlowerPredictorSetting,
     PhlowerTrainerSetting,
 )
+from phlower.utils._dimensions_class import PhysicalDimensions
 from phlower.utils.enums import ModelSelectionType
 
 

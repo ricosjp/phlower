@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import abc
 import pathlib
-from typing import Generic, TypeVar
+from typing import Generic, Self, TypeVar
 
-from typing_extensions import Self
+from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor.collections import IPhlowerTensorCollections
 
-from phlower._base.tensors import PhlowerTensor
-from phlower._fields import ISimulationField
-from phlower.collections.tensors import IPhlowerTensorCollections
 from phlower.settings._module_settings import IPhlowerLayerParameters
 from phlower.settings._preset_group_parameter_setting import (
     IPhlowerPresetGroupParameters,

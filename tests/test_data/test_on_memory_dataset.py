@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import yaml
-from phlower._base import IPhlowerArray, phlower_array
+from phlower_tensor import IPhlowerArray, phlower_array
+
 from phlower.data import OnMemoryPhlowerDataSet
 from phlower.settings import ModelIOSetting, PhlowerModelSetting
 from phlower.utils.typing import ArrayDataType

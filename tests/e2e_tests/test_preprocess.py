@@ -4,10 +4,11 @@ import shutil
 import numpy as np
 import pytest
 import scipy.sparse as sp
+from pipe import select, where
+
 from phlower.io import PhlowerDirectory, PhlowerFileBuilder
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.settings import PhlowerSetting
-from pipe import select, where
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_tmp_preprocess"
 

@@ -1,7 +1,9 @@
 import torch
+from phlower_tensor.collections import (
+    SequencedDictArray,
+    phlower_tensor_collection,
+)
 
-from phlower.collections import phlower_tensor_collection
-from phlower.collections.arrays import SequencedDictArray
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
 
 

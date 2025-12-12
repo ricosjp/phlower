@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
 import torch
-from phlower import phlower_tensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import phlower_tensor
+from phlower_tensor.collections import (
+    phlower_tensor_collection,
+)
+
 from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
 from phlower.settings import ModuleSetting
 from phlower.settings._debug_parameter_setting import (

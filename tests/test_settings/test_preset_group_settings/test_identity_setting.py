@@ -1,4 +1,5 @@
 import pytest
+
 from phlower.settings._preset_group_settings import IdentityPresetGroupSetting
 
 
@@ -28,7 +29,7 @@ def test__detect_insufficient_inputs(
             return input_keys
 
         def get_output_info(self) -> dict[str, int]:
-            return {k: 1 for k in input_to_output_map.values()}
+            return dict.fromkeys(input_to_output_map.values(), 1)
 
     dummy_module = DummyModule()
 
@@ -64,7 +65,7 @@ def test__detect_insufficient_outputs(
             return list(input_to_output_map.keys())
 
         def get_output_info(self) -> dict[str, int]:
-            return {k: 1 for k in output_keys}
+            return dict.fromkeys(output_keys, 1)
 
     dummy_module = DummyModule()
 

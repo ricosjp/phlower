@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 import torch
-from phlower import PhlowerTensor
+from phlower_tensor import PhlowerTensor
+
 from phlower.io import PhlowerDirectory, PhlowerNumpyFile
 from phlower.services.predictor import PhlowerPredictor
 from phlower.services.preprocessing import PhlowerScalingService

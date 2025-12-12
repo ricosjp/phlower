@@ -5,13 +5,14 @@ import numpy as np
 import pytest
 import torch
 from hypothesis import given
-from phlower import phlower_tensor
-from phlower.collections import phlower_tensor_collection
+from phlower_tensor import phlower_tensor
+from phlower_tensor.collections import phlower_tensor_collection
+from phlower_tensor.functionals import apply_orthogonal_group
+from scipy.stats import ortho_group
+
 from phlower.nn import EnEquivariantTCN
-from phlower.nn._functionals import _functions
 from phlower.settings._module_settings import EnEquivariantTCNSetting
 from phlower.utils.enums import ActivationType
-from scipy.stats import ortho_group
 
 
 def test__can_call_parameters():
@@ -142,16 +143,12 @@ def test__en_equivariance(
     )
 
     phlower_tensors = phlower_tensor_collection({"tensor": input_tensor})
-    actual = _functions.apply_orthogonal_group(
+    actual = apply_orthogonal_group(
         orthogonal_tensor, model.forward(phlower_tensors)
     )
 
     rotated_phlower_tensors = phlower_tensor_collection(
-        {
-            "tensor": _functions.apply_orthogonal_group(
-                orthogonal_tensor, input_tensor
-            )
-        }
+        {"tensor": apply_orthogonal_group(orthogonal_tensor, input_tensor)}
     )
     desired = model.forward(rotated_phlower_tensors)
 

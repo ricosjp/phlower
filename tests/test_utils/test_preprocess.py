@@ -2,6 +2,7 @@ import numpy as np
 from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as ex_np
+
 from phlower.utils import convert_to_dumped, get_registered_scaler_names
 from phlower.utils.enums import PhlowerScalerName
 

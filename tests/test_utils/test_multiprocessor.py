@@ -6,6 +6,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+
 from phlower.utils import PhlowerMultiprocessor
 from phlower.utils._multiprocessor import _get_chunks, _process_chunk
 from phlower.utils.exceptions import PhlowerMultiProcessError

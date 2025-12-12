@@ -1,6 +1,7 @@
 import hypothesis.strategies as st
 import pytest
 from hypothesis import given
+
 from phlower.services.trainer._loggings._record_io import LogRecordIO
 from phlower.utils.typing import AfterEvaluationOutput
 

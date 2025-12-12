@@ -1,46 +1,47 @@
 IN_PROJECT?=true
-VERSION=`poetry version --short`
+VERSION=`uv version --short`
+IMAGE_VERSION = 0.4.0
+CUDA_TAG = cu124
+
 
 .PHONY: reset
 reset:
 	rm -r ./.venv || true
-	rm poetry.lock || true
-	poetry config virtualenvs.in-project ${IN_PROJECT}
-
+	rm uv.lock || true
 
 .PHONY: install
 install:
-	poetry sync --no-root
+	uv sync --extra ${CUDA_TAG} --group dev
 
 
 .PHONY: mypy
 mypy:
-	poetry run mypy src
+	uv run mypy src
 
 .PHONY: format
 format:
-	poetry run ruff format
-	poetry run ruff check --fix
+	uv run ruff format
+	uv run ruff check --fix
+
 
 .PHONY: test
 test:
-	poetry run pytest tests -m "not e2e_test and not gpu_test" --cov=src --cov-report term-missing --durations 5
+	uv run pytest tests -m "not e2e_test and not gpu_test" --cov=src --cov-report term-missing --durations 5
 
+
+.PHONY: dev_test_lf
+test_lf:
+	uv run pytest tests -m "not e2e_test and not gpu_test" --lf
 
 .PHONY: e2e_test
 e2e_test:
-	poetry run pytest tests -m "e2e_test"
-
-
-.PHONY: gpu_test
-gpu_test:
-	poetry run pytest tests -m "gpu_test"
+	uv run pytest tests -m "e2e_test"
 
 
 .PHONY: lint
 lint:
-	poetry run ruff check --output-format=full
-	poetry run ruff format --diff
+	uv run ruff check --output-format=full
+	uv run ruff format --diff
 	# $(MAKE) mypy
 
 
@@ -49,7 +50,7 @@ examples:
 	$(foreach file, \
 		$(wildcard examples/**/main.py), \
 		cd $(shell dirname $(file)); \
-		poetry run python3 main.py || exit 1; \
+		uv run python3 main.py || exit 1; \
 		cd -; \
 		)
 
@@ -59,9 +60,9 @@ document:
 	rm -rf docs/build || true
 	rm -rf docs/source/reference/generated || true
 	rm -rf docs/source/tutorials/basic_usages || true
-	poetry run sphinx-build -M html docs/source docs/build
+	uv run sphinx-build -M html docs/source docs/build
 
 
 .PHONY: push_docker_images
 push_docker_images: 
-	make -C docker push VERSION=${VERSION}
+	make -f Makefile.docker push
