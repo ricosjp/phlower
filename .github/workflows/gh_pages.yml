@@ -19,15 +19,13 @@ jobs:
       - name: setup
         shell: bash
         run: |
-          apt update -y
-          apt install -y make git
           pip install uv
           uv sync --extra cpu --group docs
 
       - name: build_pages
         shell: bash
         run: |
-          make document
+          uv run sphinx-build -M html docs/source docs/build
           mkdir public
           cp -r docs/build/html/* public/
 
