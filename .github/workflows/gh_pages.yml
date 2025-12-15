@@ -8,13 +8,14 @@ on:
 jobs:
   build_docs:
     runs-on: ubuntu-latest
-    container:
-        image: python:3.12-slim
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: setup
         shell: bash
         run: |
