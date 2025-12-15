@@ -40,7 +40,10 @@ class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
 
         for k, v in kwargs.items():
-            setattr(self, k, self._convert(k, v))
+            if k in ["scale_", "mean_", "var_"]:
+                setattr(self, k, np.array(v))
+            else:
+                setattr(self, k, self._convert(k, v))
 
     def _convert(self, field_name: str, value: Any) -> Any:  # noqa: ANN401
         if field_name in ["copy", "with_mean", "with_std"]:
