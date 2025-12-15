@@ -414,7 +414,7 @@ def test__permutation_NOT_equivariance_over_different_batch_tensor(
 @pytest.mark.parametrize(
     "nodes, activations, bias, last_activation_name, pool_operator_name",
     [
-        ([-1, 10, 5], ["tanh", "tanh"], True, "relu", "max"),
+        ([-1, 10, 5], ["tanh", "relu"], True, "sqrt", "max"),
         ([-1, 10, 20], ["relu", "identity"], True, "tanh", "mean"),
     ],
 )

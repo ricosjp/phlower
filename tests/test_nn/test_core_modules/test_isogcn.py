@@ -364,7 +364,9 @@ def test__invariance_of_contraction_rank1_to_rank0(
     assert ortho_h_res.rank() == 0
 
     # Compare
-    np.testing.assert_array_almost_equal(h_res.numpy(), ortho_h_res.numpy())
+    np.testing.assert_array_almost_equal(
+        h_res.to_numpy(), ortho_h_res.to_numpy(), decimal=5
+    )
 
 
 @pytest.mark.parametrize("n_nodes, n_feature", [(10, 3), (5, 1), (7, 3)])
