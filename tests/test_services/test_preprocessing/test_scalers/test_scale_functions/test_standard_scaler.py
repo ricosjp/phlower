@@ -146,3 +146,24 @@ def test__inverse_scaling(name: str, n_nodes: int, n_feature: int):
     _retrieved = scaler.inverse_transform(scaler.transform(_input))
 
     np.testing.assert_array_almost_equal(_input, _retrieved)
+
+
+@pytest.mark.parametrize("with_mean", [True, False])
+def test__parse_old_formatted_yaml(with_mean: bool):
+    # mean_ and std_ are saved as a float in old version
+    dumped_data = {
+        "with_mean": with_mean,
+        "var_": 0.075,
+        "scale_": 0.075**0.5,
+        "mean_": 100.0 if with_mean else 0.0,
+        "n_samples_seen_": 100,
+    }
+
+    name = "standardize" if with_mean else "std_scale"
+    scaler = StandardScaler.create(name, **dumped_data)
+
+    dummy = np.random.rand(10, 1) * 10 + 100.0
+    transformed = scaler.transform(dummy)
+    inversed = scaler.inverse_transform(transformed)
+
+    np.testing.assert_array_almost_equal(dummy, inversed)
