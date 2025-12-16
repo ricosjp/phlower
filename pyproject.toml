@@ -107,7 +107,7 @@ addopts = [
 ]
 markers = [
     "e2e_test: marks tests as End-to-End test (deselect with '-m not e2e_test')",
-    "gpu_test: marks tests as test using GPUs (deselect with '-m not gpu_test')",
+    "gpu_test: marks tests as test to be run on GPU",
     "need_multicore: marks tests which need multiple cores",
     "need_multigpu: marks tests which need multiple GPUs"
 ]
