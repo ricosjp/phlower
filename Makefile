@@ -26,16 +26,21 @@ format:
 
 .PHONY: test
 test:
-	uv run pytest tests -m "not e2e_test and not gpu_test" --cov=src --cov-report term-missing --durations 5
-
+	uv run pytest tests -m "not e2e_test" --device=cpu --cov=src --cov-report term-missing --durations 5
 
 .PHONY: dev_test_lf
 test_lf:
-	uv run pytest tests -m "not e2e_test and not gpu_test" --lf
+	uv run pytest tests -m "not e2e_test" --lf
+
 
 .PHONY: e2e_test
 e2e_test:
 	uv run pytest tests -m "e2e_test"
+
+
+.PHONY: gpu_test
+gpu_test:
+	uv run pytest tests -m "gpu_test and not e2e_test" --device="cuda:0"
 
 
 .PHONY: lint

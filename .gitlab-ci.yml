@@ -119,6 +119,21 @@ e2e_test:
     - job: setup_gpu_env_py311
       artifacts: true
 
+gpu_test:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+  stage: test
+  variables:
+    NCCL_DEBUG: "INFO"
+  script:
+    - make gpu_test
+  tags:
+    - multi-gpu
+    - GenuineIntel
+    - sm_75
+  needs:
+    - job: setup_gpu_env_py311
+      artifacts: true
+
 examples:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
   stage: test
