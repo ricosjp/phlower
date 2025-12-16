@@ -211,3 +211,28 @@ def test__loss_setting_aggregation(aggregation_method: str):
     assert (
         training_setting.loss_setting.aggregation_method == aggregation_method
     )
+
+
+@pytest.mark.parametrize(
+    "parameters, expected_lr, expected_weight_decay",
+    [
+        ({"lr": "1e-6", "weight_decay": "0.0"}, 0.000001, 0.0),
+        ({"lr": "0.01", "weight_decay": "0.1"}, 0.01, 0.1),
+    ],
+)
+def test__optimizer_setting_parameter_parsing(
+    parameters: dict,
+    expected_lr: float,
+    expected_weight_decay: float,
+):
+    training_setting = PhlowerTrainerSetting(
+        optimizer_setting={"optimizer": "Adam", "parameters": parameters}
+    )
+
+    actual_lr = training_setting.optimizer_setting.parameters["lr"]
+    actual_weight_decay = training_setting.optimizer_setting.parameters[
+        "weight_decay"
+    ]
+
+    assert actual_lr == expected_lr
+    assert actual_weight_decay == expected_weight_decay
