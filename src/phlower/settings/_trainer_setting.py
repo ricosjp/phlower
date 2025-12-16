@@ -4,7 +4,7 @@ import pathlib
 import socket
 from collections.abc import Iterable
 from functools import cached_property
-from typing import Any, Literal, cast
+from typing import Annotated, Any, Literal, cast
 
 import pydantic
 import pydantic.dataclasses as dc
@@ -65,6 +65,11 @@ class LossSetting:
         return list(self.name2loss.keys())
 
 
+_ParameterValue = Annotated[
+    int | float | bool | str | Any, Field(union_mode="left_to_right")
+]
+
+
 class OptimizerSetting(pydantic.BaseModel):
     optimizer: str = "Adam"
     """
@@ -72,9 +77,7 @@ class OptimizerSetting(pydantic.BaseModel):
     Ex. Adam, RMSprop, SGD
     """
 
-    parameters: dict[str, int | float | bool | str | Any] = Field(
-        default_factory=dict
-    )
+    parameters: dict[str, _ParameterValue] = Field(default_factory=dict)
     """
     Parameters to pass when optimizer class is initialized.
     Allowed parameters depend on the optimizer you choose.
