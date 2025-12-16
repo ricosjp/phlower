@@ -116,3 +116,23 @@ def test__scaling_with_OnMemory_data(
     # check whether interim variable name is existed.
     for name in targets.keys():
         assert name in results
+
+
+@pytest.mark.parametrize("yaml_file", ["preprocess.yml", "preprocess_2.yml"])
+def test__retrieve_scaling_items_from_dumped_data(
+    yaml_file: str,
+    prepare_sample_interim_files: list[pathlib.Path],
+    tmp_path: pathlib.Path,
+):
+    scaler = PhlowerScalingService.from_yaml(DATA_DIR / yaml_file)
+    scaler.fit_transform_all(
+        interim_data_directories=prepare_sample_interim_files,
+        output_base_directory=tmp_path,
+    )
+    scaler.save(tmp_path, "scaled")
+    dumped = scaler._recreate_setting().model_dump()
+
+    new_scaler = PhlowerScalingService.from_yaml(tmp_path / "scaled.yml")
+    loaded = new_scaler._recreate_setting().model_dump()
+
+    assert dumped == loaded

@@ -1,0 +1,24 @@
+scaling:
+  variable_name_to_scalers:
+
+    nodal_adj:
+      method: identity
+
+    nodal_x_grad_hop1:
+      method: isoam_scale
+      parameters:
+        other_components:
+          - nodal_y_grad_hop1
+          - nodal_z_grad_hop1
+    nodal_y_grad_hop1:
+      same_as: nodal_x_grad_hop1
+      join_fitting: true
+    nodal_z_grad_hop1:
+      same_as: nodal_x_grad_hop1
+      join_fitting: true
+
+    nodal_initial_u:
+      method: min_max
+    nodal_last_u:
+      same_as: nodal_initial_u
+      join_fitting: false
