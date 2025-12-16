@@ -20,8 +20,10 @@ def convert_to_dumped(v: Any) -> Any:  # noqa: ANN401
     if isinstance(v, str | float | int | bool):
         return v
 
-    if isinstance(v, tuple | list | dict):
-        # Need to fix ?
+    if isinstance(v, tuple):
+        return list(v)
+
+    if isinstance(v, list | dict):
         return v
 
     raise NotImplementedError(f"Conversion of {type(v)} is not implemented.")

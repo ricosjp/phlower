@@ -28,7 +28,7 @@ class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
         clip: bool = False,
         **kwargs,
     ):
-        super().__init__(feature_range, copy=copy, clip=clip)
+        super().__init__(tuple(feature_range), copy=copy, clip=clip)
         for k, v in kwargs.items():
             setattr(self, k, self._convert(k, v))
 
