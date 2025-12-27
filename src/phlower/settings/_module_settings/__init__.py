@@ -27,6 +27,9 @@ from phlower.settings._module_settings._layer_norm_setting import (
     LayerNormSetting,
 )
 from phlower.settings._module_settings._mlp_setting import MLPSetting
+from phlower.settings._module_settings._nan_to_num_setting import (
+    NaNToNumSetting,
+)
 from phlower.settings._module_settings._pinv_mlp_setting import PInvMLPSetting
 from phlower.settings._module_settings._pooling_setting import PoolingSetting
 from phlower.settings._module_settings._proportional_setting import (
@@ -63,6 +66,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     IsoGCNSetting,
     LayerNormSetting,
     MLPSetting,
+    NaNToNumSetting,
     PInvMLPSetting,
     ProportionalSetting,
     RearrangeSetting,
