@@ -5,7 +5,15 @@ description = "This is a Python package which helps you handle GNN especially fo
 authors = [{ name = "RICOS Co. Ltd." }]
 requires-python = ">=3.11,<4.0"
 readme = "README.md"
-license = "Apache-2.0"
+license = { file = "LICENSE" }
+keywords = [
+    "machine-learning",
+    "deep-learning",
+    "graph-neural-networks",
+    "pytorch",
+    "scientific-computing",
+    "physics-simulation",
+]
 maintainers = [{ name = "Riku Sakamoto", email = "sakamoto@ricos.co.jp" }]
 dependencies = [
     "pydantic>=2.7.0,<3",
@@ -20,6 +28,15 @@ dependencies = [
     "pandas>=2.2.2",
     "einops>=0.8.0",
     "phlower_tensor>=0.1.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 
