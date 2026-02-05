@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## UnReleased
 
+### Changed
+* All errors raised in `IPhlowerModuleAdapter` and its realized classes are now wrapped in `PhlowerRunTimeError` with location information.
+
 ## [0.3.0] - 2025-12-08
 
 ### Added

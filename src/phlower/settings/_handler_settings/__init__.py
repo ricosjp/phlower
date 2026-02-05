@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Annotated
 
 from pydantic import Discriminator, Tag
@@ -11,7 +11,7 @@ from phlower.settings._handler_settings._user_defined_handler import (
 )
 
 
-class _DiscriminatorHandlerTag(str, Enum):
+class _DiscriminatorHandlerTag(StrEnum):
     EarlyStopping = "EarlyStopping"
     UserCustom = "UserCustom"
 

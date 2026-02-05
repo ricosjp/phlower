@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 class PhlowerFileExtType(Enum):
@@ -24,7 +24,7 @@ class ModelSelectionType(Enum):
     SPECIFIED = "specified"
 
 
-class TrainerSavedKeyType(str, Enum):
+class TrainerSavedKeyType(StrEnum):
     model_state_dict = "model_state_dict"
     scheduled_optimizer = "scheduled_optimizer"
 
@@ -49,7 +49,7 @@ class PhlowerScalerName(Enum):
     STD_SCALE = "std_scale"
 
 
-class ActivationType(str, Enum):
+class ActivationType(StrEnum):
     gelu = "gelu"
     identity = "identity"
     inversed_leaky_relu0p5 = "inversed_leaky_relu0p5"
@@ -64,28 +64,28 @@ class ActivationType(str, Enum):
     truncated_atanh = "truncated_atanh"
 
 
-class PoolingType(str, Enum):
+class PoolingType(StrEnum):
     max = "max"
     mean = "mean"
 
 
-class PhlowerIterationSolverType(str, Enum):
+class PhlowerIterationSolverType(StrEnum):
     none = "none"
     simple = "simple"
     bb = "bb"  # barzilai_borwein
     cg = "cg"  # conjugate gradient
 
 
-class PhlowerHandlerRegisteredKey(str, Enum):
+class PhlowerHandlerRegisteredKey(StrEnum):
     TERMINATE = "TERMINATE"
 
 
-class PhlowerHandlerTrigger(str, Enum):
+class PhlowerHandlerTrigger(StrEnum):
     iteration_completed = "iteration_completed"
     epoch_completed = "epoch_completed"
 
 
-class TrainerInitializeType(str, Enum):
+class TrainerInitializeType(StrEnum):
     none = "none"
     pretrained = "pretrained"
     restart = "restart"

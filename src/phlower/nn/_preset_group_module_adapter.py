@@ -17,6 +17,7 @@ from phlower.nn._interface_module import (
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
+from phlower.nn._utils import attach_location_to_error_message
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
 
 
@@ -95,6 +96,7 @@ class PhlowerPresetGroupModuleAdapter(
         self, output_directory: pathlib.Path | str, recursive: bool = True
     ): ...
 
+    @attach_location_to_error_message
     def forward(
         self,
         data: IPhlowerTensorCollections,
