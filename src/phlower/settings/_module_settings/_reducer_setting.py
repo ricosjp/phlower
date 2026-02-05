@@ -26,20 +26,25 @@ class ReducerSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def gather_input_dims(self, *input_dims: int) -> int:
         if len(input_dims) == 0:
             raise ValueError("zero input is not allowed in Reducer.")
-        for i in range(1, len(input_dims)):
-            if input_dims[0] != input_dims[i]:
-                raise ValueError("input dimensions should be same in Reducer.")
+        dims_not_one = [d for d in input_dims if d != 1]
+        for i in range(1, len(dims_not_one)):
+            if dims_not_one[0] != dims_not_one[i]:
+                raise ValueError(
+                    "input dimensions should be same in Reducer. "
+                    f"(given: {input_dims})"
+                )
         sum_dim = sum(v for v in input_dims)
         return sum_dim
 
     def get_default_nodes(self, *input_dims: int) -> list[int]:
         sum_dim = self.gather_input_dims(*input_dims)
-        if sum_dim % len(input_dims) != 0:
-            raise ValueError(
-                f"sum_dim({sum_dim}) is not divisible "
-                f"by len(input_dims)({len(input_dims)})."
-            )
-        return [sum_dim, sum_dim // len(input_dims)]
+        dims_not_one = {d for d in input_dims if d != 1}
+        if len(dims_not_one) == 0:
+            output_dim = 1
+        else:
+            assert len(dims_not_one) == 1
+            output_dim = dims_not_one.pop()
+        return [sum_dim, output_dim]
 
     def confirm(self, self_module: IModuleSetting) -> None: ...
 
