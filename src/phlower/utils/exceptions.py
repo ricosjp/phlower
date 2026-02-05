@@ -77,3 +77,21 @@ class PhlowerInvalidArgumentsError(ValueError):
 
 class PhlowerNaNDetectedError(RuntimeError):
     """This error raises when NaN value is detected."""
+
+
+class PhlowerRunTimeError(Exception):
+    """
+    Custom runtime error that can track the location of the error.
+    """
+
+    def add_location(self, location: str) -> None:
+        if hasattr(self, "location"):
+            self.location = f"{location} -> {self.location}"
+        else:
+            self.location = location
+        self.args = (
+            f"Error occurred at: {self.location}, Message: {self.message}",
+        )
+
+    def set_message(self, message: str) -> None:
+        self.message = message

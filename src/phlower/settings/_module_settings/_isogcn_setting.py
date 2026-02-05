@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Literal, Self
 
 import pydantic
@@ -13,7 +13,7 @@ from phlower.settings._interface import (
 )
 
 
-class IsoGCNPropagationType(str, Enum):
+class IsoGCNPropagationType(StrEnum):
     convolution = "convolution"  # gradient
     contraction = "contraction"  # divergent
     tensor_product = "tensor_product"

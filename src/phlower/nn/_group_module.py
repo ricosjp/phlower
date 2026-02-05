@@ -30,6 +30,7 @@ from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
 from phlower.nn._preset_group_module_adapter import (
     PhlowerPresetGroupModuleAdapter,
 )
+from phlower.nn._utils import attach_location_to_error_message
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
@@ -220,6 +221,7 @@ class PhlowerGroupModule(
         for module in self._phlower_modules:
             module.draw(output_directory, recursive=recursive)
 
+    @attach_location_to_error_message
     def forward(
         self,
         data: IPhlowerTensorCollections,

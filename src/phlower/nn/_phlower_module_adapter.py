@@ -16,6 +16,7 @@ from phlower.nn._interface_module import (
     IPhlowerModuleAdapter,
     IReadonlyReferenceGroup,
 )
+from phlower.nn._utils import attach_location_to_error_message
 from phlower.settings._debug_parameter_setting import (
     PhlowerModuleDebugParameters,
 )
@@ -100,6 +101,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
     def name(self) -> str:
         return self._name
 
+    @attach_location_to_error_message
     def forward(
         self,
         data: IPhlowerTensorCollections,

@@ -11,6 +11,7 @@ from phlower.settings import ModuleSetting
 from phlower.settings._debug_parameter_setting import (
     PhlowerModuleDebugParameters,
 )
+from phlower.utils.exceptions import PhlowerRunTimeError
 
 
 @pytest.mark.parametrize("coeff", [1.0, 2.0, -3.2])
@@ -32,7 +33,7 @@ def test__coeff_factor_with_identity_module(coeff: float):
 @pytest.mark.parametrize(
     "output_tensor_shape", [(-1, 1), (2, 3, 2), (2, 3, 4, -1)]
 )
-def test__taise_error_invalid_output_tensor_shape(
+def test__raise_error_invalid_output_tensor_shape(
     output_tensor_shape: list[int],
 ):
     debug_parameters = PhlowerModuleDebugParameters(
@@ -47,7 +48,7 @@ def test__taise_error_invalid_output_tensor_shape(
     input_tensor = phlower_tensor(torch.rand(2, 3, 4))
     input_tensors = phlower_tensor_collection({"sample": input_tensor})
     model = PhlowerModuleAdapter.from_setting(setting)
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(PhlowerRunTimeError) as ex:
         _ = model.forward(input_tensors)
 
     assert "is different from desired shape" in str(ex.value)

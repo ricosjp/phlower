@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Literal, Self
 
 import pydantic
@@ -34,7 +34,7 @@ class GroupIOSetting:
     n_last_dim: int | None = None
 
 
-class _DiscriminatorTag(str, Enum):
+class _DiscriminatorTag(StrEnum):
     GROUP = "GROUP"
     MODULE = "MODULE"
     PRESETGROUP = "PRESETGROUP"
