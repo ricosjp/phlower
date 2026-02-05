@@ -59,13 +59,33 @@ def test__fill_default_settings(
     assert setting.operator == desired_operator
 
 
-@pytest.mark.parametrize("input_dims", [([30]), ([40]), ([100])])
+@pytest.mark.parametrize(
+    "input_dims",
+    [
+        ([30]),
+        ([40]),
+        ([100]),
+        ([20, 20]),
+        ([1, 1]),
+        ([20, 20, 20]),
+        ([1, 1, 1]),
+        # broadcast
+        ([1, 20]),
+        ([20, 1]),
+        ([1, 20, 20]),
+        ([20, 1, 20]),
+        ([20, 20, 1]),
+        ([1, 1, 20]),
+        ([1, 20, 1]),
+        ([20, 1, 1]),
+    ],
+)
 def test__gather_input_dims(input_dims: list[int]):
     setting = ReducerSetting(
         nodes=[10, 20], activation="identity", operator="add"
     )
 
-    assert setting.gather_input_dims(*input_dims) == input_dims[0]
+    assert setting.gather_input_dims(*input_dims) == sum(input_dims)
 
 
 @pytest.mark.parametrize("input_dims", [([]), ([40, 400]), ([10, 0, 1])])
@@ -118,6 +138,35 @@ def test__reference_is_not_necessary():
     assert not setting.need_reference
 
 
+@pytest.mark.parametrize(
+    "input_dims, desired_output_dim",
+    [
+        ([20], 20),
+        ([20, 20], 20),
+        ([1, 1], 1),
+        ([20, 20, 20], 20),
+        ([1, 1, 1], 1),
+        # broadcast
+        ([1, 20], 20),
+        ([20, 1], 20),
+        ([1, 20, 20], 20),
+        ([20, 1, 20], 20),
+        ([20, 20, 1], 20),
+        ([1, 1, 20], 20),
+        ([1, 20, 1], 20),
+        ([20, 1, 1], 20),
+    ],
+)
+def test__get_default_nodes(input_dims: list[int], desired_output_dim: int):
+    setting = ReducerSetting(
+        nodes=[-1, desired_output_dim], activation="identity", operator="add"
+    )
+    actual_input_dim, actual_output_dim = setting.get_default_nodes(*input_dims)
+
+    assert actual_input_dim == sum(input_dims)
+    assert actual_output_dim == desired_output_dim
+
+
 # region E2E tests only for ReducerSettings
 
 _TEST_DATA_DIR = pathlib.Path(__file__).parent / "data/reducer_setting"
@@ -136,6 +185,22 @@ def test__nodes_after_resolve(yaml_file: str):
     for key, value in content["misc"]["tests"].items():
         target = setting.network.search_module_setting(key)
         assert target.get_n_nodes() == value
+
+
+@pytest.mark.parametrize("yaml_file", ["broadcast.yml"])
+def test__broadcast_from_yaml(yaml_file: str):
+    with open(_TEST_DATA_DIR / yaml_file) as fr:
+        content = yaml.load(fr, Loader=yaml.SafeLoader)
+
+    setting = PhlowerModelSetting(**content["model"])
+    setting.network.resolve(is_first=True)
+
+    reducer = setting.network.search_module_setting("REDUCER")
+    content["misc"]["tests"]
+    assert reducer.nodes == [
+        content["misc"]["tests"]["input"],
+        content["misc"]["tests"]["output"],
+    ]
 
 
 # endregion
