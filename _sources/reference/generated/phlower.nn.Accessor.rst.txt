@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Accessor
+===================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Accessor
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Accessor.forward
+   
+   
+      ~Accessor.from_setting
+   
+   
+   
+   
+   
+   
+      ~Accessor.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Accessor.T_destination
+      ~Accessor.call_super_init
+      ~Accessor.dump_patches
+      ~Accessor.training
+   
+   
