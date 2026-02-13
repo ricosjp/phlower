@@ -1,0 +1,61 @@
+misc:
+  tests:
+    SOURCE: x
+    TARGET: y
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 16
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 4
+  fields:
+    - name: x
+      physical_dimension: {"L": 1}
+    - name: y
+      physical_dimension: {"L": 1}
+
+  network:
+    nn_type: GROUP
+    name: MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 16
+      - name: feature1
+        n_last_dim: 4
+    outputs:
+      - name: feature0
+        n_last_dim: 16
+      - name: feature1
+        n_last_dim: 4
+
+    modules:
+      - name: IN_FEATURE0
+        nn_type: Identity
+        input_keys:
+          - feature0
+        output_key: feature0
+        destinations:
+          - INTERPOLATOR
+      - name: IN_FEATURE1
+        nn_type: Identity
+        input_keys:
+          - feature1
+        output_key: feature1
+        destinations:
+          - INTERPOLATOR
+      - name: INTERPOLATOR
+        nn_type: PresetGroup
+        preset_type: Interpolator
+        outputs:
+          - name: feature0
+            n_last_dim: 16
+          - name: feature1
+            n_last_dim: 4
+        nn_parameters:
+          source_position_name: x
+          target_position_name: y

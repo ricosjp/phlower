@@ -5,7 +5,7 @@ It confirms that the model has the scaling equivariance during and after trainin
 
 # Usage
 ```bash
-poetry run python3 main.py
+uv run python3 main.py
 ```
 
 # References
