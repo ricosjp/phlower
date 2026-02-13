@@ -1,0 +1,165 @@
+
+data:
+  training:
+    - data/case_0
+  validation: []
+
+training:
+  batch_size: 1
+  random_seed: 0
+  device: "auto"
+  n_epoch: 200
+  loss_setting:
+    name2loss:
+      face1_phi: "mse"
+      face1_v: "mse"
+      face2_phi: "mse"
+      face2_v: "mse"
+  optimizer_setting:
+    optimizer: Adam
+    parameters:
+      lr: 0.001
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+
+model:
+  inputs:
+    - name: source_r
+    # - name: source_z
+  labels:
+    - name: face1_phi
+    - name: face2_phi
+    - name: face1_v
+    - name: face2_v
+
+  fields:
+    - name: source_points
+    - name: face1_points
+    - name: face2_points
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: source_r
+        n_last_dim: 1
+      # - name: source_z
+      #   n_last_dim: 1
+
+    outputs:
+      - name: v
+        n_last_dim: 1
+      - name: phi
+        n_last_dim: 1
+      - name: face1_phi
+        n_last_dim: 1
+      - name: face1_v
+        n_last_dim: 1
+      - name: face2_phi
+        n_last_dim: 1
+      - name: face2_v
+        n_last_dim: 1
+
+    modules:
+      - name: CAT_INPUT
+        nn_type: Concatenator
+        input_keys:
+          - source_r
+          # - source_z
+        destinations:
+          - MLP_SCALAR
+          - MLP_VECTOR
+      - name: MLP_SCALAR
+        nn_type: MLP
+        output_key: phi
+        destinations:
+          - ID_OUT_PHI
+          - FACE1_INTERPOLATOR
+          - FACE2_INTERPOLATOR
+        nn_parameters:
+          nodes:
+            - -1
+            - 64
+            - 64
+            - 1
+          activations:
+            - relu
+            - relu
+            - identity
+
+      - name: MLP_VECTOR
+        nn_type: MLP
+        destinations:
+          - REARRANGE_VECTOR
+        nn_parameters:
+          nodes:
+            - -1
+            - 64
+            - 64
+            - 3
+          activations:
+            - relu
+            - relu
+            - identity
+      - name: REARRANGE_VECTOR
+        nn_type: Rearrange
+        output_key: v
+        destinations:
+          - ID_OUT_V
+          - FACE1_INTERPOLATOR
+          - FACE2_INTERPOLATOR
+        nn_parameters:
+          pattern: "node (dim feature) -> node dim feature"
+          axes_lengths:
+            dim: 3
+          output_feature_dim: 1
+
+      - name: ID_OUT_PHI
+        nn_type: Identity
+        output_key: phi
+      - name: ID_OUT_V
+        nn_type: Identity
+        output_key: v
+
+      - name: FACE1_INTERPOLATOR
+        nn_type: PresetGroup
+        preset_type: Interpolator
+        destinations:
+          - ID_FACE1_PHI
+          - ID_FACE1_V
+        outputs:
+          # By default, output keys are the same as inputs
+          - name: phi
+            n_last_dim: 1
+          - name: v
+            n_last_dim: 1
+        nn_parameters:
+          source_position_name: source_points
+          target_position_name: face1_points
+      - name: ID_FACE1_PHI
+        nn_type: Identity
+        input_keys:
+          - phi
+        output_key: face1_phi
+      - name: ID_FACE1_V
+        nn_type: Identity
+        input_keys:
+          - v
+        output_key: face1_v
+
+      - name: FACE2_INTERPOLATOR
+        nn_type: PresetGroup
+        preset_type: Interpolator
+        outputs:
+          - name: face2_phi
+            n_last_dim: 1
+          - name: face2_v
+            n_last_dim: 1
+        nn_parameters:
+          source_position_name: source_points
+          target_position_name: face2_points
+          # One can rename output keys
+          input_to_output_map:
+            phi: face2_phi
+            v: face2_v
