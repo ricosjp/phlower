@@ -11,7 +11,7 @@ reset:
 
 .PHONY: install
 install:
-	uv sync --extra ${CUDA_TAG} --group dev
+	uv sync --extra ${CUDA_TAG} --group dev --group docs
 
 
 .PHONY: mypy
@@ -65,6 +65,7 @@ document:
 	rm -rf docs/build || true
 	rm -rf docs/source/reference/generated || true
 	rm -rf docs/source/tutorials/basic_usages || true
+	uv run python3 docs/source/render.py
 	uv run sphinx-build -M html docs/source docs/build
 
 
