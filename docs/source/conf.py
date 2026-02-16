@@ -64,7 +64,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",  # google, numpy styleのdocstring対応
+    "sphinx.ext.napoleon",  # docstring for google, numpy style
     "sphinx_gallery.gen_gallery",
     "sphinxcontrib.mermaid",
 ]

@@ -6,6 +6,7 @@ Module Reference
     :maxdepth: 2
 
     nn
+    presets
     tensors
     services
     settings
