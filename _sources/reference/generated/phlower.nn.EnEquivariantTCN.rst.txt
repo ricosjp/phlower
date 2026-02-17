@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.EnEquivariantTCN
+===========================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: EnEquivariantTCN
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~EnEquivariantTCN.forward
+   
+   
+      ~EnEquivariantTCN.from_setting
+   
+   
+   
+   
+   
+   
+      ~EnEquivariantTCN.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EnEquivariantTCN.T_destination
+      ~EnEquivariantTCN.call_super_init
+      ~EnEquivariantTCN.dump_patches
+      ~EnEquivariantTCN.training
+   
+   

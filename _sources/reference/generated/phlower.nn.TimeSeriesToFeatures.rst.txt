@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.TimeSeriesToFeatures
+===============================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: TimeSeriesToFeatures
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~TimeSeriesToFeatures.forward
+   
+   
+      ~TimeSeriesToFeatures.from_setting
+   
+   
+   
+   
+   
+   
+      ~TimeSeriesToFeatures.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TimeSeriesToFeatures.T_destination
+      ~TimeSeriesToFeatures.call_super_init
+      ~TimeSeriesToFeatures.dump_patches
+      ~TimeSeriesToFeatures.training
+   
+   

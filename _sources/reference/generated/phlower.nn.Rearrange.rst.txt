@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Rearrange
+====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Rearrange
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Rearrange.forward
+   
+   
+      ~Rearrange.from_setting
+   
+   
+   
+   
+   
+   
+      ~Rearrange.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Rearrange.T_destination
+      ~Rearrange.call_super_init
+      ~Rearrange.dump_patches
+      ~Rearrange.training
+   
+   

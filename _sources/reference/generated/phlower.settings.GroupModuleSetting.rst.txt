@@ -1,0 +1,119 @@
+﻿:orphan:
+
+phlower.settings.GroupModuleSetting
+===================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: GroupModuleSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~GroupModuleSetting.find_module
+   
+   
+   
+   
+      ~GroupModuleSetting.get_destinations
+   
+   
+      ~GroupModuleSetting.get_input_keys
+   
+   
+      ~GroupModuleSetting.get_name
+   
+   
+      ~GroupModuleSetting.get_output_info
+   
+   
+      ~GroupModuleSetting.get_output_keys
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~GroupModuleSetting.resolve
+   
+   
+   
+   
+   
+   
+      ~GroupModuleSetting.search_group_setting
+   
+   
+      ~GroupModuleSetting.search_module_setting
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GroupModuleSetting.model_computed_fields
+      ~GroupModuleSetting.model_config
+      ~GroupModuleSetting.model_extra
+      ~GroupModuleSetting.model_fields
+      ~GroupModuleSetting.model_fields_set
+      ~GroupModuleSetting.name
+      ~GroupModuleSetting.inputs
+      ~GroupModuleSetting.outputs
+      ~GroupModuleSetting.modules_same_as
+      ~GroupModuleSetting.modules
+      ~GroupModuleSetting.destinations
+      ~GroupModuleSetting.nn_type
+      ~GroupModuleSetting.no_grad
+      ~GroupModuleSetting.solver_type
+      ~GroupModuleSetting.is_steady_problem
+      ~GroupModuleSetting.solver_parameters
+      ~GroupModuleSetting.time_series_length
+   
+   

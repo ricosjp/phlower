@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.NaNToNum
+===================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: NaNToNum
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~NaNToNum.forward
+   
+   
+      ~NaNToNum.from_setting
+   
+   
+   
+   
+   
+   
+      ~NaNToNum.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NaNToNum.T_destination
+      ~NaNToNum.call_super_init
+      ~NaNToNum.dump_patches
+      ~NaNToNum.training
+   
+   

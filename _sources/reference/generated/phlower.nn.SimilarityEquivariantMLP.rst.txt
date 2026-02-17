@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.SimilarityEquivariantMLP
+===================================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: SimilarityEquivariantMLP
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~SimilarityEquivariantMLP.forward
+   
+   
+      ~SimilarityEquivariantMLP.from_setting
+   
+   
+   
+   
+   
+   
+      ~SimilarityEquivariantMLP.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SimilarityEquivariantMLP.T_destination
+      ~SimilarityEquivariantMLP.call_super_init
+      ~SimilarityEquivariantMLP.dump_patches
+      ~SimilarityEquivariantMLP.training
+   
+   

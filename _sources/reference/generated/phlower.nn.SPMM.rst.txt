@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.SPMM
+===============
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: SPMM
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~SPMM.forward
+   
+   
+      ~SPMM.from_setting
+   
+   
+   
+   
+   
+   
+      ~SPMM.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SPMM.T_destination
+      ~SPMM.call_super_init
+      ~SPMM.dump_patches
+      ~SPMM.training
+   
+   
