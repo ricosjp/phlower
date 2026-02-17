@@ -13,7 +13,7 @@ from phlower.utils.typing import ArrayDataType
 class MaxAbsPoweredScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
     @classmethod
     def create(cls, name: str, **kwards) -> MaxAbsPoweredScaler:
-        if name == PhlowerScalerName.MAX_ABS_POWERED.value:
+        if name == PhlowerScalerName.max_abs_powered.value:
             return MaxAbsPoweredScaler(**kwards)
 
         raise NotImplementedError(

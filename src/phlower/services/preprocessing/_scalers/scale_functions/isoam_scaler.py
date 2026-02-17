@@ -18,7 +18,7 @@ class IsoAMScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards) -> IsoAMScaler:
-        if name == PhlowerScalerName.ISOAM_SCALE.value:
+        if name == PhlowerScalerName.isoam_scale.value:
             return IsoAMScaler(**kwards)
 
         raise NotImplementedError()
