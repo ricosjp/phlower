@@ -13,7 +13,7 @@ from phlower.utils.preprocess import convert_to_dumped
 class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
     @classmethod
     def create(cls, name: str, **kwards) -> MinMaxScaler:
-        if name == PhlowerScalerName.MIN_MAX.value:
+        if name == PhlowerScalerName.min_max.value:
             return MinMaxScaler(**kwards)
 
         raise NotImplementedError(

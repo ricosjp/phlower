@@ -13,13 +13,13 @@ from phlower.utils.preprocess import convert_to_dumped
 class StandardScaler(preprocessing.StandardScaler, IPhlowerScaler):
     @classmethod
     def create(cls, name: str, **kwards) -> StandardScaler:
-        if name == PhlowerScalerName.STANDARDIZE.value:
+        if name == PhlowerScalerName.standardize.value:
             with_mean = kwards.pop("with_mean", True)
             if not with_mean:
                 raise ValueError("with_mean must be True in standardize scaler")
             return StandardScaler(with_mean=with_mean, **kwards)
 
-        if name == PhlowerScalerName.STD_SCALE.value:
+        if name == PhlowerScalerName.std_scale.value:
             with_mean = kwards.pop("with_mean", False)
             if with_mean:
                 raise ValueError("with_mean must be False in std_scale")

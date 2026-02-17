@@ -12,7 +12,7 @@ class IdentityScaler(BaseEstimator, TransformerMixin, IPhlowerScaler):
 
     @classmethod
     def create(cls, name: str, **kwards) -> IdentityScaler:
-        if name == PhlowerScalerName.IDENTITY.value:
+        if name == PhlowerScalerName.identity.value:
             return IdentityScaler(**kwards)
 
         raise NotImplementedError()

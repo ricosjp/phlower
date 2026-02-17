@@ -202,7 +202,7 @@ class ScalerResolvedParameter:
 def _validate_scaler(
     method_name: str, setting: ScalerResolvedParameter
 ) -> None:
-    if method_name == PhlowerScalerName.ISOAM_SCALE.value:
+    if method_name == PhlowerScalerName.isoam_scale.value:
         _validate_isoam(setting)
         return
 

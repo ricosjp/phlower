@@ -3,6 +3,7 @@ from phlower.utils.enums import PhlowerScalerName
 
 from .identity_scaler import IdentityScaler
 from .isoam_scaler import IsoAMScaler
+from .logit_transform import LogitTransformScaler
 from .max_abs_scaler import MaxAbsPoweredScaler
 from .min_max_scaler import MinMaxScaler
 from .standard_scaler import StandardScaler
@@ -10,12 +11,13 @@ from .standard_scaler import StandardScaler
 # name to scaler class and default arguments
 
 _alias_to_scaler: dict[str, IPhlowerScaler] = {
-    PhlowerScalerName.IDENTITY.value: IdentityScaler,
-    PhlowerScalerName.ISOAM_SCALE.value: IsoAMScaler,
-    PhlowerScalerName.MAX_ABS_POWERED.value: MaxAbsPoweredScaler,
-    PhlowerScalerName.MIN_MAX.value: MinMaxScaler,
-    PhlowerScalerName.STANDARDIZE.value: StandardScaler,
-    PhlowerScalerName.STD_SCALE.value: StandardScaler,
+    PhlowerScalerName.identity.value: IdentityScaler,
+    PhlowerScalerName.isoam_scale.value: IsoAMScaler,
+    PhlowerScalerName.max_abs_powered.value: MaxAbsPoweredScaler,
+    PhlowerScalerName.min_max.value: MinMaxScaler,
+    PhlowerScalerName.standardize.value: StandardScaler,
+    PhlowerScalerName.std_scale.value: StandardScaler,
+    PhlowerScalerName.logit_transform.value: LogitTransformScaler,
 }
 
 
