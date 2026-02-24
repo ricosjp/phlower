@@ -3,12 +3,14 @@ from __future__ import annotations
 import abc
 import pathlib
 from collections.abc import Callable, Mapping
-from typing import Any, Generic, NamedTuple, TypeVar
+from typing import Any, Generic, NamedTuple, Protocol, TypeVar
 
 import numpy as np
 import scipy.sparse as sp
 import torch
+from phlower_tensor.collections import IPhlowerTensorCollections
 
+from phlower.utils.calculation_state import CalculationState
 from phlower.utils.enums import PhlowerHandlerTrigger
 
 DenseArrayType = np.ndarray
@@ -76,3 +78,14 @@ class IPhlowerHandler(Generic[T], metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def trigger(self) -> PhlowerHandlerTrigger: ...
+
+
+class PhlowerForwardHook(Protocol):
+    def __call__(
+        self,
+        name: str,
+        unique_name: str,
+        result: IPhlowerTensorCollections,
+        *,
+        state: CalculationState | None = None,
+    ) -> None: ...
