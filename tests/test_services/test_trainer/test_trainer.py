@@ -65,6 +65,13 @@ def create_sample_preprocessed_data(output_base_dir: pathlib.Path):
             preprocessed_dir / "nodal_last_u.npy", nodal_last_u.astype(dtype)
         )
 
+        n_time_series = 5
+        nodal_last_ts_u = np.random.rand(n_time_series, n_nodes, 3, 1)
+        np.save(
+            preprocessed_dir / "nodal_last_ts_u.npy",
+            nodal_last_ts_u.astype(dtype),
+        )
+
         nodal_initial_p = np.random.rand(n_nodes, 1)
         np.save(
             preprocessed_dir / "nodal_initial_p.npy",
@@ -669,7 +676,7 @@ def test__n_call_times_when_time_sliding(
     with mock.patch(
         "phlower.services.trainer._runners._trainer._training_batch_step_w_slide"
     ) as mocked:
-        mocked.side_effect = lambda x, y, z, w: (0.0, {})
+        mocked.side_effect = lambda x, y, z, w, state: (0.0, {})
 
         trainer.train(
             train_directories=preprocessed_directories,
@@ -852,6 +859,62 @@ def test__detect_insufficient_cpus(
 
     with pytest.raises(ValueError, match="is larger than available processes"):
         PhlowerTrainer.from_setting(setting)
+
+
+# endregion
+
+
+# region tests for debug features
+
+
+@pytest.mark.parametrize("yaml_file", ["train_mlp_dump.yml"])
+def test__dump_en_route_tensors(
+    yaml_file: str, prepare_sample_preprocessed_files: None
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / yaml_file)
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / yaml_file.split(".")[0]
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+    en_route_dir = output_directory / "en_route_tensors"
+    assert en_route_dir.exists()
+
+    epoch_size = setting.training.n_epoch
+    batch_size = len(preprocessed_directories)
+
+    epochs_dirs = list(en_route_dir.glob("epoch=*"))
+    assert len(epochs_dirs) == epoch_size
+
+    n_time_series = setting.model.network.time_series_length
+
+    for epoch_dir in epochs_dirs:
+        batch_dirs = list(epoch_dir.glob("batch_idx=*"))
+        assert len(batch_dirs) == batch_size
+
+        for batch_dir in batch_dirs:
+            assert (
+                len(list(batch_dir.glob("**/nodal_last_ts_u.npy")))
+                == n_time_series
+            )
+            assert (
+                len(list(batch_dir.glob("**/nodal_last_ts_u_grad_output.npy")))
+                == n_time_series
+            )
 
 
 # endregion

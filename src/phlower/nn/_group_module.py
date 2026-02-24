@@ -34,7 +34,9 @@ from phlower.nn._utils import attach_location_to_error_message
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
+from phlower.utils.calculation_state import CalculationState
 from phlower.utils.enums import TrainerSavedKeyType
+from phlower.utils.typing import PhlowerForwardHook
 
 TargetFunctionType = Callable[
     [IPhlowerTensorCollections], IPhlowerTensorCollections
@@ -156,6 +158,9 @@ class PhlowerGroupModule(
         self._iteration_solver = iteration_solver
         self._time_series_length = time_series_length or 0
         assert self._time_series_length >= -1
+        self._parent_prefix = ""
+        self._post_hooks: list[PhlowerForwardHook] = []
+        self._finalize_hooks: list[Callable[[], None]] = []
 
         self._stream = self.resolve()
         for _module in self._phlower_modules:
@@ -177,9 +182,24 @@ class PhlowerGroupModule(
     def get_n_nodes(self) -> list[int] | None:
         return None
 
+    def get_unique_name(self) -> str:
+        return self._parent_prefix + self.name
+
+    def register_phlower_forward_hook(self, hook: PhlowerForwardHook) -> None:
+        self._post_hooks.append(hook)
+
+    def register_phlower_finalize_debug_hook(
+        self, hook: Callable[[], None]
+    ) -> None:
+        return self._finalize_hooks.append(hook)
+
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> dagstream.DagStream:
+
+        if parent is not None:
+            self._parent_prefix = parent.get_unique_name() + "."
+
         for module in self._phlower_modules:
             module.resolve(parent=self)
 
@@ -227,20 +247,22 @@ class PhlowerGroupModule(
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField,
+        state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
         if self.do_time_series_iteration:
             return self._forward_time_series(
-                data, field_data=field_data, **kwards
+                data, field_data=field_data, state=state, **kwards
             )
 
-        return self._forward(data, field_data=field_data, **kwards)
+        return self._forward(data, field_data=field_data, state=state, **kwards)
 
     def _forward_time_series(
         self,
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField,
+        state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
         results: list[IPhlowerTensorCollections] = []
@@ -260,7 +282,9 @@ class PhlowerGroupModule(
                 inputs.update(last_result, overwrite=True)
 
             results.append(
-                self._forward(inputs, field_data=field_data, **kwards)
+                self._forward(
+                    inputs, field_data=field_data, state=state, **kwards
+                )
             )
 
         return reduce_stack(results, to_time_series=True)
@@ -270,10 +294,11 @@ class PhlowerGroupModule(
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField,
+        state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
         step_forward = partial(
-            self.step_forward, field_data=field_data, **kwards
+            self.step_forward, field_data=field_data, state=state, **kwards
         )
         problem = _GroupOptimizeProblem(
             initials=data,
@@ -290,6 +315,7 @@ class PhlowerGroupModule(
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField,
+        state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
         results = phlower_tensor_collection({})
@@ -308,7 +334,9 @@ class PhlowerGroupModule(
 
                 args = reduce_update(node.get_received_args())
                 _module: PhlowerModuleAdapter = node.get_user_function()
-                _result = _module.forward(args, field_data=field_data, **kwards)
+                _result = _module.forward(
+                    args, field_data=field_data, state=state, **kwards
+                )
 
                 dag_modules.send(node.mut_name, _result)
                 dag_modules.done(node.mut_name)
@@ -353,3 +381,10 @@ class PhlowerGroupModule(
 
     def get_core_module(self) -> IPhlowerCoreModule:
         return self
+
+    def finalize_debug(self) -> None:
+        for hook in self._finalize_hooks:
+            hook()
+
+        for m in self._phlower_modules:
+            m.finalize_debug()

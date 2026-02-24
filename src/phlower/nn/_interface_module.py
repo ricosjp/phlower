@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import pathlib
+from collections.abc import Callable
 from typing import Generic, Self, TypeVar
 
 from phlower_tensor import ISimulationField, PhlowerTensor
@@ -11,6 +12,8 @@ from phlower.settings._module_settings import IPhlowerLayerParameters
 from phlower.settings._preset_group_parameter_setting import (
     IPhlowerPresetGroupParameters,
 )
+from phlower.utils.calculation_state import CalculationState
+from phlower.utils.typing import PhlowerForwardHook
 
 T1 = TypeVar("T1", IPhlowerLayerParameters, IPhlowerPresetGroupParameters)
 T2 = TypeVar("T2", PhlowerTensor, IPhlowerTensorCollections)
@@ -40,6 +43,8 @@ class IGenericPhlowerCoreModule(Generic[T1, T2], metaclass=abc.ABCMeta):
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField | None = None,
+        state: CalculationState | None = None,
+        **kwards,
     ) -> T2: ...
 
     @abc.abstractmethod
@@ -57,6 +62,15 @@ IPhlowerCorePresetGroupModule = IGenericPhlowerCoreModule[
 class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def search_module(self, name: str) -> IPhlowerCoreModule: ...
+
+    @abc.abstractmethod
+    def get_unique_name(self) -> str:
+        """
+        Get the name of the group.
+        This name is unique across the entire module tree.
+        e.g. "ModuleA.ModuleB" for a module C inside module B.
+        """
+        ...
 
 
 class IPhlowerGroup(metaclass=abc.ABCMeta):
@@ -105,3 +119,21 @@ class IPhlowerModuleAdapter(metaclass=abc.ABCMeta):
     def get_core_module(
         self,
     ) -> IGenericPhlowerCoreModule: ...
+
+    @abc.abstractmethod
+    def register_phlower_forward_hook(
+        self, hook: PhlowerForwardHook
+    ) -> None: ...
+
+    @abc.abstractmethod
+    def register_phlower_finalize_debug_hook(
+        self, hook: Callable[[], None]
+    ) -> None: ...
+
+    @abc.abstractmethod
+    def finalize_debug(self) -> None:
+        """
+        Run finalize debug hooks.
+        If no finalize debug hook is registered, this method does nothing.
+        """
+        ...

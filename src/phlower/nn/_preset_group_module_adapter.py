@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
 
 import torch
 from phlower_tensor import ISimulationField
@@ -19,12 +20,11 @@ from phlower.nn._interface_module import (
 )
 from phlower.nn._utils import attach_location_to_error_message
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
+from phlower.utils.calculation_state import CalculationState
+from phlower.utils.typing import PhlowerForwardHook
 
 
-class PhlowerPresetGroupModuleAdapter(
-    torch.nn.Module,
-    IPhlowerModuleAdapter,
-):
+class PhlowerPresetGroupModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
     """This layer handles common attributes for all PhlowerLayers.
     Example: no_grad
     """
@@ -69,8 +69,23 @@ class PhlowerPresetGroupModuleAdapter(
         self._input_nodes = input_nodes
         self._output_nodes = output_nodes
 
+        self._parent_prefix = ""
+        self._forward_hooks: list[PhlowerForwardHook] = []
+        self._finalize_hooks: list[Callable[[], None]] = []
+
     def get_destinations(self) -> list[str]:
         return self._destinations
+
+    def get_unique_name(self) -> str:
+        return self._parent_prefix + self._name
+
+    def register_phlower_forward_hook(self, hook: PhlowerForwardHook) -> None:
+        self._forward_hooks.append(hook)
+
+    def register_phlower_finalize_debug_hook(
+        self, hook: Callable[[], None]
+    ) -> None:
+        self._finalize_hooks.append(hook)
 
     @property
     def name(self) -> str:
@@ -87,8 +102,8 @@ class PhlowerPresetGroupModuleAdapter(
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> None:
-        if not self._layer.need_reference():
-            return
+        if parent is not None:
+            self._parent_prefix = parent.get_unique_name() + "."
 
         self._layer.resolve(parent=parent, **kwards)
 
@@ -102,6 +117,7 @@ class PhlowerPresetGroupModuleAdapter(
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField,
+        state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
         inputs = phlower_tensor_collection(
@@ -117,3 +133,7 @@ class PhlowerPresetGroupModuleAdapter(
 
     def get_core_module(self) -> IPhlowerCorePresetGroupModule:
         return self._layer
+
+    def finalize_debug(self) -> None:
+        for hook in self._finalize_hooks:
+            hook()

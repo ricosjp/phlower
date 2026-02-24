@@ -30,6 +30,7 @@ from phlower.settings import (
     PhlowerSetting,
 )
 from phlower.utils import get_logger
+from phlower.utils.calculation_state import CalculationState
 
 _logger = get_logger(__name__)
 
@@ -343,7 +344,12 @@ class PhlowerPredictor:
         self, data_loader: DataLoader, return_only_prediction: bool = False
     ) -> Iterator[PhlowerPredictionResult]:
         with self._predict_context_manager():
-            for batch in data_loader:
+            for idx, batch in enumerate(data_loader):
+                state = CalculationState(
+                    mode="predicting",
+                    current_batch_iteration=idx,
+                )
+
                 batch: LumpedTensorData
                 # HACK: Need to unbatch ?
                 assert batch.n_data == 1
@@ -353,7 +359,7 @@ class PhlowerPredictor:
                     self._predict_setting.time_series_sliding,
                 )
                 self._model.eval()
-                h = _batch_forward(self._model, helper)
+                h = _batch_forward(self._model, helper, state=state)
 
                 if return_only_prediction:
                     yield PhlowerPredictionResult(prediction_data=h)
@@ -478,12 +484,15 @@ def _load_model(
 def _batch_forward(
     model: PhlowerGroupModule,
     helper: SlidingWindowHelper,
+    *,
+    state: CalculationState | None = None,
 ) -> IPhlowerTensorCollections:
     predicted: list[IPhlowerTensorCollections] = []
     for _slided_batch in helper:
         h = model.forward(
             _slided_batch.x_data,
             field_data=_slided_batch.field_data,
+            state=state,
         )
         predicted.append(h)
 

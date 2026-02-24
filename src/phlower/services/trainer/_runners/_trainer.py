@@ -17,6 +17,7 @@ from phlower.settings import (
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar
+from phlower.utils.calculation_state import CalculationState
 from phlower.utils.enums import (
     PhlowerHandlerTrigger,
 )
@@ -53,7 +54,13 @@ class TrainingRunner:
     ) -> AfterEpochTrainingInfo:
         train_losses: list[float] = []
         train_loss_details: list[dict[str, float]] = []
-        for tr_batch in train_loader:
+        for idx, tr_batch in enumerate(train_loader):
+            state = CalculationState(
+                mode="training",
+                current_epoch=epoch,
+                current_batch_iteration=idx,
+                output_directory=output_directory,
+            )
             tr_batch = tr_batch.to(
                 device=self._trainer_setting.get_device(),
                 non_blocking=self._trainer_setting.non_blocking,
@@ -65,6 +72,7 @@ class TrainingRunner:
                 model,
                 self._loss_calculator,
                 self._handlers,
+                state=state,
             )
             train_pbar.update(
                 trick=self._trainer_setting.batch_size,
@@ -100,7 +108,13 @@ class TrainingRunner:
         train_loader.sampler.set_epoch(epoch)
         device = self._trainer_setting.get_device(rank)
         model.train()
-        for tr_batch in train_loader:
+        for idx, tr_batch in enumerate(train_loader):
+            state = CalculationState(
+                mode="training",
+                current_epoch=epoch,
+                current_batch_iteration=idx,
+                output_directory=output_directory,
+            )
             tr_batch: LumpedTensorData
             tr_batch = tr_batch.to(
                 device=device,
@@ -113,6 +127,7 @@ class TrainingRunner:
                 model,
                 self._loss_calculator,
                 self._handlers,
+                state=state,
             )
             train_pbar.update(
                 trick=self._trainer_setting.batch_size,
@@ -143,6 +158,7 @@ def training_batch_step(
     model: torch.nn.Module,
     loss_calculator: LossCalculator,
     handlers: PhlowerHandlersRunner,
+    state: CalculationState | None = None,
 ) -> tuple[float, dict[str, float]]:
     helper = SlidingWindowHelper(
         tr_batch,
@@ -155,6 +171,7 @@ def training_batch_step(
             scheduled_optimizer,
             model,
             loss_calculator,
+            state=state,
         )
         handlers.run(
             last_loss, trigger=PhlowerHandlerTrigger.iteration_completed
@@ -165,12 +182,16 @@ def training_batch_step(
 def _training_batch_step_w_slide(
     tr_batch: LumpedTensorData,
     scheduled_optimizer: PhlowerOptimizerWrapper,
-    model: torch.nn.Module,
+    model: PhlowerGroupModule | torch.nn.Module,
     loss_calculator: LossCalculator,
+    *,
+    state: CalculationState | None = None,
 ) -> tuple[float, dict[str, float]]:
     scheduled_optimizer.zero_grad()
 
-    h = model.forward(tr_batch.x_data, field_data=tr_batch.field_data)
+    h = model.forward(
+        tr_batch.x_data, field_data=tr_batch.field_data, state=state
+    )
 
     losses = loss_calculator.calculate(
         h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
@@ -187,5 +208,10 @@ def _training_batch_step_w_slide(
     # NOTE: This is necessary to use less memory
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+
+    if isinstance(model, PhlowerGroupModule):
+        # When the model is DistributedDataParallel,
+        # finalize_debug cannnot be called.
+        model.finalize_debug()
 
     return _last_loss, detached_losses

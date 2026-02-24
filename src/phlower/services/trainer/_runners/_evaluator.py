@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import overload
-
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -251,15 +249,6 @@ class EvaluationRunner:
                     results_details.extend(gathered_details)
 
         return np.average(results), _aggregate_loss_details(results_details)
-
-
-@overload
-def _evaluation_batch_step(
-    sliding_window_helper: SlidingWindowHelper,
-    model: torch.nn.Module,
-    loss_calculator: LossCalculator,
-    handlers: PhlowerHandlersRunner,
-) -> tuple[list[float], dict[str, float] | None]: ...
 
 
 def _evaluation_batch_step(

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
-import numpy as np
 import torch
-from phlower_tensor import ISimulationField, PhlowerTensor
+from phlower_tensor import ISimulationField
 from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
@@ -17,10 +17,14 @@ from phlower.nn._interface_module import (
     IReadonlyReferenceGroup,
 )
 from phlower.nn._utils import attach_location_to_error_message
-from phlower.settings._debug_parameter_setting import (
-    PhlowerModuleDebugParameters,
-)
 from phlower.settings._group_setting import ModuleSetting
+from phlower.utils import get_logger
+from phlower.utils.calculation_state import CalculationState
+from phlower.utils.typing import PhlowerForwardHook
+
+from ._utils import attach_debug_helper
+
+_logger = get_logger(__name__)
 
 
 class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
@@ -31,7 +35,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
     @classmethod
     def from_setting(cls, setting: ModuleSetting) -> PhlowerModuleAdapter:
         layer = get_module(setting.nn_type).from_setting(setting.nn_parameters)
-        return cls(
+        mod = PhlowerModuleAdapter(
             layer,
             name=setting.name,
             input_keys=setting.input_keys,
@@ -40,8 +44,9 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
             no_grad=setting.no_grad,
             n_nodes=setting.nn_parameters.get_n_nodes(),
             coeff=setting.coeff,
-            debug_parameters=setting.debug_parameters,
         )
+        attach_debug_helper(mod, setting.debug_parameters)
+        return mod
 
     def __init__(
         self,
@@ -53,7 +58,6 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         no_grad: bool,
         n_nodes: list[int],
         coeff: float,
-        debug_parameters: PhlowerModuleDebugParameters,
         **kwards,
     ) -> None:
         super().__init__(**kwards)
@@ -66,18 +70,30 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         self._n_nodes = n_nodes
         self._coeff = coeff
 
-        self._debug_helper = _DebugHelper(debug_parameters)
+        self._forward_post_hooks: list[PhlowerForwardHook] = []
+        self._finalize_hooks: list[Callable[[], None]] = []
+        self._parent_prefix = ""
 
     def get_destinations(self) -> list[str]:
         return self._destinations
 
+    def get_unique_name(self) -> str:
+        return self._parent_prefix + self._name
+
+    def register_phlower_forward_hook(self, hook: PhlowerForwardHook) -> None:
+        self._forward_post_hooks.append(hook)
+
+    def register_phlower_finalize_debug_hook(
+        self, hook: Callable[[], None]
+    ) -> None:
+        self._finalize_hooks.append(hook)
+
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None, **kwards
     ) -> None:
-        if not self._layer.need_reference():
-            return
-
         self._layer.resolve(parent=parent, **kwards)
+        if parent is not None:
+            self._parent_prefix = parent.get_unique_name() + "."
 
     def get_n_nodes(self) -> list[int]:
         return self._n_nodes
@@ -107,6 +123,8 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         data: IPhlowerTensorCollections,
         *,
         field_data: ISimulationField | None = None,
+        state: CalculationState | None = None,
+        **kwards,
     ) -> IPhlowerTensorCollections:
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
@@ -114,61 +132,27 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         if self._no_grad:
             with torch.no_grad():
                 result = self._coeff * self._layer.forward(
-                    inputs, field_data=field_data
+                    inputs, field_data=field_data, state=state, **kwards
                 )
         else:
             result = self._coeff * self._layer.forward(
-                inputs, field_data=field_data
+                inputs, field_data=field_data, state=state, **kwards
             )
 
-        if self._debug_helper.need_debug():
-            self._debug_helper.debug(self._name, result)
+        ret = phlower_tensor_collection({self._output_key: result})
 
-        return phlower_tensor_collection({self._output_key: result})
+        for hook in self._forward_post_hooks:
+            hook(
+                name=self._name,
+                unique_name=self.get_unique_name(),
+                result=ret,
+                state=state,
+            )
+        return ret
 
     def get_core_module(self) -> IPhlowerCoreModule:
         return self._layer
 
-
-class _DebugHelper:
-    def __init__(
-        self,
-        debug_parameters: PhlowerModuleDebugParameters,
-    ):
-        self._debug_parameters = debug_parameters
-
-    def need_debug(self) -> bool:
-        return self._debug_parameters.output_tensor_shape is not None
-
-    def debug(self, name: str, result: PhlowerTensor) -> None:
-        if self._debug_parameters.output_tensor_shape:
-            self._check_output_tensor_shape(name, result)
-
-        return
-
-    def _check_output_tensor_shape(
-        self, name: str, result: PhlowerTensor
-    ) -> None:
-        if len(self._debug_parameters.output_tensor_shape) != len(result.shape):
-            raise ValueError(
-                f"In {name}, result tensor shape "
-                f"{result.shape} is different from desired shape "
-                f"{self._debug_parameters.output_tensor_shape} "
-                "in yaml file"
-            )
-
-        output_tensor_shape = np.array(
-            self._debug_parameters.output_tensor_shape
-        )
-        positive_flag = output_tensor_shape > 0
-        output_tensor_shape = np.where(
-            positive_flag, output_tensor_shape, result.shape
-        )
-        if not all(output_tensor_shape == result.shape):
-            ind = np.where(output_tensor_shape != result.shape)[0][0]
-
-            raise ValueError(
-                f"In {name}, {ind}-th result tensor shape "
-                f"{result.shape} is different from desired shape "
-                f"{output_tensor_shape} in yaml file"
-            )
+    def finalize_debug(self) -> None:
+        for hook in self._finalize_hooks:
+            hook()
