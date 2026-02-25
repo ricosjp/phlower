@@ -10,6 +10,7 @@ from phlower.nn._core_modules._gcn import GCN
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._iso_gcn import IsoGCN
 from phlower.nn._core_modules._layer_norm import LayerNorm
+from phlower.nn._core_modules._layer_scaler import LayerScaler
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._nan_to_num import NaNToNum
 from phlower.nn._core_modules._pinv_mlp import PInvMLP
@@ -44,6 +45,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     Identity,
     IsoGCN,
     LayerNorm,
+    LayerScaler,
     MLP,
     NaNToNum,
     PInvMLP,

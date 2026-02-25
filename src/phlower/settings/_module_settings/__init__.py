@@ -26,6 +26,10 @@ from phlower.settings._module_settings._isogcn_setting import IsoGCNSetting
 from phlower.settings._module_settings._layer_norm_setting import (
     LayerNormSetting,
 )
+from phlower.settings._module_settings._layer_scaler_setting import (
+    LayerScalerSetting,
+    LayerScalingMethod,
+)
 from phlower.settings._module_settings._mlp_setting import MLPSetting
 from phlower.settings._module_settings._nan_to_num_setting import (
     NaNToNumSetting,
@@ -65,6 +69,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     IdentitySetting,
     IsoGCNSetting,
     LayerNormSetting,
+    LayerScalerSetting,
     MLPSetting,
     NaNToNumSetting,
     PInvMLPSetting,
