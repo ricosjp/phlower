@@ -155,28 +155,30 @@ class EvaluationRunner:
 
         model.eval()
 
-        for batch in data_loader:
-            batch = batch.to(
-                device=self._trainer_setting.get_device(rank),
-                non_blocking=self._trainer_setting.non_blocking,
-            )
-            helper = SlidingWindowHelper(
-                batch,
-                self._trainer_setting.time_series_sliding.validation_window_settings,
-            )
-            _loss_list, _loss_details = _evaluation_batch_step(
-                helper,
-                model,
-                loss_function,
-                self._handlers,
-            )
-            results.extend(_loss_list)
-            results_details.extend(_loss_details)
+        context_manager = self._determine_context_manager()
+        with context_manager():
+            for batch in data_loader:
+                batch = batch.to(
+                    device=self._trainer_setting.get_device(rank),
+                    non_blocking=self._trainer_setting.non_blocking,
+                )
+                helper = SlidingWindowHelper(
+                    batch,
+                    self._trainer_setting.time_series_sliding.validation_window_settings,
+                )
+                _loss_list, _loss_details = _evaluation_batch_step(
+                    helper,
+                    model,
+                    loss_function,
+                    self._handlers,
+                )
+                results.extend(_loss_list)
+                results_details.extend(_loss_details)
 
-            pbar.update(
-                trick=batch.n_data,
-                desc=f"{pbar_title}: {results[-1]:.3e}",
-            )
+                pbar.update(
+                    trick=batch.n_data,
+                    desc=f"{pbar_title}: {results[-1]:.3e}",
+                )
         return np.average(results), _aggregate_loss_details(results_details)
 
     def _determine_context_manager(

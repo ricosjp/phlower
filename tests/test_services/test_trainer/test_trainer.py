@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
+import torch
 import torch.multiprocessing as mp
 import yaml
 
@@ -419,6 +420,38 @@ def test__attach_hanlder(
                 name, mocked, allow_overwrite=allow_overwrite
             )
         assert str(ex.value) == f"Handler named {name} is already attached."
+
+
+def test__evaluate_using_context_manager(
+    prepare_sample_preprocessed_files: None,
+):
+    # This test reproduce the issue
+    # that context manager for evaluation is not properly set
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train.yml")
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    with mock.patch.object(
+        trainer._evaluation_runner, "_determine_context_manager"
+    ) as mocked:
+        mocked.side_effect = lambda: torch.inference_mode
+        _ = trainer.train(
+            train_directories=preprocessed_directories,
+            validation_directories=preprocessed_directories,
+            output_directory=output_directory,
+        )
+    assert mocked.call_count > 0
 
 
 # region Test for dumped details in training log
