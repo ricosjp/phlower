@@ -307,7 +307,7 @@ class InterpolatorPresetGroupModule(
             self.source_field_name_for_unbatch
         )
         unbatched_data = functionals.unbatch(data, n_nodes=n_nodes)
-        unbatched_field = self._unbatch_field(field_data)
+        unbatched_field = self._unbatch_dense_field(field_data)
 
         unbatched_collections = [
             self._interpolate_multihead(
@@ -330,7 +330,7 @@ class InterpolatorPresetGroupModule(
             return functionals.to_batch(tensors, dense_concat_dim=1)[0]
         return functionals.to_batch(tensors, dense_concat_dim=0)[0]
 
-    def _unbatch_field(
+    def _unbatch_dense_field(
         self, field_data: ISimulationField
     ) -> list[ISimulationField]:
         n_source_nodes = field_data.get_batched_n_nodes(
@@ -340,14 +340,19 @@ class InterpolatorPresetGroupModule(
             self.target_field_name_for_unbatch
         )
         if n_source_nodes == n_target_nodes:
-            return functionals.unbatch(field_data, n_nodes=n_source_nodes)
+            return functionals.unbatch(
+                phlower_tensor_collection(
+                    {k: v for k, v in field_data.items() if not v.is_sparse}
+                ),
+                n_nodes=n_source_nodes,
+            )
 
         unbatched_dict_source = functionals.unbatch(
             phlower_tensor_collection(
                 {
                     k: v
                     for k, v in field_data.items()
-                    if v.n_vertices() == sum(n_source_nodes)
+                    if not v.is_sparse and v.n_vertices() == sum(n_source_nodes)
                 }
             ),
             n_nodes=n_source_nodes,
@@ -357,7 +362,7 @@ class InterpolatorPresetGroupModule(
                 {
                     k: v
                     for k, v in field_data.items()
-                    if v.n_vertices() == sum(n_target_nodes)
+                    if not v.is_sparse and v.n_vertices() == sum(n_target_nodes)
                 }
             ),
             n_nodes=n_target_nodes,
