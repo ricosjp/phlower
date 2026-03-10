@@ -25,6 +25,79 @@ def test__can_call_parameters():
 
 
 @pytest.mark.parametrize(
+    "n_sources, n_targets",
+    [
+        ((10,), (10,)),
+        ((10, 10), (10, 10)),
+        ((10, 20), (10, 20)),
+        ((10,), (5,)),
+        ((10, 10), (5, 5)),
+        ((10, 20), (5, 10)),
+        ((10,), (20,)),
+        ((10, 10), (20, 20)),
+        ((10, 20), (20, 40)),
+    ],
+)
+def test__unbatch_dense_field(n_sources: tuple[int], n_targets: tuple[int]):
+    source_positions = [
+        phlower_tensor(torch.rand((n_source, 3, 1))) for n_source in n_sources
+    ]
+    target_positions = [
+        phlower_tensor(torch.rand((n_target, 3, 1))) for n_target in n_targets
+    ]
+
+    source_sparses = [
+        phlower_tensor((torch.rand((n_source, n_source)) > 0.8).to_sparse_coo())
+        for n_source in n_sources
+    ]
+    # raise ValueError(source_positions[0], source_sparses[0])
+    target_sparses = [
+        phlower_tensor((torch.rand((n_target, n_target)) > 0.8).to_sparse_coo())
+        for n_target in n_targets
+    ]
+
+    batched_source_position, source_position_batch_info = to_batch(
+        source_positions
+    )
+    batched_target_position, target_position_batch_info = to_batch(
+        target_positions
+    )
+    batched_source_sparse, source_sparse_batch_info = to_batch(source_sparses)
+    batched_target_sparse, target_sparse_batch_info = to_batch(target_sparses)
+
+    field = SimulationField(
+        phlower_tensor_collection(
+            {
+                "source_position": batched_source_position,
+                "source_sparse": batched_source_sparse,
+                "target_position": batched_target_position,
+                "target_sparse": batched_target_sparse,
+            }
+        ),
+        batch_info={
+            "source_position": source_position_batch_info,
+            "source_sparse": source_sparse_batch_info,
+            "target_position": target_position_batch_info,
+            "target_sparse": target_sparse_batch_info,
+        },
+    )
+
+    model = InterpolatorPresetGroupModule(
+        source_position_name="source_position",
+        target_position_name="target_position",
+    )
+    fields = model._unbatch_dense_field(field)
+
+    for i_field, field in enumerate(fields):
+        np.testing.assert_almost_equal(
+            field["source_position"].numpy(), source_positions[i_field].numpy()
+        )
+        np.testing.assert_almost_equal(
+            field["target_position"].numpy(), target_positions[i_field].numpy()
+        )
+
+
+@pytest.mark.parametrize(
     "position_dimension",
     [
         None,
@@ -550,7 +623,7 @@ def test__interpolator_input_to_output_map(unbatch: bool):
         {"s_in": position * 3, "t_in": torch.linalg.norm(position, dim=1)}
     )
     batch_info = GraphBatchInfo(
-        sizes=[position.size],
+        sizes=[position.size()],
         shapes=[position.shape],
         n_nodes=[position.n_vertices()],
         dense_concat_dim=0,
@@ -631,7 +704,7 @@ def test__interpolator_dimension(
         {"t": variable, "deformed_position": position + deformation}
     )
     batch_info = GraphBatchInfo(
-        sizes=[position.size],
+        sizes=[position.size()],
         shapes=[position.shape],
         n_nodes=[position.n_vertices()],
         dense_concat_dim=0,
@@ -709,7 +782,7 @@ def test__interpolator_grad(
         {"t": variable, "deformed_position": position + deformation}
     )
     batch_info = GraphBatchInfo(
-        sizes=[position.size],
+        sizes=[position.size()],
         shapes=[position.shape],
         n_nodes=[position.n_vertices()],
         dense_concat_dim=0,
@@ -778,7 +851,7 @@ def test__interpolator_conservation(
         {"t": variable, "deformed_position": position + deformation}
     )
     batch_info = GraphBatchInfo(
-        sizes=[position.size],
+        sizes=[position.size()],
         shapes=[position.shape],
         n_nodes=[position.n_vertices()],
         dense_concat_dim=0,
@@ -994,13 +1067,13 @@ def test__interpolation_correct(
         {"scalar": scalar, "vector": vector, "ts": ts}
     )
     batch_info_source = GraphBatchInfo(
-        sizes=[point_source.size],
+        sizes=[point_source.size()],
         shapes=[point_source.shape],
         n_nodes=[point_source.n_vertices()],
         dense_concat_dim=0,
     )
     batch_info_target = GraphBatchInfo(
-        sizes=[point_target.size],
+        sizes=[point_target.size()],
         shapes=[point_target.shape],
         n_nodes=[point_target.n_vertices()],
         dense_concat_dim=0,
