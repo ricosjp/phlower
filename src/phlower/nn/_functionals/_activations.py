@@ -80,6 +80,9 @@ class ActivationSelector:
         "smooth_leaky_relu": _SMOOTH_LEAKY_RELU,
         "sqrt": torch.sqrt,
         "tanh": torch.tanh,
+        "sin": torch.sin,
+        "cos": torch.cos,
+        "exp": torch.exp,
         "truncated_atanh": truncated_atanh,
     }
 

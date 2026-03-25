@@ -63,6 +63,9 @@ class ActivationType(StrEnum):
     sqrt = "sqrt"
     tanh = "tanh"
     truncated_atanh = "truncated_atanh"
+    sin = "sin"
+    cos = "cos"
+    exp = "exp"
 
 
 class PoolingType(StrEnum):
