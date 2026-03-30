@@ -6,6 +6,9 @@ from phlower.settings._module_settings._accessor_setting import AccessorSetting
 from phlower.settings._module_settings._concatenator_setting import (
     ConcatenatorSetting,
 )
+from phlower.settings._module_settings._conjugate_gradient_solver_setting import (  # noqa: E501
+    ConjugateGradientSolverSetting,
+)
 from phlower.settings._module_settings._contraction_setting import (
     ContractionSetting,
 )
@@ -59,12 +62,13 @@ from phlower.settings._module_settings._transolver_attention_setting import (
 _layer_settings: list[type[IPhlowerLayerParameters]] = [
     AccessorSetting,
     ConcatenatorSetting,
+    ConjugateGradientSolverSetting,
+    ContractionSetting,
     DeepSetsSetting,
     DirichletSetting,
-    ContractionSetting,
-    EnEquivariantTCNSetting,
-    EnEquivariantMLPSetting,
     EinsumSetting,
+    EnEquivariantMLPSetting,
+    EnEquivariantTCNSetting,
     GCNSetting,
     IdentitySetting,
     IsoGCNSetting,
@@ -73,14 +77,14 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     MLPSetting,
     NaNToNumSetting,
     PInvMLPSetting,
+    PoolingSetting,
     ProportionalSetting,
     RearrangeSetting,
     ReducerSetting,
+    SPMMSetting,
     ShareSetting,
     SimilarityEquivariantMLPSetting,
-    SPMMSetting,
     TCNSetting,
     TimeSeriesToFeaturesSetting,
     TransolverAttentionSetting,
-    PoolingSetting,
 ]

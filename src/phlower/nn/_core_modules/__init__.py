@@ -1,5 +1,8 @@
 from phlower.nn._core_modules._accessor import Accessor
 from phlower.nn._core_modules._concatenator import Concatenator
+from phlower.nn._core_modules._conjugate_gradient_solver import (
+    ConjugateGradientSolver,
+)
 from phlower.nn._core_modules._contraction import Contraction
 from phlower.nn._core_modules._deepsets import DeepSets
 from phlower.nn._core_modules._dirichlet import Dirichlet
@@ -36,6 +39,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     Accessor,
     Concatenator,
     Dirichlet,
+    ConjugateGradientSolver,
     Contraction,
     DeepSets,
     EnEquivariantMLP,

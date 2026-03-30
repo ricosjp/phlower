@@ -28,6 +28,7 @@ dependencies = [
     "pandas>=2.2.2",
     "einops>=0.8.0",
     "phlower_tensor>=0.1.0",
+    "vtk==9.6.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.11",
@@ -65,10 +66,12 @@ cpu = [
 cu118 = [
   "torch>=2.5.1",
   "torchvision>=0.20.1",
+  "cupy-cuda11x>=13.6.0",
 ]
 cu124 = [
   "torch>=2.5.1",
   "torchvision>=0.20.1",
+  "cupy-cuda12x>=14.0.1",
 ]
 
 

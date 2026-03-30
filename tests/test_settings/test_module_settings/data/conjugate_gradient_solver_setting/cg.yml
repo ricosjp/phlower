@@ -1,0 +1,50 @@
+misc:
+
+  tests:
+    CG: [12, 12]
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+  fields:
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 5
+
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+
+    modules:
+      - name: MLP0
+        nn_type: MLP
+        input_keys:
+          - feature0
+        destinations:
+          - CG
+        nn_parameters:
+          nodes: [-1, 12, 12]
+          activations: ["identity", "identity"]
+
+      - name: CG
+        nn_type: ConjugateGradientSolver
+        output_key: spmm1
+        destinations:
+          - MLP1
+        nn_parameters:
+          matrix_name: support1
+
+      - name: MLP1
+        nn_type: MLP
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
