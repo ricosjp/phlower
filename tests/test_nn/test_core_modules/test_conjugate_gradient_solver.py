@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 import pytest
@@ -184,6 +185,143 @@ def test__can_consider_dirichlet(
         np.ravel(solution[..., 1].numpy()) / np.max(ref_1),
         ref_1 / np.max(ref_1),
         decimal=4,
+    )
+
+
+@pytest.mark.gpu_test
+@pytest.mark.parametrize("preconditioner", ["diag"])
+def test__diag_works(preconditioner: str, auto_device: str):
+    rank = 1000
+    cond = 10.0
+    values = torch.linspace(1.0, cond, rank)
+    row = col = torch.arange(rank)
+    spmat = torch.sparse_coo_tensor(
+        indices=torch.stack([row, col]), values=values, size=(rank, rank)
+    ).coalesce()
+    field = SimulationField(
+        field_tensors=phlower_tensor_collection({"spmat": spmat})
+    )
+    b = torch.ones(rank, 1)
+
+    cg_wo_preconditioner = ConjugateGradientSolver(
+        matrix_name="spmat",
+        rtol=1e-5,
+        atol=0,
+        batch_solve=False,
+        preconditioner="none",
+        force_cpu=False,
+    )
+    start_wo_preconditioner = time.perf_counter()
+    cg_wo_preconditioner(
+        phlower_tensor_collection({"b": b}),
+        field_data=field,
+    )
+    end_wo_preconditioner = time.perf_counter()
+
+    cg_w_preconditioner = ConjugateGradientSolver(
+        matrix_name="spmat",
+        rtol=1e-5,
+        atol=0,
+        batch_solve=False,
+        preconditioner=preconditioner,
+        force_cpu=False,
+    )
+
+    start_w_preconditioner = time.perf_counter()
+    solution_w_preconditioner = cg_w_preconditioner(
+        phlower_tensor_collection({"b": b}),
+        field_data=field,
+    )
+    end_w_preconditioner = time.perf_counter()
+
+    np.testing.assert_almost_equal(
+        np.ravel(solution_w_preconditioner[..., 0].numpy()) / cond,
+        1 / values / cond,
+        decimal=2,
+    )
+
+    assert (
+        end_w_preconditioner - start_w_preconditioner
+        < end_wo_preconditioner - start_wo_preconditioner
+    )
+
+
+@pytest.mark.gpu_test
+@pytest.mark.parametrize("preconditioner", ["amg"])
+def test__amg_works(preconditioner: str, auto_device: str):
+    rank = 10000
+
+    b = phlower_tensor(torch.ones(rank, 2)).to(device=auto_device)
+    b[:, 1] = 0
+
+    dirichlet = torch.ones(rank, 2) * torch.nan
+    dirichlet[0, 0] = 0.0
+    dirichlet[-1, 0] = 0.0
+    dirichlet[0, 1] = -1.0
+    dirichlet[-1, 1] = 2.0
+
+    dirichlet = phlower_tensor(dirichlet.to(device=auto_device))
+
+    # Use negative Laplacian to solve L u + f = 0
+    spmat = -_generate_laplacian(rank).to(device=auto_device)
+
+    field = SimulationField(
+        field_tensors=phlower_tensor_collection({"spmat": spmat})
+    )
+
+    cg_wo_preconditioner = ConjugateGradientSolver(
+        matrix_name="spmat",
+        dirichlet_name="dirichlet",
+        rtol=1e-5,
+        atol=0,
+        batch_solve=False,
+        preconditioner="none",
+        force_cpu=False,
+        maxiter=10000,
+    )
+    start_wo_preconditioner = time.perf_counter()
+    cg_wo_preconditioner(
+        phlower_tensor_collection({"b": b, "dirichlet": dirichlet}),
+        field_data=field,
+    )
+    end_wo_preconditioner = time.perf_counter()
+
+    cg_w_preconditioner = ConjugateGradientSolver(
+        matrix_name="spmat",
+        dirichlet_name="dirichlet",
+        rtol=1e-5,
+        atol=0,
+        batch_solve=False,
+        preconditioner=preconditioner,
+        force_cpu=False,
+        maxiter=10000,
+    )
+
+    start_w_preconditioner = time.perf_counter()
+    solution_w_preconditioner = cg_w_preconditioner(
+        phlower_tensor_collection({"b": b, "dirichlet": dirichlet}),
+        field_data=field,
+    )
+    end_w_preconditioner = time.perf_counter()
+
+    x = np.arange(rank)
+    ref_0 = -0.5 * x * (x - (rank - 1))
+    ref_1 = np.linspace(-1.0, 2.0, rank)
+
+    np.testing.assert_almost_equal(
+        np.ravel(solution_w_preconditioner[..., 0].numpy()) / np.max(ref_0),
+        ref_0 / np.max(ref_0),
+        decimal=2,
+    )
+    np.testing.assert_almost_equal(
+        np.ravel(solution_w_preconditioner[..., 1].numpy()) / np.max(ref_1),
+        ref_1 / np.max(ref_1),
+        decimal=2,
+    )
+
+    assert (
+        end_w_preconditioner - start_w_preconditioner
+        < end_wo_preconditioner - start_wo_preconditioner
     )
 
 

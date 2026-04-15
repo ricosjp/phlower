@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import types
+from typing import Literal
 
 import numpy as np
+import pyamg
 import scipy.sparse as sp
 import torch
 from numpy.typing import NDArray
@@ -49,6 +51,9 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
         Maximum number of iterations.
     batch_solve: bool = True
         If True, solve multiple systems in a batched manner.
+    preconditioner: Literal["diag", "amg", "none"] = "diag"
+        Preconditioner for the CG method.
+        Note that AMG preconditioner run on CPU even with force_cpu = False.
     force_cpu: bool = False
         If True, force CPU computation even if the input is GPU.
     log_level: str = "warning"
@@ -99,6 +104,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
         atol: float = 0.0,
         maxiter: int | None = None,
         batch_solve: bool = True,
+        preconditioner: Literal["diag", "amg", "none"] = "diag",
         force_cpu: bool = False,
         log_level: str = "warning",
         **kwards,
@@ -112,6 +118,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
         self._atol = atol
         self._maxiter = maxiter
         self._batch_solve = batch_solve
+        self._preconditioner = preconditioner
         self._force_cpu = force_cpu
         self._log_level = log_level
 
@@ -160,7 +167,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
                 f"dirichlet_name {self._dirichlet_name} not found in "
                 f"{data.keys()}"
             )
-        if self._force_cpu:
+        if self._force_cpu or self._preconditioner == "amg":
             device = "cpu"
         else:
             device = None
@@ -171,6 +178,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
             data.pop(self._dirichlet_name, None), device=device
         )
 
+        original_device = data.unique_item().device
         b = data.unique_item().to(device=device)
         if b.is_time_series:
             raise NotImplementedError("Time series is not supported")
@@ -187,6 +195,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
             self._atol,
             self._maxiter,
             self._batch_solve,
+            self._preconditioner,
             self._log_level,
         )
 
@@ -195,7 +204,7 @@ class ConjugateGradientSolver(torch.nn.Module, IPhlowerCoreModule):
             ret = phlower_tensor(solution, dimension=ret_dim)
         else:
             ret = phlower_tensor(solution)
-        return ret.to(b.device)
+        return ret.to(original_device)
 
     def _apply_dirichlet(
         self, matrix: PhlowerTensor, b: PhlowerTensor, dirichlet: torch.Tensor
@@ -301,6 +310,7 @@ class SparseCGSolver(torch.autograd.Function):
         atol: float = 0.0,
         maxiter: int | None = None,
         batch_solve: bool = True,
+        preconditioner: str = "diag",
         log_level: str = "warning",
     ) -> torch.Tensor:
         if len(b.shape) == 1:
@@ -323,6 +333,7 @@ class SparseCGSolver(torch.autograd.Function):
             atol=atol,
             maxiter=maxiter,
             batch_solve=batch_solve,
+            preconditioner=preconditioner,
             log_level=log_level,
         )
         x = torch.from_dlpack(x_xp).to(b.dtype)
@@ -336,6 +347,7 @@ class SparseCGSolver(torch.autograd.Function):
         ctx.atol = atol
         ctx.maxiter = maxiter
         ctx.batch_solve = batch_solve
+        ctx.preconditioner = preconditioner
         ctx.log_level = log_level
 
         return x
@@ -362,6 +374,7 @@ class SparseCGSolver(torch.autograd.Function):
             atol=ctx.atol,
             maxiter=ctx.maxiter,
             batch_solve=ctx.batch_solve,
+            preconditioner=ctx.preconditioner,
             log_level=ctx.log_level,
         )
         grad_b = torch.from_dlpack(grad_b_array).to(x.dtype)
@@ -380,7 +393,7 @@ class SparseCGSolver(torch.autograd.Function):
         else:
             grad_spmat = None
 
-        return grad_spmat, grad_b, None, None, None, None, None, None
+        return grad_spmat, grad_b, None, None, None, None, None, None, None
 
 
 def _reshape_slice_if_needed(
@@ -403,56 +416,143 @@ def _solve_multiple(
     atol: float = 0.0,
     maxiter: int | None = None,
     batch_solve: bool = True,
+    preconditioner: str = "diag",
     log_level: str = "warning",
+    preconditioner_func: callable | None = None,
 ) -> np.ndarray | cp.ndarray:
     b_reshaped = xp.reshape(b_array, (spmat_array.shape[0], -1))
     x0_reshaped = _reshape_slice_if_needed(x0, (spmat_array.shape[0], -1))
+    n = spmat_array.shape[0]
+    n_feature = b_reshaped.shape[-1]
 
-    if batch_solve:
-        n = spmat_array.shape[0]
-        n_feature = b_reshaped.shape[-1]
-
-        def matvec(v: NDArray) -> NDArray:
-            return (spmat_array @ v.reshape(-1, n_feature)).reshape(-1)
-
-        op = xlin.LinearOperator((n * n_feature, n * n_feature), matvec=matvec)
-        x0_input = _reshape_slice_if_needed(x0_reshaped, (-1,))
-        x_xp, status = xlin.cg(
-            op,
-            b_reshaped.reshape(-1),
-            x0=x0_input,
-            rtol=rtol,
-            atol=atol,
-            maxiter=maxiter,
+    if preconditioner_func is None:
+        preconditioner_func = _create_preconditioner(
+            xp,
+            preconditioner=preconditioner,
+            spmat_array=spmat_array,
         )
-        x_xp = x_xp.reshape(b_array.shape)
-    else:
-        statuses = []
+
+    if not batch_solve:
         list_x_xp = []
-        for i in range(b_reshaped.shape[-1]):
+        for i in range(n_feature):
             x0_input = _reshape_slice_if_needed(
                 x0_reshaped, (-1,), last_slice=i
             )
-            _x, status = xlin.cg(
-                spmat_array,
-                b_reshaped[..., i].reshape(-1),
+            _x = _solve_multiple(
+                xp=xp,
+                xlin=xlin,
+                spmat_array=spmat_array,
+                b_array=b_reshaped[..., i],
                 x0=x0_input,
                 rtol=rtol,
                 atol=atol,
                 maxiter=maxiter,
+                batch_solve=True,
+                preconditioner=preconditioner,
+                log_level=log_level,
+                preconditioner_func=preconditioner_func,
             )
             list_x_xp.append(_x)
-            statuses.append(status)
         x_xp = xp.reshape(xp.stack(list_x_xp, axis=-1), b_array.shape)
-        status = np.sum(statuses)
+        return x_xp
+
+    op_preconditioner = xlin.LinearOperator(
+        shape=(n * n_feature, n * n_feature),
+        matvec=preconditioner_func,
+        dtype=spmat_array.dtype,
+    )
+
+    def matvec(v: NDArray) -> NDArray:
+        return (spmat_array @ v.reshape(-1, n_feature)).reshape(-1)
+
+    op = xlin.LinearOperator((n * n_feature, n * n_feature), matvec=matvec)
+    x0_input = _reshape_slice_if_needed(x0_reshaped, (-1,))
+    x_xp, status = xlin.cg(
+        op,
+        b_reshaped.reshape(-1),
+        x0=x0_input,
+        rtol=rtol,
+        atol=atol,
+        maxiter=maxiter,
+        M=op_preconditioner,
+    )
+    x_xp = x_xp.reshape(b_array.shape)
 
     if status != 0:
-        message = f"CG solver not converged: {status}"
+        residual = xp.sqrt(
+            xp.mean(
+                (
+                    (spmat_array @ x_xp.reshape(n, -1)).reshape(b_array.shape)
+                    - b_array
+                )
+                ** 2
+            )
+        )
+        message = (
+            f"CG solver not converged. iter: {status}, residual: {residual:.5e}"
+        )
         if log_level == "warning":
             _logger.warning(message)
         elif log_level == "info":
             _logger.info(message)
+        elif log_level == "debug":
+            _logger.debug(message)
         else:
             raise ValueError(f"Invalid log level: {log_level}")
 
     return x_xp
+
+
+def _create_preconditioner(
+    xp: types.ModuleType,
+    preconditioner: str,
+    spmat_array: sp.sparray | csp.sparray,
+) -> callable:
+    if preconditioner == "diag":
+        return _DiagPreconditioner(xp, spmat_array)
+    if preconditioner == "amg":
+        return _AMGPreconditioner(spmat_array)
+    if preconditioner == "none":
+        return _IdentityPreconditioner()
+    raise ValueError(f"Invalid preconditioner: {preconditioner}")
+
+
+class _DiagPreconditioner:
+    def __init__(
+        self, xp: types.ModuleType, spmat_array: sp.sparray | csp.sparray
+    ):
+        self._xp = xp
+        self._n = spmat_array.shape[0]
+        diag = spmat_array.diagonal()
+        self._diag_inv = xp.zeros_like(diag)
+        mask = xp.abs(diag) > 1e-12
+        self._diag_inv[mask] = 1.0 / diag[mask]
+        self._diag_inv[~mask] = 1.0
+
+    def __call__(self, r: NDArray) -> NDArray:
+        return self._xp.einsum(
+            "i,i...->i...", self._diag_inv, r.reshape(self._n, -1)
+        )
+
+
+class _AMGPreconditioner:
+    def __init__(self, spmat_array: sp.sparray | csp.sparray):
+        self._n = spmat_array.shape[0]
+        ml = pyamg.smoothed_aggregation_solver(
+            spmat_array.tocsr(),
+            strength="symmetric",
+        )
+        self._amg = ml.aspreconditioner(cycle="V")
+
+    def __call__(self, r: NDArray) -> NDArray:
+        reshaped_r = r.reshape(self._n, -1)
+        n_feature = reshaped_r.shape[-1]
+        z = np.concatenate(
+            [self._amg.matvec(reshaped_r[..., i]) for i in range(n_feature)]
+        )
+        return z
+
+
+class _IdentityPreconditioner:
+    def __call__(self, r: NDArray) -> NDArray:
+        return r
