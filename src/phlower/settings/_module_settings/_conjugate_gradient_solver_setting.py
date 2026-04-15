@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 import pydantic
 from pydantic import Field
@@ -21,6 +23,7 @@ class ConjugateGradientSolverSetting(
     atol: float = Field(0.0, frozen=True)
     maxiter: int | None = Field(None, frozen=True)
     batch_solve: bool = Field(True, frozen=True)
+    preconditioner: Literal["diag", "amg", "none"] = Field("diag", frozen=True)
     force_cpu: bool = Field(False, frozen=True)
     log_level: str = Field("warning", frozen=True)
 
