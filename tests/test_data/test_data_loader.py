@@ -1,4 +1,5 @@
 import pathlib
+import sys
 from collections.abc import Callable
 
 import pytest
@@ -11,7 +12,8 @@ from phlower.data import (
     LumpedTensorData,
 )
 from phlower.settings import (
-    ModelIOSetting,
+    ArrayDataIOSetting,
+    MeshDataIOSetting,
     PhlowerPredictorSetting,
     PhlowerTrainerSetting,
 )
@@ -73,11 +75,11 @@ def test__create_from_predictor_setting(setting: PhlowerPredictorSetting):
 
 def _to_modelIO_settings(
     names: list[tuple[str, int, dict]] | None,
-) -> list[ModelIOSetting] | None:
+) -> list[ArrayDataIOSetting] | None:
     if names is None:
         return None
     return [
-        ModelIOSetting(
+        ArrayDataIOSetting(
             name=v,
             physical_dimension=dims,
             members=[{"name": v, "n_last_dim": n_dim}],
@@ -86,10 +88,24 @@ def _to_modelIO_settings(
     ]
 
 
+def _to_meshIO_settings(
+    names: list[str] | None,
+) -> list[MeshDataIOSetting] | None:
+    if names is None:
+        return None
+    return [
+        MeshDataIOSetting(
+            name=v,
+            filename=f"{v}.vtk",
+        )
+        for v in names
+    ]
+
+
 @pytest.mark.parametrize("batch_size", [1, 2, 3])
 def test__consider_batch_size(
     batch_size: int,
-    create_tmp_dataset: None,
+    create_base_dataset: None,
     output_base_directory: pathlib.Path,
 ):
     directories = [
@@ -110,7 +126,7 @@ def test__consider_batch_size(
         non_blocking=False,
         random_seed=0,
         batch_size=batch_size,
-        num_workers=1,
+        num_workers=0,
     )
     dataloader = builder.create(dataset, drop_last=True)
 
@@ -144,13 +160,15 @@ def test__consider_batch_size(
         )
     ],
 )
+@pytest.mark.parametrize("device", ["cpu", "meta"])
 def test__consider_dimensions(
     x_variables: list,
     y_variables: list,
     fields: list,
     disable_dimensions: bool,
     desired: dict,
-    create_tmp_dataset: None,
+    device: str,
+    create_base_dataset: None,
     output_base_directory: pathlib.Path,
 ):
     directories = [
@@ -167,11 +185,11 @@ def test__consider_dimensions(
         non_blocking=False,
         random_seed=0,
         batch_size=1,
-        num_workers=1,
+        num_workers=0,
     )
     dataloader = builder.create(
         dataset,
-        device="cpu",
+        device=device,
         disable_dimensions=disable_dimensions,
     )
 
@@ -205,12 +223,14 @@ def test__consider_dimensions(
         )
     ],
 )
+@pytest.mark.parametrize("device", ["cpu", "meta"])
 def test__not_consider_dimensions(
     inputs: list,
     labels: list,
     fields: list,
     disable_dimensions: bool,
-    create_tmp_dataset: None,
+    device: str,
+    create_base_dataset: None,
     output_base_directory: pathlib.Path,
 ):
     directories = [
@@ -227,11 +247,11 @@ def test__not_consider_dimensions(
         non_blocking=False,
         random_seed=0,
         batch_size=1,
-        num_workers=1,
+        num_workers=0,
     )
     dataloader = builder.create(
         dataset,
-        device="cpu",
+        device=device,
         disable_dimensions=disable_dimensions,
     )
 
@@ -245,3 +265,155 @@ def test__not_consider_dimensions(
 
         for data_name in item.field_data.keys():
             assert not item.field_data[data_name].has_dimension
+
+
+# region test for dataset with mesh data
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="Not supported in Python versions below 3.12",
+)
+@pytest.mark.parametrize("device", ["cpu", "meta"])
+def test__load_dataset_with_mesh(
+    device: str,
+    create_dataset_with_mesh: None,
+    output_base_directory_w_mesh: pathlib.Path,
+):
+    directories = [
+        output_base_directory_w_mesh / v for v in ["data0", "data1", "data2"]
+    ]
+    dataset = LazyPhlowerDataset(
+        input_settings=_to_modelIO_settings(
+            [
+                ("x0", 1, {"L": 2, "T": -2}),
+                ("x1", 1, {"M": 2}),
+                ("x2", 1, {"I": 1}),
+            ]
+        ),
+        label_settings=_to_modelIO_settings([("y0", 1, {"N": -2})]),
+        directories=directories,
+        field_settings=_to_meshIO_settings(["mesh"]),
+    )
+
+    # num_workers must be 0 to pass coverage
+    builder = DataLoaderBuilder(
+        non_blocking=False,
+        random_seed=0,
+        batch_size=1,
+        num_workers=0,
+    )
+    dataloader = builder.create(dataset, device=device)
+
+    assert len(dataloader) > 0
+    for item in dataloader:
+        item: LumpedTensorData
+        mesh = item.field_data.get_mesh()
+        assert mesh is not None
+        assert mesh.n_points > 0
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="Not supported in Python versions below 3.12",
+)
+def test__raise_error_when_batch_size_larger_than_one_and_mesh_data_exists(
+    create_dataset_with_mesh: None,
+    output_base_directory_w_mesh: pathlib.Path,
+):
+    directories = [
+        output_base_directory_w_mesh / v for v in ["data0", "data1", "data2"]
+    ]
+    dataset = LazyPhlowerDataset(
+        input_settings=_to_modelIO_settings(
+            [
+                ("x0", 1, {"L": 2, "T": -2}),
+                ("x1", 1, {"M": 2}),
+                ("x2", 1, {"I": 1}),
+            ]
+        ),
+        label_settings=_to_modelIO_settings([("y0", 1, {"N": -2})]),
+        directories=directories,
+        field_settings=_to_meshIO_settings(["mesh"]),
+    )
+
+    builder = DataLoaderBuilder(
+        non_blocking=False,
+        random_seed=0,
+        batch_size=2,
+        num_workers=0,
+    )
+    dataloader = builder.create(dataset, device="cpu")
+
+    assert len(dataloader) > 0
+    with pytest.raises(
+        NotImplementedError,
+        match="Batch size must be 1 when field data contains mesh data",
+    ):
+        _ = dataloader.__iter__().__next__()
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="Not supported in Python versions below 3.12",
+)
+@pytest.mark.parametrize(
+    "inputs, labels, fields, disable_dimensions",
+    [
+        (
+            [
+                ("x0", 1, {"L": 2, "T": -2}),
+                ("x1", 1, {"M": 2}),
+                ("x2", 1, {"I": 1}),
+            ],
+            [("y0", 1, {"N": -2})],
+            [("s0", None, {"I": 1})],
+            True,
+        )
+    ],
+)
+@pytest.mark.parametrize("device", ["cpu", "meta"])
+def test__disable_dimensions_for_mesh_data(
+    inputs: list,
+    labels: list,
+    fields: list,
+    disable_dimensions: bool,
+    device: str,
+    create_dataset_with_mesh: None,
+    output_base_directory_w_mesh: pathlib.Path,
+):
+    directories = [
+        output_base_directory_w_mesh / v for v in ["data0", "data1", "data2"]
+    ]
+    dataset = LazyPhlowerDataset(
+        input_settings=_to_modelIO_settings(inputs),
+        label_settings=_to_modelIO_settings(labels),
+        directories=directories,
+        field_settings=_to_modelIO_settings(fields),
+    )
+
+    builder = DataLoaderBuilder(
+        non_blocking=False,
+        random_seed=0,
+        batch_size=1,
+        num_workers=0,
+    )
+    dataloader = builder.create(
+        dataset,
+        device=device,
+        disable_dimensions=disable_dimensions,
+    )
+
+    for item in dataloader:
+        item: LumpedTensorData
+        for data_name in item.x_data.keys():
+            assert not item.x_data[data_name].has_dimension
+
+        for data_name in item.y_data.keys():
+            assert not item.y_data[data_name].has_dimension
+
+        for data_name in item.field_data.keys():
+            assert not item.field_data[data_name].has_dimension
+
+
+# endregion

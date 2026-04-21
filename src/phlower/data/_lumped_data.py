@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import torch
 from phlower_tensor import GraphBatchInfo, IPhlowerArray
-from phlower_tensor._fields import SimulationField
+from phlower_tensor._fields import ISimulationField, SimulationField
 from phlower_tensor.collections import IPhlowerTensorCollections
 
 from phlower.io import PhlowerDirectory
+from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
 
 
 class LumpedArrayData:
@@ -13,7 +14,7 @@ class LumpedArrayData:
         self,
         x_data: dict[str, IPhlowerArray],
         y_data: dict[str, IPhlowerArray],
-        field_data: dict[str, IPhlowerArray],
+        field_data: dict[str, IPhlowerArray | PyVistaMeshAdapter],
         data_directory: PhlowerDirectory | None = None,
     ) -> None:
         self.x_data = x_data
@@ -26,7 +27,7 @@ class LumpedTensorData:
     def __init__(
         self,
         x_data: IPhlowerTensorCollections,
-        field_data: IPhlowerTensorCollections | SimulationField,
+        field_data: IPhlowerTensorCollections | ISimulationField,
         data_directories: list[PhlowerDirectory] | None = None,
         y_data: IPhlowerTensorCollections | None = None,
         x_batch_info: dict[str, GraphBatchInfo] | None = None,
@@ -40,12 +41,12 @@ class LumpedTensorData:
         self.x_batch_info = x_batch_info
         self.y_batch_info = y_batch_info
 
-        if isinstance(field_data, SimulationField):
-            self.field_data = field_data
-        else:
+        if isinstance(field_data, IPhlowerTensorCollections):
             self.field_data = SimulationField(
                 field_tensors=field_data, batch_info=field_batch_info
             )
+        else:
+            self.field_data = field_data
 
     def to(
         self, device: str | torch.device, non_blocking: bool = False

@@ -1,60 +1,37 @@
 import pathlib
+import sys
 
 import numpy as np
 import pytest
-import scipy.sparse as sp
 import yaml
-from phlower_tensor import IPhlowerArray, phlower_array
+from phlower_tensor import IPhlowerArray
 
 from phlower.data import OnMemoryPhlowerDataSet
-from phlower.settings import ModelIOSetting, PhlowerModelSetting
-from phlower.utils.typing import ArrayDataType
-
-
-@pytest.fixture
-def create_loaded_data() -> list[dict[str, ArrayDataType]]:
-    directory_names = ["data0", "data1", "data2"]
-    name2dense_shape: dict[str, tuple[int, ...]] = {
-        "x0": (1, 3, 4),
-        "x1": (10, 5),
-        "x2": (11, 3, 1),
-        "x3": (11, 3),
-        "y0": (1, 3, 4, 1),
-        "y1": (1, 3, 4),
-    }
-    name2sparse_shape: dict[str, tuple[int, ...]] = {
-        "s0": (5, 5),
-        "s1": (10, 5),
-    }
-
-    results: list[dict[str, ArrayDataType]] = []
-    for _ in directory_names:
-        dict_data = {}
-        for v_name, v_shape in name2dense_shape.items():
-            dict_data[v_name] = phlower_array(np.random.rand(*v_shape))
-
-        for v_name, v_shape in name2sparse_shape.items():
-            dict_data[v_name] = phlower_array(sp.random(*v_shape, density=0.1))
-
-        results.append(dict_data)
-    return results
+from phlower.io import PhlowerNumpyFile
+from phlower.settings import ArrayDataIOSetting, PhlowerModelSetting
+from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
 
 
 @pytest.mark.parametrize("yaml_file", ["sample1.yml", "sample2.yml"])
 def test__onmemory_dataset_array_shape(
     yaml_file: str,
-    create_loaded_data: list[dict[str, ArrayDataType]],
+    create_encrypted_dataset: bytes,
+    output_base_directory: pathlib.Path,
 ):
+    encrypt_key = create_encrypted_dataset
     yaml_path = pathlib.Path(__file__).parent / f"data/{yaml_file}"
     with open(yaml_path) as fr:
         content = yaml.safe_load(fr)
 
+    directories = list(output_base_directory.iterdir())
+
     setting = PhlowerModelSetting(**content["model"])
-    dataset = OnMemoryPhlowerDataSet(
-        loaded_data=create_loaded_data,
+    dataset = OnMemoryPhlowerDataSet.create(
         input_settings=setting.inputs,
         label_settings=setting.labels,
         field_settings=setting.fields,
+        directories=directories,
+        decrypt_key=encrypt_key,
     )
 
     desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
@@ -77,19 +54,23 @@ def test__onmemory_dataset_array_shape(
 @pytest.mark.parametrize("yaml_file", ["sample_with_no_labels.yml"])
 def test__on_memory_dataset_array_shape_when_no_ydata(
     yaml_file: str,
-    create_loaded_data: list[dict[str, ArrayDataType]],
+    create_encrypted_dataset: bytes,
+    output_base_directory: pathlib.Path,
 ):
+    encrypt_key = create_encrypted_dataset
     yaml_path = pathlib.Path(__file__).parent / f"data/{yaml_file}"
     with open(yaml_path) as fr:
         content = yaml.safe_load(fr)
 
+    directories = list(output_base_directory.iterdir())
     setting = PhlowerModelSetting(**content["model"])
-    dataset = OnMemoryPhlowerDataSet(
-        loaded_data=create_loaded_data,
+    dataset = OnMemoryPhlowerDataSet.create(
         input_settings=setting.inputs,
         label_settings=setting.labels,
         field_settings=setting.fields,
         allow_no_y_data=True,
+        directories=directories,
+        decrypt_key=encrypt_key,
     )
 
     desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
@@ -120,10 +101,12 @@ def test__get_members(
     index: int,
     data_type: str,
     expected: list[str],
-    create_loaded_data: list[dict[str, ArrayDataType]],
+    create_encrypted_dataset: bytes,
+    output_base_directory: pathlib.Path,
 ):
+    encrypt_key = create_encrypted_dataset
     input_settings = [
-        ModelIOSetting(
+        ArrayDataIOSetting(
             name="all_x",
             members=[
                 {"name": "x0"},
@@ -131,17 +114,21 @@ def test__get_members(
                 {"name": "x2"},
             ],
         ),
-        ModelIOSetting(name="x3", members=[{"name": "x3"}]),
+        ArrayDataIOSetting(name="x3", members=[{"name": "x3"}]),
     ]
     label_settings = [
-        ModelIOSetting(name="all_y", members=[{"name": "y0"}, {"name": "y1"}]),
-        ModelIOSetting(name="y1", members=[{"name": "y1"}]),
+        ArrayDataIOSetting(
+            name="all_y", members=[{"name": "y0"}, {"name": "y1"}]
+        ),
+        ArrayDataIOSetting(name="y1", members=[{"name": "y1"}]),
     ]
 
-    dataset = OnMemoryPhlowerDataSet(
-        loaded_data=create_loaded_data,
+    directories = list(output_base_directory.iterdir())
+    dataset = OnMemoryPhlowerDataSet.create(
         input_settings=input_settings,
         label_settings=label_settings,
+        decrypt_key=encrypt_key,
+        directories=directories,
     )
 
     members = dataset.get_members(index, data_type=data_type)
@@ -151,7 +138,54 @@ def test__get_members(
         assert name in members
         assert isinstance(members[name], IPhlowerArray)
 
-        expected_arr = create_loaded_data[index][name]
+        expected_arr = PhlowerNumpyFile(
+            directories[index] / f"{name}.npy.enc"
+        ).load(decrypt_key=encrypt_key)
         np.testing.assert_array_equal(
             members[name].to_numpy(), expected_arr.to_numpy()
         )
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="Requires Python 3.12 or higher for graphlow.",
+)
+@pytest.mark.parametrize("yaml_file", ["sample1_with_mesh.yml"])
+def test__onmemory_dataset_array_with_mesh(
+    yaml_file: str,
+    create_encrypted_dataset: bytes,
+    output_base_directory: pathlib.Path,
+):
+    encrypt_key = create_encrypted_dataset
+    yaml_path = pathlib.Path(__file__).parent / f"data/{yaml_file}"
+    with open(yaml_path) as fr:
+        content = yaml.safe_load(fr)
+
+    directories = list(output_base_directory.iterdir())
+
+    setting = PhlowerModelSetting(**content["model"])
+    dataset = OnMemoryPhlowerDataSet.create(
+        input_settings=setting.inputs,
+        label_settings=setting.labels,
+        field_settings=setting.fields,
+        directories=directories,
+        decrypt_key=encrypt_key,
+    )
+
+    desired_shapes: dict[str, dict[str, list[int]]] = content["misc"]["tests"][
+        "desired_shapes"
+    ]
+
+    for i in range(len(dataset)):
+        item = dataset[i]
+
+        for name, actual in item.x_data.items():
+            assert actual.shape == tuple(desired_shapes["inputs"][name])
+
+        for name, actual in item.y_data.items():
+            assert actual.shape == tuple(desired_shapes["labels"][name])
+
+        for _, actual in item.field_data.items():
+            assert isinstance(actual, PyVistaMeshAdapter)
+            for val_name in desired_shapes["fields"].keys():
+                assert val_name in actual.get_pvmesh().point_data

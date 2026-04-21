@@ -4,6 +4,7 @@ import shutil
 
 import numpy as np
 import pytest
+import pyvista as pv
 import scipy.sparse as sp
 
 from phlower.io import PhlowerDirectory
@@ -47,6 +48,13 @@ def prepare_sample_preprocessed_files_fixture() -> pathlib.Path:
         sp.save_npz(
             preprocessed_dir / "nodal_nadj", nodal_nadj.tocoo().astype(dtype)
         )
+
+        mesh = pv.ImageData(dimensions=(n_nodes, 1, 1), spacing=(1.0, 1.0, 1.0))
+        mesh.point_data["nodal_scalar_A"] = np.random.rand(n_nodes).astype(
+            dtype
+        )
+        mesh = mesh.cast_to_unstructured_grid()
+        mesh.save(preprocessed_dir / "mesh.vtu")
 
         (preprocessed_dir / "preprocessed").touch()
 

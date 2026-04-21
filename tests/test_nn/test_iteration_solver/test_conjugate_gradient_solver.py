@@ -66,11 +66,13 @@ class PoissonModel:
         mean = np.mean(tot)
         sp_d = (sp_d / mean).tocsr()
 
-        return torch.sparse_csr_tensor(
-            torch.from_numpy(sp_d.indptr),
-            torch.from_numpy(sp_d.indices),
-            torch.from_numpy(sp_d.data).to(torch.float32),
-            size=sp_d.shape,
+        return phlower_tensor(
+            torch.sparse_csr_tensor(
+                torch.from_numpy(sp_d.indptr),
+                torch.from_numpy(sp_d.indices),
+                torch.from_numpy(sp_d.data).to(torch.float32),
+                size=sp_d.shape,
+            ).to_sparse_coo()
         )
 
     def laplacian(

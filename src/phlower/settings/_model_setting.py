@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import itertools
+from enum import StrEnum
 from functools import cached_property
-from typing import Self
+from typing import Annotated, Self
 
 import pydantic
 from phlower_tensor import PhysicalDimensions
 from pipe import select, uniq
+from pydantic import Discriminator, Tag
 
 from phlower.settings._group_setting import GroupModuleSetting
 from phlower.utils._dimensions_class import PhysicalDimensionsClass
@@ -34,7 +36,7 @@ class _MemberSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
 
-class ModelIOSetting(pydantic.BaseModel):
+class ArrayDataIOSetting(pydantic.BaseModel):
     name: str
     """
     Name of this feature array
@@ -129,20 +131,79 @@ class ModelIOSetting(pydantic.BaseModel):
         return sum(v.n_last_dim for v in self.members)
 
 
+class MeshDataIOSetting(pydantic.BaseModel):
+    filename: str
+    """
+    Relative path to mesh data file.
+    The path is relative to the preprocessed directory
+    """
+
+    name: str = "mesh"
+    """
+    Name of this mesh data. If None is set, the name is automatically
+    set to be "mesh"
+    """
+
+    physical_dimension_collection: dict[str, PhysicalDimensionsClass | None] = (
+        pydantic.Field(default_factory=dict, frozen=True)
+    )
+    """
+    Physical dimensions for each variable in this mesh data. The key is the
+    variable name in mesh data, and the value is physical dimension.
+    If None is set, the physical dimension is not defined.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+
+class _IODiscriminatorTag(StrEnum):
+    ARRAYS = "ARRAYS"
+    MESH = "MESH"
+
+
+def _custom_io_discriminator(value: object) -> str:
+    if isinstance(value, dict):
+        relpath = value.get("filename", None)
+    else:
+        relpath = getattr(value, "filename", None)
+
+    if relpath is not None:
+        return _IODiscriminatorTag.MESH.value
+
+    else:
+        return _IODiscriminatorTag.ARRAYS.value
+
+
+ModelIOSettingType = Annotated[
+    Annotated[ArrayDataIOSetting, Tag(_IODiscriminatorTag.ARRAYS.name)]
+    | Annotated[
+        MeshDataIOSetting,
+        Tag(_IODiscriminatorTag.MESH.name),
+    ],
+    Discriminator(
+        _custom_io_discriminator,
+        custom_error_type="invalid_union_member",
+        custom_error_message="Invalid union member",
+        custom_error_context={"discriminator": "arrays or mesh"},
+    ),
+]
+
+
 class PhlowerModelSetting(pydantic.BaseModel):
-    inputs: list[ModelIOSetting]
+    inputs: list[ArrayDataIOSetting]
     """
     settings for input feature values
     """
 
-    labels: list[ModelIOSetting] = pydantic.Field(
+    labels: list[ArrayDataIOSetting] = pydantic.Field(
         default_factory=list, frozen=True
     )
     """
     settings for output feature value
     """
 
-    fields: list[ModelIOSetting] = pydantic.Field(
+    fields: list[ModelIOSettingType] = pydantic.Field(
         default_factory=list, frozen=True
     )
     """

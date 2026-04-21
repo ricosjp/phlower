@@ -4,7 +4,11 @@ from unittest import mock
 import numpy as np
 import pytest
 import torch
-from phlower_tensor import PhlowerTensor, SimulationField, phlower_tensor
+from phlower_tensor import (
+    PhlowerTensor,
+    SimulationField,
+    phlower_tensor,
+)
 from phlower_tensor.collections import phlower_tensor_collection
 
 from phlower.nn import IsoGCN
@@ -47,9 +51,10 @@ def generate_isoam_like_matrix(
     assert n_axis == len(key_names)
 
     for i in range(n_axis):
-        dict_data[key_names[i]] = phlower_tensor(
-            g_tilde[..., i], dtype=torch.float32
-        )
+        _sparse = torch.from_numpy(
+            g_tilde[..., i].astype(np.float32)
+        ).to_sparse_coo()
+        dict_data[key_names[i]] = _sparse
 
     return dict_data
 
@@ -482,15 +487,16 @@ def test__forbid_operation_for_tensor_with_a_hw(
         self_network_bias=bias,
     )
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(
+        ValueError,
+        match="Nonlinear operation is not allowed for rank > 0 tensor",
+    ):
         _ = isogcn.forward(
             phlower_tensor_collection(
                 {"h": phlower_tensor(h, dtype=torch.float32)}
             ),
             field_data=field,
         )
-
-        assert "Cannot apply nonlinear operator for rank > 0 tensor." in str(ex)
 
 
 @pytest.mark.parametrize(
@@ -533,15 +539,16 @@ def test__forbid_operation_for_tensor_with_ah_w(
         self_network_bias=bias,
     )
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(
+        ValueError,
+        match="Nonlinear operation is not allowed for rank > 0 tensor",
+    ):
         _ = isogcn.forward(
             phlower_tensor_collection(
                 {"h": phlower_tensor(h, dtype=torch.float32)}
             ),
             field_data=field,
         )
-
-        assert "Cannot apply nonlinear operator for rank > 0 tensor." in str(ex)
 
 
 # endregion
@@ -598,7 +605,9 @@ def test__can_forward_with_neumann_condition(n_nodes: int, n_feature: int):
 
 
 def test__forbid_forward_neumann_wihthout_self_network():
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(
+        ValueError, match="Use self_network when neumannn layer"
+    ):
         _ = IsoGCN(
             nodes=[10, 10],
             isoam_names=["isoam_x"],
@@ -608,7 +617,6 @@ def test__forbid_forward_neumann_wihthout_self_network():
             neumann_input_name="neumann",
             inversed_moment_name="inv",
         )
-        assert "Use self_network when neumannn layer" in str(ex)
 
 
 # NOTE: After integrating graphlow, write neumann boudary

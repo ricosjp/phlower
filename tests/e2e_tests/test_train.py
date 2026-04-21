@@ -104,3 +104,33 @@ def test__same_loss_value_when_traing_data_and_validation_data_is_same(
     validation_loss = df.loc[:, "validation_loss"].to_numpy()
 
     np.testing.assert_array_almost_equal(train_loss, validation_loss)
+
+
+@pytest.mark.e2e_test
+def test__training_with_graphlow_mesh_data(
+    prepare_sample_preprocessed_files_fixture: pathlib.Path,
+):
+    output_dir = prepare_sample_preprocessed_files_fixture
+    phlower_path = PhlowerDirectory(output_dir / "preprocessed")
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        "tests/e2e_tests/data/train_with_mesh_data.yml"
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = output_dir / "model_with_mesh"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    assert loss > 0
