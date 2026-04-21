@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.TransolverAttention
+==============================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: TransolverAttention
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~TransolverAttention.forward
+   
+   
+      ~TransolverAttention.from_setting
+   
+   
+   
+   
+   
+   
+      ~TransolverAttention.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TransolverAttention.T_destination
+      ~TransolverAttention.call_super_init
+      ~TransolverAttention.dump_patches
+      ~TransolverAttention.training
+   
+   
