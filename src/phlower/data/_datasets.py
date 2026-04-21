@@ -3,16 +3,22 @@ from __future__ import annotations
 import abc
 import pathlib
 from functools import reduce
-from typing import Literal
+from typing import Literal, overload
 
 import numpy as np
+import pyvista as pv
 from phlower_tensor import IPhlowerArray, phlower_array
 from torch.utils.data import Dataset
 
 from phlower.data._lumped_data import LumpedArrayData
 from phlower.io import PhlowerDirectory
-from phlower.settings import ModelIOSetting
-from phlower.settings._model_setting import _MemberSetting
+from phlower.settings import (
+    ArrayDataIOSetting,
+    MeshDataIOSetting,
+    ModelIOSettingType,
+)
+from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
+from phlower.utils.typing import ArrayDataType
 
 
 class IPhlowerDataset(metaclass=abc.ABCMeta):
@@ -27,36 +33,36 @@ class IPhlowerDataset(metaclass=abc.ABCMeta):
         ...
 
 
+# region OnMemoryPhlowerDataset
+
+
 class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
     @classmethod
     def create(
         cls,
-        input_settings: list[ModelIOSetting],
-        label_settings: list[ModelIOSetting],
+        input_settings: list[ArrayDataIOSetting],
+        label_settings: list[ArrayDataIOSetting],
         directories: list[pathlib.Path],
         *,
-        field_settings: list[ModelIOSetting] | None = None,
+        field_settings: list[ModelIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ) -> OnMemoryPhlowerDataSet:
         field_settings = field_settings or []
-        _members = [
-            _setting.members
-            for _setting in input_settings + label_settings + field_settings
-        ]
-        _members = reduce(lambda x, y: x + y, _members)
 
-        loaded_data = [
-            _load_ndarray_data(
+        _all_settings = input_settings + label_settings + field_settings
+        all_loaded_data = [
+            _load_data(
                 data_directory=PhlowerDirectory(directory),
-                members=_members,
+                settings=_all_settings,
                 allow_missing=True,
                 decrypt_key=decrypt_key,
+                skip_apply_setting=True,
             )
             for directory in directories
         ]
         return OnMemoryPhlowerDataSet(
-            loaded_data=loaded_data,
+            loaded_data=all_loaded_data,
             input_settings=input_settings,
             label_settings=label_settings,
             field_settings=field_settings,
@@ -66,11 +72,11 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
 
     def __init__(
         self,
-        loaded_data: list[dict[str, IPhlowerArray]],
-        input_settings: list[ModelIOSetting],
-        label_settings: list[ModelIOSetting] | None,
+        loaded_data: list[dict[str, IPhlowerArray | PyVistaMeshAdapter]],
+        input_settings: list[ArrayDataIOSetting],
+        label_settings: list[ArrayDataIOSetting] | None,
         *,
-        field_settings: list[ModelIOSetting] | None = None,
+        field_settings: list[ModelIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ):
@@ -120,7 +126,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
                 )
 
         return {
-            name: arr
+            name: phlower_array(arr)
             for name, arr in self._loaded_data[index].items()
             if any(setting.has_member(name) for setting in target_settings)
         }
@@ -128,22 +134,23 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
     def _setup_data(
         self,
         index: int,
-        variable_settings: list[ModelIOSetting],
+        variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
-    ) -> dict[str, IPhlowerArray]:
-        arrs = [
-            (
-                setting.name,
-                _apply_setting(
-                    self._loaded_data[index],
-                    setting,
-                    allow_missing=allow_missing,
-                ),
+    ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
+        _dict = {
+            setting.name: _apply_setting(
+                dict_arrs=self._loaded_data[index],
+                io_setting=setting,
+                allow_missing=allow_missing,
             )
             for setting in variable_settings
-        ]
+        }
+        return {name: v for name, v in _dict.items() if v is not None}
 
-        return {name: arr for name, arr in arrs if arr is not None}
+
+# endregion
+
+# region LazyPhlowerDataset
 
 
 class LazyPhlowerDataset(Dataset, IPhlowerDataset):
@@ -151,11 +158,11 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
 
     def __init__(
         self,
-        input_settings: list[ModelIOSetting],
-        label_settings: list[ModelIOSetting] | None,
+        input_settings: list[ArrayDataIOSetting],
+        label_settings: list[ArrayDataIOSetting] | None,
         directories: list[pathlib.Path],
         *,
-        field_settings: list[ModelIOSetting] | None = None,
+        field_settings: list[ModelIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ):
@@ -208,68 +215,116 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
                     "Must be 'input' or 'label'."
                 )
 
-        data_directory = self._directories[index]
-        dict_arrs = [
-            _load_ndarray_data(
-                data_directory=data_directory,
-                members=_setting.members,
+        arrays = [
+            _load_ndarray_array(
+                data_directory=self._directories[index],
+                io_setting=setting,
                 allow_missing=True,
                 decrypt_key=self._decrypt_key,
             )
-            for _setting in io_settings
+            for setting in io_settings
         ]
-
-        dict_arrs = reduce(lambda x, y: {**x, **y}, dict_arrs)
-        return {name: phlower_array(arr) for name, arr in dict_arrs.items()}
+        arrays = reduce(lambda x, y: x | y, arrays, {})
+        # NOTE: Just convert phlower_array without any information
+        return {name: phlower_array(arr) for name, arr in arrays.items()}
 
     def _setup_data(
         self,
         data_directory: PhlowerDirectory,
-        variable_settings: list[ModelIOSetting],
+        variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
-    ) -> dict[str, IPhlowerArray]:
-        arrs = [
-            (
-                setting.name,
-                _load_phlower_array(
+    ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
+
+        return _load_data(
+            data_directory=data_directory,
+            settings=variable_settings,
+            allow_missing=allow_missing,
+            decrypt_key=self._decrypt_key,
+        )
+
+
+# endregion
+
+# region utility functions for loading data
+
+
+@overload
+def _load_data(
+    data_directory: PhlowerDirectory,
+    settings: list[ArrayDataIOSetting],
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+    skip_apply_setting: Literal[False] | None = ...,
+) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]: ...
+
+
+@overload
+def _load_data(
+    data_directory: PhlowerDirectory,
+    settings: list[ArrayDataIOSetting],
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+    skip_apply_setting: Literal[True] = True,
+) -> dict[str, np.ndarray | pv.DataSet]: ...
+
+
+def _load_data(
+    data_directory: PhlowerDirectory,
+    settings: list[ModelIOSettingType],
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+    skip_apply_setting: bool = False,
+) -> (
+    dict[str, IPhlowerArray | PyVistaMeshAdapter]
+    | dict[str, np.ndarray | pv.DataSet]
+):
+
+    _results = {}
+    for setting in settings:
+        _out = None
+        match setting:
+            case ArrayDataIOSetting():
+                _out = _load_ndarray_array(
                     data_directory,
                     setting,
                     allow_missing=allow_missing,
-                    decrypt_key=self._decrypt_key,
-                ),
-            )
-            for setting in variable_settings
-        ]
+                    decrypt_key=decrypt_key,
+                )
+            case MeshDataIOSetting():
+                _out = _load_mesh_data(
+                    data_directory,
+                    setting,
+                    allow_missing=allow_missing,
+                    decrypt_key=decrypt_key,
+                )
+            case _:
+                raise ValueError(f"Unknown setting type: {type(setting)}")
 
-        return {name: arr for name, arr in arrs if arr is not None}
+        _results.update(_out)
+
+    if skip_apply_setting:
+        return _results
+
+    _collected = {
+        setting.name: _apply_setting(
+            _results, setting, allow_missing=allow_missing
+        )
+        for setting in settings
+    }
+    return {name: arr for name, arr in _collected.items() if arr is not None}
 
 
-def _load_phlower_array(
+def _load_ndarray_array(
     data_directory: PhlowerDirectory,
-    io_setting: ModelIOSetting,
-    allow_missing: bool,
-    decrypt_key: bytes | None = None,
-) -> IPhlowerArray | None:
-    dict_arrs = _load_ndarray_data(
-        data_directory=data_directory,
-        members=io_setting.members,
-        allow_missing=allow_missing,
-        decrypt_key=decrypt_key,
-    )
-    return _apply_setting(
-        dict_arrs, io_setting=io_setting, allow_missing=allow_missing
-    )
-
-
-def _load_ndarray_data(
-    data_directory: PhlowerDirectory,
-    members: list[_MemberSetting],
+    io_setting: ModelIOSettingType,
     allow_missing: bool,
     decrypt_key: bytes | None = None,
 ) -> dict[str, np.ndarray]:
-    name_to_arr: dict[str, np.ndarray] = {}
 
-    for member in members:
+    assert isinstance(io_setting, ArrayDataIOSetting)
+
+    name_to_arr: dict[str, np.ndarray] = {}
+    for member in io_setting.members:
         ph_path = data_directory.find_variable_file(
             variable_name=member.name, allow_missing=allow_missing
         )
@@ -282,17 +337,80 @@ def _load_ndarray_data(
     return name_to_arr
 
 
+def _load_mesh_data(
+    data_directory: PhlowerDirectory,
+    setting: MeshDataIOSetting,
+    allow_missing: bool,
+    decrypt_key: bytes | None = None,
+) -> dict[str, pv.DataSet]:
+
+    target_path = data_directory.path / setting.filename
+    if not target_path.exists():
+        if allow_missing:
+            return {}
+        raise ValueError(f"Mesh data file not found: {target_path}")
+
+    mesh = pv.read(target_path)
+    return {setting.name: mesh}
+
+
 def _apply_setting(
-    dict_arrs: dict[str, np.ndarray | IPhlowerArray],
-    io_setting: ModelIOSetting,
+    dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
+    io_setting: ModelIOSettingType,
     allow_missing: bool = False,
-) -> IPhlowerArray | None:
+) -> IPhlowerArray | PyVistaMeshAdapter | None:
+
+    match io_setting:
+        case ArrayDataIOSetting():
+            return _apply_setting_to_array(
+                dict_arrs, io_setting, allow_missing=allow_missing
+            )
+        case MeshDataIOSetting():
+            return _apply_setting_to_mesh(
+                dict_arrs, io_setting, allow_missing=allow_missing
+            )
+        case _:
+            raise ValueError(f"Unknown IO setting type: {type(io_setting)}")
+
+
+def _apply_setting_to_mesh(
+    dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
+    io_setting: MeshDataIOSetting,
+    allow_missing: bool = False,
+) -> PyVistaMeshAdapter | None:
+    if io_setting.name not in dict_arrs:
+        if allow_missing:
+            return None
+        raise ValueError(f"Mesh data for {io_setting.name} is missing.")
+
+    mesh = dict_arrs[io_setting.name]
+    if not isinstance(mesh, pv.DataSet):
+        raise ValueError(
+            f"Data for {io_setting.name} must be a PyVista DataSet."
+        )
+
+    return PyVistaMeshAdapter(
+        mesh, dimensions=io_setting.physical_dimension_collection
+    )
+
+
+def _apply_setting_to_array(
+    dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
+    io_setting: ModelIOSettingType,
+    allow_missing: bool = False,
+) -> IPhlowerArray | pv.UnstructuredGrid | None:
     member_arrs: list[np.ndarray] = []
     for member in io_setting.members:
         if member.name not in dict_arrs:
             continue
 
         _arr = dict_arrs[member.name]
+        if not isinstance(_arr, (ArrayDataType, IPhlowerArray)):
+            raise ValueError(
+                f"Data for {member.name} must be "
+                "either numpy array or PhlowerArray."
+            )
+
         if isinstance(_arr, IPhlowerArray):
             _arr = _arr.to_numpy()
 
@@ -332,3 +450,6 @@ def _apply_setting(
         return _array
 
     return _array.slice_along_time_axis(io_setting.time_slice_object)
+
+
+# endregion

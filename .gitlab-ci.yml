@@ -21,7 +21,7 @@ setup_cpu_env_py311:
   stage: setup
   before_script: []
   script:
-    - make install CUDA_TAG="cpu"
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.11"
     - tar -czf venv.tar.gz .venv
   tags:
     - no-gpu
@@ -45,8 +45,8 @@ setup_cpu_env_py312:
   dependencies: []
 
 
-setup_gpu_env_py311:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+setup_gpu_env_py312:
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
   stage: setup
   before_script: []
   script:
@@ -104,7 +104,7 @@ pytest_with_py311:
 
 
 e2e_test:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
   stage: test
   variables:
     NCCL_DEBUG: "INFO"
@@ -116,11 +116,11 @@ e2e_test:
     - GenuineIntel
     - sm_75
   needs:
-    - job: setup_gpu_env_py311
+    - job: setup_gpu_env_py312
       artifacts: true
 
 gpu_test:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
   stage: test
   variables:
     NCCL_DEBUG: "INFO"
@@ -131,11 +131,11 @@ gpu_test:
     - GenuineIntel
     - sm_75
   needs:
-    - job: setup_gpu_env_py311
+    - job: setup_gpu_env_py312
       artifacts: true
 
 examples:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cu124
+  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
   stage: test
   script:
     - uv run python3 -c "import torch; print(torch.cuda.get_arch_list())"
@@ -145,7 +145,7 @@ examples:
     - GenuineIntel
     - sm_75
   needs:
-    - job: setup_gpu_env_py311
+    - job: setup_gpu_env_py312
       artifacts: true
 
 pages_test:

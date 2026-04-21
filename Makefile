@@ -2,7 +2,8 @@ IN_PROJECT?=true
 VERSION=`uv version --short`
 IMAGE_VERSION = 0.4.0
 CUDA_TAG = cu124
-
+GRAPHLOW_TAG = --group graphlow
+PYTHON_VERSION = 3.12
 
 .PHONY: reset
 reset:
@@ -11,7 +12,12 @@ reset:
 
 .PHONY: install
 install:
-	uv sync --extra ${CUDA_TAG} --group dev --group docs
+	uv sync --refresh --reinstall --python ${PYTHON_VERSION} --extra ${CUDA_TAG} --group dev --group docs ${GRAPHLOW_TAG}
+
+
+.PHONY: sync
+sync:
+	uv sync --extra ${CUDA_TAG} --group dev --group docs ${GRAPHLOW_TAG}
 
 
 .PHONY: mypy
