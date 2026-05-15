@@ -134,6 +134,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             neumann_factor=setting.neumann_setting.factor,
             neumann_input_name=setting.neumann_setting.neumann_input_name,
             inversed_moment_name=setting.neumann_setting.inversed_moment_name,
+            inversed_moment_source=setting.neumann_setting.inversed_moment_source,
         )
 
     @classmethod
@@ -168,6 +169,9 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         neumann_factor: float = 1.0,
         neumann_input_name: str | None = None,
         inversed_moment_name: str = "",
+        inversed_moment_source: Literal[
+            "field_data", "input_data"
+        ] = "field_data",
     ) -> None:
         super().__init__()
 
@@ -203,6 +207,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         self._use_neumann = use_neumann
         self._neumann_factor = neumann_factor
         self._neumann_input_name = neumann_input_name
+        self._inversed_moment_source = inversed_moment_source
         if self._use_neumann:
             self._neumann_layer = self._create_neumann_layer()
         else:
@@ -244,12 +249,9 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             PhlowerTensor:
                 Tensor object
         """
-        assert len(data) <= 2, (
-            f"At most two inputs are allowed. input: {len(data)}"
-        )
-
         supports = [field_data[name] for name in self._isoam_names]
         neumann_value = data.pop(self._neumann_input_name, None)
+        inversed_moment = self._determine_inversed_moment(field_data, data)
         x = data.unique_item()
 
         h = self._forward_self_network(x, supports=supports)
@@ -258,7 +260,7 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             h = self._add_neumann(
                 h,
                 neumann_tensor=neumann_value,
-                inversed_moment=field_data[self._inversed_moment_name],
+                inversed_moment=inversed_moment,
             )
 
         if self._to_symmetric:
@@ -320,6 +322,23 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
             h = self._select_propagations(name)(h, supports)
         return h
 
+    def _determine_inversed_moment(
+        self, field_data: ISimulationField, data: IPhlowerTensorCollections
+    ) -> PhlowerTensor | None:
+        if self._use_neumann is False:
+            return None
+
+        if self._inversed_moment_source == "field_data":
+            return field_data[self._inversed_moment_name]
+
+        if self._inversed_moment_source == "input_data":
+            return data.pop(self._inversed_moment_name)
+
+        raise NotImplementedError(
+            f"inversed moment source {self._inversed_moment_source} "
+            "is not implemented."
+        )
+
     def _add_neumann(
         self,
         gradient: PhlowerTensor,
@@ -327,7 +346,8 @@ class IsoGCN(IPhlowerCoreModule, torch.nn.Module):
         inversed_moment: PhlowerTensor,
     ) -> PhlowerTensor:
         neumann_tensor = torch.nan_to_num(neumann_tensor, nan=0.0)
-        # NOTE: Shape of inversed_moment is Shape(N, 3, 3)
+        # NOTE: Shape of inversed_moment is Shape(N, 3, 3) or (N, 3, 3, 1)
+        inversed_moment = _functions.squeeze(inversed_moment, dim=-1)
         neumann = (
             _functions.einsum(
                 "ikl,il...f->ik...f",

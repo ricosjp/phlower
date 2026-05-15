@@ -1,5 +1,6 @@
 import pathlib
 from collections.abc import Callable
+from unittest import mock
 
 import hypothesis.strategies as st
 import pytest
@@ -109,20 +110,47 @@ def test__can_accept_valid_parameters_for_coefficient_network(
 
 
 @pytest.mark.parametrize(
-    "nodes, activations, dropouts",
+    "nodes, activations, dropouts, desired_msg",
     [
-        ([10, 20, 30], ["identity"], []),
-        ([10, 30], [], [0.3, 0.4]),
-        ([5, 10, 20, 5], ["relu", "relu", "tanh", "identity"], [0.3, 0.2, 0.1]),
-        ([5, -1, 20, 5], ["relu", "relu", "tanh"], [0.3, 0.2, 0.1]),
-        ([5, 10, 20, 5], ["relu", "relu", "tanh"], [0.3]),
-        ([10], [], []),
+        (
+            [10, 20, 30],
+            ["identity"],
+            [],
+            "Size of nodes and activations is not compatible",
+        ),
+        (
+            [10, 30],
+            [],
+            [0.3, 0.4],
+            "Size of nodes and dropouts is not compatible",
+        ),
+        (
+            [5, 10, 20, 5],
+            ["relu", "relu", "tanh", "identity"],
+            [0.3, 0.2, 0.1],
+            "Size of nodes and activations is not compatible",
+        ),
+        (
+            [5, -1, 20, 5],
+            ["relu", "relu", "tanh"],
+            [0.3, 0.2, 0.1],
+            "value -1 in 1-th of nodes is not allowed.",
+        ),
+        (
+            [5, 10, 20, 5],
+            ["relu", "relu", "tanh"],
+            [0.3],
+            "Size of nodes and dropouts is not compatible",
+        ),
     ],
 )
 def test__raise_error_invalid_parameters_for_coefficient_network(
-    nodes: list[int], activations: list[str], dropouts: list[float]
+    nodes: list[int],
+    activations: list[str],
+    dropouts: list[float],
+    desired_msg: str,
 ):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=desired_msg):
         _ = IsoGCNSetting(
             nodes=nodes,
             isoam_names=["dummy"],
@@ -145,16 +173,19 @@ def test__raise_error_when_use_neumannn_without_self_network():
 
 
 @pytest.mark.parametrize(
-    "inversed_moment_name, neumann_input_name",
-    [(None, None), ("aaa", None), (None, "aaa")],
+    "inversed_moment_name, neumann_input_name, desired_msg",
+    [
+        (None, None, "inversed_moment_name must be determined"),
+        ("aaa", None, "neumann_input_name must be determined"),
+        (None, "aaa", "inversed_moment_name must be determined"),
+    ],
 )
 def test__invalid_neumann_setting(
-    inversed_moment_name: str, neumann_input_name: str
+    inversed_moment_name: str, neumann_input_name: str, desired_msg: str
 ):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=desired_msg):
         _ = IsoGCNSetting(
             nodes=[10, 10],
-            self_network={"use_network": True},
             isoam_names=["dummy"],
             neumann_setting={
                 "factor": 0.2,
@@ -172,26 +203,87 @@ def test__invalid_neumann_setting(
 
 @pytest.mark.parametrize(
     "input_dims, desired",
-    [([30], 30), ([40], 40), ([100], 100), ([20, 20], 20)],
+    [
+        ({"x": 30}, 30),
+        ({"x": 40}, 40),
+        ({"x": 100}, 100),
+        ({"x": 20}, 20),
+    ],
 )
-def test__gather_input_dims(input_dims: list[int], desired: int):
+def test__gather_input_dims(input_dims: dict[str, int], desired: int):
     setting = IsoGCNSetting(
         nodes=[10, 20],
         isoam_names=["dummy"],
+        self_network={"use_network": True},
     )
 
-    assert setting.gather_input_dims(*input_dims) == desired
+    assert setting.gather_input_dims(input_dims) == desired
 
 
-@pytest.mark.parametrize("input_dims", [([]), ([40, 400, 10]), ([10, 0, 1])])
-def test__raise_error_invalid_input_dims(input_dims: list[int]):
+@pytest.mark.parametrize(
+    "input_dims, inversed_moment_source, desired",
+    [
+        ({"x": 30, "minv": 50, "neumann_input": 40}, "input_data", 30),
+        ({"neumann_input": 30, "minv": 50, "x": 100}, "input_data", 100),
+        ({"neumann_input": 50, "x": 40}, "field_data", 40),
+    ],
+)
+def test__gather_input_dims_with_neumann(
+    input_dims: dict[str, int], inversed_moment_source: str, desired: int
+):
     setting = IsoGCNSetting(
         nodes=[10, 20],
         isoam_names=["dummy"],
+        neumann_setting={
+            "use_neumann": True,
+            "inversed_moment_name": "minv",
+            "neumann_input_name": "neumann_input",
+            "inversed_moment_source": inversed_moment_source,
+        },
+        self_network={"use_network": True},
     )
 
-    with pytest.raises(ValueError):
-        _ = setting.gather_input_dims(*input_dims)
+    assert setting.gather_input_dims(input_dims) == desired
+
+
+@pytest.mark.parametrize(
+    "use_neumann, inversed_moment_source, input_dims ,desired_n_inputs",
+    [
+        (False, "input_data", {}, 1),
+        (True, "field_data", {"x": 10, "neumann_input": 3, "minv": 4}, 2),
+        (True, "field_data", {"x": 10}, 2),
+        (True, "input_data", {"x": 10, "neumann_input": 3}, 3),
+    ],
+)
+def test__raise_error_invalid_input_dims(
+    use_neumann: bool,
+    inversed_moment_source: str | None,
+    input_dims: list[int],
+    desired_n_inputs: int,
+):
+    setting = IsoGCNSetting(
+        nodes=[10, 20],
+        isoam_names=["dummy"],
+        neumann_setting={
+            "use_neumann": use_neumann,
+            "inversed_moment_source": inversed_moment_source,
+            "inversed_moment_name": "moment_input",
+            "neumann_input_name": "neumann_input",
+        },
+        self_network={
+            "use_network": True,
+            "activations": ["tanh"],
+            "dropouts": [0.2],
+            "bias": True,
+        },
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=f"{desired_n_inputs} inputs are necessary "
+        "in IsoGCN for this setting",
+    ):
+        _ = setting.gather_input_dims(input_dims)
 
 
 @st.composite
@@ -229,6 +321,62 @@ def test__reference_is_not_necessary():
     setting = IsoGCNSetting(nodes=[10, 20], isoam_names=["dummy"])
 
     assert not setting.need_reference
+
+
+def test__allow_use_inversed_moment_from_input_data():
+    setting = IsoGCNSetting(
+        nodes=[10, 20],
+        isoam_names=["dummy"],
+        self_network={"use_network": True},
+        neumann_setting={
+            "use_neumann": True,
+            "factor": 0.2,
+            "inversed_moment_source": "input_data",
+            "inversed_moment_name": "moment_input",
+            "neumann_input_name": "neumann_input",
+        },
+    )
+
+    assert setting.neumann_setting.inversed_moment_source == "input_data"
+
+    self_module = mock.MagicMock()
+    self_module.get_input_keys.return_value = [
+        "x",
+        "neumann_input",
+        "moment_input",
+    ]
+    setting.confirm(self_module)
+    n_gather_input_dims = setting.gather_input_dims(
+        {"neumann_input": 40, "moment_input": 50, "x": 30}
+    )
+    assert n_gather_input_dims == 30
+
+
+def test__raise_error_when_inversed_moment_name_is_not_found_in_input_keys():
+    setting = IsoGCNSetting(
+        nodes=[10, 20],
+        isoam_names=["dummy"],
+        self_network={"use_network": True},
+        neumann_setting={
+            "use_neumann": True,
+            "factor": 0.2,
+            "inversed_moment_source": "input_data",
+            "inversed_moment_name": "moment_input",
+            "neumann_input_name": "neumann_input",
+        },
+    )
+
+    self_module = mock.MagicMock()
+    self_module.get_input_keys.return_value = [
+        "x",
+        "neumann_input",
+        "neumann_invalid_moment",
+    ]
+
+    with pytest.raises(
+        ValueError, match="inversed_moment_name is not found in input_keys."
+    ):
+        setting.confirm(self_module)
 
 
 # endregion

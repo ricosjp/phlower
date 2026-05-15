@@ -45,6 +45,7 @@ class _NeumannSetting(pydantic.BaseModel):
     factor: float = 1.0
     inversed_moment_name: str | None = None
     neumann_input_name: str | None = None
+    inversed_moment_source: Literal["field_data", "input_data"] = "field_data"
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
@@ -68,7 +69,10 @@ class _NeumannSetting(pydantic.BaseModel):
             return self
 
         if self.neumann_input_name is None:
-            raise ValueError("Set neumann input name.")
+            raise ValueError(
+                "neumann_input_name must be determined "
+                "when using neumann IsoGCN."
+            )
 
         return self
 
@@ -100,23 +104,33 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     def get_nn_type(cls) -> str:
         return "IsoGCN"
 
-    def confirm(self, self_module: IModuleSetting) -> None:
-        input_keys = self_module.get_input_keys()
+    def _desired_n_input_tensors(self) -> int:
         if not self.neumann_setting.use_neumann:
-            if len(input_keys) != 1:
-                raise ValueError(
-                    "Only one input is allowed "
-                    "when neumann boundary is not considered. "
-                    f"{input_keys=}"
-                )
-            return
+            return 1
 
-        if len(input_keys) != 2:
+        if self.neumann_setting.inversed_moment_source == "field_data":
+            return 2
+
+        return 3
+
+    def confirm(self, self_module: IModuleSetting) -> None:
+        # NOTE: This is not necessary to check here,
+        # but it is better to check just in case
+        self._check_valid_input_keys(self_module.get_input_keys())
+        return
+
+    def _check_valid_input_keys(self, input_keys: set[int] | list[int]) -> None:
+        n_inputs = self._desired_n_input_tensors()
+        if len(input_keys) != n_inputs:
             raise ValueError(
-                "Two inputs are necessary "
-                "when neumann boundary is considered. "
-                f"{input_keys=}"
+                f"{n_inputs} inputs are necessary in IsoGCN for this setting, "
+                f"but {len(input_keys)} inputs are given. "
+                f"{input_keys=}",
+                f"neumann_setting={self.neumann_setting}",
             )
+
+        if not self.neumann_setting.use_neumann:
+            return
 
         if self.neumann_setting.neumann_input_name not in input_keys:
             raise ValueError(
@@ -125,24 +139,48 @@ class IsoGCNSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 f"{input_keys=}"
             )
 
+        if self.neumann_setting.inversed_moment_source == "input_data":
+            if self.neumann_setting.inversed_moment_name not in input_keys:
+                raise ValueError(
+                    f"inversed_moment_name is not found in input_keys."
+                    f"inversed_moment_name={self.neumann_setting.inversed_moment_name}"
+                    f"{input_keys=}"
+                )
+
         return
 
-    def gather_input_dims(self, *input_dims: int) -> int:
-        if (len(input_dims) == 0) or (len(input_dims) >= 3):
-            raise ValueError("one or two inputs are allowed in IsoGCN.")
-        return input_dims[0]
+    def gather_input_dims(self, input_dims: dict[str, int]) -> int:
+        input_keys = list(input_dims.keys())
+        self._check_valid_input_keys(input_keys)
 
-    def get_default_nodes(self, *input_dims: int) -> list[int]:
+        if not self.neumann_setting.use_neumann:
+            return next(iter(input_dims.values()))
+
+        keys = set(input_dims.keys())
+        keys.remove(self.neumann_setting.neumann_input_name)
+        match self.neumann_setting.inversed_moment_source:
+            case "input_data":
+                keys.remove(self.neumann_setting.inversed_moment_name)
+            case "field_data":
+                pass
+            case _:
+                raise NotImplementedError()
+
+        if len(keys) != 1:
+            raise ValueError("Failed to determine input dim. ")
+
+        return input_dims[keys.pop()]
+
+    def get_default_nodes(self, input_dims: dict[str, int]) -> list[int]:
         n_dim = self.gather_input_dims(*input_dims)
         return [n_dim, n_dim]
 
     @pydantic.field_validator("nodes")
     @classmethod
     def check_n_nodes(cls, vals: list[int] | None) -> list[int]:
-        if len(vals) < 2:
+        if not vals:
             raise ValueError(
-                "size of nodes must be larger than 1 in IsoGCNSettings."
-                f" input: {vals}"
+                "Size of nodes must be larger than 1 in IsoGCNSettings."
             )
 
         for i, v in enumerate(vals):

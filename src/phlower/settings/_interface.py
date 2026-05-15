@@ -48,8 +48,12 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def gather_input_dims(self, *input_dims: int) -> int:
+    def gather_input_dims(self, *input_dims: int | dict[str, int]) -> int:
         """Gather feature dimensions of input tensors
+
+        # HACK: We need to change this method to accept dict[str, int]
+        # instead of *input_dims: int
+        # See isogcn_setting.py
 
         Args:
             *input_dims (list[int]): feature dimensions of input tensors
@@ -60,8 +64,13 @@ class IPhlowerLayerParameters(metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def get_default_nodes(self, *input_dims: int) -> list[str]:
+    def get_default_nodes(self, *input_dims: int | dict[str, int]) -> list[str]:
         """Return desired nodes when nodes is None
+
+        # HACK: We need to change this method to accept dict[str, int]
+        # instead of *input_dims: int
+        # See isogcn_setting.py
+
         Returns:
             list[str]: default nodes
         """

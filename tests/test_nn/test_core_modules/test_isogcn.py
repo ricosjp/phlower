@@ -191,6 +191,43 @@ def forward_isogcn_with_no_weight(
                 "inversed_moment_name": "inv1",
             },
         ),
+        (
+            {
+                "nodes": [10, 30],
+                "isoam_names": ["isoam1"],
+                "propagations": ["contraction"],
+                "mul_order": "ah_w",
+                "to_symmetric": False,
+                "self_network": {
+                    "activations": ["tanh"],
+                    "dropouts": [0.1],
+                    "bias": False,
+                },
+                "neumann_setting": {
+                    "factor": 0.2,
+                    "neumann_input_name": "neumann_value",
+                    "inversed_moment_name": "inv1",
+                    "inversed_moment_source": "input_data",
+                },
+            },
+            {
+                "nodes": [10, 30],
+                "isoam_names": ["isoam1"],
+                "propagations": ["contraction"],
+                "mul_order": "ah_w",
+                "to_symmetric": False,
+                "use_self_network": True,
+                "self_network_activations": ["tanh"],
+                "self_network_dropouts": [0.1],
+                "self_network_bias": False,
+                "use_coefficient": False,
+                "use_neumann": True,
+                "neumann_factor": 0.2,
+                "neumann_input_name": "neumann_value",
+                "inversed_moment_name": "inv1",
+                "inversed_moment_source": "input_data",
+            },
+        ),
     ],
 )
 def test__passed_correctly_from_setting(
@@ -597,6 +634,52 @@ def test__can_forward_with_neumann_condition(n_nodes: int, n_feature: int):
             {
                 "h": phlower_tensor(h, dtype=torch.float32),
                 "neumann": phlower_tensor(neumann, dtype=torch.float32),
+            }
+        ),
+        field_data=field,
+    )
+    assert h_res.rank() == 1
+
+
+@pytest.mark.parametrize("n_nodes, n_feature", [(5, 2), (10, 3)])
+def test__can_forward_with_neumann_condition_using_input_data(
+    n_nodes: int, n_feature: int
+):
+    # common
+    propagations = ["convolution"]
+
+    # base coordination
+    location = np.random.rand(n_nodes, 3)
+    h = np.random.rand(n_nodes, n_feature)
+    neumann = np.random.rand(n_nodes, 3, n_feature)
+
+    support_names = ["isoam_x", "isoam_y", "isoam_z"]
+    inversed_moment_name = "inv"
+    dict_data = generate_isoam_like_matrix(location, support_names)
+    field = SimulationField(field_tensors=phlower_tensor_collection(dict_data))
+
+    isogcn = IsoGCN(
+        nodes=[n_feature, 10],
+        isoam_names=support_names,
+        propagations=propagations,
+        use_self_network=True,
+        self_network_activations=["identity"],
+        self_network_dropouts=[],
+        self_network_bias=False,
+        use_neumann=True,
+        neumann_input_name="neumann",
+        inversed_moment_name=inversed_moment_name,
+        inversed_moment_source="input_data",
+    )
+
+    h_res = isogcn.forward(
+        phlower_tensor_collection(
+            {
+                "h": phlower_tensor(h, dtype=torch.float32),
+                "neumann": phlower_tensor(neumann, dtype=torch.float32),
+                inversed_moment_name: phlower_tensor(
+                    np.random.rand(n_nodes, 3, 3, 1), dtype=torch.float32
+                ),
             }
         ),
         field_data=field,
