@@ -1,0 +1,105 @@
+﻿:orphan:
+
+phlower.settings.ModuleSetting
+==============================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: ModuleSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~ModuleSetting.get_destinations
+   
+   
+      ~ModuleSetting.get_input_keys
+   
+   
+      ~ModuleSetting.get_name
+   
+   
+      ~ModuleSetting.get_output_info
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~ModuleSetting.resolve
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ModuleSetting.model_computed_fields
+      ~ModuleSetting.model_config
+      ~ModuleSetting.model_extra
+      ~ModuleSetting.model_fields
+      ~ModuleSetting.model_fields_set
+      ~ModuleSetting.nn_type
+      ~ModuleSetting.name
+      ~ModuleSetting.input_keys
+      ~ModuleSetting.output_key
+      ~ModuleSetting.destinations
+      ~ModuleSetting.no_grad
+      ~ModuleSetting.nn_parameters_same_as
+      ~ModuleSetting.nn_parameters
+      ~ModuleSetting.coeff
+      ~ModuleSetting.debug_parameters
+   
+   
