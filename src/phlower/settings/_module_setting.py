@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import typing
 
 import pydantic
 from pydantic import Field
@@ -161,15 +162,31 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         for output in resolved_outputs:
             key2node.update(output)
 
-        first_node = self.nn_parameters.gather_input_dims(
-            *(key2node[key] for key in self.input_keys)
-        )
+        _hints = typing.get_type_hints(self.nn_parameters.gather_input_dims)
+        if _hints["input_dims"] == dict[str, int]:
+            first_node = self.nn_parameters.gather_input_dims(
+                {key: key2node[key] for key in self.input_keys}
+            )
+        else:
+            # HACK: for backward compatibility.
+            # We need to remove this branch
+            # after changing all gather_input_dims to accept dict[str, int]
+            first_node = self.nn_parameters.gather_input_dims(
+                *[key2node[key] for key in self.input_keys]
+            )
 
         nodes = self.nn_parameters.get_n_nodes()
         if nodes is None:
-            return self.nn_parameters.get_default_nodes(
-                *(key2node[key] for key in self.input_keys)
-            )
+            _hints = typing.get_type_hints(self.nn_parameters.get_default_nodes)
+            if _hints["input_dims"] == dict[str, int]:
+                return self.nn_parameters.get_default_nodes(
+                    {key: key2node[key] for key in self.input_keys}
+                )
+            else:
+                # HACK: for backward compatibility.
+                return self.nn_parameters.get_default_nodes(
+                    *[key2node[key] for key in self.input_keys]
+                )
 
         if (nodes[0] != -1) and (nodes[0] != first_node):
             raise PhlowerModuleNodeDimSizeError(
