@@ -24,13 +24,18 @@ class QuadraticProblem(IOptimizeProblem):
     f(x) = 1/2 x^T A x - b^T x
     """
 
-    def __init__(self) -> None:
+    def __init__(self, record_intermediate_tensor: bool = False) -> None:
         self._A = phlower_tensor(
             tensor=np.array([[3.0, 2.0], [2.0, 4.0]], dtype=np.float32)
         )
         self._b = phlower_tensor(
             tensor=np.array([[2.0], [5.0]], dtype=np.float32)
         )
+        self._recorded_intermediate_tensor = record_intermediate_tensor
+        self._recorded: list[PhlowerTensor] = []
+
+    def get_recorded(self) -> list[PhlowerTensor]:
+        return self._recorded
 
     def desired_solution(self) -> PhlowerTensor:
         return torch.linalg.inv(self._A) @ self._b
@@ -59,6 +64,9 @@ class QuadraticProblem(IOptimizeProblem):
     ) -> IPhlowerTensorCollections:
         x = value["x"]
         h = self._A @ x - self._b
+        if self._recorded_intermediate_tensor:
+            h.to_tensor().retain_grad()
+            self._recorded.append(h)
 
         return phlower_tensor_collection({"x": h})
 
@@ -219,3 +227,74 @@ def test__initialize_from_setting(
     assert solver._convergence_threshold == 0.01
     assert solver._max_iterations == 100
     assert solver._divergence_threshold == 100
+
+
+@pytest.mark.parametrize("bb_type", ["long", "short"])
+@pytest.mark.parametrize(
+    "array",
+    [
+        ([[5.0], [1.0]]),
+        ([[-4.1], [-1.0]]),
+        ([[3.1], [-10.0]]),
+        ([[-12.0], [110.0]]),
+    ],
+)
+def test__all_input_value_has_grad(bb_type: str, array: list[list[float]]):
+    solver = BarzilaiBorweinSolver(
+        max_iterations=10000,
+        convergence_threshold=0.00001,
+        divergence_threshold=100000,
+        update_keys=["x"],
+        bb_type=bb_type,
+    )
+
+    array = torch.tensor(array, requires_grad=True)
+    problem = QuadraticProblem(record_intermediate_tensor=True)
+    inputs = phlower_tensor_collection({"x": phlower_tensor(array)})
+    h = solver.run(inputs, problem)
+
+    actual = h.unique_item()
+
+    dummy_loss = torch.sum(actual)
+    dummy_loss.backward()
+
+    recorded = problem.get_recorded()
+    for tensor in recorded:
+        assert tensor.to_tensor().grad is not None
+
+
+@pytest.mark.parametrize("bb_type", ["long", "short"])
+@pytest.mark.parametrize(
+    "array",
+    [
+        ([[5.0], [1.0]]),
+        ([[-4.1], [-1.0]]),
+        ([[3.1], [-10.0]]),
+        ([[-12.0], [110.0]]),
+    ],
+)
+def test__grad_is_none_when_residual_is_diverged(
+    bb_type: str, array: list[list[float]]
+):
+    solver = BarzilaiBorweinSolver(
+        max_iterations=10000,
+        convergence_threshold=0.00001,
+        divergence_threshold=0.000001,
+        # Set very small divergence threshold to make sure the solver diverges
+        update_keys=["x"],
+        bb_type=bb_type,
+    )
+
+    array = torch.tensor(array, requires_grad=True)
+    problem = QuadraticProblem(record_intermediate_tensor=True)
+    inputs = phlower_tensor_collection({"x": phlower_tensor(array)})
+    h = solver.run(inputs, problem)
+
+    actual = h.unique_item()
+
+    dummy_loss = torch.sum(actual)
+    dummy_loss.backward()
+
+    recorded = problem.get_recorded()
+    last_tensor = recorded[-1]
+    assert last_tensor.to_tensor().grad is None

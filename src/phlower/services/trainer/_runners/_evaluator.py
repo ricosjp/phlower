@@ -12,6 +12,7 @@ from phlower.settings import (
     PhlowerTrainerSetting,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch
+from phlower.utils.calculation_state import CalculationState
 from phlower.utils.enums import (
     PhlowerHandlerTrigger,
 )
@@ -49,6 +50,9 @@ class EvaluationRunner:
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch,
     ) -> AfterEvaluationOutput:
+        # So far, state is only used for training when debugging
+        state = CalculationState(mode="validation")
+
         if not self._trainer_setting.evaluation_for_training:
             train_eval_loss = np.average(info.train_losses)
             train_loss_details = _aggregate_loss_details(
@@ -62,6 +66,7 @@ class EvaluationRunner:
                 loss_function=self._loss_calculator,
                 pbar=train_pbar,
                 pbar_title="batch train loss",
+                state=state,
             )
 
         if validation_loader is None:
@@ -75,6 +80,7 @@ class EvaluationRunner:
                 loss_function=self._loss_calculator,
                 pbar=validation_pbar,
                 pbar_title="batch val loss",
+                state=state,
             )
 
         return AfterEvaluationOutput(
@@ -149,6 +155,7 @@ class EvaluationRunner:
         loss_function: LossCalculator,
         pbar: PhlowerProgressBar,
         pbar_title: str,
+        state: CalculationState | None = None,
     ) -> tuple[float, dict[str, float] | None]:
         results: list[float] = []
         results_details: list[dict[str, np.ndarray]] = []
@@ -167,10 +174,7 @@ class EvaluationRunner:
                     self._trainer_setting.time_series_sliding.validation_window_settings,
                 )
                 _loss_list, _loss_details = _evaluation_batch_step(
-                    helper,
-                    model,
-                    loss_function,
-                    self._handlers,
+                    helper, model, loss_function, self._handlers, state=state
                 )
                 results.extend(_loss_list)
                 results_details.extend(_loss_details)
@@ -255,15 +259,18 @@ class EvaluationRunner:
 
 def _evaluation_batch_step(
     sliding_window_helper: SlidingWindowHelper,
-    model: torch.nn.Module,
+    model: PhlowerGroupModule,
     loss_calculator: LossCalculator,
     handlers: PhlowerHandlersRunner,
+    state: CalculationState | None = None,
 ) -> tuple[list[float], dict[str, float] | None]:
     results: list[float] = []
     results_details: list[dict[str, np.ndarray]] = []
 
     for _batch in sliding_window_helper:
-        h = model.forward(_batch.x_data, field_data=_batch.field_data)
+        h = model.forward(
+            _batch.x_data, field_data=_batch.field_data, state=state
+        )
         val_losses = loss_calculator.calculate(
             h,
             _batch.y_data,
