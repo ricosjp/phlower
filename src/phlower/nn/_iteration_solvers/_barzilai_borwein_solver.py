@@ -113,20 +113,6 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         for idx in range(self._max_iterations):
             self._n_iterated += 1
 
-            if idx != 0:
-                alphas = self._calculate_alphas(
-                    v_history.oldest,
-                    v_history.latest,
-                    gradients_history.oldest,
-                    gradients_history.latest,
-                )
-
-                # v_{i+1} = v_i - alpha_i * R(u_i)
-                v_next = v_history.latest - alphas * gradients_history.latest
-
-                # NOTE: update only considered variables
-                h_inputs.update(v_next, overwrite=True)
-
             gradient = problem.gradient(
                 h_inputs,
                 update_keys=self._keys,
@@ -137,13 +123,33 @@ class BarzilaiBorweinSolver(IFIterationSolver):
             gradients_history.append(gradient)
 
             criteria = gradient.apply(torch.linalg.norm)
-            if criteria < self._convergence_threshold:
-                self._is_converged = True
+
+            # If the criteria is larger than divergence threshold,
+            # it is considered as diverged and stop iteration
+            # without updating the solution.
+            if criteria > self._divergence_threshold:
+                _logger.warning(
+                    f"BB solver has diverged at iteration {idx}"
+                    f" with criteria value {criteria}. "
+                )
+                self._is_converged = False
                 break
 
-            if criteria > self._divergence_threshold:
-                _logger.warning("BB solver has diverged.")
-                self._is_converged = False
+            alphas = self._calculate_alphas(
+                v_history.oldest,
+                v_history.latest,
+                gradients_history.oldest,
+                gradients_history.latest,
+            )
+
+            # v_{i+1} = v_i - alpha_i * R(u_i)
+            v_next = v_history.latest - alphas * gradients_history.latest
+
+            # NOTE: update only considered variables
+            h_inputs.update(v_next, overwrite=True)
+
+            if criteria < self._convergence_threshold:
+                self._is_converged = True
                 break
 
         return h_inputs.mask(self._keys)

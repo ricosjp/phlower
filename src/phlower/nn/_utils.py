@@ -144,10 +144,12 @@ class _DumpEnRouteTensorHook(PhlowerForwardHook):
             *,
             state: CalculationState | None = None,
         ):
-            if state is None:
+            if state is None or state.mode != "training":
                 _logger.info(
-                    "Dumping en route tensor is skipped"
-                    " because calculation state is not provided."
+                    f"Dumping en route tensor for {unique_name} is skipped"
+                    " because calculation state is not provided "
+                    "or not in training mode."
+                    f"{state=}"
                 )
                 return
 
@@ -209,7 +211,22 @@ class _DumpEnRouteTensorHook(PhlowerForwardHook):
 
                 for k, v in ref_result.items():
                     output_path = output_directory / f"{k}_grad_output.npy"
-                    np.save(output_path, v._tensor.grad.numpy())
+                    _raw_tensor = v.to_tensor()
+                    if _raw_tensor.grad is None:
+                        _msg = (
+                            f"Grad tensor of {k} is None. "
+                            "This may be caused by non-differentiable operation"
+                            " or the tensor is not involved"
+                            " in loss calculation."
+                            " np.nan is saved for this tensor."
+                            f"{_raw_tensor.is_leaf=}, "
+                            f"{_raw_tensor.requires_grad=}, "
+                            f"{_raw_tensor.retains_grad=}. "
+                        )
+                        _logger.warning(_msg)
+                        np.save(output_path, np.nan)
+                    else:
+                        np.save(output_path, _raw_tensor.grad.numpy())
 
             return None
 
