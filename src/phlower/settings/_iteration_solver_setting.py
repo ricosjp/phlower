@@ -146,6 +146,13 @@ class BarzilaiBoweinSolverSetting(
     substracting values of target_keys.
     """
 
+    exit_before_update_when_diverged: bool = False
+    """
+    Whether to exit the iteration before updating variables when diverged.
+    If False, the solver will update variables even when diverged,
+    and then exit the iteration. Defaults to False.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
