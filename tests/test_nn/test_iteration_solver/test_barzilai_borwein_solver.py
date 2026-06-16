@@ -203,12 +203,14 @@ def test__not_hanlding_denominator_of_alpha(
         (None, ["a", "b"], [], []),
     ],
 )
+@pytest.mark.parametrize("exit_before_update_when_diverged", [True, False])
 def test__initialize_from_setting(
     bb_type: str,
     target_keys: list[str] | None,
     update_keys: list[str] | None,
     operator_keys: list[str] | None,
     expected_operator_keys: list[str],
+    exit_before_update_when_diverged: bool,
 ):
     setting = BarzilaiBoweinSolverSetting(
         convergence_threshold=0.01,
@@ -218,6 +220,7 @@ def test__initialize_from_setting(
         target_keys=target_keys or [],
         update_keys=update_keys or [],
         operator_keys=operator_keys or [],
+        exit_before_update_when_diverged=exit_before_update_when_diverged,
     )
 
     solver = BarzilaiBorweinSolver.from_setting(setting)
@@ -227,6 +230,10 @@ def test__initialize_from_setting(
     assert solver._convergence_threshold == 0.01
     assert solver._max_iterations == 100
     assert solver._divergence_threshold == 100
+    assert (
+        solver._exit_before_update_when_diverged
+        == exit_before_update_when_diverged
+    )
 
 
 @pytest.mark.parametrize("bb_type", ["long", "short"])
@@ -283,6 +290,44 @@ def test__grad_is_none_when_residual_is_diverged(
         # Set very small divergence threshold to make sure the solver diverges
         update_keys=["x"],
         bb_type=bb_type,
+    )
+
+    array = torch.tensor(array, requires_grad=True)
+    problem = QuadraticProblem(record_intermediate_tensor=True)
+    inputs = phlower_tensor_collection({"x": phlower_tensor(array)})
+    h = solver.run(inputs, problem)
+
+    actual = h.unique_item()
+
+    dummy_loss = torch.sum(actual)
+    dummy_loss.backward()
+
+    recorded = problem.get_recorded()
+    last_tensor = recorded[-1]
+    assert last_tensor.to_tensor().grad is not None
+
+
+@pytest.mark.parametrize("bb_type", ["long", "short"])
+@pytest.mark.parametrize(
+    "array",
+    [
+        ([[5.0], [1.0]]),
+        ([[-4.1], [-1.0]]),
+        ([[3.1], [-10.0]]),
+        ([[-12.0], [110.0]]),
+    ],
+)
+def test__grad_is_not_none_when_residual_is_diverged(
+    bb_type: str, array: list[list[float]]
+):
+    solver = BarzilaiBorweinSolver(
+        max_iterations=10000,
+        convergence_threshold=0.00001,
+        divergence_threshold=0.000001,
+        # Set very small divergence threshold to make sure the solver diverges
+        update_keys=["x"],
+        bb_type=bb_type,
+        exit_before_update_when_diverged=True,
     )
 
     array = torch.tensor(array, requires_grad=True)

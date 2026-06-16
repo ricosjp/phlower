@@ -72,6 +72,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         alpha_component_wise: bool = False,
         bb_type: Literal["long", "short"] = "long",
         operator_keys: list[str] | None = None,
+        exit_before_update_when_diverged: bool = False,
     ) -> None:
         self._max_iterations = max_iterations
         self._convergence_threshold = convergence_threshold
@@ -87,6 +88,9 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         # internal status
         self._n_iterated = 0
         self._is_converged = False
+        self._exit_before_update_when_diverged = (
+            exit_before_update_when_diverged
+        )
 
     def zero_residuals(self) -> None:
         self._n_iterated = 0
@@ -124,14 +128,13 @@ class BarzilaiBorweinSolver(IFIterationSolver):
 
             criteria = gradient.apply(torch.linalg.norm)
 
-            # If the criteria is larger than divergence threshold,
-            # it is considered as diverged and stop iteration
-            # without updating the solution.
-            if criteria > self._divergence_threshold:
-                _logger.warning(
-                    f"BB solver has diverged at iteration {idx}"
-                    f" with criteria value {criteria}. "
-                )
+            _is_diverged = criteria > self._divergence_threshold
+            _diverged_msg = (
+                f"BB solver has diverged at iteration {idx}"
+                f" with criteria value {criteria}. "
+            )
+            if _is_diverged and self._exit_before_update_when_diverged:
+                _logger.warning(_diverged_msg + "Exit before update.")
                 self._is_converged = False
                 break
 
@@ -147,6 +150,11 @@ class BarzilaiBorweinSolver(IFIterationSolver):
 
             # NOTE: update only considered variables
             h_inputs.update(v_next, overwrite=True)
+
+            if _is_diverged:
+                _logger.warning(_diverged_msg + "Exit after update.")
+                self._is_converged = False
+                break
 
             if criteria < self._convergence_threshold:
                 self._is_converged = True
