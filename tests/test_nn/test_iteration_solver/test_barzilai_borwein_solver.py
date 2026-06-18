@@ -227,9 +227,9 @@ def test__initialize_from_setting(
 
     assert solver._operator_keys == expected_operator_keys
     assert solver._keys == update_keys or target_keys
-    assert solver._convergence_threshold == 0.01
-    assert solver._max_iterations == 100
-    assert solver._divergence_threshold == 100
+    assert solver.convergence_threshold == 0.01
+    assert solver.max_iterations == 100
+    assert solver.divergence_threshold == 100
     assert (
         solver._exit_before_update_when_diverged
         == exit_before_update_when_diverged
@@ -343,3 +343,41 @@ def test__grad_is_not_none_when_residual_is_diverged(
     recorded = problem.get_recorded()
     last_tensor = recorded[-1]
     assert last_tensor.to_tensor().grad is None
+
+
+@pytest.mark.parametrize("bb_type", ["long", "short"])
+@pytest.mark.parametrize(
+    "max_iterations, is_converged",
+    [
+        (2, False),
+        (10000, True),
+        (3, False),
+    ],
+)
+def test__grad_is_none_when_skip_last_update(
+    bb_type: str, max_iterations: int, is_converged: bool
+):
+    array = [[5.0], [1.0]]
+    solver = BarzilaiBorweinSolver(
+        max_iterations=max_iterations,
+        convergence_threshold=0.00001,
+        divergence_threshold=100000,
+        update_keys=["x"],
+        bb_type=bb_type,
+        skip_last_update=True,
+    )
+
+    array = torch.tensor(array, requires_grad=True)
+    problem = QuadraticProblem(record_intermediate_tensor=True)
+    inputs = phlower_tensor_collection({"x": phlower_tensor(array)})
+    h = solver.run(inputs, problem)
+
+    actual = h.unique_item()
+
+    dummy_loss = torch.sum(actual)
+    dummy_loss.backward()
+
+    recorded = problem.get_recorded()
+    last_tensor = recorded[-1]
+    assert last_tensor.to_tensor().grad is None
+    assert solver.get_converged() is is_converged

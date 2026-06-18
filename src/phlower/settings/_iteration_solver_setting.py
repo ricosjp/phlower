@@ -4,6 +4,7 @@ import abc
 from typing import Annotated, Any, Literal, Self
 
 import pydantic
+from packaging.version import Version
 from pydantic import (
     PlainSerializer,
     PlainValidator,
@@ -12,7 +13,10 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
+from phlower.utils import get_logger
 from phlower.utils.enums import PhlowerIterationSolverType
+
+_logger = get_logger(__name__)
 
 
 class IPhlowerIterationSolverSetting(metaclass=abc.ABCMeta):
@@ -153,8 +157,36 @@ class BarzilaiBoweinSolverSetting(
     and then exit the iteration. Defaults to False.
     """
 
+    skip_last_update: bool = False
+    """
+    Whether to skip the last update when the iteration is converged.
+    This is just for backward compatibility with the old implementation,
+    and it is recommended to set this to False. Defaults to False.
+    """
+
     # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+    model_config = pydantic.ConfigDict(
+        extra="forbid", frozen=True, validate_default=True
+    )
+
+    @pydantic.field_validator("skip_last_update")
+    @classmethod
+    def check_skip_last_update(
+        cls, v: bool | None, info: ValidationInfo
+    ) -> bool:
+        context = info.context or {}
+        version = context.get("version")
+        if version is None:
+            return v
+
+        if Version(version) < Version("0.4.0.dev1"):
+            _logger.info(
+                "For backward compatibility, the value of skip_last_update "
+                "is set to True for version lower than 0.4.0.dev1. "
+            )
+            return True
+
+        return v
 
     @pydantic.model_validator(mode="before")
     def pass_target_keys_to_update_and_residual_keys(
@@ -291,8 +323,9 @@ def _validate(
             f"solver_type: {solver_type} is not implemented."
         )
 
-    setting_cls = _name_to_setting[solver_type]
-    return setting_cls(**vals)
+    setting_cls: pydantic.BaseModel = _name_to_setting[solver_type]
+    # NOTE: Need to pass other fields of info ?
+    return setting_cls.model_validate(vals, context=info.context)
 
 
 def _serialize(

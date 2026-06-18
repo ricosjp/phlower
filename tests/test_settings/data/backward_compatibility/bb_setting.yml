@@ -1,0 +1,133 @@
+data:
+  training: []
+  validation: []
+model:
+  fields:
+  - is_time_series: false
+    is_voxel: false
+    members:
+    - index_first_dim: null
+      n_last_dim: null
+      name: support1
+    name: support1
+    physical_dimension: null
+    time_slice: null
+  inputs:
+  - is_time_series: false
+    is_voxel: false
+    members:
+    - index_first_dim: null
+      n_last_dim: 10
+      name: feature0
+    name: feature0
+    physical_dimension:
+      I: 0.0
+      J: 0.0
+      L: 1
+      M: 0.0
+      N: 0.0
+      T: -1
+      Theta: 0.0
+    time_slice: null
+  - is_time_series: false
+    is_voxel: false
+    members:
+    - index_first_dim: null
+      n_last_dim: 12
+      name: feature0
+    name: feature1
+    physical_dimension:
+      I: 0.0
+      J: 0.0
+      L: 1
+      M: 0.0
+      N: 0.0
+      T: -1
+      Theta: 0.0
+    time_slice: null
+  labels: []
+  network:
+    destinations: []
+    inputs:
+    - n_last_dim: 10
+      name: feature0
+    - n_last_dim: 12
+      name: feature1
+    is_steady_problem: false
+    modules:
+    - coeff: 1.0
+      debug_parameters:
+        dump_backward_tensor: false
+        dump_forward_tensor: false
+        output_tensor_shape: null
+      destinations:
+      - GCN0
+      input_keys:
+      - feature0
+      name: MLP0
+      nn_parameters:
+        activations:
+        - Identity
+        - identity
+        bias: true
+        dropouts:
+        - 0.0
+        - 0.0
+        nodes:
+        - -1
+        - 20
+        - 100
+      nn_parameters_same_as: null
+      nn_type: MLP
+      no_grad: false
+      output_key: mlp0
+    - coeff: 1.0
+      debug_parameters:
+        dump_backward_tensor: false
+        dump_forward_tensor: false
+        output_tensor_shape: null
+      destinations: []
+      input_keys:
+      - mlp0
+      name: GCN0
+      nn_parameters:
+        activations:
+        - identity
+        bias: true
+        dropouts:
+        - 0.0
+        factor: 1.0
+        nodes:
+        - -1
+        - 5
+        repeat: 1
+        support_name: support1
+      nn_parameters_same_as: null
+      nn_type: GCN
+      no_grad: false
+      output_key: out_feature0
+    modules_same_as: null
+    name: CYCLE_MODEL
+    nn_type: GROUP
+    no_grad: false
+    outputs:
+    - n_last_dim: 5
+      name: out_feature0
+    solver_parameters:
+      alpha_component_wise: false
+      bb_type: short
+      convergence_threshold: 1.0e-05
+      divergence_threshold: 1000000000.0
+      max_iterations: 8
+      operator_keys:
+      - gu
+      - gp
+      update_keys:
+      - gu
+      - gp
+    solver_type: bb
+    time_series_length: 1
+prediction: null
+scaling: null
+training: null
+version: 0.4.0-dev0
