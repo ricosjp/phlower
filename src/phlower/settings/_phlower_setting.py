@@ -77,7 +77,10 @@ class PhlowerSetting(pydantic.BaseModel):
         """Read dictionary and parse to PhlowerSetting object."""
 
         try:
-            return PhlowerSetting(**data)
+            version = data.get("version", "0.0.0")
+            return PhlowerSetting.model_validate(
+                data, context={"version": version}
+            )
         except pydantic.ValidationError as ex:
             raise ValueError(
                 "Invalid contents are found in the input setting file. "

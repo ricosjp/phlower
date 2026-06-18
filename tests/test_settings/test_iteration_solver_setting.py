@@ -198,6 +198,37 @@ def test__raise_error_when_both_operator_and_target_keys_are_set():
         )
 
 
+@pytest.mark.parametrize(
+    "context, expected",
+    [
+        ({"version": "0.3.0"}, True),
+        ({"version": "0.4.0.dev0"}, True),
+        (
+            {"version": "0.4.0.dev1"},
+            False,
+        ),  # higher than 0.4.0.dev1, the default value is False
+        ({"version": "1.0.0"}, False),
+        ({}, False),
+    ],
+)
+def test__default_value_of_skip_last_update(
+    context: dict[str, str], expected: bool
+):
+    # This test is for checking the default value
+    # of skip_last_update for backward compatibility.
+    content = {
+        "update_keys": ["a", "b"],
+        "convergence_threshold": 0.1,
+        "max_iterations": 10,
+        "divergence_threshold": 50,
+    }
+    setting = BarzilaiBoweinSolverSetting.model_validate(
+        content, context=context
+    )
+
+    assert setting.skip_last_update is expected
+
+
 # endregion
 
 # region test for conjugate gradient setting

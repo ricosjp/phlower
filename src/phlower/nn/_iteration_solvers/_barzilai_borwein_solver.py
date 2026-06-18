@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, NamedTuple, TypeVar
 
 import torch
 from phlower_tensor import PhlowerTensor
@@ -54,6 +54,57 @@ class _FixedSizeMemory(Generic[T]):
         return self._values[0]
 
 
+class _IterationState(NamedTuple):
+    """
+    This class represents the state of iteration.
+    """
+
+    n_iterated: int
+    is_converged: bool
+    is_diverged: bool
+
+    def is_finished(self, max_iterations: int) -> bool:
+        if self.is_converged or self.is_diverged:
+            return True
+        if self.n_iterated >= max_iterations:
+            return True
+        return False
+
+    def get_diverged_message(self, criteria: float) -> str:
+        return (
+            f"BB solver has diverged at iteration {self.n_iterated}."
+            f" with criteria value {criteria}. "
+        )
+
+
+class _IterataionStateChecker:
+    def __init__(
+        self,
+        max_iterations: int,
+        convergence_threshold: float,
+        divergence_threshold: float,
+    ):
+        self._max_iterations = max_iterations
+        self._convergence_threshold = convergence_threshold
+        self._divergence_threshold = divergence_threshold
+
+    def examine(
+        self,
+        criteria: IPhlowerTensorCollections,
+        current_state: _IterationState,
+    ) -> _IterationState:
+
+        n_iterated = current_state.n_iterated + 1
+        is_diverged = criteria > self._divergence_threshold
+        is_converged = criteria < self._convergence_threshold
+
+        return _IterationState(
+            n_iterated=n_iterated,
+            is_converged=is_converged,
+            is_diverged=is_diverged,
+        )
+
+
 # Barzilai–Borwein Method
 class BarzilaiBorweinSolver(IFIterationSolver):
     @classmethod
@@ -73,10 +124,8 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         bb_type: Literal["long", "short"] = "long",
         operator_keys: list[str] | None = None,
         exit_before_update_when_diverged: bool = False,
+        skip_last_update: bool = False,
     ) -> None:
-        self._max_iterations = max_iterations
-        self._convergence_threshold = convergence_threshold
-        self._divergence_threshold = divergence_threshold
         self._keys = update_keys
 
         self._alpha_calculator = AlphaCalculator(
@@ -85,22 +134,46 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         )
 
         self._operator_keys = operator_keys
-        # internal status
-        self._n_iterated = 0
-        self._is_converged = False
         self._exit_before_update_when_diverged = (
             exit_before_update_when_diverged
         )
 
+        self._iteration_checker = _IterataionStateChecker(
+            max_iterations=max_iterations,
+            convergence_threshold=convergence_threshold,
+            divergence_threshold=divergence_threshold,
+        )
+        self._iterated_state = _IterationState(
+            n_iterated=0,
+            is_converged=False,
+            is_diverged=False,
+        )
+
+        # for backward compatibility
+        self._skip_last_update = skip_last_update
+
+    @property
+    def max_iterations(self) -> int:
+        return self._iteration_checker._max_iterations
+
+    @property
+    def convergence_threshold(self) -> float:
+        return self._iteration_checker._convergence_threshold
+
+    @property
+    def divergence_threshold(self) -> float:
+        return self._iteration_checker._divergence_threshold
+
     def zero_residuals(self) -> None:
-        self._n_iterated = 0
-        self._is_converged = False
+        self._iterated_state = _IterationState(
+            n_iterated=0, is_converged=False, is_diverged=False
+        )
 
     def get_n_iterated(self) -> int:
-        return self._n_iterated
+        return self._iterated_state.n_iterated
 
     def get_converged(self) -> bool:
-        return self._is_converged
+        return self._iterated_state.is_converged
 
     def run(
         self,
@@ -110,13 +183,11 @@ class BarzilaiBorweinSolver(IFIterationSolver):
         v_history = _FixedSizeMemory(max_length=2)
         gradients_history = _FixedSizeMemory(max_length=2)
 
-        assert self._max_iterations > 1
+        assert self.max_iterations > 1
         h_inputs = initial_values
         v_next = h_inputs.mask(self._keys)
 
-        for idx in range(self._max_iterations):
-            self._n_iterated += 1
-
+        for _ in range(self.max_iterations):
             gradient = problem.gradient(
                 h_inputs,
                 update_keys=self._keys,
@@ -128,39 +199,64 @@ class BarzilaiBorweinSolver(IFIterationSolver):
 
             criteria = gradient.apply(torch.linalg.norm)
 
-            _is_diverged = criteria > self._divergence_threshold
-            _diverged_msg = (
-                f"BB solver has diverged at iteration {idx}"
-                f" with criteria value {criteria}. "
+            self._iterated_state = self._iteration_checker.examine(
+                criteria=criteria, current_state=self._iterated_state
             )
-            if _is_diverged and self._exit_before_update_when_diverged:
-                _logger.warning(_diverged_msg + "Exit before update.")
-                self._is_converged = False
+
+            _finished = self._iterated_state.is_finished(self.max_iterations)
+
+            v_next = self._compute_v_next(
+                v_history=v_history,
+                gradients_history=gradients_history,
+            )
+
+            if _finished:
                 break
-
-            alphas = self._calculate_alphas(
-                v_history.oldest,
-                v_history.latest,
-                gradients_history.oldest,
-                gradients_history.latest,
-            )
-
-            # v_{i+1} = v_i - alpha_i * R(u_i)
-            v_next = v_history.latest - alphas * gradients_history.latest
 
             # NOTE: update only considered variables
             h_inputs.update(v_next, overwrite=True)
 
-            if _is_diverged:
-                _logger.warning(_diverged_msg + "Exit after update.")
-                self._is_converged = False
-                break
+        if self._iterated_state.is_diverged:
+            _diverged_msg = self._iterated_state.get_diverged_message(criteria)
+            _logger.warning(_diverged_msg)
 
-            if criteria < self._convergence_threshold:
-                self._is_converged = True
-                break
+        if self._skip_last_update:
+            _logger.info(
+                "Skip the last update for backward compatibility. "
+                "Set skip_last_update as False to avoid this message."
+            )
+            return h_inputs.mask(self._keys)
 
+        if (
+            self._iterated_state.is_diverged
+            and self._exit_before_update_when_diverged
+        ):
+            _logger.info(
+                "Exit before update."
+                "Set exit_before_update_when_diverged as False "
+                "to avoid this message."
+            )
+            return h_inputs.mask(self._keys)
+
+        # NOTE: update only considered variables
+        h_inputs.update(v_next, overwrite=True)
         return h_inputs.mask(self._keys)
+
+    def _compute_v_next(
+        self,
+        v_history: _FixedSizeMemory,
+        gradients_history: _FixedSizeMemory,
+    ) -> IPhlowerTensorCollections:
+        alphas = self._calculate_alphas(
+            v_history.oldest,
+            v_history.latest,
+            gradients_history.oldest,
+            gradients_history.latest,
+        )
+
+        # v_{i+1} = v_i - alpha_i * R(u_i)
+        v_next = v_history.latest - alphas * gradients_history.latest
+        return v_next
 
     def _calculate_alphas(
         self,
