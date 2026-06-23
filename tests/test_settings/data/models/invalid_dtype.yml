@@ -9,20 +9,19 @@ model:
 
   inputs:
     - name: feature0
-      batch_mode: axiswise
+      dtype: float32
       members:
         - name: feature0
           n_last_dim: 10
 
     - name: feature1
-      batch_mode: axiswise
+      dtype: invalid_dtype
       members:
         - name: feature1
           n_last_dim: 12
 
   fields:
     - name: support1
-      batch_mode: block_diagonal
       is_time_series: false
 
   network:

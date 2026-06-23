@@ -3,10 +3,12 @@ from __future__ import annotations
 import itertools
 from enum import StrEnum
 from functools import cached_property
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
+import numpy as np
 import pydantic
 from phlower_tensor import PhysicalDimensions
+from phlower_tensor.utils.enums import ConcatenateType
 from pipe import select, uniq
 from pydantic import Discriminator, Tag
 
@@ -67,8 +69,35 @@ class ArrayDataIOSetting(pydantic.BaseModel):
     slice object for time slicing
     """
 
+    batch_mode: ConcatenateType | None = None
+    """
+    batch mode for this feature array.
+    If None is set, the batch mode is automatically
+    determined by the value of `is_time_series` and `is_voxel`.
+
+    * `axiswise`: batch is concatenated in the node axis.
+    * `block_diagonal`: batch is concatenated in the block diagonal way.
+    * `index_shifting`: batch is concatenated by shifting
+    the index of the first axis.
+    """
+
+    dtype: str | None = "float32"
+    """
+    Data type of this feature array.
+    If None is set, the data type is determined
+    by the data loaded from file.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    @pydantic.field_serializer("batch_mode")
+    @classmethod
+    def serialize_batch_mode(cls, value: ConcatenateType | None) -> str | None:
+        if value is None:
+            return value
+
+        return value.value
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -105,6 +134,19 @@ class ArrayDataIOSetting(pydantic.BaseModel):
             )
 
         return self
+
+    @pydantic.model_validator(mode="after")
+    def check_dtype(self) -> Self:
+        if self.dtype is None:
+            return self
+
+        try:
+            _ = np.dtype(self.dtype)
+            return self
+        except Exception as ex:
+            raise ValueError(
+                f"{self.dtype} is not interpreted as a valid numpy dtype."
+            ) from ex
 
     @cached_property
     def _contain_none(self) -> bool:
@@ -153,6 +195,12 @@ class MeshDataIOSetting(pydantic.BaseModel):
     If None is set, the physical dimension is not defined.
     """
 
+    batch_mode: Literal[None] = None
+    """
+    batch mode for this mesh data.
+    This is set to None because currently only one mesh data is supported.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
@@ -175,7 +223,7 @@ def _custom_io_discriminator(value: object) -> str:
         return _IODiscriminatorTag.ARRAYS.value
 
 
-ModelIOSettingType = Annotated[
+FieldIOSettingType = Annotated[
     Annotated[ArrayDataIOSetting, Tag(_IODiscriminatorTag.ARRAYS.name)]
     | Annotated[
         MeshDataIOSetting,
@@ -203,7 +251,7 @@ class PhlowerModelSetting(pydantic.BaseModel):
     settings for output feature value
     """
 
-    fields: list[ModelIOSettingType] = pydantic.Field(
+    fields: list[FieldIOSettingType] = pydantic.Field(
         default_factory=list, frozen=True
     )
     """

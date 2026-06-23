@@ -277,3 +277,32 @@ def test__invalid_same_as_modules(file_name: str):
         match="modules and modules_same_as cannot be set simultaneously.",
     ):
         PhlowerModelSetting(**data["model"]).resolve()
+
+
+@pytest.mark.parametrize("file_name", ["invalid_dtype.yml"])
+def test__check_model_setting_with_valid_dtype(file_name: str):
+    data = parse_file(file_name)
+
+    with pytest.raises(
+        ValueError,
+        match="is not interpreted as a valid numpy dtype.",
+    ):
+        PhlowerModelSetting.model_validate(data["model"]).resolve()
+
+
+@pytest.mark.parametrize("file_name", ["simple_module.yml"])
+def test__batch_mode_is_serialized_as_str(file_name: str):
+    data = parse_file(file_name)
+
+    setting = PhlowerModelSetting.model_validate(data["model"])
+    setting.resolve()
+
+    dumped = setting.model_dump()
+    _check_as_str(dumped["inputs"][0]["batch_mode"], "axiswise")
+    _check_as_str(dumped["inputs"][1]["batch_mode"], "axiswise")
+    _check_as_str(dumped["fields"][0]["batch_mode"], "block_diagonal")
+
+
+def _check_as_str(target: object, expected: str):
+    assert isinstance(target, str)
+    assert target == expected

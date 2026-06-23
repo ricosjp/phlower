@@ -10,6 +10,8 @@ from phlower.utils._extended_simulation_field import (
     create_simulation_field,
 )
 
+from ._utils import BatchModeHolder
+
 
 class PhlowerCollateFn:
     def __init__(
@@ -17,10 +19,16 @@ class PhlowerCollateFn:
         device: str | torch.device,
         non_blocking: bool = False,
         disable_dimensions: bool = False,
+        batch_mode_holder: BatchModeHolder | None = None,
     ) -> None:
         self._device = device
         self._non_blocking = non_blocking
         self._disable_dimensions = disable_dimensions
+        self._batch_mode_holder = batch_mode_holder or BatchModeHolder(
+            inputs_batch_mode={},
+            labels_batch_mode={},
+            field_batch_mode={},
+        )
 
     def __call__(self, batch: list[LumpedArrayData]) -> LumpedTensorData:
         inputs = SequencedDictArray([v.x_data for v in batch])
@@ -31,12 +39,14 @@ class PhlowerCollateFn:
             device=self._device,
             non_blocking=self._non_blocking,
             disable_dimensions=self._disable_dimensions,
+            batch_mode_dict=self._batch_mode_holder.inputs_batch_mode,
         )
 
         outputs_tensors, outputs_batch_info = outputs.to_batched_tensor(
             device=self._device,
             non_blocking=self._non_blocking,
             disable_dimensions=self._disable_dimensions,
+            batch_mode_dict=self._batch_mode_holder.labels_batch_mode,
         )
 
         simulation_field, field_batch_info = _to_batch_field_helper(
@@ -44,6 +54,7 @@ class PhlowerCollateFn:
             device=self._device,
             non_blocking=self._non_blocking,
             disable_dimensions=self._disable_dimensions,
+            batch_mode_holder=self._batch_mode_holder,
         )
         data_directories = [b.data_directory for b in batch]
 
@@ -63,6 +74,7 @@ def _to_batch_field_helper(
     device: str | torch.device,
     non_blocking: bool,
     disable_dimensions: bool,
+    batch_mode_holder: BatchModeHolder,
 ) -> tuple[ISimulationField, GraphBatchInfo]:
     _contain_only_arrays = all(
         all(isinstance(v, IPhlowerArray) for v in d.field_data.values())
@@ -74,6 +86,7 @@ def _to_batch_field_helper(
             device=device,
             non_blocking=non_blocking,
             disable_dimensions=disable_dimensions,
+            batch_mode_dict=batch_mode_holder.field_batch_mode,
         )
         return (
             create_simulation_field(
@@ -105,6 +118,7 @@ def _to_batch_field_helper(
         device=device,
         non_blocking=non_blocking,
         disable_dimensions=disable_dimensions,
+        batch_mode_dict=batch_mode_holder.field_batch_mode,
     )
 
     return (

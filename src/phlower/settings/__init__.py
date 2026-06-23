@@ -6,8 +6,8 @@ from phlower.settings._group_setting import (
 )
 from phlower.settings._model_setting import (
     ArrayDataIOSetting,
+    FieldIOSettingType,
     MeshDataIOSetting,
-    ModelIOSettingType,
     PhlowerModelSetting,
 )
 from phlower.settings._phlower_setting import (

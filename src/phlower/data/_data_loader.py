@@ -59,6 +59,7 @@ class DataLoaderBuilder:
             device=device,
             non_blocking=self._non_blocking,
             disable_dimensions=disable_dimensions,
+            batch_mode_holder=dataset.get_batch_mode_holder(),
         )
 
         random_generator = torch.Generator()
