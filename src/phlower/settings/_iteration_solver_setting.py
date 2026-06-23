@@ -283,6 +283,12 @@ class ConjugateGradientSolverSetting(
     already considered in the operator.
     """
 
+    exact_backward_flag: bool = pydantic.Field(default=True)
+    """
+    If True, the backward operation is strictly reversing of the CG method.
+    If False, the backward operation is memory-saving approximated approach.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 

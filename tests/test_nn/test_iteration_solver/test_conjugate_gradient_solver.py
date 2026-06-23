@@ -20,6 +20,35 @@ from phlower.settings._iteration_solver_setting import (
 )
 
 
+class IdentityModel:
+    def __init__(self, n_mat: int, coef: torch.Tensor, keys: str = "x"):
+        self.n_mat = n_mat
+        self.keys = keys
+
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+        sp_array = sp.eye(n_mat, dtype=np.float32).tocoo()
+        indices = torch.stack(
+            [torch.from_numpy(sp_array.row), torch.from_numpy(sp_array.col)],
+            dim=0,
+        )
+        values = torch.from_numpy(sp_array.data.astype(np.float32))
+        values_for_torch = values.clone().requires_grad_(True) + coef
+        sparse_for_torch = torch.sparse_coo_tensor(
+            indices=indices, values=values_for_torch, size=sp_array.shape
+        ).to(self.get_device())
+
+        self.sp_d = phlower_tensor(sparse_for_torch)
+
+    def dot(self, x: IPhlowerTensorCollections) -> IPhlowerTensorCollections:
+        return phlower_tensor_collection(
+            {k: spmm(self.sp_d, x[k]) for k in self.keys}
+        )
+
+    def get_device(self) -> str:
+        return self.device
+
+
 class PoissonModel:
     DISTANCE_FACTOR = 2.1
 
@@ -228,3 +257,277 @@ def test__raises_value_error_when_dirichlet_keys_incomplete():
             dict_variable_to_right={"x": "b", "y": "c"},
             dict_variable_to_dirichlet={"z": "x_bnd"},
         )
+
+
+@pytest.mark.parametrize("n_x", [5, 10])
+@pytest.mark.parametrize("x_length", [0.1, 1.0])
+def test__check_gradient_value(n_x: int, x_length: float):
+    solver = ConjugateGradientSolver(
+        max_iterations=n_x * 10,
+        convergence_threshold=1.0e-8,
+        divergence_threshold=1.0e5,
+        update_keys=["x"],
+        operator_keys=["x"],
+        dict_variable_to_right={"x": "b"},
+        dict_variable_to_dirichlet={"x": "x_bnd"},
+    )
+    low_memory_solver = ConjugateGradientSolver(
+        max_iterations=n_x * 10,
+        convergence_threshold=1.0e-8,
+        divergence_threshold=1.0e5,
+        update_keys=["x"],
+        operator_keys=["x"],
+        dict_variable_to_right={"x": "b"},
+        dict_variable_to_dirichlet={"x": "x_bnd"},
+        exact_backward_flag=False,
+    )
+
+    coef1 = torch.tensor(
+        [
+            0.3,
+        ],
+        requires_grad=True,
+    )
+    low_memory_coef1 = torch.tensor(
+        [
+            0.3,
+        ],
+        requires_grad=True,
+    )
+    poisson_model = PoissonModel(n_x, x_length=x_length)
+    indices = poisson_model.sp_d._tensor.indices()
+    shape = poisson_model.sp_d._tensor.shape
+
+    new_values = poisson_model.sp_d._tensor.values() + coef1
+    new_tensor = torch.sparse_coo_tensor(indices, new_values, shape)
+    poisson_model.sp_d._tensor = new_tensor
+
+    low_memory_poisson_model = PoissonModel(n_x, x_length=x_length)
+    low_memory_new_values = (
+        low_memory_poisson_model.sp_d._tensor.values() + low_memory_coef1
+    )
+    low_memory_new_tensor = torch.sparse_coo_tensor(
+        indices, low_memory_new_values, shape
+    )
+    low_memory_poisson_model.sp_d._tensor = low_memory_new_tensor
+
+    n = poisson_model.n
+    x_bnd = torch.ones(n, 1) * torch.nan
+    x_bnd[poisson_model.filter_left] = 0.0
+    x_bnd[poisson_model.filter_right] = 0.0
+    b = torch.ones(n, 1) * poisson_model.dx**2 / 2
+
+    coef2 = torch.tensor(
+        [
+            0.1,
+        ],
+        requires_grad=True,
+    )
+    low_memory_coef2 = torch.tensor(
+        [
+            0.1,
+        ],
+        requires_grad=True,
+    )
+
+    inputs = phlower_tensor_collection(
+        {
+            "x": phlower_tensor(torch.zeros(n, 1)),
+            "b": phlower_tensor(b + coef2),
+            "x_bnd": phlower_tensor(x_bnd),
+            "pos": phlower_tensor(poisson_model.pos),
+        }
+    )
+
+    low_memory_inputs = phlower_tensor_collection(
+        {
+            "x": phlower_tensor(torch.zeros(n, 1)),
+            "b": phlower_tensor(b + low_memory_coef2),
+            "x_bnd": phlower_tensor(x_bnd),
+            "pos": phlower_tensor(poisson_model.pos),
+        }
+    )
+
+    problem = _GroupOptimizeProblem(
+        initials=inputs,
+        step_forward=poisson_model.laplacian,
+        steady_mode=True,
+    )
+    low_memory_problem = _GroupOptimizeProblem(
+        initials=low_memory_inputs,
+        step_forward=low_memory_poisson_model.laplacian,
+        steady_mode=True,
+    )
+    h = solver.run(inputs, problem)
+    low_memory_h = low_memory_solver.run(low_memory_inputs, low_memory_problem)
+
+    x = poisson_model.x[:, None]
+    desired = -x * (x - x_length)
+    scale = np.max(desired)
+
+    diff = (
+        h.unique_item() / scale - torch.from_numpy(np.asarray(desired)) / scale
+    )
+    low_memory_diff = (
+        low_memory_h.unique_item() / scale
+        - torch.from_numpy(np.asarray(desired)) / scale
+    )
+
+    loss = torch.linalg.norm(diff)
+    low_memory_loss = torch.linalg.norm(low_memory_diff)
+
+    scale = loss.numpy()
+    np.testing.assert_array_almost_equal(
+        loss.numpy() / scale, low_memory_loss.numpy() / scale, decimal=4
+    )
+
+    loss.backward()
+    low_memory_loss.backward()
+
+    scale = np.max(coef1.grad.numpy())
+    np.testing.assert_array_almost_equal(
+        coef1.grad.numpy() / scale,
+        low_memory_coef1.grad.numpy() / scale,
+        decimal=4,
+    )
+    scale = np.max(coef2.grad.numpy())
+    np.testing.assert_array_almost_equal(
+        coef2.grad.numpy() / scale,
+        low_memory_coef2.grad.numpy() / scale,
+        decimal=4,
+    )
+
+    """
+    # for gradcheck
+
+    low_memory_poisson_model.sp_d._tensor = (
+        low_memory_poisson_model.sp_d._tensor.to(torch.float64)
+    )
+
+    tensors = [
+        low_memory_inputs[key]._tensor.requires_grad_(True).to(torch.float64)
+        for key in low_memory_inputs.keys()
+    ]
+    dummy_tensor = torch.tensor(0.0, requires_grad=True)
+
+    assert torch.autograd.gradcheck(
+        lambda *ts: ConjugateGradientSolver_Core.apply(
+            *(
+                ts
+                + (low_memory_inputs,)
+                + (low_memory_problem,)
+                + (low_memory_solver,)
+                + (dummy_tensor,)
+            )
+        ),
+        (
+            tuple(
+                tensors,
+            )
+        ),
+    )
+    """
+
+
+@pytest.mark.gpu_test
+@pytest.mark.parametrize("n_mat", [1000000])
+def test__check_memory_usage(n_mat: int):
+    solver = ConjugateGradientSolver(
+        max_iterations=2,
+        convergence_threshold=1.0e-8,
+        divergence_threshold=1.0e5,
+        update_keys=["x"],
+        operator_keys=["x"],
+        dict_variable_to_right={"x": "b"},
+        dict_variable_to_dirichlet={"x": "x_bnd"},
+    )
+    low_memory_solver = ConjugateGradientSolver(
+        max_iterations=2,
+        convergence_threshold=1.0e-8,
+        divergence_threshold=1.0e5,
+        update_keys=["x"],
+        operator_keys=["x"],
+        dict_variable_to_right={"x": "b"},
+        dict_variable_to_dirichlet={"x": "x_bnd"},
+        exact_backward_flag=False,
+    )
+
+    coef1 = torch.tensor(
+        [
+            1.0,
+        ],
+        requires_grad=True,
+    )
+    coef2 = torch.tensor(
+        [
+            2.0,
+        ],
+        requires_grad=True,
+    )
+    low_memory_coef1 = torch.tensor(
+        [
+            1.0,
+        ],
+        requires_grad=True,
+    )
+    low_memory_coef2 = torch.tensor(
+        [
+            2.0,
+        ],
+        requires_grad=True,
+    )
+
+    identity_model = IdentityModel(n_mat, coef1)
+    low_memory_identity_model = IdentityModel(n_mat, low_memory_coef1)
+
+    x_bnd = torch.ones(n_mat, 1) * torch.nan
+    b = torch.ones(n_mat, 1)
+
+    inputs = phlower_tensor_collection(
+        {
+            "x": phlower_tensor(torch.zeros(n_mat, 1)),
+            "b": phlower_tensor(b + coef2),
+            "x_bnd": phlower_tensor(x_bnd),
+        }
+    ).to(identity_model.get_device())
+    low_memory_inputs = phlower_tensor_collection(
+        {
+            "x": phlower_tensor(torch.zeros(n_mat, 1)),
+            "b": phlower_tensor(b + low_memory_coef2),
+            "x_bnd": phlower_tensor(x_bnd),
+        }
+    ).to(low_memory_identity_model.get_device())
+
+    problem = _GroupOptimizeProblem(
+        initials=inputs,
+        step_forward=identity_model.dot,
+        steady_mode=True,
+    )
+    low_memory_problem = _GroupOptimizeProblem(
+        initials=low_memory_inputs,
+        step_forward=low_memory_identity_model.dot,
+        steady_mode=True,
+    )
+
+    torch.cuda.empty_cache()
+    low_memory_h = low_memory_solver.run(low_memory_inputs, low_memory_problem)
+    low_memory_loss = torch.sum(low_memory_h.unique_item())
+    low_memory_loss.backward()
+
+    low_memory_max_allocated = torch.cuda.max_memory_allocated() / 1024**2
+
+    del low_memory_h, low_memory_loss
+
+    torch.cuda.empty_cache()
+    h = solver.run(inputs, problem)
+    loss = torch.sum(h.unique_item())
+    loss.backward()
+
+    max_allocated = torch.cuda.max_memory_allocated() / 1024**2
+
+    del h, loss
+
+    assert (
+        low_memory_max_allocated * 1.2 < max_allocated
+        or identity_model.get_device() == "cpu"
+    )

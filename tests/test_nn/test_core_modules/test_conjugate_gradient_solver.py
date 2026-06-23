@@ -540,7 +540,6 @@ def test__gradient_correct(
 def test__gradient_consistent_with_dense_solve(
     rank: int, component_shape: tuple[int], batch_solve: bool
 ):
-
     seed_b = torch.randn([rank] + list(component_shape), dtype=torch.float64)
     b_for_sparse = seed_b.clone().requires_grad_(True)
     # b_ = b.clone()
