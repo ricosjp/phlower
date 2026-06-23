@@ -93,3 +93,9 @@ class TrainerInitializeType(StrEnum):
     none = "none"
     pretrained = "pretrained"
     restart = "restart"
+
+
+class ContinueTrainingType(StrEnum):
+    none = "none"
+    lr_decay = "lr_decay"
+    optimizer_switch = "optimizer_switch"

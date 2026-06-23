@@ -4,25 +4,25 @@ import pathlib
 import socket
 from collections.abc import Iterable
 from functools import cached_property
-from typing import Annotated, Any, Literal, cast
+from typing import Any, Literal, cast
 
 import pydantic
 import pydantic.dataclasses as dc
 import torch
 from pydantic import Field
 
+from phlower.settings._continue_settings import ContinueSetting
 from phlower.settings._handler_settings import (
     EarlyStoppingSetting,
     HandlerSettingType,
 )
+from phlower.settings._optimizer_setting import (
+    OptimizerSetting,
+)
 from phlower.settings._time_series_sliding_setting import (
     TimeSeriesSlidingSetting,
 )
-from phlower.utils import (
-    OptimizerSelector,
-    SchedulerSelector,
-    get_logger,
-)
+from phlower.utils import SchedulerSelector, get_logger
 from phlower.utils.enums import TrainerInitializeType
 
 _logger = get_logger(__name__)
@@ -63,43 +63,6 @@ class LossSetting:
             list[str]: variable names
         """
         return list(self.name2loss.keys())
-
-
-_ParameterValue = Annotated[
-    int | float | bool | str | Any, Field(union_mode="left_to_right")
-]
-
-
-class OptimizerSetting(pydantic.BaseModel):
-    optimizer: str = "Adam"
-    """
-    Optimizer Class name defined in torch.optim. Default to Adam.
-    Ex. Adam, RMSprop, SGD
-    """
-
-    parameters: dict[str, _ParameterValue] = Field(default_factory=dict)
-    """
-    Parameters to pass when optimizer class is initialized.
-    Allowed parameters depend on the optimizer you choose.
-    """
-
-    # special keyward to forbid extra fields in pydantic
-    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
-
-    def get_lr(self) -> float | None:
-        return self.parameters.get("lr")
-
-    @pydantic.field_validator("optimizer")
-    @classmethod
-    def check_exist_scheduler(cls, name: str) -> str:
-        if not OptimizerSelector.exist(name):
-            raise ValueError(
-                f"{name} is not defined as an optimizer in phlower. "
-                "If you defined user defined optimizer, "
-                "please use `register` function in "
-                "`phlower.utils.OptimizerSelector`."
-            )
-        return name
 
 
 class SchedulerSetting(pydantic.BaseModel):
@@ -327,6 +290,14 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     Choose from "no_grad" or "inference_mode".
     Defaults to "inference_mode".
     """
+
+    continue_setting: ContinueSetting = pydantic.Field(
+        default_factory=lambda: ContinueSetting(is_active=False)
+    )
+    """
+    Setting for continue training. Defaults to None.
+    If not None, it is used to continue training with modified parameters.
+     """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
