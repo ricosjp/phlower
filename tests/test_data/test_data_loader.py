@@ -3,6 +3,7 @@ import sys
 from collections.abc import Callable
 
 import pytest
+import torch
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -10,11 +11,13 @@ from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
     LumpedTensorData,
+    OnMemoryPhlowerDataSet,
 )
 from phlower.settings import (
     ArrayDataIOSetting,
     MeshDataIOSetting,
     PhlowerPredictorSetting,
+    PhlowerSetting,
     PhlowerTrainerSetting,
 )
 from phlower.utils._dimensions_class import PhysicalDimensions
@@ -414,6 +417,71 @@ def test__disable_dimensions_for_mesh_data(
 
         for data_name in item.field_data.keys():
             assert not item.field_data[data_name].has_dimension
+
+
+# endregion
+
+
+# region test for batch mode
+
+
+_DATA_DIR = pathlib.Path(__file__).parent / "data"
+
+
+@pytest.mark.parametrize("batch_size", [1, 2, 3])
+@pytest.mark.parametrize(
+    "yaml_file_name", ["sample_batch_mode_with_index_like.yml"]
+)
+def test__consider_batch_mode(
+    batch_size: int,
+    yaml_file_name: str,
+    create_dataset_with_index_like_values: None,
+    output_base_directory_index_like: pathlib.Path,
+):
+    directories = [
+        output_base_directory_index_like / v
+        for v in ["data0", "data1", "data2"]
+    ]
+
+    yaml_path = _DATA_DIR / yaml_file_name
+    setting = PhlowerSetting.read_yaml(yaml_path)
+    setting = PhlowerSetting.model_validate(
+        setting.model_dump()
+        | {
+            "training": {
+                "batch_size": batch_size,
+            }
+        }
+    )
+
+    dataset = OnMemoryPhlowerDataSet.create(
+        input_settings=setting.model.inputs,
+        label_settings=setting.model.labels,
+        field_settings=setting.model.fields,
+        directories=directories,
+    )
+    builder = DataLoaderBuilder.from_setting(setting.training)
+
+    dataloader = builder.create(dataset, drop_last=True)
+
+    index_like_names = [
+        "index_like0",
+        "index_like1",
+    ]
+    for item in dataloader:
+        item: LumpedTensorData
+        assert len(item.data_directories) == batch_size
+        assert item.n_data == batch_size
+
+        for name in index_like_names:
+            assert item.field_data[name].dtype == torch.int32
+
+            # check if the index_like values are shifted correctly
+            val = torch.unique(item.field_data[name])
+            _shape = item.field_data[name].shape
+            assert val.shape == _shape
+            assert torch.min(item.field_data[name]) == 0
+            assert torch.max(item.field_data[name]) == _shape[0] - 1
 
 
 # endregion

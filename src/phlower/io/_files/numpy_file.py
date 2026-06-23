@@ -29,9 +29,13 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
         *,
         encrypt_key: bytes = None,
         allow_overwrite: bool = False,
-        dtype: np.dtype = np.float32,
         **kwargs,
     ) -> PhlowerNumpyFile:
+        if kwargs.get("dtype") is not None:
+            raise ValueError(
+                "dtype argument is deprecated in PhlowerNumpyFile.save()"
+            )
+
         fileio = _get_fileio(data, encrypt_key=encrypt_key)
         save_path = fileio.get_save_path(output_directory, file_basename)
         if not allow_overwrite:
@@ -40,9 +44,7 @@ class PhlowerNumpyFile(IPhlowerNumpyFile):
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
-        fileio.save(
-            save_path=save_path, data=data, dtype=dtype, encrypt_key=encrypt_key
-        )
+        fileio.save(save_path=save_path, data=data, encrypt_key=encrypt_key)
         _logger.info(f"{file_basename} is saved in: {save_path}")
         return PhlowerNumpyFile(save_path)
 
@@ -141,7 +143,9 @@ def _get_fileio(
 class INumpyFileIOCore(metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
-    def load(cls, path: pathlib.Path, decrypt_key: bytes = None): ...
+    def load(
+        cls, path: pathlib.Path, decrypt_key: bytes = None
+    ) -> np.ndarray: ...
 
     @classmethod
     @abc.abstractmethod
@@ -155,7 +159,6 @@ class INumpyFileIOCore(metaclass=abc.ABCMeta):
         cls,
         save_path: pathlib.Path,
         data: ArrayDataType,
-        dtype: np.dtype = np.float32,
         encrypt_key: bytes = None,
     ) -> None: ...
 
@@ -178,10 +181,9 @@ class _NpyFileIO(INumpyFileIOCore):
         cls,
         save_path: pathlib.Path,
         data: ArrayDataType,
-        dtype: np.dtype = np.float32,
         encrypt_key: bytes = None,
     ) -> None:
-        np.save(save_path, data.astype(dtype))
+        np.save(save_path, data)
         return save_path
 
 
@@ -208,8 +210,7 @@ class _NpyEncFileIO(INumpyFileIOCore):
         cls,
         save_path: pathlib.Path,
         data: ArrayDataType,
-        dtype: np.dtype = np.float32,
-        encrypt_key: bytes = None,
+        encrypt_key: bytes | None = None,
     ) -> None:
         if encrypt_key is None:
             raise ValueError(
@@ -217,7 +218,7 @@ class _NpyEncFileIO(INumpyFileIOCore):
             )
 
         bytesio = io.BytesIO()
-        np.save(bytesio, data.astype(dtype))
+        np.save(bytesio, data)
         utils.encrypt_file(encrypt_key, save_path, bytesio)
         return
 
@@ -238,10 +239,9 @@ class _NpzFileIO(INumpyFileIOCore):
         cls,
         save_path: pathlib.Path,
         data: ArrayDataType,
-        dtype: np.dtype = np.float32,
         encrypt_key: bytes = None,
     ) -> None:
-        sp.save_npz(save_path, data.tocoo().astype(dtype))
+        sp.save_npz(save_path, data.tocoo())
         return save_path
 
 
@@ -266,7 +266,6 @@ class _NpzEncFileIO(INumpyFileIOCore):
         cls,
         save_path: pathlib.Path,
         data: ArrayDataType,
-        dtype: np.dtype = np.float32,
         encrypt_key: bytes = None,
     ) -> None:
         if encrypt_key is None:
@@ -274,6 +273,6 @@ class _NpzEncFileIO(INumpyFileIOCore):
                 "Encrption key is None. Cannot create encrypted file."
             )
         bytesio = io.BytesIO()
-        sp.save_npz(bytesio, data.tocoo().astype(dtype))
+        sp.save_npz(bytesio, data.tocoo())
         utils.encrypt_file(encrypt_key, save_path, bytesio)
         return save_path

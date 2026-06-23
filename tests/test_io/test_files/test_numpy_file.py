@@ -143,3 +143,18 @@ def test__save_not_allowed_overwrite(setup_test_dir: pathlib.Path):
             file_basename="sample",
             allow_overwrite=False,
         )
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int32, np.int64])
+def test__retrieve_dtype(dtype: np.dtype, tmp_path: pathlib.Path):
+    sample_array = np.random.rand(3, 4).astype(dtype)
+
+    saved_path = PhlowerNumpyFile.save(
+        output_directory=tmp_path,
+        file_basename="sample",
+        data=sample_array,
+        allow_overwrite=True,
+    )
+
+    loaded_array = saved_path.load()
+    assert loaded_array.to_numpy().dtype == dtype

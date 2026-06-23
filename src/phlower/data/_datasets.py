@@ -14,11 +14,13 @@ from phlower.data._lumped_data import LumpedArrayData
 from phlower.io import PhlowerDirectory
 from phlower.settings import (
     ArrayDataIOSetting,
+    FieldIOSettingType,
     MeshDataIOSetting,
-    ModelIOSettingType,
 )
 from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
 from phlower.utils.typing import ArrayDataType
+
+from ._utils import BatchModeHolder
 
 
 class IPhlowerDataset(metaclass=abc.ABCMeta):
@@ -30,6 +32,14 @@ class IPhlowerDataset(metaclass=abc.ABCMeta):
         self, index: int, data_type: Literal["input", "label"]
     ) -> dict[str, IPhlowerArray]:
         """Get members of the dataset for the specified data type."""
+        ...
+
+    @abc.abstractmethod
+    def get_batch_mode_holder(self) -> BatchModeHolder:
+        """
+        Get the BatchModeFolder for the dataset, which provides information
+        about the batch mode for each input, label, and field variable.
+        """
         ...
 
 
@@ -44,7 +54,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         label_settings: list[ArrayDataIOSetting],
         directories: list[pathlib.Path],
         *,
-        field_settings: list[ModelIOSettingType] | None = None,
+        field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ) -> OnMemoryPhlowerDataSet:
@@ -76,7 +86,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         input_settings: list[ArrayDataIOSetting],
         label_settings: list[ArrayDataIOSetting] | None,
         *,
-        field_settings: list[ModelIOSettingType] | None = None,
+        field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ):
@@ -147,6 +157,9 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         }
         return {name: v for name, v in _dict.items() if v is not None}
 
+    def get_batch_mode_holder(self) -> BatchModeHolder:
+        return _get_batch_mode_holder(self)
+
 
 # endregion
 
@@ -162,7 +175,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         label_settings: list[ArrayDataIOSetting] | None,
         directories: list[pathlib.Path],
         *,
-        field_settings: list[ModelIOSettingType] | None = None,
+        field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
     ):
@@ -242,6 +255,9 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             decrypt_key=self._decrypt_key,
         )
 
+    def get_batch_mode_holder(self) -> BatchModeHolder:
+        return _get_batch_mode_holder(self)
+
 
 # endregion
 
@@ -270,7 +286,7 @@ def _load_data(
 
 def _load_data(
     data_directory: PhlowerDirectory,
-    settings: list[ModelIOSettingType],
+    settings: list[FieldIOSettingType],
     allow_missing: bool,
     decrypt_key: bytes | None = None,
     skip_apply_setting: bool = False,
@@ -316,7 +332,7 @@ def _load_data(
 
 def _load_ndarray_array(
     data_directory: PhlowerDirectory,
-    io_setting: ModelIOSettingType,
+    io_setting: FieldIOSettingType,
     allow_missing: bool,
     decrypt_key: bytes | None = None,
 ) -> dict[str, np.ndarray]:
@@ -356,7 +372,7 @@ def _load_mesh_data(
 
 def _apply_setting(
     dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
-    io_setting: ModelIOSettingType,
+    io_setting: FieldIOSettingType,
     allow_missing: bool = False,
 ) -> IPhlowerArray | PyVistaMeshAdapter | None:
 
@@ -396,7 +412,7 @@ def _apply_setting_to_mesh(
 
 def _apply_setting_to_array(
     dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
-    io_setting: ModelIOSettingType,
+    io_setting: FieldIOSettingType,
     allow_missing: bool = False,
 ) -> IPhlowerArray | pv.UnstructuredGrid | None:
     member_arrs: list[np.ndarray] = []
@@ -445,11 +461,37 @@ def _apply_setting_to_array(
         is_time_series=io_setting.is_time_series,
         is_voxel=io_setting.is_voxel,
         dimensions=io_setting.physical_dimension,
+        dtype=io_setting.dtype,
     )
     if io_setting.time_slice is None:
         return _array
 
     return _array.slice_along_time_axis(io_setting.time_slice_object)
+
+
+# endregion
+
+
+# region utility functions for batch mode
+
+
+def _get_batch_mode_holder(
+    self: OnMemoryPhlowerDataSet | LazyPhlowerDataset,
+) -> BatchModeHolder:
+    inputs_batch_mode = {
+        setting.name: setting.batch_mode for setting in self._input_settings
+    }
+    labels_batch_mode = {
+        setting.name: setting.batch_mode for setting in self._label_settings
+    }
+    field_batch_mode = {
+        setting.name: setting.batch_mode for setting in self._field_settings
+    }
+    return BatchModeHolder(
+        inputs_batch_mode=inputs_batch_mode,
+        labels_batch_mode=labels_batch_mode,
+        field_batch_mode=field_batch_mode,
+    )
 
 
 # endregion
