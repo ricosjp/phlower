@@ -3,7 +3,9 @@ from __future__ import annotations
 import torch
 from phlower_tensor import GraphBatchInfo, IPhlowerArray
 from phlower_tensor._fields import ISimulationField, SimulationField
-from phlower_tensor.collections import IPhlowerTensorCollections
+from phlower_tensor.collections import (
+    IPhlowerTensorCollections,
+)
 
 from phlower.io import PhlowerDirectory
 from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
@@ -34,6 +36,9 @@ class LumpedTensorData:
         y_batch_info: dict[str, GraphBatchInfo] | None = None,
         field_batch_info: dict[str, GraphBatchInfo] | None = None,
     ) -> None:
+        assert isinstance(x_data, IPhlowerTensorCollections)
+        assert y_data is None or isinstance(y_data, IPhlowerTensorCollections)
+
         self.x_data = x_data
         self.y_data = y_data
         self.data_directories = data_directories

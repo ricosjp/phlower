@@ -1,19 +1,23 @@
 import pathlib
+from unittest import mock
 
 import numpy as np
 import pytest
+import scipy.sparse as sp
 import torch
-from phlower_tensor import phlower_tensor
+from phlower_tensor import phlower_array, phlower_tensor
 from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
 
+from phlower.nn import GCN
 from phlower.nn._phlower_module_adapter import PhlowerModuleAdapter
 from phlower.settings import ModuleSetting
 from phlower.settings._debug_parameter_setting import (
     PhlowerModuleDebugParameters,
 )
+from phlower.utils import create_simulation_field
 from phlower.utils.exceptions import PhlowerRunTimeError
 from phlower.utils.typing import CalculationState
 
@@ -141,3 +145,65 @@ def test_dump_en_route_tensor(
             np.load(target_file),
             desired[target_file.name],
         )
+
+
+def test__field_data_is_overwritten():
+    setting = ModuleSetting(
+        nn_type="GCN",
+        name="aa",
+        input_keys=["sample", "support1"],
+        output_key="feat",
+        nn_parameters={"support_name": "support1", "nodes": [10, 10]},
+        input_keys_promoting_to_field=["support1"],
+    )
+    model = PhlowerModuleAdapter.from_setting(setting)
+
+    support1_field = phlower_tensor(
+        phlower_array(
+            sp.random(100, 100, density=0.1, format="csr", dtype=np.float32)
+        ).to_tensor()
+    )
+    field_data = create_simulation_field(
+        field_tensors={"support1": support1_field},
+        batch_info={},
+    )
+
+    input_tensor = phlower_tensor(torch.rand(100, 10, requires_grad=True))
+    support1_input = phlower_tensor(
+        phlower_array(
+            sp.random(100, 100, density=0.1, format="csr", dtype=np.float32)
+        ).to_tensor()
+    )
+
+    # check that the two support tensors are not equal
+    with pytest.raises(AssertionError):
+        np.testing.assert_array_almost_equal(
+            support1_field.to_tensor().to_dense().numpy(),
+            support1_input.to_tensor().to_dense().numpy(),
+        )
+
+    input_tensors = phlower_tensor_collection(
+        {"sample": input_tensor, "support1": support1_input}
+    )
+    model = PhlowerModuleAdapter.from_setting(setting)
+    model.train()
+
+    with mock.patch.object(GCN, "forward") as mocked:
+        mocked.return_value = phlower_tensor(
+            torch.rand(100, 10, requires_grad=True)
+        )  # this is dummy
+
+        _ = model.forward(input_tensors, field_data=field_data)
+        mocked.assert_called_once()
+        _, kwargs = mocked.call_args
+        assert "support1" in kwargs["field_data"].keys()
+        np.testing.assert_array_almost_equal(
+            kwargs["field_data"]["support1"].to_tensor().to_dense().numpy(),
+            support1_input.to_tensor().to_dense().numpy(),
+        )
+
+    # check that the field data remains unchanged after the forward pass
+    np.testing.assert_array_almost_equal(
+        field_data["support1"].to_tensor().to_dense().numpy(),
+        support1_field.to_tensor().to_dense().numpy(),
+    )

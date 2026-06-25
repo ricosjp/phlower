@@ -59,7 +59,7 @@ class SimpleIterationSolver(IFIterationSolver):
             rel_diff_h = diff_h / (
                 h.mask(self._targets).apply(torch.linalg.norm) + self._EPS
             )
-            h.update(h_next.mask(self._targets), overwrite=True)
+            h = h | h_next.mask(self._targets)
 
             if rel_diff_h < self._convergence_threshold:
                 _logger.info(

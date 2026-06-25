@@ -56,24 +56,32 @@ class SlidingWindowHelper:
 
         for i in range(self._total_size):
             yield LumpedTensorData(
-                x_data={
-                    k: v.slice_time(
-                        self._window_setting.inputs.get_window(k).get_slice(i),
-                        keep_time_series=True,
-                    )
-                    if v.is_time_series
-                    else v
-                    for k, v in self._lumped_data.x_data.items()
-                },
-                y_data={
-                    k: v.slice_time(
-                        self._window_setting.labels.get_window(k).get_slice(i),
-                        keep_time_series=True,
-                    )
-                    if v.is_time_series
-                    else v
-                    for k, v in self._lumped_data.y_data.items()
-                },
+                x_data=phlower_tensor_collection(
+                    {
+                        k: v.slice_time(
+                            self._window_setting.inputs.get_window(k).get_slice(
+                                i
+                            ),
+                            keep_time_series=True,
+                        )
+                        if v.is_time_series
+                        else v
+                        for k, v in self._lumped_data.x_data.items()
+                    }
+                ),
+                y_data=phlower_tensor_collection(
+                    {
+                        k: v.slice_time(
+                            self._window_setting.labels.get_window(k).get_slice(
+                                i
+                            ),
+                            keep_time_series=True,
+                        )
+                        if v.is_time_series
+                        else v
+                        for k, v in self._lumped_data.y_data.items()
+                    }
+                ),
                 field_data=self._lumped_data.field_data,
                 data_directories=self._lumped_data.data_directories,
                 x_batch_info=self._lumped_data.x_batch_info,

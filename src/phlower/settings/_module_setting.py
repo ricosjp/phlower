@@ -39,6 +39,11 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     key names of input variables
     """
 
+    input_keys_promoting_to_field: list[str] = Field(default_factory=list)
+    """
+    key names of input variables that will be promoted to field_data.
+    """
+
     output_key: str = Field(default="")
     """
     key names of output variables
@@ -97,6 +102,15 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
 
     def get_output_info(self) -> dict[str, int]:
         return {self.output_key: self.nn_parameters.get_n_nodes()[-1]}
+
+    def _get_actual_input_dims(
+        self, key2node: dict[str, int]
+    ) -> dict[str, int]:
+        return {
+            key: key2node[key]
+            for key in self.input_keys
+            if key not in self.input_keys_promoting_to_field
+        }
 
     def resolve(
         self,
@@ -157,6 +171,15 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
                     "Please check precedents."
                 )
 
+        for promotion_key in self.input_keys_promoting_to_field:
+            if promotion_key not in self.input_keys:
+                raise PhlowerModuleKeyError(
+                    f"{promotion_key} is not found in input_keys of "
+                    f"{self.name}."
+                    "Please check the configuration of "
+                    "input_keys_promoting_to_field."
+                )
+
     def _resolve_nodes(self, *resolved_outputs: dict[str, int]) -> list[int]:
         key2node: dict[str, int] = {}
         for output in resolved_outputs:
@@ -165,14 +188,14 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
         _hints = typing.get_type_hints(self.nn_parameters.gather_input_dims)
         if _hints["input_dims"] == dict[str, int]:
             first_node = self.nn_parameters.gather_input_dims(
-                {key: key2node[key] for key in self.input_keys}
+                self._get_actual_input_dims(key2node)
             )
         else:
             # HACK: for backward compatibility.
             # We need to remove this branch
             # after changing all gather_input_dims to accept dict[str, int]
             first_node = self.nn_parameters.gather_input_dims(
-                *[key2node[key] for key in self.input_keys]
+                *list(self._get_actual_input_dims(key2node).values())
             )
 
         nodes = self.nn_parameters.get_n_nodes()
@@ -180,12 +203,12 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
             _hints = typing.get_type_hints(self.nn_parameters.get_default_nodes)
             if _hints["input_dims"] == dict[str, int]:
                 return self.nn_parameters.get_default_nodes(
-                    {key: key2node[key] for key in self.input_keys}
+                    self._get_actual_input_dims(key2node)
                 )
             else:
                 # HACK: for backward compatibility.
                 return self.nn_parameters.get_default_nodes(
-                    *[key2node[key] for key in self.input_keys]
+                    *list(self._get_actual_input_dims(key2node).values())
                 )
 
         if (nodes[0] != -1) and (nodes[0] != first_node):

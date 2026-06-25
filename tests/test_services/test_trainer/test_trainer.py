@@ -89,6 +89,11 @@ def create_sample_preprocessed_data(output_base_dir: pathlib.Path):
             preprocessed_dir / "nodal_nadj", nodal_nadj.tocoo().astype(dtype)
         )
 
+        nodal_nadj = sp.random(n_nodes, n_nodes, density=0.1, random_state=rng)
+        sp.save_npz(
+            preprocessed_dir / "nodal_nadj0", nodal_nadj.tocoo().astype(dtype)
+        )
+
         (preprocessed_dir / "preprocessed").touch()
 
 
@@ -951,3 +956,30 @@ def test__dump_en_route_tensors(
 
 
 # endregion
+
+
+def test_simple_training_with_updating_yaml(
+    prepare_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        _SETTINGS_DIR / "train_update_field_data.yml"
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_DIR / "model_field_overwrite"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )

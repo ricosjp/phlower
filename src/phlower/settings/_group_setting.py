@@ -29,7 +29,19 @@ from phlower.utils.exceptions import (
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class GroupIOSetting:
+class GroupInputSetting:
+    name: str
+    n_last_dim: int | None = None
+    promote_to_field: bool = False
+    """
+    If True, this variable is promoted to field data in the group.
+    field data is treated as a fixed value in the group,
+    and it is not updated by the group.
+    """
+
+
+@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
+class GroupOutputSetting:
     name: str
     n_last_dim: int | None = None
 
@@ -67,14 +79,14 @@ class GroupModuleSetting(
     name of group
     """
 
-    inputs: list[GroupIOSetting] = Field(
+    inputs: list[GroupInputSetting] = Field(
         default_factory=list, validate_default=True
     )
     """
     definition of input variables
     """
 
-    outputs: list[GroupIOSetting] = Field(
+    outputs: list[GroupOutputSetting] = Field(
         default_factory=list, validate_default=True
     )
     """
@@ -154,8 +166,10 @@ class GroupModuleSetting(
     @pydantic.field_validator("inputs", "outputs")
     @classmethod
     def _check_unique_items(
-        cls, values: list[GroupIOSetting], info: pydantic.ValidationInfo
-    ) -> list[GroupIOSetting]:
+        cls,
+        values: list[GroupInputSetting] | list[GroupOutputSetting],
+        info: pydantic.ValidationInfo,
+    ) -> list[GroupInputSetting] | list[GroupOutputSetting]:
         names = [v.name for v in values]
         if len(names) != len(set(names)):
             raise PhlowerModuleDuplicateKeyError(
@@ -215,6 +229,9 @@ class GroupModuleSetting(
     def get_destinations(self) -> list[str]:
         return self.destinations
 
+    def get_promotion_input_keys(self) -> list[str]:
+        return [v.name for v in self.inputs if v.promote_to_field]
+
     def get_input_keys(self) -> list[str]:
         return [v.name for v in self.inputs]
 
@@ -253,7 +270,11 @@ class GroupModuleSetting(
         if not is_first:
             self._check_inputs(*resolved_outputs)
 
-        input_info = {v.name: v.n_last_dim for v in self.inputs}
+        input_info = {
+            v.name: v.n_last_dim
+            for v in self.inputs
+            if v.promote_to_field is False
+        }
 
         if self.modules_same_as is not None:
             ref = parent.search_group_setting(self.modules_same_as)
@@ -304,7 +325,7 @@ class GroupModuleSetting(
                     )
             # set automatically
             self.inputs = [
-                GroupIOSetting(name=k, n_last_dim=v)
+                GroupInputSetting(name=k, n_last_dim=v)
                 for k, v in _flatten_dict.items()
             ]
 
@@ -338,7 +359,7 @@ class GroupModuleSetting(
         if len(self.outputs) == 0:
             # set automatically
             self.outputs = [
-                GroupIOSetting(name=k, n_last_dim=v)
+                GroupOutputSetting(name=k, n_last_dim=v)
                 for k, v in _flatten_dict.items()
             ]
 
