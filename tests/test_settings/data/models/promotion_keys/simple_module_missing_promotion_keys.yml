@@ -1,0 +1,74 @@
+
+misc:
+
+  tests:
+    MLP0: 10
+    MLP1: 1
+    GCN0: 100
+
+
+model:
+
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 12
+
+    - name: support0
+      batch_mode: block_diagonal
+      is_time_series: false
+      members:
+        - name: support0
+          n_last_dim: 1
+
+  fields:
+    - name: support1
+      batch_mode: block_diagonal
+      is_time_series: false
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - GCN0
+        nn_parameters:
+          nodes: [-1, 20, 100]
+          activations: ["Identity", "identity"]
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - support0
+        output_key: support1
+        destinations:
+          - GCN0
+        nn_parameters:
+          nodes: [-1, 1]
+          activations: ["Identity"]
+  
+      - nn_type: GCN
+        name: GCN0
+        input_keys_promoting_to_field:
+          - support_missing # This key is missing in the input keys
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]
+          support_name: support1

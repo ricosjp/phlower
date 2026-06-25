@@ -18,6 +18,7 @@ from phlower_tensor.collections import (
 from phlower.nn import PhlowerGroupModule
 from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.settings import PhlowerSetting
+from phlower.utils import create_simulation_field
 
 _SAMPLE_SETTING_DIR = pathlib.Path(__file__).parent / "data/group"
 
@@ -316,3 +317,61 @@ def test__subtract_input_for_gradient(
         np.testing.assert_almost_equal(
             actual_value.numpy(), desired_value.numpy()
         )
+
+
+@pytest.mark.parametrize(
+    "yaml_file", ["forward_time_series_with_promoted_field.yml"]
+)
+def test__field_data_is_overwritten(yaml_file: str):
+    setting = PhlowerSetting.read_yaml(_SAMPLE_SETTING_DIR / yaml_file)
+    setting.model.resolve()
+
+    group = PhlowerGroupModule.from_setting(setting.model.network)
+
+    support1_input = phlower_tensor(
+        phlower_array(
+            sp.random(10, 10, density=0.1, format="csr", dtype=np.float32)
+        ).to_tensor()
+    )
+    support1_field = phlower_tensor(
+        phlower_array(
+            sp.random(10, 10, density=0.1, format="csr", dtype=np.float32)
+        ).to_tensor()
+    )
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_array_almost_equal(
+            support1_input.to_tensor().to_dense().numpy(),
+            support1_field.to_tensor().to_dense().numpy(),
+        )
+
+    mock_input = phlower_tensor_collection(
+        {
+            "sample_input": phlower_tensor(torch.rand(10, 3)),
+            "support1": support1_input,
+        }
+    )
+    field_data = create_simulation_field(
+        field_tensors={"support1": support1_field},
+        batch_info={},
+    )
+
+    with mock.patch.object(PhlowerGroupModule, "_forward") as mocked:
+        _ = group(mock_input, field_data=field_data)
+
+        assert mocked.call_count == 1
+        inputs, kwargs = mocked.call_args
+
+        assert "support1" not in inputs
+
+        used_field_data = kwargs["field_data"]
+        assert "support1" in used_field_data
+        np.testing.assert_array_almost_equal(
+            used_field_data["support1"].to_tensor().to_dense().numpy(),
+            support1_input.to_tensor().to_dense().numpy(),
+        )
+
+    np.testing.assert_array_almost_equal(
+        field_data["support1"].to_tensor().to_dense().numpy(),
+        support1_field.to_tensor().to_dense().numpy(),
+    )

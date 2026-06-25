@@ -214,7 +214,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
                 break
 
             # NOTE: update only considered variables
-            h_inputs.update(v_next, overwrite=True)
+            h_inputs = h_inputs | v_next
 
         if self._iterated_state.is_diverged:
             _diverged_msg = self._iterated_state.get_diverged_message(criteria)
@@ -239,7 +239,7 @@ class BarzilaiBorweinSolver(IFIterationSolver):
             return h_inputs.mask(self._keys)
 
         # NOTE: update only considered variables
-        h_inputs.update(v_next, overwrite=True)
+        h_inputs = h_inputs | v_next
         return h_inputs.mask(self._keys)
 
     def _compute_v_next(

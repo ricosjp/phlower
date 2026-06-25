@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import ItemsView, KeysView
+from types import TracebackType
 from typing import TYPE_CHECKING
 
 import pyvista as pv
@@ -87,12 +88,15 @@ class GraphlowSimulationField(ISimulationField):
 
     def __init__(
         self,
-        field_tensors: IPhlowerTensorCollections,
+        field_tensors: IPhlowerTensorCollections | dict[str, PhlowerTensor],
         mesh: graphlow.TensorMesh,
         batch_info: dict[str, GraphBatchInfo] | None = None,
     ) -> None:
         self._mesh = mesh
         self._batch_info = batch_info or {}
+
+        if not isinstance(field_tensors, IPhlowerTensorCollections):
+            field_tensors = phlower_tensor_collection(field_tensors)
         self._field_tensors = field_tensors
 
         if len(self._batch_info) > 1:
@@ -146,3 +150,86 @@ class GraphlowSimulationField(ISimulationField):
             mesh=self._mesh.to(device=device),
             batch_info=self._batch_info,
         )
+
+    def overwrite(
+        self,
+        new_data: dict[str, PhlowerTensor] | IPhlowerTensorCollections,
+    ) -> GraphlowSimulationField:
+        if not isinstance(new_data, IPhlowerTensorCollections):
+            new_data = phlower_tensor_collection(new_data)
+
+        for k, v in new_data.items():
+            if k in self._mesh.point_data or k in self._mesh.cell_data:
+                raise NotImplementedError(
+                    f"{k} is found in mesh data. "
+                    "Overwriting mesh data is not supported."
+                )
+
+            # NOTE: Ensure that the override data
+            # has the same shape as the original data.
+            # Otherwise, it does not perform unbatching correctly.
+            if (
+                k in self._field_tensors
+                and self._field_tensors[k].shape != v.shape
+            ):
+                raise ValueError(
+                    f"Shape mismatch for {k}: "
+                    f"{self._field_tensors[k].shape} vs {v.shape}. "
+                    "Replacement data must have the same shape "
+                    "as the original data."
+                )
+
+        return GraphlowSimulationField(
+            field_tensors=self._field_tensors | new_data,
+            mesh=self._mesh,
+            batch_info=self._batch_info,
+        )
+
+
+class FieldDataOverwriteContext:
+    def __init__(
+        self,
+        source: IPhlowerTensorCollections,
+        field: ISimulationField | None,
+        replacement_keys: list[str],
+    ):
+        self._field = field
+        self._source = source
+        self._replacement_keys = replacement_keys
+        if field is None and len(replacement_keys) > 0:
+            raise ValueError(
+                "Field data is None, but replacement keys are provided."
+            )
+
+    def __enter__(self):
+        if self._field is None:
+            return self
+
+        _replacement_data = self._source.mask(self._replacement_keys)
+        self._field = self._field.overwrite(_replacement_data)
+
+        masks = [
+            k for k in self._source.keys() if k not in self._replacement_keys
+        ]
+        self._source = self._source.mask(masks)
+        return self
+
+    @property
+    def source(self) -> IPhlowerTensorCollections:
+        return self._source
+
+    @property
+    def field_data(self) -> ISimulationField:
+        return self._field
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        traceback: TracebackType,
+    ) -> None:
+
+        # NOTE: No need to restore the field data,
+        # as it is a new instance created in __enter__.
+
+        return False  # Do not suppress exceptions

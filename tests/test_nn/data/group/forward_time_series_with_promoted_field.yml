@@ -1,0 +1,39 @@
+model:
+  inputs:
+    - name: sample_input
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: model
+    inputs:
+      - name: sample_input
+        n_last_dim: 3
+
+      - name: support1
+        n_last_dim: 1
+        promote_to_field: true
+
+    outputs:
+      - name: sample_output
+        n_last_dim: 3
+
+    modules:
+      - nn_type: MLP
+        name: MLP_1
+        input_keys:
+          - sample_input
+        output_key: sample_output
+        destinations:
+          - GCN_1
+        nn_parameters:
+          nodes: [-1, 3]
+          activations: ["identity"]
+
+      
+      - nn_type: GCN
+        name: GCN_1
+        output_key: sample_output
+        nn_parameters:
+          nodes: [-1, 3]
+          support_name: support1

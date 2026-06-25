@@ -306,3 +306,38 @@ def test__batch_mode_is_serialized_as_str(file_name: str):
 def _check_as_str(target: object, expected: str):
     assert isinstance(target, str)
     assert target == expected
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "promotion_keys/simple_module.yml",
+        "promotion_keys/simple_group_in_group.yml",
+    ],
+)
+def test__promotion_keys(file_name: str):
+    data = parse_file(file_name)
+
+    setting = PhlowerModelSetting.model_validate(data["model"])
+    setting.resolve()
+
+    _recursive_check(setting.network, data["misc"]["tests"])
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "promotion_keys/simple_module_missing_promotion_keys.yml",
+        # "promotion_keys/simple_group_in_group.yml",
+    ],
+)
+def test__missing_promotion_keys(file_name: str):
+    data = parse_file(file_name)
+
+    setting = PhlowerModelSetting.model_validate(data["model"])
+
+    with pytest.raises(
+        ValueError,
+        match="Please check the configuration of input_keys_promoting_to_field",
+    ):
+        setting.resolve()

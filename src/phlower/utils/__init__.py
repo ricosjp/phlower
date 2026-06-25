@@ -11,3 +11,7 @@ from phlower.utils._timer import StopWatch
 from phlower.utils._optimizer import OptimizerSelector
 from phlower.utils._schedulers import SchedulerSelector
 from phlower.utils._random import fix_seed
+from phlower.utils._extended_simulation_field import (
+    create_simulation_field,
+    FieldDataOverwriteContext,
+)

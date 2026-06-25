@@ -18,7 +18,7 @@ from phlower.nn._interface_module import (
 )
 from phlower.nn._utils import attach_location_to_error_message
 from phlower.settings._group_setting import ModuleSetting
-from phlower.utils import get_logger
+from phlower.utils import FieldDataOverwriteContext, get_logger
 from phlower.utils.calculation_state import CalculationState
 from phlower.utils.typing import PhlowerForwardHook
 
@@ -44,6 +44,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
             no_grad=setting.no_grad,
             n_nodes=setting.nn_parameters.get_n_nodes(),
             coeff=setting.coeff,
+            promoting_keys=setting.input_keys_promoting_to_field,
         )
         attach_debug_helper(mod, setting.debug_parameters)
         return mod
@@ -58,6 +59,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         no_grad: bool,
         n_nodes: list[int],
         coeff: float,
+        promoting_keys: list[str] | None = None,
         **kwards,
     ) -> None:
         super().__init__(**kwards)
@@ -69,6 +71,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         self._output_key = output_key
         self._n_nodes = n_nodes
         self._coeff = coeff
+        self._promotion_input_keys = promoting_keys or []
 
         self._forward_post_hooks: list[PhlowerForwardHook] = []
         self._finalize_hooks: list[Callable[[], None]] = []
@@ -129,26 +132,36 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
         )
-        if self._no_grad:
-            with torch.no_grad():
+
+        with FieldDataOverwriteContext(
+            inputs, field_data, self._promotion_input_keys
+        ) as context:
+            if self._no_grad:
+                with torch.no_grad():
+                    result = self._coeff * self._layer.forward(
+                        context.source,
+                        field_data=context.field_data,
+                        state=state,
+                        **kwards,
+                    )
+            else:
                 result = self._coeff * self._layer.forward(
-                    inputs, field_data=field_data, state=state, **kwards
+                    context.source,
+                    field_data=context.field_data,
+                    state=state,
+                    **kwards,
                 )
-        else:
-            result = self._coeff * self._layer.forward(
-                inputs, field_data=field_data, state=state, **kwards
-            )
 
-        ret = phlower_tensor_collection({self._output_key: result})
+            ret = phlower_tensor_collection({self._output_key: result})
 
-        for hook in self._forward_post_hooks:
-            hook(
-                name=self._name,
-                unique_name=self.get_unique_name(),
-                result=ret,
-                state=state,
-            )
-        return ret
+            for hook in self._forward_post_hooks:
+                hook(
+                    name=self._name,
+                    unique_name=self.get_unique_name(),
+                    result=ret,
+                    state=state,
+                )
+            return ret
 
     def get_core_module(self) -> IPhlowerCoreModule:
         return self._layer

@@ -34,6 +34,7 @@ from phlower.nn._utils import attach_location_to_error_message
 from phlower.services.drawers import MermaidDrawer
 from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
+from phlower.utils import FieldDataOverwriteContext
 from phlower.utils.calculation_state import CalculationState
 from phlower.utils.enums import TrainerSavedKeyType
 from phlower.utils.typing import PhlowerForwardHook
@@ -129,6 +130,7 @@ class PhlowerGroupModule(
             is_steady_problem=setting.is_steady_problem,
             iteration_solver=solver_cls.from_setting(setting.solver_parameters),
             time_series_length=setting.time_series_length,
+            promotion_input_keys=setting.get_promotion_input_keys(),
         )
 
     def __init__(
@@ -142,6 +144,7 @@ class PhlowerGroupModule(
         is_steady_problem: bool = False,
         iteration_solver: IFIterationSolver | None = None,
         time_series_length: int | None = None,
+        promotion_input_keys: list[str] | None = None,
         **kwards,
     ) -> None:
         super().__init__(**kwards)
@@ -157,6 +160,8 @@ class PhlowerGroupModule(
         self._is_steady_problem = is_steady_problem
         self._iteration_solver = iteration_solver
         self._time_series_length = time_series_length or 0
+        self._promotion_input_keys = promotion_input_keys or []
+
         assert self._time_series_length >= -1
         self._parent_prefix = ""
         self._post_hooks: list[PhlowerForwardHook] = []
@@ -250,12 +255,26 @@ class PhlowerGroupModule(
         state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
-        if self.do_time_series_iteration:
-            return self._forward_time_series(
-                data, field_data=field_data, state=state, **kwards
-            )
 
-        return self._forward(data, field_data=field_data, state=state, **kwards)
+        with FieldDataOverwriteContext(
+            source=data,
+            field=field_data,
+            replacement_keys=self._promotion_input_keys,
+        ) as context:
+            if self.do_time_series_iteration:
+                return self._forward_time_series(
+                    context.source,
+                    field_data=context.field_data,
+                    state=state,
+                    **kwards,
+                )
+
+            return self._forward(
+                context.source,
+                field_data=context.field_data,
+                state=state,
+                **kwards,
+            )
 
     def _forward_time_series(
         self,
@@ -327,9 +346,9 @@ class PhlowerGroupModule(
             nodes = dag_modules.get_ready()
             for node in nodes:
                 if node.n_predecessors == 0:
-                    inputs = phlower_tensor_collection(
-                        {key: data[key] for key in self._input_keys}
-                    )
+                    # NOTE: just in case, we pass new referece
+                    # to the original data to avoid updating it.
+                    inputs = phlower_tensor_collection({}) | data
                     node.receive_args(inputs)
 
                 args = reduce_update(node.get_received_args())

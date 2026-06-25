@@ -4,6 +4,7 @@ from phlower_tensor.collections import (
     SequencedDictArray,
     phlower_tensor_collection,
 )
+from phlower_tensor.functionals import to_batch
 
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
 from phlower.utils._extended_simulation_field import (
@@ -35,17 +36,21 @@ class PhlowerCollateFn:
         outputs = SequencedDictArray([v.y_data for v in batch])
 
         # concatenate and send
-        inputs_tensors, inputs_batch_info = inputs.to_batched_tensor(
-            device=self._device,
-            non_blocking=self._non_blocking,
-            disable_dimensions=self._disable_dimensions,
+        inputs_tensors, inputs_batch_info = to_batch(
+            inputs.to_phlower_tensors_dict(
+                device=self._device,
+                non_blocking=self._non_blocking,
+                disable_dimensions=self._disable_dimensions,
+            ),
             batch_mode_dict=self._batch_mode_holder.inputs_batch_mode,
         )
 
-        outputs_tensors, outputs_batch_info = outputs.to_batched_tensor(
-            device=self._device,
-            non_blocking=self._non_blocking,
-            disable_dimensions=self._disable_dimensions,
+        outputs_tensors, outputs_batch_info = to_batch(
+            outputs.to_phlower_tensors_dict(
+                device=self._device,
+                non_blocking=self._non_blocking,
+                disable_dimensions=self._disable_dimensions,
+            ),
             batch_mode_dict=self._batch_mode_holder.labels_batch_mode,
         )
 
@@ -82,10 +87,12 @@ def _to_batch_field_helper(
     )
     if _contain_only_arrays:
         _arrays = SequencedDictArray([v.field_data for v in batch])
-        _tensors, _batch_info = _arrays.to_batched_tensor(
-            device=device,
-            non_blocking=non_blocking,
-            disable_dimensions=disable_dimensions,
+        _tensors, _batch_info = to_batch(
+            _arrays.to_phlower_tensors_dict(
+                device=device,
+                non_blocking=non_blocking,
+                disable_dimensions=disable_dimensions,
+            ),
             batch_mode_dict=batch_mode_holder.field_batch_mode,
         )
         return (
@@ -114,10 +121,12 @@ def _to_batch_field_helper(
         if isinstance(v, IPhlowerArray)
     }
     _arrays = SequencedDictArray([_arrays])
-    _tensors, _batch_info = _arrays.to_batched_tensor(
-        device=device,
-        non_blocking=non_blocking,
-        disable_dimensions=disable_dimensions,
+    _tensors, _batch_info = to_batch(
+        _arrays.to_phlower_tensors_dict(
+            device=device,
+            non_blocking=non_blocking,
+            disable_dimensions=disable_dimensions,
+        ),
         batch_mode_dict=batch_mode_holder.field_batch_mode,
     )
 
