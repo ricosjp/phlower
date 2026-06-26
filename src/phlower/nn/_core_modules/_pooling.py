@@ -18,6 +18,19 @@ _logger = getLogger(__name__)
 
 
 class Pooling(IPhlowerCoreModule, torch.nn.Module):
+    """Pooling is a layer to perform pooling in the specified dimension.
+
+    Parameters
+    ----------
+    nodes: list[int]
+        List of feature dimension sizes (The last value of tensor shape).
+    unbatch_key: str | None
+        Key of the unbatch operation.
+    pooling_dimension: int | None
+        Dimension to perform pooling.
+        By default, the dimension of vertex is used.
+    """
+
     @classmethod
     def from_setting(cls, setting: PoolingSetting) -> Pooling:
         """Create Pooling from setting object
@@ -48,11 +61,13 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
         pool_operator_name: str,
         nodes: list[int] | None = None,
         unbatch_key: str | None = None,
+        pooling_dimension: int | None = None,
     ):
         super().__init__()
         self._nodes = nodes
         self._pool_operator_name = pool_operator_name
         self._unbatch_key = unbatch_key
+        self._pooling_dimension = pooling_dimension
 
         self._pooling_operator = PoolingSelector.select(pool_operator_name)
 
@@ -93,9 +108,11 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
         return results
 
     def _pooling(self, target: PhlowerTensor) -> PhlowerTensor:
-        _value = self._pooling_operator(
-            [target.to_tensor()], target.shape_pattern.nodes_dim
-        )
+        if self._pooling_dimension is None:
+            dim = target.shape_pattern.nodes_dim
+        else:
+            dim = self._pooling_dimension
+        _value = self._pooling_operator([target.to_tensor()], dim)
         return phlower_tensor(
             tensor=_value,
             dimension=target.dimension,

@@ -3,17 +3,22 @@ from collections.abc import Callable
 import torch
 
 
-def _max_pool(tensors: list[torch.Tensor], nodes_dim: int) -> torch.Tensor:
+def _max_pool(
+    tensors: list[torch.Tensor], pooling_dimension: int
+) -> torch.Tensor:
     return torch.stack(
-        [torch.max(t, dim=nodes_dim, keepdim=False)[0] for t in tensors],
-        dim=nodes_dim,
+        [
+            torch.max(t, dim=pooling_dimension, keepdim=False)[0]
+            for t in tensors
+        ],
+        dim=pooling_dimension,
     )
 
 
-def _mean(tensors: list[torch.Tensor], nodes_dim: int) -> torch.Tensor:
+def _mean(tensors: list[torch.Tensor], pooling_dimension: int) -> torch.Tensor:
     return torch.stack(
-        [torch.mean(t, dim=nodes_dim, keepdim=False) for t in tensors],
-        dim=nodes_dim,
+        [torch.mean(t, dim=pooling_dimension, keepdim=False) for t in tensors],
+        dim=pooling_dimension,
     )
 
 

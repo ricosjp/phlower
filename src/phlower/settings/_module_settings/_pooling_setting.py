@@ -15,6 +15,7 @@ class PoolingSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     unbatch_key: str | None = Field(None, frozen=True)
     nodes: list[int] | None = Field(None)
     pool_operator_name: PoolingType | str = Field("max", frozen=True)
+    pooling_dimension: int | None = Field(None, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)

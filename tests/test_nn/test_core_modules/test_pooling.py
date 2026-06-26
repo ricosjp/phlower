@@ -95,10 +95,54 @@ def test__pooling_for_uniform_tensor(
     ],
 )
 @pytest.mark.parametrize(
-    "input_shape, is_time_series, desired_shape",
+    "input_shape, is_time_series, pooling_dimension",
     [
-        ([10, 5], False, [1, 5]),
-        ([2, 10, 3, 1], True, [2, 1, 3, 1]),
+        ([10, 5], False, 0),
+        ([2, 10, 3, 1], True, 0),
+        ([2, 10, 3, 1], True, 1),
+    ],
+)
+def test__pooling_correct(
+    pool_operator_name: PoolingType,
+    input_shape: list[int],
+    is_time_series: bool,
+    pooling_dimension: int | None,
+):
+    _tensor = phlower_tensor(
+        np.random.rand(*input_shape),
+        is_time_series=is_time_series,
+        dtype=torch.float32,
+    )
+
+    model = Pooling(
+        pool_operator_name=pool_operator_name,
+        pooling_dimension=pooling_dimension,
+    )
+
+    result = model.forward(phlower_tensor_collection({"input": _tensor}))
+
+    torch_pooling = getattr(torch, pool_operator_name)
+    desired = torch_pooling(_tensor, dim=pooling_dimension, keepdim=True)
+    if isinstance(desired, tuple):
+        desired = desired[0]
+    np.testing.assert_array_almost_equal(result.numpy(), desired.numpy())
+
+
+@pytest.mark.parametrize(
+    "pool_operator_name",
+    [
+        PoolingType.max,
+        PoolingType.mean,
+    ],
+)
+@pytest.mark.parametrize(
+    "input_shape, is_time_series, pooling_dimension, desired_shape",
+    [
+        ([10, 5], False, None, [1, 5]),
+        ([10, 5], False, 0, [1, 5]),
+        ([2, 10, 3, 1], True, None, [2, 1, 3, 1]),
+        ([2, 10, 3, 1], True, 0, [1, 10, 3, 1]),
+        ([2, 10, 3, 1], True, 1, [2, 1, 3, 1]),
     ],
 )
 @pytest.mark.parametrize("dimension", [{}, {"T": -1, "L": 1}, None])
@@ -106,6 +150,7 @@ def test__pooling_for_not_batched_tensor(
     pool_operator_name: PoolingType,
     input_shape: list[int],
     is_time_series: bool,
+    pooling_dimension: int | None,
     desired_shape: list[int],
     dimension: dict | None,
 ):
@@ -116,7 +161,10 @@ def test__pooling_for_not_batched_tensor(
         dtype=torch.float32,
     )
 
-    model = Pooling(pool_operator_name=pool_operator_name)
+    model = Pooling(
+        pool_operator_name=pool_operator_name,
+        pooling_dimension=pooling_dimension,
+    )
 
     result = model.forward(phlower_tensor_collection({"input": _tensor}))
 
@@ -140,10 +188,13 @@ def test__pooling_for_not_batched_tensor(
     ],
 )
 @pytest.mark.parametrize(
-    "input_shapes, is_time_series, desired_shape",
+    "input_shapes, is_time_series, pooling_dimension, desired_shape",
     [
-        ([[10, 5], [30, 5]], False, [2, 5]),
-        ([[2, 10, 3, 1], [2, 50, 3, 1]], True, [2, 2, 3, 1]),
+        ([[10, 5], [30, 5]], False, None, [2, 5]),
+        ([[10, 5], [30, 5]], False, 0, [2, 5]),
+        ([[2, 10, 3, 1], [2, 50, 3, 1]], True, None, [2, 2, 3, 1]),
+        ([[2, 10, 3, 1], [2, 50, 3, 1]], True, 0, [1, 60, 3, 1]),
+        ([[2, 10, 3, 1], [2, 50, 3, 1]], True, 1, [2, 2, 3, 1]),
     ],
 )
 @pytest.mark.parametrize("dimension", [{}, {"T": -1, "L": 1}, None])
@@ -151,6 +202,7 @@ def test__pooling_for_batched_tensor(
     pool_operator_name: PoolingType,
     input_shapes: list[list[int]],
     is_time_series: bool,
+    pooling_dimension: int | None,
     desired_shape: list[int],
     dimension: dict | None,
 ):
@@ -167,7 +219,11 @@ def test__pooling_for_batched_tensor(
     _tensor, batch_info = to_batch(_tensors, _concat_dim)
     field = SimulationField({}, {"sample": batch_info})
 
-    model = Pooling(pool_operator_name=pool_operator_name, unbatch_key="sample")
+    model = Pooling(
+        pool_operator_name=pool_operator_name,
+        unbatch_key="sample",
+        pooling_dimension=pooling_dimension,
+    )
 
     result = model.forward(
         phlower_tensor_collection({"input": _tensor}), field_data=field
