@@ -342,7 +342,12 @@ class InterpolatorPresetGroupModule(
         if n_source_nodes == n_target_nodes:
             return functionals.unbatch(
                 phlower_tensor_collection(
-                    {k: v for k, v in field_data.items() if not v.is_sparse}
+                    {
+                        k: v
+                        for k, v in field_data.items()
+                        if not v.is_sparse
+                        and v.n_vertices() == sum(n_source_nodes)
+                    }
                 ),
                 n_nodes=n_source_nodes,
             )

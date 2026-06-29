@@ -25,35 +25,58 @@ def test__can_call_parameters():
 
 
 @pytest.mark.parametrize(
-    "n_sources, n_targets",
+    "n_sources, n_targets, n_others",
     [
-        ((10,), (10,)),
-        ((10, 10), (10, 10)),
-        ((10, 20), (10, 20)),
-        ((10,), (5,)),
-        ((10, 10), (5, 5)),
-        ((10, 20), (5, 10)),
-        ((10,), (20,)),
-        ((10, 10), (20, 20)),
-        ((10, 20), (20, 40)),
+        ((10,), (10,), (10,)),
+        ((10,), (10,), (20,)),
+        ((10, 10), (10, 10), (10, 10)),
+        ((10, 10), (10, 10), (20, 10)),
+        ((10, 20), (10, 20), (10, 20)),
+        ((10, 20), (10, 20), (20, 40)),
+        ((10,), (5,), (10,)),
+        ((10,), (5,), (5,)),
+        ((10,), (5,), (20,)),
+        ((10, 10), (5, 5), (10, 10)),
+        ((10, 10), (5, 5), (5, 5)),
+        ((10, 10), (5, 5), (20, 20)),
+        ((10, 20), (5, 10), (10, 20)),
+        ((10, 20), (5, 10), (5, 10)),
+        ((10, 20), (5, 10), (20, 40)),
+        ((10,), (20,), (10,)),
+        ((10,), (20,), (20,)),
+        ((10,), (20,), (40,)),
+        ((10, 10), (20, 20), (10, 10)),
+        ((10, 10), (20, 20), (20, 20)),
+        ((10, 10), (20, 20), (40, 40)),
+        ((10, 20), (20, 40), (10, 20)),
+        ((10, 20), (20, 40), (20, 40)),
+        ((10, 20), (20, 40), (40, 80)),
     ],
 )
-def test__unbatch_dense_field(n_sources: tuple[int], n_targets: tuple[int]):
+def test__unbatch_dense_field(
+    n_sources: tuple[int], n_targets: tuple[int], n_others: tuple[int]
+):
     source_positions = [
         phlower_tensor(torch.rand((n_source, 3, 1))) for n_source in n_sources
     ]
     target_positions = [
         phlower_tensor(torch.rand((n_target, 3, 1))) for n_target in n_targets
     ]
+    others = [
+        phlower_tensor(torch.rand((n_other, 3, 1))) for n_other in n_others
+    ]
 
     source_sparses = [
         phlower_tensor((torch.rand((n_source, n_source)) > 0.8).to_sparse_coo())
         for n_source in n_sources
     ]
-    # raise ValueError(source_positions[0], source_sparses[0])
     target_sparses = [
         phlower_tensor((torch.rand((n_target, n_target)) > 0.8).to_sparse_coo())
         for n_target in n_targets
+    ]
+    other_sparses = [
+        phlower_tensor((torch.rand((n_other, n_other)) > 0.8).to_sparse_coo())
+        for n_other in n_others
     ]
 
     batched_source_position, source_position_batch_info = to_batch(
@@ -62,8 +85,11 @@ def test__unbatch_dense_field(n_sources: tuple[int], n_targets: tuple[int]):
     batched_target_position, target_position_batch_info = to_batch(
         target_positions
     )
+    batched_other, other_batch_info = to_batch(others)
+
     batched_source_sparse, source_sparse_batch_info = to_batch(source_sparses)
     batched_target_sparse, target_sparse_batch_info = to_batch(target_sparses)
+    batched_other_sparse, other_sparse_batch_info = to_batch(other_sparses)
 
     field = SimulationField(
         phlower_tensor_collection(
@@ -72,6 +98,8 @@ def test__unbatch_dense_field(n_sources: tuple[int], n_targets: tuple[int]):
                 "source_sparse": batched_source_sparse,
                 "target_position": batched_target_position,
                 "target_sparse": batched_target_sparse,
+                "others": batched_other,
+                "other_sparse": batched_other_sparse,
             }
         ),
         batch_info={
@@ -79,6 +107,8 @@ def test__unbatch_dense_field(n_sources: tuple[int], n_targets: tuple[int]):
             "source_sparse": source_sparse_batch_info,
             "target_position": target_position_batch_info,
             "target_sparse": target_sparse_batch_info,
+            "others": other_batch_info,
+            "other_sparse": other_sparse_batch_info,
         },
     )
 
