@@ -38,6 +38,19 @@ class _MemberSetting(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
 
+class _RandomSamplingSetting(pydantic.BaseModel):
+    is_active: bool = True
+
+    n_sampled_points: int | None = None
+    """
+    Number of points to be randomly selected.
+    If None is set, all samples are used.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+
 class ArrayDataIOSetting(pydantic.BaseModel):
     name: str
     """
@@ -86,6 +99,15 @@ class ArrayDataIOSetting(pydantic.BaseModel):
     Data type of this feature array.
     If None is set, the data type is determined
     by the data loaded from file.
+    """
+
+    random_sampling: _RandomSamplingSetting = pydantic.Field(
+        default=_RandomSamplingSetting(is_active=False), frozen=True
+    )
+    """
+    Random sampling setting for this feature array.
+    If `is_active` is set to True, the feature array is randomly sampled
+    with `n_samples` number of samples.
     """
 
     # special keyward to forbid extra fields in pydantic

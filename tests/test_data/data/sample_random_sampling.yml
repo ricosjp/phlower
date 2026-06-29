@@ -1,0 +1,53 @@
+misc:
+  tests:
+    desired_n_points:
+      inputs: 
+        feature0: 10
+        feature1: 20
+        feature2: 30
+      labels:
+        feature3: 100
+
+
+
+model:
+  inputs:
+    - name: feature0
+      is_time_series: true
+      members:
+        - name: x0
+      random_sampling:
+        n_sampled_points: 10
+
+    - name: feature1
+      members:
+        - name: x1
+          n_last_dim: 1
+      random_sampling:
+        n_sampled_points: 20
+
+    - name: feature2
+      members:
+        - name: x2
+          n_last_dim: 1
+        - name: x3
+          n_last_dim: 1
+      random_sampling:
+        n_sampled_points: 30
+
+  labels:
+    - name: feature3
+      is_time_series: true
+      members:
+        - name: y0
+          n_last_dim: 1
+
+  fields:
+    - name: s0
+      batch_mode: block_diagonal
+  
+  network:
+    nn_type: GROUP
+    name: Dummy
+
+training: {}

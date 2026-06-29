@@ -415,6 +415,41 @@ def _apply_setting_to_array(
     io_setting: FieldIOSettingType,
     allow_missing: bool = False,
 ) -> IPhlowerArray | pv.UnstructuredGrid | None:
+    member_arrs: list[np.ndarray] = _extract_member_arrays(
+        io_setting, dict_arrs
+    )
+
+    if len(member_arrs) == 0:
+        if allow_missing:
+            return None
+        raise ValueError(f"Arrays for {io_setting.name} are missing.")
+
+    _array = (
+        member_arrs[0]
+        if len(member_arrs) == 1
+        else np.concatenate(member_arrs, axis=-1)
+    )
+    _array = phlower_array(
+        _array,
+        is_time_series=io_setting.is_time_series,
+        is_voxel=io_setting.is_voxel,
+        dimensions=io_setting.physical_dimension,
+        dtype=io_setting.dtype,
+    )
+    # -- time slice
+    if io_setting.time_slice is not None:
+        _array = _array.slice_along_time_axis(io_setting.time_slice_object)
+
+    # -- random sampling
+    if io_setting.random_sampling.is_active:
+        _array = _random_sampled_array(io_setting, _array)
+
+    return _array
+
+
+def _extract_member_arrays(
+    io_setting: ArrayDataIOSetting, dict_arrs: dict[str, np.ndarray]
+) -> list[np.ndarray]:
     member_arrs: list[np.ndarray] = []
     for member in io_setting.members:
         if member.name not in dict_arrs:
@@ -445,28 +480,51 @@ def _apply_setting_to_array(
         if member.index_first_dim is not None:
             _arr = _arr[member.index_first_dim]
         member_arrs.append(_arr)
+    return member_arrs
 
-    if len(member_arrs) == 0:
-        if allow_missing:
-            return None
-        raise ValueError(f"Arrays for {io_setting.name} are missing.")
 
-    _array = (
-        member_arrs[0]
-        if len(member_arrs) == 1
-        else np.concatenate(member_arrs, axis=-1)
+def _random_sampled_array(
+    io_setting: ArrayDataIOSetting, array: IPhlowerArray
+) -> IPhlowerArray:
+    if io_setting.is_voxel:
+        raise ValueError(
+            "Random sampling is not supported for voxel data. "
+            "Please set `random_sampling.is_active` to False "
+            f"for {io_setting.name}."
+        )
+
+    # NOTE: SO far, we assume that
+    # array's shape is (<n_times>, n_nodes, n_features)
+    n_node_index = 1 if array.is_time_series else 0
+    n_nodes = array.shape[n_node_index]
+    selected_indices = np.random.choice(
+        n_nodes,
+        size=io_setting.random_sampling.n_sampled_points,
+        replace=False,
     )
-    _array = phlower_array(
-        _array,
-        is_time_series=io_setting.is_time_series,
-        is_voxel=io_setting.is_voxel,
-        dimensions=io_setting.physical_dimension,
-        dtype=io_setting.dtype,
-    )
-    if io_setting.time_slice is None:
-        return _array
 
-    return _array.slice_along_time_axis(io_setting.time_slice_object)
+    ndarray = array.to_numpy()
+    if n_node_index == 0:
+        return phlower_array(
+            ndarray[selected_indices, ...],
+            is_time_series=array.is_time_series,
+            is_voxel=array.is_voxel,
+            dimensions=array.dimension,
+            dtype=ndarray.dtype,
+        )
+    if n_node_index == 1:
+        return phlower_array(
+            ndarray[:, selected_indices, ...],
+            is_time_series=array.is_time_series,
+            is_voxel=array.is_voxel,
+            dimensions=array.dimension,
+            dtype=ndarray.dtype,
+        )
+
+    raise ValueError(
+        "Unexpected error in random sampling. "
+        f"n_node_index: {n_node_index}, array shape: {array.shape}"
+    )
 
 
 # endregion
