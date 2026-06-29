@@ -10,19 +10,6 @@ from phlower.utils.typing import DenseArrayType, SparseArrayType
 
 
 @pytest.fixture
-def scalers_name() -> str:
-    scalers_name = [
-        "identity",
-        "standardize",
-        "std_scale",
-        "isoam_scale",
-        "min_max",
-        "max_abs_powered",
-    ]
-    return scalers_name
-
-
-@pytest.fixture
 def sample_data() -> np.ndarray:
     return np.random.rand(100, 3)
 
