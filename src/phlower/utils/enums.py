@@ -39,7 +39,7 @@ class DirectoryType(Enum):
     PREPROCESSED = 2
 
 
-class PhlowerScalerName(Enum):
+class PhlowerScalerName(StrEnum):
     identity = "identity"
     isoam_scale = "isoam_scale"
     max_abs_powered = "max_abs_powered"
@@ -48,6 +48,7 @@ class PhlowerScalerName(Enum):
     standardize = "standardize"
     std_scale = "std_scale"
     logit_transform = "logit_transform"
+    physical_nondimensionalize = "physical_nondimensionalize"
 
 
 class ActivationType(StrEnum):

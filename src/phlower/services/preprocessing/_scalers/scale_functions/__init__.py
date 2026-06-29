@@ -1,6 +1,10 @@
 from phlower.services.preprocessing._scalers import IPhlowerScaler
 from phlower.utils.enums import PhlowerScalerName
 
+from ._physics_nondimensionalize_scaler import (
+    PhysicalDataType,
+    PhysicalNondimensionalizeScaler,
+)
 from .identity_scaler import IdentityScaler
 from .isoam_scaler import IsoAMScaler
 from .logit_transform import LogitTransformScaler
@@ -18,6 +22,9 @@ _alias_to_scaler: dict[str, IPhlowerScaler] = {
     PhlowerScalerName.standardize.value: StandardScaler,
     PhlowerScalerName.std_scale.value: StandardScaler,
     PhlowerScalerName.logit_transform.value: LogitTransformScaler,
+    PhlowerScalerName.physical_nondimensionalize.value: (
+        PhysicalNondimensionalizeScaler
+    ),
 }
 
 

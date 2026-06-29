@@ -1,0 +1,24 @@
+scaling:
+  variable_name_to_scalers:
+
+    nodal_initial_u:
+      method: physical_nondimensionalize
+      parameters:
+        data_type: velocity
+        rho: 1.0
+        nu: 1.0
+        U: 10.0
+        L: 1.0
+
+    nodal_last_u:
+      same_as: nodal_initial_u
+      join_fitting: false
+
+    nodal_coordinates:
+      method: physical_nondimensionalize
+      parameters:
+        data_type: length
+        rho: 1.0
+        nu: 1.0
+        U: 10.0
+        L: 1.0
