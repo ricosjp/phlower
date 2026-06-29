@@ -182,9 +182,7 @@ def create_encrypted_dataset() -> bytes:
 
 
 @pytest.fixture(scope="module")
-def create_dataset_with_index_like_values() -> dict[
-    str, dict[str, ArrayDataType]
-]:
+def create_dataset_with_index_like_values() -> None:
 
     name2dense_shape: dict[str, tuple[int, ...]] = {
         "x0": (1, 3, 4, 1),
@@ -212,3 +210,34 @@ def create_dataset_with_index_like_values() -> dict[
         mesh_n_points=[20, 30, 40],
         indexlike_names=index_like_names,
     )
+
+
+@pytest.fixture(scope="module")
+def create_dataset_with_n_nodes_100() -> pathlib.Path:
+    output_directory = (
+        pathlib.Path(__file__).parent / "tmp/datasets_with_n_nodes_100"
+    )
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+    output_directory.mkdir(parents=True)
+
+    name2dense_shape: dict[str, tuple[int, ...]] = {
+        "x0": (1, 100, 4, 1),
+        "x1": (100, 5, 1),
+        "x2": (100, 3, 1),
+        "x3": (100, 3, 1),
+        "y0": (1, 100, 4, 1),
+    }
+    name2sparse_shape: dict[str, tuple[int, ...]] = {
+        "s0": (5, 5),
+        "s1": (10, 5),
+    }
+    create_dataset(
+        output_base_directory=output_directory,
+        directory_names=["data0", "data1", "data2"],
+        name2dense_shape=name2dense_shape,
+        name2sparse_shape=name2sparse_shape,
+        include_mesh=False,
+        encrypt_key=None,
+    )
+    return output_directory

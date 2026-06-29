@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 import pytest
 import torch
+import yaml
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -482,6 +483,68 @@ def test__consider_batch_mode(
             assert val.shape == _shape
             assert torch.min(item.field_data[name]) == 0
             assert torch.max(item.field_data[name]) == _shape[0] - 1
+
+
+# endregion
+
+
+# region test for random sampling
+
+
+@pytest.mark.parametrize("batch_size", [1, 2, 3])
+@pytest.mark.parametrize("yaml_file_name", ["sample_random_sampling.yml"])
+def test__random_sampling(
+    batch_size: int,
+    yaml_file_name: str,
+    create_dataset_with_n_nodes_100: pathlib.Path,
+):
+    output_base_directory = create_dataset_with_n_nodes_100
+    directories = [
+        output_base_directory / v for v in ["data0", "data1", "data2"]
+    ]
+
+    yaml_path = _DATA_DIR / yaml_file_name
+    with yaml_path.open() as f:
+        yaml_content = yaml.safe_load(f)
+    misc = yaml_content.pop("misc")
+    setting = PhlowerSetting.model_validate(yaml_content)
+    setting = PhlowerSetting.model_validate(
+        setting.model_dump()
+        | {
+            "training": {
+                "batch_size": batch_size,
+            }
+        }
+    )
+
+    dataset = OnMemoryPhlowerDataSet.create(
+        input_settings=setting.model.inputs,
+        label_settings=setting.model.labels,
+        field_settings=setting.model.fields,
+        directories=directories,
+    )
+    builder = DataLoaderBuilder.from_setting(setting.training)
+
+    dataloader = builder.create(dataset, drop_last=True)
+
+    tests = misc["tests"]["desired_n_points"]
+
+    for item in dataloader:
+        item: LumpedTensorData
+        assert len(item.data_directories) == batch_size
+        assert item.n_data == batch_size
+
+        for name in item.x_data.keys():
+            assert (
+                item.x_data[name].n_vertices()
+                == int(tests["inputs"][name]) * batch_size
+            )
+
+        for name in item.y_data.keys():
+            assert (
+                item.y_data[name].n_vertices()
+                == int(tests["labels"][name]) * batch_size
+            )
 
 
 # endregion
