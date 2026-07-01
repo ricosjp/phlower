@@ -14,9 +14,62 @@ from pydantic import (
 from typing_extensions import deprecated
 
 from phlower.utils import get_logger
-from phlower.utils.enums import PhlowerIterationSolverType
+from phlower.utils.enums import (
+    PhlowerCGPreconditionType,
+    PhlowerIterationSolverType,
+)
 
 _logger = get_logger(__name__)
+
+
+class ICGPreconditionSetting(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def get_precondition_type(self) -> str: ...
+
+
+class NoneCGPreconditionSetting(pydantic.BaseModel, ICGPreconditionSetting):
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    def get_precondition_type(self) -> str:
+        return PhlowerCGPreconditionType.none.value
+
+
+class RandomJacobiCGPreconditionSetting(
+    pydantic.BaseModel, ICGPreconditionSetting
+):
+    num_of_trials: int = pydantic.Field(default_factory=1)
+
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    def get_precondition_type(self) -> str:
+        return PhlowerCGPreconditionType.random_jacobi.value
+
+
+_cg_precondition_name_to_setting: dict[str, ICGPreconditionSetting] = {
+    PhlowerCGPreconditionType.none.value: NoneCGPreconditionSetting,
+    PhlowerCGPreconditionType.random_jacobi.value: RandomJacobiCGPreconditionSetting,  # noqa: E501
+}
+
+
+def _cg_precondition_validate(
+    vals: dict, info: ValidationInfo
+) -> ICGPreconditionSetting:
+    cg_precondition_type = info.data["precondition_type"]
+
+    if cg_precondition_type not in PhlowerCGPreconditionType.__members__:
+        raise NotImplementedError(
+            f"precondition_type: {cg_precondition_type} is not implemented."
+        )
+    setting_cls: pydantic.BaseModel = _cg_precondition_name_to_setting[
+        cg_precondition_type
+    ]
+    return setting_cls.model_validate(vals, context=info.context)
+
+
+def _cg_precondition_serialize(
+    v: pydantic.BaseModel, info: SerializationInfo
+) -> dict[str, Any]:
+    return v.model_dump()
 
 
 class IPhlowerIterationSolverSetting(metaclass=abc.ABCMeta):
@@ -235,6 +288,13 @@ class BarzilaiBoweinSolverSetting(
         return self.update_keys
 
 
+CGPreconditionParameters = Annotated[
+    ICGPreconditionSetting,
+    PlainValidator(_cg_precondition_validate),
+    PlainSerializer(_cg_precondition_serialize),
+]
+
+
 class ConjugateGradientSolverSetting(
     pydantic.BaseModel, IPhlowerIterationSolverSetting
 ):
@@ -287,6 +347,18 @@ class ConjugateGradientSolverSetting(
     """
     If True, the backward operation is strictly reversing of the CG method.
     If False, the backward operation is memory-saving approximated approach.
+    """
+
+    precondition_type: str = pydantic.Field("none", frozen=True)
+    """
+    Preconditioner type for the solver.
+    """
+
+    precondition_parameters: CGPreconditionParameters = pydantic.Field(
+        default_factory=dict, validate_default=True, frozen=True
+    )
+    """
+    Parameters to pass preconditioner. Contents depends on preconditioner_type
     """
 
     # special keyward to forbid extra fields in pydantic

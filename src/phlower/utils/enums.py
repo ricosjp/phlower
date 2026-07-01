@@ -81,6 +81,11 @@ class PhlowerIterationSolverType(StrEnum):
     cg = "cg"  # conjugate gradient
 
 
+class PhlowerCGPreconditionType(StrEnum):
+    none = "none"
+    random_jacobi = "random_jacobi"
+
+
 class PhlowerHandlerRegisteredKey(StrEnum):
     TERMINATE = "TERMINATE"
 
