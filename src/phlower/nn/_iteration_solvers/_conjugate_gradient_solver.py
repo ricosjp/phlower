@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import abc
 from collections.abc import KeysView
 
+import pydantic
 import torch
 from phlower_tensor import functionals as functions
 from phlower_tensor.collections import (
@@ -15,12 +17,166 @@ from phlower.nn._interface_iteration_solver import (
     IOptimizeProblem,
 )
 from phlower.settings._iteration_solver_setting import (
+    CGPreconditionParameters,
     ConjugateGradientSolverSetting,
     IPhlowerIterationSolverSetting,
 )
 from phlower.utils import get_logger
+from phlower.utils.enums import PhlowerCGPreconditionType
 
 _logger = get_logger(__name__)
+
+
+# region Preconditioner
+
+
+def create_preconditioner(
+    precondition_type: None | str,
+    parameteres: dict | pydantic.BaseModel | None = None,
+) -> IPreconditioner:
+    precondtioner_type = precondition_type or PhlowerCGPreconditionType.none
+    parameters = parameteres or {}
+    if isinstance(parameters, pydantic.BaseModel):
+        parameters = parameters.model_dump()
+
+    match precondtioner_type:
+        case PhlowerCGPreconditionType.none:
+            return NonePreconditioner(**parameters)
+
+        case PhlowerCGPreconditionType.random_jacobi:
+            return RandomJacobiPreconditioner(**parameters)
+
+        case _:
+            raise NotImplementedError(
+                f"Preconditioner type {precondtioner_type} is not implemented."
+            )
+
+
+class IPreconditioner(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def build_internal_state(
+        self,
+        solver: ConjugateGradientSolver,
+        problem: IOptimizeProblem,
+        initial_values: IPhlowerTensorCollections,
+    ) -> None:
+        """
+        Prepare the preconditioner for the iteration solver.
+        This method should be called before the iteration solver starts.
+        In many cases, precondition matrix is constructed
+        based on the initial values and the problem.
+        """
+        ...
+
+    @abc.abstractmethod
+    def apply(
+        self, x: IPhlowerTensorCollections
+    ) -> IPhlowerTensorCollections: ...
+
+
+class NonePreconditioner(IPreconditioner):
+    def __init__(self):
+        return
+
+    def build_internal_state(
+        self,
+        solver: ConjugateGradientSolver,
+        problem: IOptimizeProblem,
+        initial_values: IPhlowerTensorCollections,
+    ) -> None:
+        return
+
+    def apply(self, x: IPhlowerTensorCollections) -> IPhlowerTensorCollections:
+        return x
+
+
+# TODO
+# Preconditioner should preferably not depend on
+# the specific linear solver being used.
+class RandomJacobiPreconditioner(IPreconditioner):
+    """
+    RandomJacobiPreconditioner is a Jacobi preconditioner
+    that estimates the diagonal of a LinearOperator via a randomized algorithm.
+
+    Ref: https://arxiv.org/pdf/2202.02887
+    """
+
+    def __init__(
+        self,
+        num_of_trials: int = 1,
+    ) -> None:
+        self.num_of_trials = num_of_trials
+        self.pred_diag: IPhlowerTensorCollections | None = None
+
+    def build_internal_state(
+        self,
+        solver: ConjugateGradientSolver,
+        problem: IOptimizeProblem,
+        initial_values: IPhlowerTensorCollections,
+    ) -> None:
+
+        # TODO: this process heavily depends on CG solver's implementation.
+        # We need to find a better way to implement this.
+
+        key_shape_pair = {
+            key: initial_values[key].shape for key in solver._update_keys
+        }
+        dirichlet = phlower_tensor_collection(
+            {
+                key: initial_values[dirichlet]
+                for key, dirichlet in solver._dict_variable_to_dirichlet.items()
+            }
+        )
+
+        pred2 = None
+        for _ in range(self.num_of_trials):
+            y = phlower_tensor_collection(
+                {
+                    key: torch.randn(shape, requires_grad=False)
+                    for key, shape in key_shape_pair.items()
+                }
+            )
+
+            y = solver._apply_dirichlet(y, dirichlet, factor=0.0)
+
+            lap = (
+                problem.gradient(
+                    y,
+                    update_keys=solver._update_keys,
+                    operator_keys=solver._operator_keys,
+                )
+                * y
+            )
+            lap = solver._apply_dirichlet(lap, dirichlet, factor=0.0)
+            if pred2 is None:
+                pred2 = lap
+            else:
+                pred2 = pred2 + lap
+
+        self.pred_diag = pred2 / self.num_of_trials
+
+    def apply(self, x: IPhlowerTensorCollections) -> IPhlowerTensorCollections:
+        if self.pred_diag is None:
+            raise ValueError(
+                "Preconditioner is not initialized. "
+                "Call `build_internal_state` method "
+                "before applying the preconditioner."
+            )
+
+        ans = {}
+        assert self.pred_diag.keys() == x.keys()
+        eps = 1.0e-6
+        for key in x.keys():
+            ans[key] = torch.where(
+                torch.abs(self.pred_diag[key]._tensor) > eps,
+                x[key] / self.pred_diag[key],
+                x[key],
+            )
+
+        return phlower_tensor_collection(ans)
+
+
+# endregion
 
 
 def _cg_core(
@@ -28,7 +184,11 @@ def _cg_core(
     b: IPhlowerTensorCollections,
     initial_values: IPhlowerTensorCollections,
     self: ConjugateGradientSolver,
+    preconditioner: IPreconditioner | None = None,
 ) -> tuple[torch.Tensor]:
+    if preconditioner is None:
+        preconditioner = NonePreconditioner()
+
     x = initial_values.clone()
     dirichlet = phlower_tensor_collection(
         {
@@ -44,10 +204,12 @@ def _cg_core(
 
     r = b - lap
     r = self._apply_dirichlet(r, dirichlet, factor=0.0)
-    p = r
-    norm_r = self._inner(r, r)
+    z = preconditioner.apply(r)
+    z = self._apply_dirichlet(z, dirichlet, factor=0.0)
+    p = z
+    norm_rz = self._inner(r, z)
 
-    initial_criteria = norm_r.apply(torch.linalg.norm)
+    initial_criteria = norm_rz.apply(torch.linalg.norm)
     if initial_criteria >= self._initial_convergence_threshold:
         for _ in range(self._max_iterations):
             self._n_iterated += 1
@@ -58,16 +220,18 @@ def _cg_core(
                 operator_keys=self._operator_keys,
             )
             ap = self._apply_dirichlet(ap, dirichlet, factor=0.0)
-            alpha = norm_r / self._inner(p, ap)
+            alpha = norm_rz / self._inner(p, ap)
 
             x.update(x.mask(self._update_keys) + alpha * p, overwrite=True)
 
             r = r - alpha * ap
-            norm_r_new = self._inner(r, r)
-            p = r + (norm_r_new / norm_r) * p
-            norm_r = norm_r_new
+            z = preconditioner.apply(r)
+            norm_rz_new = self._inner(r, z)
+            p = r + (norm_rz_new / norm_rz) * p
+            norm_rz = norm_rz_new
 
-            criteria = norm_r.apply(torch.linalg.norm) / initial_criteria
+            criteria = norm_rz.apply(torch.linalg.norm) / initial_criteria
+
             if criteria < self._convergence_threshold:
                 self._is_converged = True
                 break
@@ -125,7 +289,13 @@ class ConjugateGradientSolver_Core(torch.autograd.Function):
         ctx.phlower_gradient_solver = self
         ctx.phlower_iteration_problem_initial_values = initial_values
 
-        x = _cg_core(problem, b, initial_values, self)
+        x = _cg_core(
+            problem,
+            b,
+            initial_values,
+            self,
+            preconditioner=self._preconditioner,
+        )
 
         x_clone = tuple([t.detach().clone().requires_grad_(False) for t in x])
 
@@ -163,7 +333,11 @@ class ConjugateGradientSolver_Core(torch.autograd.Function):
         )
 
         grad_b = _cg_core(
-            problem, grad_outputs, initial_values_zero, self
+            problem,
+            grad_outputs,
+            initial_values_zero,
+            self,
+            preconditioner=self._preconditioner,
         )  # because A = A^T
 
         grad_b_new = dict(zip(keys, grad_b, strict=True))
@@ -212,7 +386,7 @@ class ConjugateGradientSolver(IFIterationSolver):
         cls, setting: IPhlowerIterationSolverSetting
     ) -> ConjugateGradientSolver:
         assert isinstance(setting, ConjugateGradientSolverSetting)
-        return ConjugateGradientSolver(**setting.__dict__)
+        return ConjugateGradientSolver(**setting.model_dump())
 
     def __init__(
         self,
@@ -225,6 +399,8 @@ class ConjugateGradientSolver(IFIterationSolver):
         initial_convergence_threshold: float = 1.0e-16,
         operator_keys: list[str] | None = None,
         exact_backward_flag: bool = True,
+        precondition_type: str | None = None,
+        precondition_parameters: dict | CGPreconditionParameters | None = None,
     ) -> None:
         self._max_iterations = max_iterations
         self._convergence_threshold = convergence_threshold
@@ -254,6 +430,13 @@ class ConjugateGradientSolver(IFIterationSolver):
         )
         self._exact_backward_flag = exact_backward_flag
 
+        self._precondition_type = precondition_type
+        self._precondition_parameters = precondition_parameters or {}
+        self._preconditioner = create_preconditioner(
+            precondition_type=precondition_type,
+            parameteres=self._precondition_parameters,
+        )
+
     def _validate_keys(self, dict_name: str, dict_keys: KeysView):
         unmatched_keys = [
             dict_key
@@ -282,6 +465,15 @@ class ConjugateGradientSolver(IFIterationSolver):
         x = initial_values.clone()
         keys = initial_values.keys()
 
+        with torch.no_grad():
+            self._preconditioner.build_internal_state(
+                solver=self,
+                problem=problem,
+                initial_values=initial_values,
+            )
+            # The same preconditioner is applied to both forward and backward
+            # passes because A=A^T
+
         if self._exact_backward_flag:
             b = phlower_tensor_collection(
                 {
@@ -291,7 +483,14 @@ class ConjugateGradientSolver(IFIterationSolver):
                     for key in self._update_keys
                 }
             )
-            outputs = _cg_core(problem, b, initial_values, self)
+
+            outputs = _cg_core(
+                problem,
+                b,
+                initial_values,
+                self,
+                preconditioner=self._preconditioner,
+            )
         else:
             tensors = [initial_values[key]._tensor for key in keys]
             dummy_tensor = torch.tensor(0.0, requires_grad=True)

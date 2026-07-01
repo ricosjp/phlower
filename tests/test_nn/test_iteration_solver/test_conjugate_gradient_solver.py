@@ -2,6 +2,8 @@ import numpy as np
 import pytest
 import pyvista as pv
 import torch
+from hypothesis import given
+from hypothesis import strategies as st
 from phlower_tensor import PhlowerTensor, phlower_tensor
 from phlower_tensor.collections import (
     IPhlowerTensorCollections,
@@ -17,6 +19,7 @@ from phlower.nn._iteration_solvers._conjugate_gradient_solver import (
 )
 from phlower.settings._iteration_solver_setting import (
     ConjugateGradientSolverSetting,
+    RandomJacobiCGPreconditionSetting,
 )
 
 
@@ -112,7 +115,7 @@ class PoissonModel:
         )
 
 
-def test__from_setting():
+def test__from_default_setting():
     setting = ConjugateGradientSolverSetting(
         convergence_threshold=1.0e-4,
         max_iterations=100,
@@ -121,12 +124,36 @@ def test__from_setting():
         dict_variable_to_dirichlet={"a": "dirichlet_a"},
     )
     solver = ConjugateGradientSolver.from_setting(setting)
-    for key, value in vars(setting).items():
-        actual = getattr(solver, "_" + key)
-        if isinstance(value, float):
-            np.testing.assert_almost_equal(actual, value)
-        else:
-            assert actual == value
+
+    assert solver._max_iterations == setting.max_iterations
+    assert solver._convergence_threshold == setting.convergence_threshold
+    assert solver._divergence_threshold == setting.divergence_threshold
+    assert solver._update_keys == setting.update_keys
+    assert (
+        solver._dict_variable_to_dirichlet == setting.dict_variable_to_dirichlet
+    )
+    assert solver._precondition_type == "none"
+
+
+@given(num_of_trials=st.integers(min_value=1, max_value=1000))
+def test__from_random_jacobi_setting(num_of_trials: int):
+    setting = ConjugateGradientSolverSetting(
+        **{
+            "convergence_threshold": 1.0e-4,
+            "max_iterations": 100,
+            "divergence_threshold": 1000,
+            "update_keys": ["a"],
+            "dict_variable_to_dirichlet": {"a": "dirichlet_a"},
+            "precondition_type": "random_jacobi",
+            "precondition_parameters": {
+                "num_of_trials": num_of_trials,
+            },
+        }
+    )
+
+    solver = ConjugateGradientSolver.from_setting(setting)
+    assert solver._precondition_type == "random_jacobi"
+    assert solver._preconditioner.num_of_trials == num_of_trials
 
 
 @pytest.mark.parametrize("n_target", [1, 2, 3])
@@ -531,3 +558,151 @@ def test__check_memory_usage(n_mat: int):
         low_memory_max_allocated * 1.2 < max_allocated
         or identity_model.get_device() == "cpu"
     )
+
+
+def test__raise_value_error_when_unsupported_precondition():
+    with pytest.raises(
+        NotImplementedError, match="precondition_type: hoge is not implemented."
+    ):
+        _ = ConjugateGradientSolverSetting(
+            convergence_threshold=1.0e-4,
+            max_iterations=100,
+            divergence_threshold=1000,
+            update_keys=["a"],
+            dict_variable_to_dirichlet={"a": "dirichlet_a"},
+            precondition_type="hoge",
+        )
+
+
+@pytest.mark.parametrize("n_target", [3])
+@pytest.mark.parametrize("n_x", [5])
+@pytest.mark.parametrize("x_length", [0.1])
+def test__can_converge_laplace_equation_with_RandomJacobi_precond(
+    n_target: int, n_x: int, x_length: float
+):
+    torch.manual_seed(0)
+    operator_keys = [f"x{i}" for i in range(n_target)]
+    solver = ConjugateGradientSolver(
+        max_iterations=n_x * 10,
+        convergence_threshold=1.0e-5,
+        divergence_threshold=1.0e5,
+        update_keys=operator_keys,
+        operator_keys=operator_keys,
+        dict_variable_to_right={},
+        dict_variable_to_dirichlet={
+            k: f"x_bnd{i}" for i, k in enumerate(operator_keys)
+        },
+        precondition_type="random_jacobi",
+        precondition_parameters=RandomJacobiCGPreconditionSetting(
+            num_of_trials=50
+        ),
+    )
+
+    poisson_model = PoissonModel(n_x, x_length, keys=operator_keys)
+    n = poisson_model.n
+
+    dict_inputs = {}
+    dict_inputs.update(
+        {
+            k: phlower_tensor(torch.ones(n, 1) * 0.1 * i)
+            for i, k in enumerate(operator_keys)
+        }
+    )
+    dict_inputs.update(
+        {
+            right: phlower_tensor(torch.zeros(n, 1))
+            for right in solver._dict_variable_to_right.values()
+        }
+    )
+    for i, dirichlet in enumerate(solver._dict_variable_to_dirichlet.values()):
+        bnd = torch.ones(n, 1) * torch.nan
+        bnd[poisson_model.filter_left] = 1.0 * (i + 1)
+        bnd[poisson_model.filter_right] = 0.0
+        dict_inputs.update({dirichlet: bnd})
+    dict_inputs.update({"pos": phlower_tensor(poisson_model.pos)})
+
+    inputs = phlower_tensor_collection(dict_inputs)
+    problem = _GroupOptimizeProblem(
+        initials=inputs,
+        step_forward=poisson_model.laplacian,
+        steady_mode=True,
+    )
+    h = solver.run(inputs, problem)
+
+    for i, target in enumerate(operator_keys):
+        actual = h[target]
+        desired = (x_length - poisson_model.pos[:, [0]]) / x_length * (i + 1)
+        scale = np.max(desired)
+        np.testing.assert_array_almost_equal(
+            actual.numpy() / scale, desired / scale, decimal=2
+        )
+
+
+@pytest.mark.parametrize("n_target", [1])
+@pytest.mark.parametrize("n_x", [200])
+@pytest.mark.parametrize("x_length", [0.1])
+def test__check_iterations_with_precond(
+    n_target: int, n_x: int, x_length: float
+):
+    torch.manual_seed(0)
+    operator_keys = [f"x{i}" for i in range(n_target)]
+    solver = ConjugateGradientSolver(
+        max_iterations=n_x * 10,
+        convergence_threshold=1.0e-5,
+        divergence_threshold=1.0e5,
+        update_keys=operator_keys,
+        operator_keys=operator_keys,
+        dict_variable_to_right={},
+        dict_variable_to_dirichlet={
+            k: f"x_bnd{i}" for i, k in enumerate(operator_keys)
+        },
+    )
+    RandomJacobisolver = ConjugateGradientSolver(
+        max_iterations=n_x * 10,
+        convergence_threshold=1.0e-5,
+        divergence_threshold=1.0e5,
+        update_keys=operator_keys,
+        operator_keys=operator_keys,
+        dict_variable_to_right={},
+        dict_variable_to_dirichlet={
+            k: f"x_bnd{i}" for i, k in enumerate(operator_keys)
+        },
+        precondition_type="random_jacobi",
+        precondition_parameters=RandomJacobiCGPreconditionSetting(
+            num_of_trials=3000
+        ),
+    )
+
+    poisson_model = PoissonModel(n_x, x_length, keys=operator_keys)
+    n = poisson_model.n
+
+    dict_inputs = {}
+    dict_inputs.update(
+        {
+            k: phlower_tensor(torch.ones(n, 1) * 0.1 * i)
+            for i, k in enumerate(operator_keys)
+        }
+    )
+    dict_inputs.update(
+        {
+            right: phlower_tensor(torch.zeros(n, 1))
+            for right in solver._dict_variable_to_right.values()
+        }
+    )
+    for i, dirichlet in enumerate(solver._dict_variable_to_dirichlet.values()):
+        bnd = torch.ones(n, 1) * torch.nan
+        bnd[poisson_model.filter_left] = 1.0 * (i + 1)
+        bnd[poisson_model.filter_right] = 0.0
+        dict_inputs.update({dirichlet: bnd})
+    dict_inputs.update({"pos": phlower_tensor(poisson_model.pos)})
+
+    inputs = phlower_tensor_collection(dict_inputs)
+    problem = _GroupOptimizeProblem(
+        initials=inputs,
+        step_forward=poisson_model.laplacian,
+        steady_mode=True,
+    )
+    _ = solver.run(inputs, problem)
+    _ = RandomJacobisolver.run(inputs, problem)
+
+    assert RandomJacobisolver._n_iterated < solver._n_iterated
