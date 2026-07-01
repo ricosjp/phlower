@@ -9,6 +9,7 @@ from phlower.nn._core_modules._dirichlet import Dirichlet
 from phlower.nn._core_modules._einsum import Einsum
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._en_equivariant_tcn import EnEquivariantTCN
+from phlower.nn._core_modules._fixed_norm import FixedNorm
 from phlower.nn._core_modules._gcn import GCN
 from phlower.nn._core_modules._identity import Identity
 from phlower.nn._core_modules._iso_gcn import IsoGCN
@@ -45,6 +46,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     EnEquivariantMLP,
     EnEquivariantTCN,
     Einsum,
+    FixedNorm,
     GCN,
     Identity,
     IsoGCN,
