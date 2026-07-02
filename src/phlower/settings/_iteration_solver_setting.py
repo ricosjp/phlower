@@ -349,6 +349,11 @@ class ConjugateGradientSolverSetting(
     If False, the backward operation is memory-saving approximated approach.
     """
 
+    log_level: str = pydantic.Field("warning", frozen=True)
+    """
+    Log level for unconvergent case.
+    """
+
     precondition_type: str = pydantic.Field("none", frozen=True)
     """
     Preconditioner type for the solver.
