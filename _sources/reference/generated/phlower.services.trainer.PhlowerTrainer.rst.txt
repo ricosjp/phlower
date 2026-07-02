@@ -1,0 +1,55 @@
+﻿:orphan:
+
+phlower.services.trainer.PhlowerTrainer
+=======================================
+
+.. currentmodule:: phlower.services.trainer
+
+.. autoclass:: PhlowerTrainer
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerTrainer.__init__
+   
+   
+      ~PhlowerTrainer.attach_handler
+   
+   
+      ~PhlowerTrainer.draw_model
+   
+   
+      ~PhlowerTrainer.from_setting
+   
+   
+      ~PhlowerTrainer.get_n_handlers
+   
+   
+      ~PhlowerTrainer.get_registered_trainer_setting
+   
+   
+      ~PhlowerTrainer.load_pretrained
+   
+   
+      ~PhlowerTrainer.restart_from
+   
+   
+      ~PhlowerTrainer.train
+   
+   
+      ~PhlowerTrainer.train_ddp
+   
+   
+      ~PhlowerTrainer.train_fsdp
+   
+   
+
+
+
+   
+   
+   
