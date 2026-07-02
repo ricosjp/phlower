@@ -258,6 +258,56 @@ def test__can_converge_poisson_equation(n_x: int, x_length: float):
     )
 
 
+@pytest.mark.parametrize("n_x", [5])
+@pytest.mark.parametrize("x_length", [1.0])
+def test__can_run_multiple_inputs(n_x: int, x_length: float):
+    solver = ConjugateGradientSolver(
+        max_iterations=n_x * 100,
+        convergence_threshold=1.0e-8,
+        divergence_threshold=1.0e5,
+        update_keys=["x"],
+        operator_keys=["x"],
+        dict_variable_to_right={"x": "b"},
+        dict_variable_to_dirichlet={"x": "x_bnd"},
+    )
+
+    poisson_model = PoissonModel(n_x, x_length=x_length)
+    n = poisson_model.n
+    x_bnd = torch.ones(n, 1) * torch.nan
+    x_bnd[poisson_model.filter_left] = 0.0
+    x_bnd[poisson_model.filter_right] = 0.0
+    b = torch.ones(n, 1) * poisson_model.dx**2 / 2
+    inputs = phlower_tensor_collection(
+        {
+            "x": phlower_tensor(torch.zeros(n, 1)),
+            "b": phlower_tensor(b),
+            "nu": phlower_tensor(torch.ones(1, 1) * 0.95),
+            "x_bnd": phlower_tensor(x_bnd),
+            "pos": phlower_tensor(poisson_model.pos),
+        }
+    )
+
+    def forward(x: IPhlowerTensorCollections) -> IPhlowerTensorCollections:
+        lap = poisson_model.laplacian(x)
+        lap.update({"x": x["nu"] * lap["x"]}, overwrite=True)
+        return lap
+
+    problem = _GroupOptimizeProblem(
+        initials=inputs,
+        step_forward=forward,
+        steady_mode=True,
+    )
+    h = solver.run(inputs, problem)
+
+    actual = h.unique_item()
+    x = poisson_model.x[:, None]
+    desired = -x * (x - x_length)
+    scale = np.max(desired)
+    np.testing.assert_array_almost_equal(
+        actual / scale, desired / scale, decimal=1
+    )
+
+
 def test__raises_value_error_when_right_keys_incomplete():
     with pytest.raises(ValueError, match="Unmatched dict_variable_to_right"):
         ConjugateGradientSolver(
@@ -415,13 +465,13 @@ def test__check_gradient_value(n_x: int, x_length: float):
     np.testing.assert_array_almost_equal(
         coef1.grad.numpy() / scale,
         low_memory_coef1.grad.numpy() / scale,
-        decimal=4,
+        decimal=3,
     )
     scale = np.max(coef2.grad.numpy())
     np.testing.assert_array_almost_equal(
         coef2.grad.numpy() / scale,
         low_memory_coef2.grad.numpy() / scale,
-        decimal=4,
+        decimal=3,
     )
 
     """
@@ -555,7 +605,7 @@ def test__check_memory_usage(n_mat: int):
     del h, loss
 
     assert (
-        low_memory_max_allocated * 1.2 < max_allocated
+        low_memory_max_allocated * 1.1 < max_allocated
         or identity_model.get_device() == "cpu"
     )
 

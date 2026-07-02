@@ -201,7 +201,6 @@ class PhlowerGroupModule(
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> dagstream.DagStream:
-
         if parent is not None:
             self._parent_prefix = parent.get_unique_name() + "."
 
@@ -255,7 +254,6 @@ class PhlowerGroupModule(
         state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
-
         with FieldDataOverwriteContext(
             source=data,
             field=field_data,

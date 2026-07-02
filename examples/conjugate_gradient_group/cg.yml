@@ -1,0 +1,233 @@
+misc:
+  n_feature: &n_feature 16
+
+data:
+  training:
+    - data/case_0
+  validation: []
+
+training:
+  batch_size: 1
+  random_seed: 0
+  device: "auto"
+  n_epoch: 200
+  loss_setting:
+    name2loss:
+      phi: "mse"
+  optimizer_setting:
+    optimizer: Adam
+    parameters:
+      lr: 0.01
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+
+model:
+  inputs:
+    - name: phi_init
+    - name: x
+    - name: nu
+    - name: dirichlet
+  labels:
+    - name: phi
+      is_time_series: true
+
+  fields:
+    - name: lap
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+
+    inputs:
+      - name: phi_init
+        n_last_dim: 1
+      - name: x
+        n_last_dim: 1
+      - name: nu
+        n_last_dim: 1
+      - name: dirichlet
+        n_last_dim: 1
+
+    outputs:
+      - name: phi
+        n_last_dim: 1
+
+    modules:
+      - name: ENCODER_PHI
+        nn_type: MLP
+        input_keys:
+          - phi_init
+        output_key: phi
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          nodes:
+            - -1
+            - *n_feature
+          activations:
+            - identity
+      - name: ENCODER_DIRICHLET
+        nn_type: Share
+        no_grad: true
+        input_keys:
+          - dirichlet
+        output_key: dirichlet
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          reference_name: ENCODER_PHI
+      - name: ENCODER_SOURCE
+        nn_type: MLP
+        input_keys:
+          - x
+        output_key: source
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          nodes:
+            - -1
+            - *n_feature
+          activations:
+            - identity
+      - name: ENCODER_NU
+        nn_type: MLP
+        input_keys:
+          - nu
+        output_key: nu
+        destinations:
+          - GROUP_MAIN
+        nn_parameters:
+          nodes:
+            - -1
+            - *n_feature
+          activations:
+            - sigmoid
+
+      - name: GROUP_MAIN
+        nn_type: Group
+        destinations:
+          - DECODER_PHI
+        solver_type: simple
+        time_series_length: 9
+        solver_parameters:
+          max_iterations: 1
+          convergence_threshold: 1.0e-15
+          update_keys: [phi]
+
+        modules:
+          - name: ID_PHI
+            nn_type: Identity
+            input_keys:
+              - phi
+            output_key: phi
+            destinations:
+              - GROUP_CG
+          - name: ID_DIRICHLET
+            nn_type: Identity
+            input_keys:
+              - dirichlet
+            output_key: dirichlet
+            destinations:
+              - GROUP_CG
+          - name: ADD_SOURCE
+            nn_type: Reducer
+            input_keys:
+              - phi
+              - source
+            output_key: source
+            destinations:
+              - GROUP_CG
+            nn_parameters:
+              operator: add
+          - name: ID_NU
+            nn_type: Identity
+            input_keys:
+              - nu
+            output_key: nu
+            destinations:
+              - GROUP_CG
+
+          - name: GROUP_CG
+            nn_type: Group
+            destinations:
+              - OUT_PHI
+            solver_type: cg
+            is_steady_problem: true
+            solver_parameters:
+              max_iterations: 1000
+              convergence_threshold: 1.0e-8
+              divergence_threshold: 1.0e5
+              update_keys: [phi]
+
+              # If specified, D[u] := GROUP_RET[u]
+              # Else, D[u] := GROUP_RET[u] - u
+              # Then, gradient := -D[u] if is_steady_problem else u - u_init - D[u]
+              operator_keys: [phi]
+
+              dict_variable_to_dirichlet:
+                phi: dirichlet
+              dict_variable_to_right:
+                phi: source
+
+              log_level: warning
+              exact_backward_flag: true
+
+            modules:
+              # Express gradient := -D[u] = - [- Id + Lap] u = [Id - Lap] u
+              # So, D[u] = [- Id + Lap] u
+              - name: LAP
+                nn_type: SPMM
+                coeff: 1
+                input_keys:
+                  - phi
+                output_key: phi
+                destinations:
+                  - MUL
+                nn_parameters:
+                  support_name: lap
+              - name: ID_NU
+                nn_type: Identity
+                coeff: 0.01
+                input_keys:
+                  - nu
+                output_key: nu
+                destinations:
+                  - MUL
+              - name: MUL
+                nn_type: Einsum
+                input_keys:
+                  - phi
+                  - nu
+                output_key: phi
+                destinations:
+                  - ADD
+                nn_parameters:
+                  nodes:
+                    - -1
+                    - *n_feature
+                  equation: "nf,mf->nf"
+              - name: ID_PHI
+                nn_type: Identity
+                coeff: -1  # -1 because gradient = - D[u]
+                input_keys:
+                  - phi
+                destinations:
+                  - ADD
+              - name: ADD
+                nn_type: Reducer
+                output_key: phi
+                nn_parameters:
+                  operator: add
+
+          - name: OUT_PHI
+            nn_type: Identity
+            input_keys:
+              - phi
+            output_key: phi
+
+      - name: DECODER_PHI
+        nn_type: PInvMLP
+        output_key: phi
+        nn_parameters:
+          reference_name: ENCODER_PHI

@@ -114,7 +114,6 @@ class RandomJacobiPreconditioner(IPreconditioner):
         problem: IOptimizeProblem,
         initial_values: IPhlowerTensorCollections,
     ) -> None:
-
         # TODO: this process heavily depends on CG solver's implementation.
         # We need to find a better way to implement this.
 
@@ -204,10 +203,10 @@ def _cg_core(
 
     r = b - lap
     r = self._apply_dirichlet(r, dirichlet, factor=0.0)
-    z = preconditioner.apply(r)
+    z = x | preconditioner.apply(r)
     z = self._apply_dirichlet(z, dirichlet, factor=0.0)
     p = z
-    norm_rz = self._inner(r, z)
+    norm_rz = self._inner(r.mask(self._update_keys), z.mask(self._update_keys))
 
     initial_criteria = norm_rz.apply(torch.linalg.norm)
     if initial_criteria >= self._initial_convergence_threshold:
@@ -220,14 +219,20 @@ def _cg_core(
                 operator_keys=self._operator_keys,
             )
             ap = self._apply_dirichlet(ap, dirichlet, factor=0.0)
-            alpha = norm_rz / self._inner(p, ap)
+            alpha = norm_rz / self._inner(p.mask(self._update_keys), ap)
 
-            x.update(x.mask(self._update_keys) + alpha * p, overwrite=True)
+            x.update(
+                x.mask(self._update_keys) + alpha * p.mask(self._update_keys),
+                overwrite=True,
+            )
 
             r = r - alpha * ap
             z = preconditioner.apply(r)
             norm_rz_new = self._inner(r, z)
-            p = r + (norm_rz_new / norm_rz) * p
+            p.update(
+                r + (norm_rz_new / norm_rz) * p.mask(self._update_keys),
+                overwrite=True,
+            )
             norm_rz = norm_rz_new
 
             criteria = norm_rz.apply(torch.linalg.norm) / initial_criteria
@@ -242,7 +247,19 @@ def _cg_core(
                 break
 
         if not self._is_converged:
-            _logger.warning("CG solver not converged.")
+            total_residual = sum(criteria.values()).detach().to("cpu").numpy()
+            message = (
+                "CG solver not converged. "
+                f"iter: {self._n_iterated}, residual: {total_residual}"
+            )
+            if self._log_level == "warning":
+                _logger.warning(message)
+            elif self._log_level == "info":
+                _logger.info(message)
+            elif self._log_level == "debug":
+                _logger.debug(message)
+            else:
+                raise ValueError(f"Invalid log level: {self._log_level}")
 
     outputs = []
     for key in initial_values.keys():
@@ -399,6 +416,7 @@ class ConjugateGradientSolver(IFIterationSolver):
         initial_convergence_threshold: float = 1.0e-16,
         operator_keys: list[str] | None = None,
         exact_backward_flag: bool = True,
+        log_level: str = "warning",
         precondition_type: str | None = None,
         precondition_parameters: dict | CGPreconditionParameters | None = None,
     ) -> None:
@@ -410,6 +428,7 @@ class ConjugateGradientSolver(IFIterationSolver):
         self._dict_variable_to_dirichlet = dict_variable_to_dirichlet
         self._initial_convergence_threshold = initial_convergence_threshold
         self._operator_keys = operator_keys
+        self._log_level = log_level
 
         self._dict_dirichlet_module = {
             target: Dirichlet("identity", dirichlet_name=dirichlet)
@@ -526,7 +545,7 @@ class ConjugateGradientSolver(IFIterationSolver):
         dirichlet: IPhlowerTensorCollections,
         factor: float = 1.0,
     ) -> IPhlowerTensorCollections:
-        return phlower_tensor_collection(
+        updated_data = phlower_tensor_collection(
             {
                 k: self._dict_dirichlet_module[k](
                     phlower_tensor_collection(
@@ -540,3 +559,4 @@ class ConjugateGradientSolver(IFIterationSolver):
                 for k in dirichlet.keys()
             }
         )
+        return u | updated_data
