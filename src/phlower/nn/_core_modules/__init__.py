@@ -1,4 +1,5 @@
 from phlower.nn._core_modules._accessor import Accessor
+from phlower.nn._core_modules._activation import Activation
 from phlower.nn._core_modules._concatenator import Concatenator
 from phlower.nn._core_modules._conjugate_gradient_solver import (
     ConjugateGradientSolver,
@@ -38,6 +39,7 @@ from phlower.nn._interface_module import IPhlowerCoreModule
 
 _all_models: list[type[IPhlowerCoreModule]] = [
     Accessor,
+    Activation,
     Concatenator,
     Dirichlet,
     ConjugateGradientSolver,
