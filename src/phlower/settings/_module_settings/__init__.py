@@ -3,6 +3,9 @@ from phlower.settings._interface import (
     IReadOnlyReferenceGroupSetting,
 )
 from phlower.settings._module_settings._accessor_setting import AccessorSetting
+from phlower.settings._module_settings._activation_setting import (
+    ActivationSetting,
+)
 from phlower.settings._module_settings._concatenator_setting import (
     ConcatenatorSetting,
 )
@@ -64,6 +67,7 @@ from phlower.settings._module_settings._transolver_attention_setting import (
 
 _layer_settings: list[type[IPhlowerLayerParameters]] = [
     AccessorSetting,
+    ActivationSetting,
     ConcatenatorSetting,
     ConjugateGradientSolverSetting,
     ContractionSetting,
