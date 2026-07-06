@@ -23,6 +23,7 @@ from phlower.nn._core_modules._pooling import Pooling
 from phlower.nn._core_modules._proportional import Proportional
 from phlower.nn._core_modules._rearrange import Rearrange
 from phlower.nn._core_modules._reducer import Reducer
+from phlower.nn._core_modules._residual import Residual
 from phlower.nn._core_modules._share import Share
 from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
@@ -61,6 +62,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     Proportional,
     Rearrange,
     Reducer,
+    Residual,
     Share,
     SimilarityEquivariantMLP,
     SPMM,

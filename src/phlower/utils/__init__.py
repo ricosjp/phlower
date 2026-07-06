@@ -15,3 +15,4 @@ from phlower.utils._extended_simulation_field import (
     create_simulation_field,
     FieldDataOverwriteContext,
 )
+from phlower.utils._calculate_grad import calculate_grad, parse_equation
