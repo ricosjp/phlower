@@ -1,0 +1,77 @@
+
+
+model:
+  inputs:
+    - name: x
+      members:
+        - name: x
+          n_last_dim: 1
+
+    - name: y
+      members:
+        - name: y
+          n_last_dim: 1
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL    
+    outputs:
+      - name: out_feature0
+        n_last_dim: 1
+    
+    modules:
+
+      - nn_type: Identity
+        name: ID_X
+        input_keys:
+          - x
+        output_key: x
+        destinations:
+          - Concat0
+          - Residual0
+
+      - nn_type: Identity
+        name: ID_Y
+        input_keys:
+          - y
+        output_key: y
+        destinations:
+          - Concat0
+          - Residual0
+
+      - nn_type: Concatenator
+        name: Concat0
+        input_keys:
+          - x
+          - y
+        output_key: concat0
+        destinations:
+          - MLP0
+
+      - nn_type: MLP
+        name: MLP0
+        output_key: u
+        destinations:
+          - Residual0
+          - Output0
+        nn_parameters:
+          nodes: [-1, 20, 1]
+          activations: ["Identity", "identity"]
+
+      - nn_type: Identity
+        name: Output0
+        input_keys:
+          - u
+        output_key: out_feature0
+
+      - nn_type: Residual
+        name: Residual0
+        input_keys:
+          - x
+          - y
+        output_key: residual0
+        nn_parameters:
+          nodes: [-1, 1]
+          symbols_from_input: ["x", "y", "u", "z"]  # z is missing in the input keys
+          symbols_from_field: []
+          equation: "Diff(u, x) + Diff(u, y) + Diff(u, y)"

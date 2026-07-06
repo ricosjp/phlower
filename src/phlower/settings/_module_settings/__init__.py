@@ -49,6 +49,7 @@ from phlower.settings._module_settings._rearrange_setting import (
     RearrangeSetting,
 )
 from phlower.settings._module_settings._reducer_setting import ReducerSetting
+from phlower.settings._module_settings._residual_setting import ResidualSetting
 from phlower.settings._module_settings._share_setting import ShareSetting
 from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (  # noqa: E501
     SimilarityEquivariantMLPSetting,
@@ -85,6 +86,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     ProportionalSetting,
     RearrangeSetting,
     ReducerSetting,
+    ResidualSetting,
     SPMMSetting,
     ShareSetting,
     SimilarityEquivariantMLPSetting,
