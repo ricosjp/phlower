@@ -12,26 +12,75 @@ from phlower_tensor.collections import (
 from phlower_tensor.functionals import unbatch
 
 from phlower.settings._trainer_setting import PhlowerTrainerSetting
+from phlower.utils import get_logger
 from phlower.utils.typing import LossFunctionType
 
+_logger = get_logger(__name__)
 
-def _mse(pred: PhlowerTensor, answer: PhlowerTensor) -> PhlowerTensor:
-    # NOTE: To avoid shape mismatch
-    # Ex. (1, N, 3, 1) and (N, 3, 1)
-    return torch.nn.functional.mse_loss(
-        torch.squeeze(pred.to_tensor()), torch.squeeze(answer.to_tensor())
-    )
+
+class ILossFunctionHelper(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def need_answer(self) -> bool: ...
+
+    @abc.abstractmethod
+    def __call__(
+        self, pred: PhlowerTensor, answer: PhlowerTensor | None
+    ) -> PhlowerTensor: ...
+
+
+class _MSEHelper(ILossFunctionHelper):
+    def need_answer(self) -> bool:
+        return True
+
+    def __call__(
+        self, pred: PhlowerTensor, answer: PhlowerTensor
+    ) -> PhlowerTensor:
+        # NOTE: To avoid shape mismatch
+        # Ex. (1, N, 3, 1) and (N, 3, 1)
+        return torch.nn.functional.mse_loss(
+            torch.squeeze(pred.to_tensor()), torch.squeeze(answer.to_tensor())
+        )
+
+
+class _UserFunctionHelper(ILossFunctionHelper):
+    def __init__(self, loss_function: LossFunctionType):
+        self._loss_function = loss_function
+
+    def need_answer(self) -> bool:
+        return True
+
+    def __call__(
+        self, pred: PhlowerTensor, answer: PhlowerTensor
+    ) -> PhlowerTensor:
+        return self._loss_function(pred, answer)
+
+
+class _ResidualMSEHelper(ILossFunctionHelper):
+    def need_answer(self) -> bool:
+        return False
+
+    def __call__(
+        self, pred: PhlowerTensor, answer: Literal[None]
+    ) -> PhlowerTensor:
+        if answer is not None:
+            raise ValueError(
+                "Residual loss function does not require answer tensor."
+            )
+        return torch.mean(torch.square(pred.to_tensor()))
 
 
 class PhlowerLossFunctionsFactory:
-    _REGISTERED: dict[str, LossFunctionType] = {"mse": _mse}
+    _REGISTERED: dict[str, ILossFunctionHelper] = {
+        "mse": _MSEHelper(),
+        "residual_mse": _ResidualMSEHelper(),
+    }
 
     @classmethod
     def register(
         cls, name: str, loss_function: LossFunctionType, overwrite: bool = False
     ) -> LossFunctionType:
         if (name not in cls._REGISTERED) or overwrite:
-            cls._REGISTERED[name] = loss_function
+            cls._REGISTERED[name] = _UserFunctionHelper(loss_function)
             return
 
         raise ValueError(
@@ -47,7 +96,7 @@ class PhlowerLossFunctionsFactory:
         cls._REGISTERED.pop(name)
 
     @classmethod
-    def get(cls, name: str) -> LossFunctionType:
+    def get(cls, name: str) -> ILossFunctionHelper:
         if name not in cls._REGISTERED:
             raise KeyError(f"Loss function: {name} is not registered.")
         return cls._REGISTERED[name]
@@ -123,18 +172,38 @@ class LossCalculator(ILossCalculator):
         batch_info_dict: dict[str, GraphBatchInfo],
     ) -> IPhlowerTensorCollections:
         loss_items: dict[str, torch.Tensor] = {}
-        for key in answer.keys():
-            if key not in prediction:
+
+        if not set(answer.keys()).issubset(set(self._name2loss.keys())):
+            raise ValueError(
+                f"Some answer keys {list(answer.keys())} "
+                "are not found in loss function settings "
+                f"{self._name2loss}."
+            )
+
+        for key in self._name2loss.keys():
+            if key not in prediction.keys():
                 raise ValueError(
                     f"{key} is not found in predictions. "
-                    f"prediction keys: {list(prediction.keys())}"
+                    f"prediction keys: {list(prediction.keys())}, "
+                    f" answer keys: {list(answer.keys())}"
+                )
+
+            loss_func = self.get_loss_function(key)
+            if loss_func.need_answer() and key not in answer.keys():
+                raise ValueError(
+                    f"{key} is not found in answers. "
+                    f"prediction keys: {list(prediction.keys())}, "
+                    f" answer keys: {list(answer.keys())}"
                 )
 
             batch_info = batch_info_dict[key]
             _preds = unbatch(prediction[key], batch_info)
-            _answers = unbatch(answer[key], batch_info)
 
-            loss_func = self.get_loss_function(key)
+            if loss_func.need_answer():
+                _answers = unbatch(answer[key], batch_info)
+            else:
+                _answers = [None] * len(_preds)
+
             loss_items[key] = torch.mean(
                 torch.stack(
                     [

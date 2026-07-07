@@ -8,7 +8,7 @@ from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
-from phlower_tensor.functionals import to_batch
+from phlower_tensor.functionals import to_batch, unbatch
 
 from phlower.services.loss_operations import (
     LossCalculator,
@@ -223,9 +223,8 @@ def test__raise_error_when_key_is_missing(
 
     predictions, answers, batch_info = create_random_dataset(name2shape)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValueError, match="not found in loss function settings"):
         _ = calculator.calculate(predictions, answers, batch_info)
-    assert "Loss function is missing" in str(ex.value)
 
 
 @pytest.mark.parametrize(
@@ -312,3 +311,35 @@ def test__compute_loss_for_not_batched_voxel_tensor(
 
     calculator = LossCalculator(name2loss=name2loss)
     _ = calculator.calculate(predictions, answers, batch_info)
+
+
+@pytest.mark.parametrize(
+    "name2loss, name2shape",
+    [
+        (
+            {"nodal_residual": "residual_mse"},
+            {"nodal_residual": [(10, 3, 1), (13, 3, 1)]},
+        ),
+    ],
+)
+def test__compute_residual_losses(
+    name2loss: dict[str, str],
+    name2shape: dict[str, list[tuple[int, ...]]],
+):
+
+    predictions, _, batch_info = create_random_dataset(name2shape)
+
+    answers = phlower_tensor_collection({})
+
+    calculator = LossCalculator(name2loss=name2loss)
+    actual = calculator.calculate(predictions, answers, batch_info)
+
+    assert "nodal_residual" in actual
+
+    preds = unbatch(predictions["nodal_residual"], batch_info["nodal_residual"])
+    expected = torch.mean(
+        torch.stack([torch.mean(p**2.0) for p in preds], dim=0)
+    )
+    assert torch.allclose(
+        actual["nodal_residual"].to_tensor(), expected.to_tensor()
+    )

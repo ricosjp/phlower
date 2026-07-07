@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Self
 
 import sympy as sm
@@ -67,7 +68,23 @@ class Residual(IPhlowerCoreModule, torch.nn.Module):
         self._field_symbols = symbols_from_field
         self._equation = equation
 
-        self._parsed_equation = parse_equation(self._equation, self.all_symbols)
+        self._parsed_function = self._construct_equation()
+
+    def _construct_equation(self) -> Callable[..., PhlowerTensor]:
+        expr = parse_equation(self._equation, self.all_symbols)
+        return sm.lambdify(
+            self.all_symbols,
+            expr,
+            modules=[
+                {
+                    "Diff": lambda y, x: calculate_grad(
+                        y, [x], allow_unused=True
+                    )[0],
+                    "Integer": lambda x: torch.tensor(x, dtype=torch.int32),
+                    "Float": lambda x: torch.tensor(x, dtype=torch.float32),
+                }
+            ],
+        )
 
     @property
     def all_symbols(self) -> list[str]:
@@ -112,16 +129,4 @@ class Residual(IPhlowerCoreModule, torch.nn.Module):
                 )
             inputs.extend([field_data[s] for s in self._field_symbols])
 
-        return sm.lambdify(
-            self.all_symbols,
-            self._parsed_equation,
-            modules=[
-                {
-                    "Diff": lambda y, x: calculate_grad(
-                        y, [x], allow_unused=True
-                    )[0],
-                    "Integer": lambda x: torch.tensor(x, dtype=torch.int32),
-                    "Float": lambda x: torch.tensor(x, dtype=torch.float32),
-                }
-            ],
-        )(*inputs)
+        return self._parsed_function(*inputs)
