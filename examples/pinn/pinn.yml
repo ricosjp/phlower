@@ -1,0 +1,138 @@
+
+training:
+  n_epoch: 100
+  batch_size: 1
+  random_seed: 0
+  device: "auto"
+  evaluate_context_manager: enable_grad
+  loss_setting:
+    aggregation_method: "mean"
+    name2weight:
+      data_x: 1.0
+      boundary_x: 0.1
+      residual_eom: 10.0
+    name2loss:
+      data_x: "mse"
+      boundary_x: "mse"
+      residual_eom: "residual_mse"
+
+  optimizer_setting:
+    optimizer: Adam
+    parameters:
+      lr: 0.001
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+
+prediction:
+  selection_mode: "train_best"
+
+model:
+  inputs:
+
+    - name: data_t
+      members:
+        - name: data_t
+          n_last_dim: 1
+
+    - name: residual_t
+      members:
+        - name: residual_t
+          n_last_dim: 1
+    
+    - name: boundary_t
+      members:
+        - name: boundary_t
+          n_last_dim: 1
+
+  labels:
+    - name: data_x
+      members:
+        - name: data_x
+          n_last_dim: 1
+  
+    - name: boundary_x
+      members:
+        - name: boundary_x
+          n_last_dim: 1
+  
+  fields:
+    - name: "m"
+    - name: "c"
+    - name: "k"
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: residual_t
+        n_last_dim: 1
+        requires_grad: true
+      - name: data_t
+        n_last_dim: 1
+      - name: boundary_t
+        n_last_dim: 1
+    modules:
+      - nn_type: AdaptorGroup
+        name: PINN_GROUP
+        adaptor_setting:
+          adaptor_type: prefix_sorting
+          prefix_settings:
+            - prefix: "residual_"
+              forward_options:
+                compute_residual: true
+            - prefix: "data_"
+              forward_options:
+                compute_residual: false
+            - prefix: boundary_
+              forward_options:
+                compute_residual: false
+        network:
+          name: PINN_MAIN
+          inputs:
+            - name: t
+              n_last_dim: 1
+
+          outputs:
+            - name: x
+              n_last_dim: 1
+            - name: eom
+              n_last_dim: 1
+
+          modules:
+            - name: IN_T
+              nn_type: Identity
+              input_keys:
+                - t
+              output_key: t
+              destinations:
+                - MLP_PINN
+                - Residual_EOM
+
+            - name: MLP_PINN
+              nn_type: MLP
+              output_key: x
+              destinations:
+                - OUT_X
+                - Residual_EOM
+              nn_parameters:
+                nodes: [-1, 64, 64, 64, 32, 1]
+                activations: ["tanh", "tanh", "tanh", "tanh", "identity"]
+                bias: true
+
+            - name: OUT_X
+              nn_type: Identity
+              output_key: x
+
+            - name: Residual_EOM
+              nn_type: Residual
+              input_keys:
+                - x
+                - t
+              output_key: eom
+              nn_parameters:
+                nodes: [-1, 1]
+                symbols_from_input: ["t", "x"]
+                symbols_from_field: ["m", "c", "k"]
+                equation: "m * Diff(Diff(x, t), t) + c * Diff(x, t) + k * x"
+            

@@ -117,7 +117,10 @@ class Residual(IPhlowerCoreModule, torch.nn.Module):
         """
 
         if not torch.is_grad_enabled():
-            return phlower_tensor(torch.nan)
+            return phlower_tensor([torch.nan])
+
+        if kwards.get("compute_residual", True) is False:
+            return phlower_tensor([torch.nan])
 
         inputs = [data[s] for s in self._input_symbols]
 

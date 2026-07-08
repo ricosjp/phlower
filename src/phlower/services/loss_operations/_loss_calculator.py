@@ -196,8 +196,16 @@ class LossCalculator(ILossCalculator):
                     f" answer keys: {list(answer.keys())}"
                 )
 
-            batch_info = batch_info_dict[key]
-            _preds = unbatch(prediction[key], batch_info)
+            if key in batch_info_dict:
+                batch_info = batch_info_dict.get(key)
+                _preds = unbatch(prediction[key], batch_info)
+            else:
+                # NOTE: If batch_info_dict is None, we assume that
+                # the tensor is not batched.
+                # TODO: Set batch info in loss settings
+                if loss_func.need_answer():
+                    raise ValueError(f"Batch info for {key} is not found.")
+                _preds = [prediction[key]]
 
             if loss_func.need_answer():
                 _answers = unbatch(answer[key], batch_info)

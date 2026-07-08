@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 from collections.abc import Callable
 from functools import partial
+from typing import TypeVar
 
 import dagstream
 import torch
@@ -20,6 +21,7 @@ from phlower.nn._interface_iteration_solver import (
     IOptimizeProblem,
 )
 from phlower.nn._interface_module import (
+    IGenericPhlowerCoreModule,
     IPhlowerCoreModule,
     IPhlowerGroup,
     IPhlowerModuleAdapter,
@@ -32,7 +34,13 @@ from phlower.nn._preset_group_module_adapter import (
 )
 from phlower.nn._utils import attach_location_to_error_message
 from phlower.services.drawers import MermaidDrawer
-from phlower.settings._group_setting import GroupModuleSetting, ModuleSetting
+from phlower.settings._group_setting import (
+    AdaptorGroupModuleSetting,
+    GroupInputSetting,
+    GroupModuleSetting,
+    ModuleSetting,
+    PrefixSortingAdaptorSetting,
+)
 from phlower.settings._preset_group_setting import PresetGroupModuleSetting
 from phlower.utils import FieldDataOverwriteContext
 from phlower.utils.calculation_state import CalculationState
@@ -91,6 +99,16 @@ class _GroupOptimizeProblem(IOptimizeProblem):
         return residuals
 
 
+T = TypeVar("T")
+
+
+def _validate_settings(setting_type: type[T], items: list[dict | T]) -> list[T]:
+    return [
+        setting_type(**item) if not isinstance(item, setting_type) else item
+        for item in items
+    ]
+
+
 class PhlowerGroupModule(
     torch.nn.Module,
     IPhlowerModuleAdapter,
@@ -116,6 +134,11 @@ class PhlowerGroupModule(
                 _modules.append(_layer)
                 continue
 
+            if isinstance(_setting, AdaptorGroupModuleSetting):
+                _layer = PhlowerAdaptorGroupModule.from_setting(_setting)
+                _modules.append(_layer)
+                continue
+
             raise NotImplementedError()
 
         solver_cls = get_iteration_solver(setting.solver_type)
@@ -124,7 +147,7 @@ class PhlowerGroupModule(
             modules=_modules,
             name=setting.name,
             no_grad=setting.no_grad,
-            input_keys=setting.get_input_keys(),
+            inputs=setting.inputs,
             output_keys=setting.get_output_keys(),
             destinations=setting.destinations,
             is_steady_problem=setting.is_steady_problem,
@@ -138,7 +161,7 @@ class PhlowerGroupModule(
         modules: list[IPhlowerModuleAdapter],
         name: str,
         no_grad: bool,
-        input_keys: list[str],
+        inputs: list[dict | GroupInputSetting],
         destinations: list[str],
         output_keys: list[str],
         is_steady_problem: bool = False,
@@ -154,7 +177,7 @@ class PhlowerGroupModule(
         self._phlower_modules = modules
         self._name = name
         self._no_grad = no_grad
-        self._input_keys = input_keys
+        self._inputs = _validate_settings(GroupInputSetting, inputs)
         self._destinations = destinations
         self._output_keys = output_keys
         self._is_steady_problem = is_steady_problem
@@ -172,6 +195,10 @@ class PhlowerGroupModule(
             self.add_module(_module.name, _module)
 
     @property
+    def input_keys(self) -> list[str]:
+        return [v.name for v in self._inputs]
+
+    @property
     def name(self) -> str:
         return self._name
 
@@ -181,7 +208,7 @@ class PhlowerGroupModule(
 
     def get_display_info(self) -> str:
         return (
-            f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
+            f"input_keys: {self.input_keys}\noutput_keys: {self._output_keys}"
         )
 
     def get_n_nodes(self) -> list[int] | None:
@@ -317,6 +344,8 @@ class PhlowerGroupModule(
         step_forward = partial(
             self.step_forward, field_data=field_data, state=state, **kwards
         )
+        self._inputs_requires_grad(data)
+
         problem = _GroupOptimizeProblem(
             initials=data,
             step_forward=step_forward,
@@ -326,6 +355,13 @@ class PhlowerGroupModule(
         self._iteration_solver.zero_residuals()
 
         return self._iteration_solver.run(initial_values=data, problem=problem)
+
+    def _inputs_requires_grad(self, data: IPhlowerTensorCollections) -> None:
+        keys = [v.name for v in self._inputs if v.requires_grad]
+        if len(keys) == 0:
+            return
+
+        data.requires_grad_(True, keys=keys)
 
     def step_forward(
         self,
@@ -405,3 +441,156 @@ class PhlowerGroupModule(
 
         for m in self._phlower_modules:
             m.finalize_debug()
+
+
+# region AdaptorGroupModule
+
+# TODO: Need to refactor this class to be a subgroup module
+# of PhlowerGroupModule.
+# Considering the relationship between PhlowerModuleAdapter and
+# PhlowerCoreModule, this class also should be implemented as such.
+# But, it has a large impact on the current implementation. \
+# So, we will refactor this class later.
+
+
+class PhlowerAdaptorGroupModule(
+    torch.nn.Module,
+    IPhlowerModuleAdapter,
+):
+    @classmethod
+    def from_setting(
+        cls, setting: AdaptorGroupModuleSetting
+    ) -> PhlowerAdaptorGroupModule:
+        return PhlowerAdaptorGroupModule(
+            name=setting.name,
+            no_grad=setting.no_grad,
+            input_keys=setting.get_input_keys(),
+            destinations=setting.destinations,
+            output_keys=setting.get_output_keys(),
+            adaptor_setting=setting.adaptor_setting,
+            group=PhlowerGroupModule.from_setting(setting.network),
+        )
+
+    @classmethod
+    def get_nn_name(cls) -> str:
+        return "AdaptorGroup"
+
+    @classmethod
+    def need_reference(cls) -> bool:
+        return False
+
+    def __init__(
+        self,
+        name: str,
+        no_grad: bool,
+        input_keys: list[str],
+        destinations: list[str],
+        output_keys: list[str],
+        adaptor_setting: dict | PrefixSortingAdaptorSetting,
+        group: PhlowerGroupModule,
+    ) -> None:
+        super().__init__()
+
+        self._name = name
+        self._no_grad = no_grad
+        self._input_keys = input_keys
+        self._destinations = destinations
+        self._output_keys = output_keys
+        self._adaptor_setting = (
+            adaptor_setting
+            if isinstance(adaptor_setting, PrefixSortingAdaptorSetting)
+            else PrefixSortingAdaptorSetting(**adaptor_setting)
+        )
+        self._group = group
+        self._parent_prefix = ""
+
+    def forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField | None = None,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+
+        results = phlower_tensor_collection({})
+
+        for prefix_setting in self._adaptor_setting.prefix_settings:
+            prefix = prefix_setting.prefix
+            options = prefix_setting.forward_options
+
+            masked_inputs = phlower_tensor_collection(
+                {
+                    k.removeprefix(prefix): v
+                    for k, v in data.items()
+                    if k.startswith(prefix)
+                }
+            )
+
+            out = self._group(
+                masked_inputs,
+                field_data=field_data,
+                **kwards,
+                **options,
+            )
+
+            # rename
+            renamed_out = phlower_tensor_collection(
+                {f"{prefix}{k}": v for k, v in out.items()}
+            )
+
+            results.update(renamed_out, overwrite=False)
+
+        return results
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def get_reference_name(self) -> str | None:
+        return None
+
+    def get_unique_name(self) -> str:
+        return self._parent_prefix + self.name
+
+    def resolve(
+        self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
+    ) -> None:
+        self._group.resolve(parent=self, **kwards)
+        if parent is not None:
+            self._parent_prefix = parent.get_unique_name() + "."
+
+    def get_destinations(self) -> list[str]:
+        return self._destinations
+
+    def get_n_nodes(self) -> list[int] | None:
+        return self._group.get_n_nodes()
+
+    def get_display_info(self) -> str:
+        return (
+            f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
+        )
+
+    def draw(self, output_directory: pathlib.Path, recursive: bool): ...
+
+    def get_core_module(
+        self,
+    ) -> IGenericPhlowerCoreModule:
+        return self._group.get_core_module()
+
+    def register_phlower_forward_hook(self, hook: PhlowerForwardHook) -> None:
+        self._group.register_phlower_forward_hook(hook)
+
+    def register_phlower_finalize_debug_hook(
+        self, hook: Callable[[], None]
+    ) -> None:
+        self._group.register_phlower_finalize_debug_hook(hook)
+
+    def finalize_debug(self) -> None:
+        """
+        Run finalize debug hooks.
+        If no finalize debug hook is registered, this method does nothing.
+        """
+        self._group.finalize_debug()
+
+
+# endregion

@@ -193,6 +193,8 @@ class EvaluationRunner:
                 return torch.inference_mode
             case "no_grad":
                 return torch.no_grad
+            case "enable_grad":
+                return torch.enable_grad
             case _:
                 raise ValueError(
                     "Unknown evaluate_context_manager: "

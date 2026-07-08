@@ -1,0 +1,253 @@
+
+training:
+  batch_size: 1
+  random_seed: 0
+  device: "cuda:0"
+  loss_setting:
+    name2loss:
+      data_velocity: "mse"
+      data_pressure: "mse"
+      residual_continuity: "residual_mse"
+      residual_momentum_x: "residual_mse"
+      residual_momentum_y: "residual_mse"
+
+  optimizer_setting:
+    optimizer: SGD
+    parameters:
+      lr: 0.0001
+  handler_settings:
+    - handler: NaNStoppingHandler
+      parameters: {}
+
+model:
+  inputs:
+    - name: residual_nodal_coordinates
+      members:
+        - name: nodal_coordinates
+          n_last_dim: 2
+
+    - name: data_nodal_coordinates
+      members:
+        - name: nodal_coordinates
+          n_last_dim: 2
+
+    - name: U_boundary_nodal_coordinates
+      members:
+        - name: nodal_coordinates
+          n_last_dim: 2
+
+    - name: p_boundary_nodal_coordinates
+      members:
+        - name: nodal_coordinates
+          n_last_dim: 2
+
+  labels:
+    - name: data_velocity
+  
+  fields:
+    - name: "Re"
+      physical_dimension: {}
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    modules:
+      - nn_type: AdaptorGroup
+        name: PINN_GROUP
+        inputs:
+          - name: residual_nodal_coordinates
+            n_last_dim: 2
+          - name: data_nodal_coordinates
+            n_last_dim: 2
+          - name: U_boundary_nodal_coordinates
+            n_last_dim: 2
+          - name: p_boundary_nodal_coordinates
+            n_last_dim: 2
+        outputs:
+          # - name: residual_u
+          # - name: residual_v
+          # - name: residual_p
+          - name: residual_continuity
+            n_last_dim: 1
+          - name: residual_momentum_x
+            n_last_dim: 1
+          - name: residual_momentum_y
+            n_last_dim: 1
+
+          - name: data_velocity
+            n_last_dim: 2
+          - name: data_p
+            n_last_dim: 1
+
+          - name: U_boundary_velocity
+            n_last_dim: 2
+          # - name: boundary_u_p
+
+          # - name: boundary_p_u
+          - name: p_boundary_p
+            n_last_dim: 1
+        adaptor_setting:
+          adaptor_type: prefix_sorting
+          prefix_settings:
+            - prefix: "residual_"
+              forward_options:
+                compute_residual: true
+            - prefix: "data_"
+              forward_options:
+                compute_residual: false
+            - prefix: U_boundary_
+              forward_options:
+                compute_residual: false
+            - prefix: p_boundary_
+              forward_options:
+                compute_residual: false
+        network:
+          name: PINN_MAIN
+          inputs:
+            - name: nodal_coordinates
+              n_last_dim: 2
+
+          modules:
+            - name: Accessor_X
+              nn_type: Accessor
+              input_keys:
+                - nodal_coordinates
+              output_key: x
+              destinations:
+                - Concatenate0
+                - Continuity_Residuals
+                - Momentum_X_Residuals
+                - Momentum_Y_Residuals
+              nn_parameters:
+                dim: -1
+                index: [0]
+                keepdim: true
+
+            - name: Accessor_Y
+              nn_type: Accessor
+              input_keys:
+                - nodal_coordinates
+              destinations:
+                - Concatenate0
+                - Continuity_Residuals
+                - Momentum_X_Residuals
+                - Momentum_Y_Residuals
+              output_key: y
+              nn_parameters:
+                dim: -1
+                index: [1]
+                keepdim: true
+
+            - name: Concatenate0
+              nn_type: Concatenator
+              input_keys:
+                - x
+                - y
+              destinations:
+                - MLP_PINN
+
+            - name: MLP_PINN
+              nn_type: MLP
+              destinations:
+                - Accessor_U
+                - Accessor_V
+                - Accessor_P
+              nn_parameters:
+                nodes: [-1, 64, 64, 64, 32, 4]
+                activations: ["tanh", "tanh", "tanh", "tanh", "identity"]
+                bias: true
+
+            - name: Accessor_U
+              nn_type: Accessor
+              output_key: u
+              destinations:
+                - OUT_VELOCITY
+                - Continuity_Residuals
+                - Momentum_X_Residuals
+                - Momentum_Y_Residuals
+              nn_parameters:
+                dim: -1
+                index: [0]
+                keepdim: true
+
+            - name: Accessor_V
+              nn_type: Accessor
+              output_key: v
+              destinations:
+                - OUT_VELOCITY
+                - Continuity_Residuals
+                - Momentum_X_Residuals
+                - Momentum_Y_Residuals
+              nn_parameters:
+                dim: -1
+                index: [1]
+                keepdim: true
+
+            - name: OUT_VELOCITY
+              nn_type: Concatenator
+              input_keys:
+                - u
+                - v
+              output_key: velocity
+
+            - name: Accessor_P
+              nn_type: Accessor
+              output_key: p
+              destinations:
+                - OUT_PRESSURE
+                - Momentum_X_Residuals
+                - Momentum_Y_Residuals
+              nn_parameters:
+                dim: -1
+                index: [2]
+                keepdim: true
+
+            - name: OUT_PRESSURE
+              nn_type: Identity
+              input_keys:
+                - p
+              output_key: p
+
+            - name: Continuity_Residuals
+              nn_type: Residual
+              input_keys:
+                - x
+                - y
+                - u
+                - v
+              output_key: continuity
+              nn_parameters:
+                nodes: [-1, 1]
+                symbols_from_input: ["x", "y", "u", "v"]
+                equation: "Diff(u, x) + Diff(v, y)"
+            
+            - name: Momentum_X_Residuals
+              nn_type: Residual
+              input_keys:
+                - x
+                - y
+                - u
+                - v
+                - p
+              output_key: momentum_x
+              nn_parameters:
+                nodes: [-1, 1]
+                symbols_from_input: ["x", "y", "u", "v", "p"]
+                symbols_from_field: ["Re"]
+                equation: "u * Diff(u, x) + v * Diff(u, y) + Diff(p, x) - (1/Re) * (Diff(Diff(u, x), x) + Diff(Diff(u, y), y))"
+
+            - name: Momentum_Y_Residuals
+              nn_type: Residual
+              input_keys:
+                - x
+                - y
+                - u
+                - v
+                - p
+              output_key: momentum_y
+              nn_parameters:
+                nodes: [-1, 1]
+                symbols_from_input: ["x", "y", "u", "v", "p"]
+                symbols_from_field: ["Re"]
+                equation: "u * Diff(v, x) + v * Diff(v, y) + Diff(p, y) - (1/Re) * (Diff(Diff(v, x), x) + Diff(Diff(v, y), y))" 
+

@@ -38,6 +38,10 @@ class GroupInputSetting:
     field data is treated as a fixed value in the group,
     and it is not updated by the group.
     """
+    requires_grad: bool = False
+    """
+    If True, this variable is set to require gradient.
+    """
 
 
 @dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
@@ -50,6 +54,7 @@ class _DiscriminatorTag(StrEnum):
     GROUP = "GROUP"
     MODULE = "MODULE"
     PRESETGROUP = "PRESETGROUP"
+    ADAPTORGROUP = "ADAPTORGROUP"
 
 
 def _custom_discriminator(value: object) -> str:
@@ -65,16 +70,18 @@ def _custom_discriminator(value: object) -> str:
 
     if nn_type.upper() == _DiscriminatorTag.GROUP:
         return _DiscriminatorTag.GROUP.name
-    elif nn_type.upper() == _DiscriminatorTag.PRESETGROUP:
+    if nn_type.upper() == _DiscriminatorTag.PRESETGROUP:
         return _DiscriminatorTag.PRESETGROUP.name
-    else:
-        return _DiscriminatorTag.MODULE.name
+    if nn_type.upper() == _DiscriminatorTag.ADAPTORGROUP:
+        return _DiscriminatorTag.ADAPTORGROUP.name
+
+    return _DiscriminatorTag.MODULE.name
 
 
 class GroupModuleSetting(
     pydantic.BaseModel, IModuleSetting, IReadOnlyReferenceGroupSetting
 ):
-    name: str = Field(..., frozen=True)
+    name: str = Field(frozen=True)
     """
     name of group
     """
@@ -105,7 +112,11 @@ class GroupModuleSetting(
                 PresetGroupModuleSetting,
                 Tag(_DiscriminatorTag.PRESETGROUP.name),
             ]
-            | Annotated[ModuleSetting, Tag(_DiscriminatorTag.MODULE.name)],
+            | Annotated[ModuleSetting, Tag(_DiscriminatorTag.MODULE.name)]
+            | Annotated[
+                AdaptorGroupModuleSetting,
+                Tag(_DiscriminatorTag.ADAPTORGROUP.name),
+            ],
             Discriminator(
                 _custom_discriminator,
                 custom_error_type="invalid_union_member",
@@ -170,12 +181,7 @@ class GroupModuleSetting(
         values: list[GroupInputSetting] | list[GroupOutputSetting],
         info: pydantic.ValidationInfo,
     ) -> list[GroupInputSetting] | list[GroupOutputSetting]:
-        names = [v.name for v in values]
-        if len(names) != len(set(names)):
-            raise PhlowerModuleDuplicateKeyError(
-                f"duplicate keys exist in {info.field_name}."
-                f" GROUP = {info.data['name']}"
-            )
+        _check_unique_items(values, info, nn_name="GROUP")
         return values
 
     @pydantic.model_validator(mode="after")
@@ -268,7 +274,7 @@ class GroupModuleSetting(
         **kwards,
     ) -> None:
         if not is_first:
-            self._check_inputs(*resolved_outputs)
+            _check_inputs(self, *resolved_outputs)
 
         input_info = {
             v.name: v.n_last_dim
@@ -291,7 +297,7 @@ class GroupModuleSetting(
             ) from ex
 
         # check last state
-        self._check_last_outputs(*results)
+        _check_last_outputs(self, *results)
 
         # check target of solver setting if exist
         self._check_solver_target_exists_in_inputs_and_outputs()
@@ -304,78 +310,6 @@ class GroupModuleSetting(
                 return v
 
         return None
-
-    def _check_inputs(self, *resolved_outputs: dict[str, int | None]) -> None:
-        _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
-        _n_keys = sum(len(v.keys()) for v in resolved_outputs)
-
-        if len(_flatten_dict) != _n_keys:
-            raise PhlowerModuleDuplicateKeyError(
-                "Duplicate key name is detected in input keys "
-                f"for {self.name}. Please check precedents."
-            )
-
-        if len(self.inputs) == 0:
-            # check None
-            for k, v in _flatten_dict.items():
-                if v is None:
-                    raise ValueError(
-                        f"n_last_dim of {k} cannot be determined."
-                        f" Please check precedent modules of {self.name}."
-                    )
-            # set automatically
-            self.inputs = [
-                GroupInputSetting(name=k, n_last_dim=v)
-                for k, v in _flatten_dict.items()
-            ]
-
-        for input_v in self.inputs:
-            if input_v.name not in _flatten_dict:
-                raise PhlowerModuleKeyError(
-                    f"{input_v.name} is not passed to {self.name}. "
-                    "Please check precedents."
-                )
-
-            if _flatten_dict[input_v.name] is None:
-                continue
-
-            if _flatten_dict[input_v.name] != input_v.n_last_dim:
-                raise PhlowerModuleNodeDimSizeError(
-                    f"n_dim of {input_v.name} in {self.name} "
-                    f"is {input_v.n_last_dim}. "
-                    "It is not consistent with the precedent modules"
-                )
-
-    def _check_last_outputs(self, *resolved_outputs: dict[str, int]) -> None:
-        _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
-        _n_keys = sum(len(v.keys()) for v in resolved_outputs)
-
-        if len(_flatten_dict) != _n_keys:
-            raise PhlowerModuleDuplicateKeyError(
-                "Duplicate key name is detected in output keys "
-                f"for {self.name}. Please check precedents"
-            )
-
-        if len(self.outputs) == 0:
-            # set automatically
-            self.outputs = [
-                GroupOutputSetting(name=k, n_last_dim=v)
-                for k, v in _flatten_dict.items()
-            ]
-
-        for self_output in self.outputs:
-            if self_output.name not in _flatten_dict:
-                raise PhlowerModuleKeyError(
-                    f"{self_output.name} is not created in {self.name}. "
-                    "Please check last module in this group."
-                )
-
-            if _flatten_dict[self_output.name] != self_output.n_last_dim:
-                raise PhlowerModuleNodeDimSizeError(
-                    f"n_dim of {self_output.name} in {self.name} "
-                    f"is {self_output.n_last_dim}. "
-                    "It is not consistent with the precedent modules"
-                )
 
     def _check_solver_target_exists_in_inputs_and_outputs(self) -> None:
         input_keys = self.get_input_keys()
@@ -392,3 +326,303 @@ class GroupModuleSetting(
                 )
 
         return
+
+
+# region PrefixIterationGroupModuleSetting
+
+
+class _PrefixInputSetting(pydantic.BaseModel):
+    prefix: str
+    """
+    prefix of input keys to be processed in the group module.
+    """
+
+    forward_options: dict = Field(default_factory=dict, frozen=True)
+    """
+    options to pass to forward function of the group module.
+    """
+
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+
+class PrefixSortingAdaptorSetting(pydantic.BaseModel):
+    adaptor_type: Literal["prefix_sorting"] = Field(
+        "prefix_sorting", frozen=True
+    )
+
+    prefix_settings: list[_PrefixInputSetting] = Field(
+        default_factory=list, validate_default=True
+    )
+
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    def all_prefixes(self) -> list[str]:
+        return [v.prefix for v in self.prefix_settings]
+
+    @pydantic.model_validator(mode="after")
+    def check_prefixes(self) -> Self:
+        if len(self.prefix_settings) == 0:
+            raise ValueError(
+                "prefix_settings is empty. Please set at least one prefix."
+            )
+
+        if len(self.all_prefixes()) != len(set(self.all_prefixes())):
+            raise ValueError(
+                "Duplicate prefix is detected. "
+                "Please check prefix_settings."
+                f"all prefixes: {self.all_prefixes()}"
+            )
+        return self
+
+
+class AdaptorGroupModuleSetting(
+    pydantic.BaseModel, IModuleSetting, IReadOnlyReferenceGroupSetting
+):
+    name: str = Field(frozen=True)
+    """
+    name of group
+    """
+
+    inputs: list[GroupInputSetting] = Field(
+        default_factory=list, validate_default=True
+    )
+    """
+    definition of input variables
+    """
+
+    nn_type: Literal["AdaptorGroup", "ADAPTORGROUP"] = Field(
+        "AdaptorGroup", frozen=True
+    )
+    """
+    name of neural network type. Fixed to "Group" or "GROUP"
+    """
+
+    outputs: list[GroupOutputSetting] = Field(
+        default_factory=list, validate_default=True
+    )
+    """
+    definition of output variables
+    """
+
+    adaptor_setting: PrefixSortingAdaptorSetting = Field(validate_default=True)
+    """
+    A list of prefixes and whether to compute residuals.
+    """
+
+    network: GroupModuleSetting = Field()
+    """
+    A group module setting that defines the PINN network.
+    """
+
+    destinations: list[str] = Field(default_factory=list, frozen=True)
+    """
+    name of destination modules.
+    """
+
+    no_grad: bool = Field(False, frozen=True)
+    """
+    A Flag not to calculate gradient. Defauls to False.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
+
+    @pydantic.field_validator("inputs", "outputs")
+    @classmethod
+    def _check_unique_items(
+        cls,
+        values: list[GroupInputSetting] | list[GroupOutputSetting],
+        info: pydantic.ValidationInfo,
+    ) -> list[GroupInputSetting] | list[GroupOutputSetting]:
+        _check_unique_items(values, info, nn_name="AdaptorGroup")
+        return values
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_input_keys(self) -> list[str]:
+        return [v.name for v in self.inputs]
+
+    def get_destinations(self) -> list[str]:
+        return self.destinations
+
+    def get_output_info(self) -> dict[str, int]:
+        return {output.name: output.n_last_dim for output in self.outputs}
+
+    def get_output_keys(self) -> list[str]:
+        return [v.name for v in self.outputs]
+
+    def resolve(
+        self,
+        *resolved_outputs: dict[str, int],
+        parent: IReadOnlyReferenceGroupSetting | None = None,
+    ) -> None:
+        _check_inputs(self, *resolved_outputs)
+
+        prefix_removed_inputs = self._check_prefix_inputs()
+        self.network.resolve(
+            prefix_removed_inputs,
+            parent=self,
+        )
+        outputs = self.network.get_output_info()
+
+        prefix_added_outputs = self._check_prefix_outputs(outputs)
+        _check_last_outputs(self, prefix_added_outputs)
+        return None
+
+    def _check_prefix_inputs(self) -> list[dict[str, int]]:
+        merged = {d.name: d.n_last_dim for d in self.inputs}
+
+        # prefix to name must be 1 to 1 mapping
+
+        #  -- check prefix to name mapping
+        for prefix in self.adaptor_setting.all_prefixes():
+            matched = [k for k in merged if k.startswith(prefix)]
+            if len(matched) == 0:
+                raise ValueError(
+                    f"Prefix '{prefix}' does not match any input key. "
+                    f"Input keys: {list(merged.keys())}"
+                )
+
+        # -- check name to prefix mapping
+        prefix_removed = {}
+        prefixes = self.adaptor_setting.all_prefixes()
+        for k, v in merged.items():
+            matched = [prefix for prefix in prefixes if k.startswith(prefix)]
+            if len(matched) == 0:
+                raise ValueError(
+                    f"Input key '{k}' is not matched with any prefix. "
+                    f"Prefixes: {prefixes}"
+                )
+            if len(matched) > 1:
+                raise ValueError(
+                    f"Multiple prefixes matched for key '{k}': {matched}"
+                )
+            prefix_removed[k.removeprefix(matched[0])] = v
+
+        return prefix_removed
+
+    def _check_prefix_outputs(self, outputs: dict[str, int]) -> dict[str, int]:
+        prefix_added = {
+            f"{prefix}{k}": v
+            for k, v in outputs.items()
+            for prefix in self.adaptor_setting.all_prefixes()
+        }
+
+        if len(self.outputs) == 0:
+            # set automatically
+            self._outputs = [
+                GroupOutputSetting(name=k, n_last_dim=v)
+                for k, v in prefix_added.items()
+            ]
+
+        if not {v.name for v in self.outputs}.issubset(prefix_added):
+            raise ValueError(
+                f"Some outputs are not matched with prefix inputs. "
+                f"Outputs: {self.outputs}, "
+                f"PrefixAddedOutputs: {prefix_added}"
+            )
+
+        return prefix_added
+
+    def search_module_setting(self, name: str) -> IPhlowerLayerParameters:
+        return self.network.search_module_setting(name)
+
+    def search_group_setting(self, name: str) -> IReadOnlyReferenceGroupSetting:
+        return self.network.search_group_setting(name)
+
+
+# endregion
+
+
+def _check_inputs(
+    self: GroupModuleSetting | AdaptorGroupModuleSetting,
+    *resolved_outputs: dict[str, int | None],
+) -> None:
+    _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
+    _n_keys = sum(len(v.keys()) for v in resolved_outputs)
+
+    if len(_flatten_dict) != _n_keys:
+        raise PhlowerModuleDuplicateKeyError(
+            "Duplicate key name is detected in input keys "
+            f"for {self.name}. Please check precedents."
+        )
+
+    if len(self.inputs) == 0:
+        # check None
+        for k, v in _flatten_dict.items():
+            if v is None:
+                raise ValueError(
+                    f"n_last_dim of {k} cannot be determined."
+                    f" Please check precedent modules of {self.name}."
+                )
+        # set automatically
+        self.inputs = [
+            GroupInputSetting(name=k, n_last_dim=v)
+            for k, v in _flatten_dict.items()
+        ]
+
+    for input_v in self.inputs:
+        if input_v.name not in _flatten_dict:
+            raise PhlowerModuleKeyError(
+                f"{input_v.name} is not passed to {self.name}. "
+                "Please check precedents."
+            )
+
+        if _flatten_dict[input_v.name] is None:
+            continue
+
+        if _flatten_dict[input_v.name] != input_v.n_last_dim:
+            raise PhlowerModuleNodeDimSizeError(
+                f"n_dim of {input_v.name} in {self.name} "
+                f"is {input_v.n_last_dim}. "
+                "It is not consistent with the precedent modules"
+            )
+
+
+def _check_last_outputs(
+    self: GroupModuleSetting | AdaptorGroupModuleSetting,
+    *resolved_outputs: dict[str, int],
+) -> None:
+    _flatten_dict = functools.reduce(lambda x, y: x | y, resolved_outputs)
+    _n_keys = sum(len(v.keys()) for v in resolved_outputs)
+
+    if len(_flatten_dict) != _n_keys:
+        raise PhlowerModuleDuplicateKeyError(
+            "Duplicate key name is detected in output keys "
+            f"for {self.name}. Please check precedents"
+        )
+
+    if len(self.outputs) == 0:
+        # set automatically
+        self.outputs = [
+            GroupOutputSetting(name=k, n_last_dim=v)
+            for k, v in _flatten_dict.items()
+        ]
+
+    for self_output in self.outputs:
+        if self_output.name not in _flatten_dict:
+            raise PhlowerModuleKeyError(
+                f"{self_output.name} is not created in {self.name}. "
+                "Please check last module in this group."
+            )
+
+        if _flatten_dict[self_output.name] != self_output.n_last_dim:
+            raise PhlowerModuleNodeDimSizeError(
+                f"n_dim of {self_output.name} in {self.name} "
+                f"is {self_output.n_last_dim}. "
+                "It is not consistent with the precedent modules"
+            )
+
+
+def _check_unique_items(
+    values: list[GroupInputSetting] | list[GroupOutputSetting],
+    info: pydantic.ValidationInfo,
+    nn_name: str,
+) -> None:
+    names = [v.name for v in values]
+    if len(names) != len(set(names)):
+        raise PhlowerModuleDuplicateKeyError(
+            f"duplicate keys exist in {info.field_name}."
+            f"{nn_name}: {info.data['name']}"
+        )
