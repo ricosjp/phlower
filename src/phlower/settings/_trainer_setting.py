@@ -282,9 +282,9 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     Defaults to False.
     """
 
-    evaluate_context_manager: Literal["inference_mode", "no_grad"] = (
-        "inference_mode"
-    )
+    evaluate_context_manager: Literal[
+        "inference_mode", "no_grad", "enable_grad"
+    ] = "inference_mode"
     """
     Context manager to use during evaluation.
     Choose from "no_grad" or "inference_mode".

@@ -343,3 +343,25 @@ def test__compute_residual_losses(
     assert torch.allclose(
         actual["nodal_residual"].to_tensor(), expected.to_tensor()
     )
+
+
+def test__compute_losses_for_value_which_does_not_have_batch_info():
+
+    # when computing residual loss, batch info is not required.
+    name2loss = {"nodal_residual": "residual_mse"}
+    name2shape = {"nodal_residual": [(10, 3, 1)]}
+
+    predictions, _, _ = create_random_dataset(name2shape)
+
+    # Mimic the case where answer is not provided
+    answers = phlower_tensor_collection({})
+
+    calculator = LossCalculator(name2loss=name2loss)
+    actual = calculator.calculate(predictions, answers, {})
+
+    assert "nodal_residual" in actual
+
+    expected = torch.mean(predictions["nodal_residual"] ** 2.0)
+    assert torch.allclose(
+        actual["nodal_residual"].to_tensor(), expected.to_tensor()
+    )

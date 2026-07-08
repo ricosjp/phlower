@@ -18,6 +18,7 @@ from phlower_tensor.collections import (
 from phlower.nn import PhlowerGroupModule
 from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.settings import PhlowerSetting
+from phlower.settings._group_setting import GroupModuleSetting
 from phlower.utils import create_simulation_field
 
 _SAMPLE_SETTING_DIR = pathlib.Path(__file__).parent / "data/group"
@@ -183,7 +184,7 @@ def test__forward_count_when_time_series_input(
         name="test_group",
         modules=[],
         no_grad=False,
-        input_keys=["input"],
+        inputs=[{"name": "input"}],
         destinations=["next_group"],
         output_keys=["output"],
         is_steady_problem=False,
@@ -222,7 +223,7 @@ def test__snapshot_input_when_time_series_forward(
         name="test_group",
         modules=[],
         no_grad=False,
-        input_keys=["input"],
+        inputs=[{"name": "input"}],
         destinations=["next_group"],
         output_keys=["output"],
         is_steady_problem=False,
@@ -375,3 +376,38 @@ def test__field_data_is_overwritten(yaml_file: str):
         field_data["support1"].to_tensor().to_dense().numpy(),
         support1_field.to_tensor().to_dense().numpy(),
     )
+
+
+# @pytest.mark.parametrize()
+def test__requires_grad_with_keys():
+    setting = GroupModuleSetting(
+        **{
+            "name": "test_group",
+            "modules": [
+                {
+                    "name": "test_module",
+                    "nn_type": "Identity",
+                    "input_keys": ["input"],
+                    "output_key": "output",
+                }
+            ],
+            "no_grad": False,
+            "inputs": [{"name": "input", "requires_grad": True}],
+            "outputs": [{"name": "output"}],
+        }
+    )
+    group = PhlowerGroupModule.from_setting(setting)
+
+    data = phlower_tensor_collection(
+        {
+            "input": phlower_tensor(torch.rand(10, 3)),
+            "other": phlower_tensor(torch.rand(10, 3)),
+        }
+    )
+    assert data["input"].to_tensor().requires_grad is False
+
+    out = group(data, field_data=None)
+
+    # requires_grad is in-place operation
+    assert data["input"].to_tensor().requires_grad is True
+    assert out["output"].to_tensor().requires_grad is True
