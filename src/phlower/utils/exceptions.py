@@ -47,6 +47,15 @@ class PhlowerRestartTrainingCompletedError(ValueError):
     ...
 
 
+class PhlowerHandlerStopTraining(BaseException):
+    """
+    This error raises when a training handler
+    teminates the training process.
+    """
+
+    ...
+
+
 class PhlowerReshapeError(ValueError):
     """
     This error raises when trying to reshape a tensor in an invalid

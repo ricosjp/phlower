@@ -20,7 +20,7 @@ from phlower.settings._trainer_setting import (
     TrainerInitializerSetting,
 )
 from phlower.utils.exceptions import (
-    PhlowerNaNDetectedError,
+    PhlowerHandlerStopTraining,
     PhlowerRestartTrainingCompletedError,
 )
 from phlower.utils.typing import IPhlowerHandler
@@ -585,7 +585,7 @@ def test__train_with_raise_nan_detected(
     if output_directory.exists():
         shutil.rmtree(output_directory)
 
-    with pytest.raises(PhlowerNaNDetectedError):
+    with pytest.raises(PhlowerHandlerStopTraining):
         trainer.train(
             train_directories=preprocessed_directories,
             validation_directories=preprocessed_directories,
