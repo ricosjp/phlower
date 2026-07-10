@@ -62,7 +62,7 @@ def test__early_stop_with_validation_loss(
     for output in outputs:
         results.append(handler(output))
 
-    assert results[-1].get("TERMINATE")
+    assert results[-1].terminate_training
 
 
 @pytest.mark.parametrize(
@@ -99,7 +99,7 @@ def test__early_stop_with_training_loss(
     for output in outputs:
         results.append(handler(output))
 
-    assert results[-1].get("TERMINATE")
+    assert results[-1].terminate_training
 
 
 @pytest.mark.parametrize(

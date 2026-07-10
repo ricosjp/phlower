@@ -9,10 +9,14 @@ from phlower.services.trainer._handler_functions import (
 )
 from phlower.settings import PhlowerTrainerSetting
 from phlower.utils.enums import (
-    PhlowerHandlerRegisteredKey,
     PhlowerHandlerTrigger,
 )
-from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
+from phlower.utils.exceptions import PhlowerHandlerStopTraining
+from phlower.utils.typing import (
+    AfterEvaluationOutput,
+    IPhlowerHandler,
+    PhlowerHandlerAnalysisResult,
+)
 
 
 class PhlowerHandlersFactory:
@@ -66,7 +70,7 @@ class PhlowerHandlersRunner:
         self,
         handlers_params: dict[str, dict],
     ):
-        self._terminate = False
+        self._result = PhlowerHandlerAnalysisResult(False, None)
         self._handlers = {
             name: PhlowerHandlersFactory.create(name, params)
             for name, params in handlers_params.items()
@@ -94,6 +98,10 @@ class PhlowerHandlersRunner:
         trigger: Literal[PhlowerHandlerTrigger.iteration_completed],
     ) -> None: ...
 
+    def update_activity(self, continue_count: int):
+        for func in self._handlers.values():
+            func.update_activity(continue_count)
+
     def run(
         self,
         output: AfterEvaluationOutput | float,
@@ -104,9 +112,12 @@ class PhlowerHandlersRunner:
                 continue
 
             result = func(output)
-            if result.get(PhlowerHandlerRegisteredKey.TERMINATE):
-                self._terminate = True
+            if result.terminate_training:
+                # TODO: Consider multiple reasons
+                self._result = result
                 break
+        if self._result.terminate_training:
+            raise PhlowerHandlerStopTraining(self._result.reason)
 
     def attach(
         self,
@@ -120,7 +131,11 @@ class PhlowerHandlersRunner:
 
     @property
     def terminate_training(self) -> bool:
-        return self._terminate
+        return self._result.terminate_training
+
+    @property
+    def handler_result(self) -> PhlowerHandlerAnalysisResult:
+        return self._result
 
     def state_dict(self) -> dict[str, dict]:
         items = {

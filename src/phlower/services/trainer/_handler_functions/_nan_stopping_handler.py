@@ -7,8 +7,7 @@ from phlower.utils import get_logger
 from phlower.utils.enums import (
     PhlowerHandlerTrigger,
 )
-from phlower.utils.exceptions import PhlowerNaNDetectedError
-from phlower.utils.typing import IPhlowerHandler
+from phlower.utils.typing import IPhlowerHandler, PhlowerHandlerAnalysisResult
 
 
 class NaNStoppingHandler(IPhlowerHandler[float]):
@@ -30,12 +29,17 @@ class NaNStoppingHandler(IPhlowerHandler[float]):
         self.has_nan = False
         self.logger = get_logger(__name__ + "." + self.__class__.__name__)
 
-    def __call__(self, output: float) -> dict[str, bool]:
+    def __call__(self, output: float) -> PhlowerHandlerAnalysisResult:
         if np.isnan(output):
             self.has_nan = True
-            raise PhlowerNaNDetectedError
-
-        return {}
+            return PhlowerHandlerAnalysisResult(
+                terminate_training=True,
+                reason="NaN detected in loss.",
+            )
+        return PhlowerHandlerAnalysisResult(
+            terminate_training=False,
+            reason=None,
+        )
 
     def state_dict(self) -> OrderedDict[str, float]:
         """Method returns state dict with ``has_nan``.
@@ -55,3 +59,5 @@ class NaNStoppingHandler(IPhlowerHandler[float]):
             state_dict: a dict with "has_nan" keys/values.
         """
         self.has_nan = state_dict["has_nan"]
+
+    def update_activity(self, continue_count: int): ...

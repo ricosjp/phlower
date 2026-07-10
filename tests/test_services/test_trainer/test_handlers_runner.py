@@ -8,7 +8,12 @@ from phlower.services.trainer._handlers import (
 )
 from phlower.settings import PhlowerSetting
 from phlower.utils.enums import PhlowerHandlerTrigger
-from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
+from phlower.utils.exceptions import PhlowerHandlerStopTraining
+from phlower.utils.typing import (
+    AfterEvaluationOutput,
+    IPhlowerHandler,
+    PhlowerHandlerAnalysisResult,
+)
 
 DATA_DIR = pathlib.Path("tests/test_services/test_trainer/data/handlers")
 
@@ -38,11 +43,19 @@ class DummyCustomHanlder(IPhlowerHandler):
     def __init__(self, threshold: float = 1.0):
         self._threshold = threshold
 
-    def __call__(self, output: AfterEvaluationOutput) -> dict:
+    def __call__(
+        self, output: AfterEvaluationOutput
+    ) -> PhlowerHandlerAnalysisResult:
         if output.train_eval_loss > 1.0:
-            return {"TERMINATE": True}
+            return PhlowerHandlerAnalysisResult(
+                terminate_training=True, reason="Dummy handler triggered."
+            )
 
-        return {}
+        return PhlowerHandlerAnalysisResult(
+            terminate_training=False, reason=None
+        )
+
+    def update_activity(self, continue_count: int) -> None: ...
 
     def state_dict(self) -> dict:
         return {"threshold": self._threshold}
@@ -87,9 +100,9 @@ def test__has_termination_flag(file_name: str, setup_user_handler: None):
         validation_eval_loss=3.0,
         elapsed_time=100,
     )
-    runner.run(dummy, trigger=PhlowerHandlerTrigger.epoch_completed)
 
-    assert runner.terminate_training
+    with pytest.raises(PhlowerHandlerStopTraining):
+        runner.run(dummy, trigger=PhlowerHandlerTrigger.epoch_completed)
 
 
 @pytest.mark.parametrize(

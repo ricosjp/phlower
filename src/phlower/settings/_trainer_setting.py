@@ -297,7 +297,16 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     """
     Setting for continue training. Defaults to None.
     If not None, it is used to continue training with modified parameters.
-     """
+    """
+
+    # NOTE: here, we don't check whether name of error handlers exists or not,
+    # because the error handlers can be user defined.
+    error_handlers: list[str] = pydantic.Field(default_factory=list)
+    """
+    List of error handler names to handle training termination.
+    If the training is terminated by a handler,
+    the error handlers will be called in order.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")

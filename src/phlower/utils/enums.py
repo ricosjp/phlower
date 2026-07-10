@@ -86,10 +86,6 @@ class PhlowerCGPreconditionType(StrEnum):
     random_jacobi = "random_jacobi"
 
 
-class PhlowerHandlerRegisteredKey(StrEnum):
-    TERMINATE = "TERMINATE"
-
-
 class PhlowerHandlerTrigger(StrEnum):
     iteration_completed = "iteration_completed"
     epoch_completed = "epoch_completed"

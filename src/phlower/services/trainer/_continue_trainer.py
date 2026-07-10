@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
+from functools import partial
 from typing import Final, NamedTuple, overload
+
+import torch.multiprocessing as mp
 
 from phlower.io import PhlowerYamlFile
 from phlower.services.trainer._continue_updater import (
     ContinueParameterUpdatorFactory,
 )
-from phlower.services.trainer._trainer import PhlowerTrainer
+from phlower.services.trainer._handlers import IPhlowerHandler
+from phlower.services.trainer._trainer import (
+    PhlowerTrainer,
+    error_handler_wrapper,
+)
 from phlower.settings import PhlowerSetting
 from phlower.settings._continue_settings import (
     ContinueSetting,
@@ -148,6 +156,8 @@ class PhlowerContinueTrainer:
             setting=setting,
             preset_trainer=trainer,
         )
+        self._renderer: Callable[[pathlib.Path], None] | None = None
+        self._extra_handlers: dict[str, tuple[IPhlowerHandler, bool]] = {}
 
     @classmethod
     def restart_from(
@@ -167,19 +177,18 @@ class PhlowerContinueTrainer:
                 " is not supported yet."
             ) from ex
 
-        continue_state_file = model_directory / "continue_state.yml"
-        if not continue_state_file.exists():
-            # No continue_state.yml found, assume this is the first run
+        status = _retrieve_continue_status(model_directory)
+        if status is None:
+            _logger.info(
+                "Cannot retrieve continue status from model directory. "
+                "Assuming this is the first run of training."
+            )
             return PhlowerContinueTrainer(
                 setting=trainer._setting,
                 trainer=trainer,
             )
 
-        continue_state = PhlowerYamlFile(continue_state_file).load()
-        current_count = int(continue_state["continue_count"])
-        cont0_output_directory = pathlib.Path(
-            continue_state["cont0_output_directory"]
-        )
+        current_count, cont0_output_directory = status
         return PhlowerContinueTrainer(
             setting=trainer._setting,
             current_count=current_count,
@@ -205,12 +214,26 @@ class PhlowerContinueTrainer:
         trainer = PhlowerContinueTrainer(setting)
         return trainer
 
+    def set_trainer_renderer(
+        self, renderer: Callable[[pathlib.Path], None]
+    ) -> None:
+        self._renderer = renderer
+
+    def attach_handler(
+        self, name: str, handler: IPhlowerHandler, allow_overwrite: bool = False
+    ) -> None:
+        """
+        Attach extra handlers to the trainer.
+        It is useful when you want to use your own handler which is
+        initialized outside of training. (e.g. Optuna, WandB, etc.)
+        """
+        self._extra_handlers[name] = (handler, allow_overwrite)
+
     @overload
     def train(
         self,
         output_directory: pathlib.Path,
         disable_dimensions: bool = False,
-        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> None:
@@ -226,8 +249,6 @@ class PhlowerContinueTrainer:
                 Decrypt key. Defaults to None.
             encrypt_key: bytes | None
                 Encrypt key. Defaults to None.
-        Returns:
-            None
         """
         ...
 
@@ -257,9 +278,10 @@ class PhlowerContinueTrainer:
             encrypt_key: bytes | None
                 Encrypt key. Defaults to None.
 
-        Returns:
-            None
         """
+
+    def get_registered_setting(self) -> PhlowerSetting:
+        return self._state.setting
 
     def train(
         self,
@@ -270,6 +292,21 @@ class PhlowerContinueTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> None:
+        """
+        Train model using directories defined in the setting
+
+        Args:
+            output_directory: pathlib.Path
+                Output directory
+            disable_dimensions: bool
+                Disable dimensions. Defaults to False.
+            decrypt_key: bytes | None
+                Decrypt key. Defaults to None.
+            encrypt_key: bytes | None
+                Encrypt key. Defaults to None.
+        Returns:
+            None
+        """
 
         if self._cont0_output_directory is None:
             self._cont0_output_directory = output_directory
@@ -339,19 +376,27 @@ class PhlowerContinueTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ):
-        try:
-            trainer = self._state.setup_trainer(decrypt_key=decrypt_key)
-            trainer.train(
-                output_directory=self._state.output_directory,
-                train_directories=train_directories,
-                validation_directories=validation_directories,
-                disable_dimensions=disable_dimensions,
-                decrypt_key=decrypt_key,
-                encrypt_key=encrypt_key,
+        trainer = self._state.setup_trainer(decrypt_key=decrypt_key)
+        trainer.update_handlers_activity(
+            continue_count=self._state.current_count
+        )
+        if self._renderer is not None:
+            trainer.draw_model(self._state.output_directory)
+            self._renderer(self._state.output_directory)
+        for name, (handler, allow_overwrite) in self._extra_handlers.items():
+            trainer.attach_handler(
+                name, handler, allow_overwrite=allow_overwrite
             )
-        except Exception as ex:
-            # TODO: Accept user defined custom exception handler
-            raise ex
+
+        _start_training(
+            trainer=trainer,
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            output_directory=self._state.output_directory,
+            decrypt_key=decrypt_key,
+            encrypt_key=encrypt_key,
+            disable_dimensions=disable_dimensions,
+        )
 
     def _save_continue_state(self, state: ContinueState) -> None:
         content = {
@@ -364,3 +409,106 @@ class PhlowerContinueTrainer:
             data=content,
             encrypt_key=None,
         )
+
+
+def _start_training(
+    trainer: PhlowerTrainer,
+    output_directory: pathlib.Path,
+    train_directories: list[pathlib.Path] | None = None,
+    validation_directories: list[pathlib.Path] | None = None,
+    disable_dimensions: bool = False,
+    encrypt_key: bytes | None = None,
+    decrypt_key: bytes | None = None,
+) -> None:
+    setting = trainer.get_registered_trainer_setting()
+
+    if setting.parallel_setting.is_active:
+        _start_parallel_training(
+            trainer=trainer,
+            output_directory=output_directory,
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            disable_dimensions=disable_dimensions,
+            decrypt_key=decrypt_key,
+            encrypt_key=encrypt_key,
+        )
+
+    else:
+        _logger.info("Start single training.")
+        trainer.train(
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            output_directory=output_directory,
+            disable_dimensions=disable_dimensions,
+            decrypt_key=decrypt_key,
+            encrypt_key=encrypt_key,
+        )
+
+
+# NOTE: error handler should be called here, not in PhlowerTrainer.train,
+# because the error handler should be called
+# even if the error occurs in the parallel training process.
+@error_handler_wrapper("trainer")
+def _start_parallel_training(
+    trainer: PhlowerTrainer,
+    output_directory: pathlib.Path,
+    train_directories: list[pathlib.Path] | None = None,
+    validation_directories: list[pathlib.Path] | None = None,
+    disable_dimensions: bool = False,
+    encrypt_key: bytes | None = None,
+    decrypt_key: bytes | None = None,
+) -> None:
+    setting = trainer.get_registered_trainer_setting()
+
+    if setting.parallel_setting.parallel_type != "DDP":
+        raise NotImplementedError(
+            "Only DDP is supported for continue training."
+        )
+    world_size = setting.parallel_setting.world_size
+    _logger.info(f"Start parallel training with world_size={world_size}.")
+    mp.spawn(
+        partial(
+            trainer.train_ddp,
+            train_directories=train_directories,
+            validation_directories=validation_directories,
+            disable_dimensions=disable_dimensions,
+            decrypt_key=decrypt_key,
+            encrypt_key=encrypt_key,
+        ),
+        args=(
+            world_size,
+            output_directory,
+        ),
+        nprocs=world_size,
+        join=True,
+    )
+
+
+def _retrieve_continue_status(
+    model_directory: pathlib.Path,
+) -> tuple[int, pathlib.Path] | None:
+    continue_state_file = model_directory / "continue_state.yml"
+    if continue_state_file.exists():
+        continue_state = PhlowerYamlFile(continue_state_file).load()
+        current_count = int(continue_state["continue_count"])
+        cont0_output_directory = pathlib.Path(
+            continue_state["cont0_output_directory"]
+        )
+        return current_count, cont0_output_directory
+
+    _logger.info(
+        "No continue_state.yml found in the model directory. "
+        "Try to retrieve status from output directory name."
+    )
+
+    # No continue_state.yml found
+    # try to retieve from output directory name
+    # This is for backward compatibility with old version of Phlower
+    items: list[str] = model_directory.name.split("_")
+    if len(items) < 2:
+        return None
+    if not items[-2].startswith("cont"):
+        return None
+
+    num = items[-2].removeprefix("cont")
+    return int(num)

@@ -14,6 +14,7 @@ from phlower.services.trainer._continue_trainer import (
     StateUpdater,
 )
 from phlower.settings import PhlowerSetting
+from phlower.utils.exceptions import PhlowerHandlerStopTraining
 
 _OUT_CONTINUE_DIR = pathlib.Path(__file__).parent / "_out_continue_training"
 _SETTING_DIR = pathlib.Path(__file__).parent / "data/continue_trainer"
@@ -165,6 +166,57 @@ def test__train_cont3(
         with continue_state_file.open("r") as fr:
             content = yaml.safe_load(fr.read())
         assert content["continue_count"] == i + 1
+
+
+@pytest.mark.parametrize(
+    "yaml_filename",
+    [
+        "train_cont3_early_stopping_ignore.yml",
+    ],
+)
+def test__train_cont3_with_error_handlers(
+    yaml_filename: str, prepare_sample_preprocessed_files: None
+):
+    output_base_dir = _OUT_CONTINUE_DIR / yaml_filename.split(".")[0]
+    _train(yaml_filename, output_base_dir)
+
+    model_dirs = [
+        p
+        for p in output_base_dir.iterdir()
+        if p.is_dir() and p.name.startswith("model")
+    ]
+    assert len(model_dirs) == 4
+
+    # check the dumped continue_state.yml
+    for _model_dir in model_dirs:
+        assert (_model_dir / "training_error.txt").exists()
+        assert (
+            "EarlyStopping: No improvement after patience"
+            in (_model_dir / "training_error.txt").read_text()
+        )
+
+
+@pytest.mark.parametrize(
+    "yaml_filename",
+    [
+        "train_cont3_early_stopping_trigger.yml",
+        "train_cont3_early_stopping_trigger_with_propagate.yml",
+    ],
+)
+def test__stop_if_no_error_handlers_are_set(
+    yaml_filename: str, prepare_sample_preprocessed_files: None
+):
+    output_base_dir = _OUT_CONTINUE_DIR / yaml_filename.split(".")[0]
+
+    with pytest.raises(PhlowerHandlerStopTraining):
+        _train(yaml_filename, output_base_dir)
+
+    model_dirs = [
+        p
+        for p in output_base_dir.iterdir()
+        if p.is_dir() and p.name.startswith("model")
+    ]
+    assert len(model_dirs) == 1
 
 
 # region test for restart

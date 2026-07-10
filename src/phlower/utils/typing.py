@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import pathlib
 from collections.abc import Callable, Mapping
-from typing import Any, Generic, NamedTuple, Protocol, TypeVar
+from typing import Generic, NamedTuple, Protocol, TypeVar
 
 import numpy as np
 import scipy.sparse as sp
@@ -50,12 +50,17 @@ class AfterEvaluationOutput(NamedTuple):
     validation_loss_details: dict[str, float] | None = None
 
 
+class PhlowerHandlerAnalysisResult(NamedTuple):
+    terminate_training: bool
+    reason: str | None = None
+
+
 T = TypeVar("T", AfterEvaluationOutput, float)
 
 
 class IPhlowerHandler(Generic[T], metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __call__(self, output: T) -> dict[str, Any]:
+    def __call__(self, output: T) -> PhlowerHandlerAnalysisResult:
         """Run handler's program. If output dictionary conatins "TERMINATE" and
          its value is True, training process is terminated forcefully.
 
@@ -66,6 +71,15 @@ class IPhlowerHandler(Generic[T], metaclass=abc.ABCMeta):
 
         Returns:
             dict[str, Any]: output data
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_activity(self, continue_count: int) -> None:
+        """Update handler's activity based on continue_count
+
+        Args:
+            continue_count (int): Continue count
         """
         ...
 

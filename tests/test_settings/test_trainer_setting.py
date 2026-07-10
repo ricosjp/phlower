@@ -155,6 +155,7 @@ def test__default_trainer_setting():
     assert setting.initializer_setting.type_name == "none"
     assert setting.initializer_setting.reference_directory is None
     assert setting.lazy_load is True
+    assert setting.error_handlers == []
 
 
 @mock.patch("torch.cuda.is_available")

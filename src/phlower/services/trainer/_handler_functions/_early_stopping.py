@@ -10,10 +10,13 @@ from typing import cast
 
 from phlower.utils import get_logger
 from phlower.utils.enums import (
-    PhlowerHandlerRegisteredKey,
     PhlowerHandlerTrigger,
 )
-from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
+from phlower.utils.typing import (
+    AfterEvaluationOutput,
+    IPhlowerHandler,
+    PhlowerHandlerAnalysisResult,
+)
 
 __all__ = ["EarlyStopping"]
 
@@ -66,7 +69,9 @@ class EarlyStopping(IPhlowerHandler[AfterEvaluationOutput]):
         self.best_score: float | None = None
         self.logger = get_logger(__name__ + "." + self.__class__.__name__)
 
-    def __call__(self, output: AfterEvaluationOutput) -> dict[str, bool]:
+    def __call__(
+        self, output: AfterEvaluationOutput
+    ) -> PhlowerHandlerAnalysisResult:
         if output.validation_eval_loss is None:
             self.logger.info(
                 "Evaluation for validation dataset is missing. "
@@ -88,13 +93,26 @@ class EarlyStopping(IPhlowerHandler[AfterEvaluationOutput]):
             )
             if self.counter >= self.patience:
                 self.logger.info("EarlyStopping: Stop training")
-                return {PhlowerHandlerRegisteredKey.TERMINATE: True}
+                return PhlowerHandlerAnalysisResult(
+                    terminate_training=True,
+                    reason=(
+                        "EarlyStopping: No improvement after patience. "
+                        f"Best score: {self.best_score:.6f}, "
+                        f"Current score: {score:.6f}, "
+                        f"Current count: {self.counter}, "
+                        f"Patience: {self.patience}, "
+                        f"Min delta: {self.min_delta:.6f} "
+                    ),
+                )
 
         else:
             self.best_score = score
             self.counter = 0
 
-        return {}
+        return PhlowerHandlerAnalysisResult(
+            terminate_training=False,
+            reason=None,
+        )
 
     def state_dict(self) -> OrderedDict[str, float]:
         """Method returns state dict with ``counter`` and ``best_score``.
@@ -116,3 +134,5 @@ class EarlyStopping(IPhlowerHandler[AfterEvaluationOutput]):
         """
         self.counter = state_dict["counter"]
         self.best_score = state_dict["best_score"]
+
+    def update_activity(self, continue_count: int): ...

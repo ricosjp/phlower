@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import os
 import pathlib
+import traceback
+from collections.abc import Callable
 from datetime import timedelta
-from typing import Literal, overload
+from functools import wraps
+from inspect import signature
+from typing import Literal, ParamSpec, overload
 
 import torch
 import torch.distributed as dist
@@ -31,10 +35,12 @@ from phlower.services.trainer._dataloader_helper import (
     prepare_dataloader,
     prepare_datasets,
 )
+from phlower.services.trainer._error_handlers import ErrorHandlerChain
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
+from phlower.services.utils import TrainingTerminatedState
 from phlower.settings import (
     PhlowerDataSetting,
     PhlowerSetting,
@@ -53,9 +59,53 @@ from phlower.utils.enums import (
     TrainerInitializeType,
     TrainerSavedKeyType,
 )
-from phlower.utils.exceptions import PhlowerRestartTrainingCompletedError
+from phlower.utils.exceptions import (
+    PhlowerRestartTrainingCompletedError,
+)
 
 _logger = get_logger(__name__)
+
+
+P = ParamSpec("P")
+
+
+def error_handler_wrapper(
+    trainer_pos: str,
+) -> Callable[[Callable[P, float | None]], Callable[P, float | None]]:
+    def _handler_wrapper(
+        training_function: Callable[P, float | None],
+    ) -> Callable[P, float | None]:
+        sig = signature(training_function)
+
+        @wraps(training_function)
+        def _wrapper(*args: P.args, **kwargs: P.kwargs) -> float | None:
+            bound = sig.bind(*args, **kwargs)
+            value: float | None = None
+
+            _trainer: PhlowerTrainer = bound.arguments[trainer_pos]
+            try:
+                value = training_function(*args, **kwargs)
+            except BaseException as ex:
+                terminated_state = TrainingTerminatedState(
+                    output_directory=bound.arguments["output_directory"],
+                    setting=_trainer._setting,
+                    exception=ex,
+                    traceback_info=traceback.format_exc(),
+                )
+                allow = _trainer._error_handler.should_suppress(
+                    terminated_state
+                )
+                # If the error handler does not raise an exception,
+                # we return the value (which is None)
+                if not allow:
+                    raise ex
+                pass
+
+            return value
+
+        return _wrapper
+
+    return _handler_wrapper
 
 
 class PhlowerTrainer:
@@ -199,6 +249,11 @@ class PhlowerTrainer:
         self._start_epoch = 0
         self._offset_time = 0.0
 
+        # error handlers
+        self._error_handler = ErrorHandlerChain(
+            self._setting.training.error_handlers
+        )
+
         # NOTE: If this consumes too much memory,
         # we may need to wrap this method with `with init_empty_weights():`
         # and use FSDP2
@@ -238,12 +293,19 @@ class PhlowerTrainer:
             _model.to(self._setting.training.device)
         return _model
 
+    def update_handlers_activity(self, continue_count: int) -> None:
+        """Update handlers activity based on continue_count
+
+        Args:
+            continue_count (int): Continue count
+        """
+        self._handlers.update_activity(continue_count=continue_count)
+
     @overload
     def train(
         self,
         output_directory: pathlib.Path,
         disable_dimensions: bool = False,
-        random_seed: int | None = None,
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ) -> float:
@@ -294,6 +356,7 @@ class PhlowerTrainer:
             float: Last loss
         """
 
+    @error_handler_wrapper("self")
     def train(
         self,
         output_directory: pathlib.Path,
@@ -400,9 +463,6 @@ class PhlowerTrainer:
                 output,
                 trigger=PhlowerHandlerTrigger.epoch_completed,
             )
-            if self._handlers.terminate_training:
-                _logger.info("Training process is killed by handler.")
-                break
 
         return train_last_loss
 
@@ -442,6 +502,9 @@ class PhlowerTrainer:
             Key used for decrypting data files, if necessary. Default is None.
         encrypt_key : bytes | None, optional
             Key used for encrypting output files, if necessary. Default is None.
+        raiase_error_on_handler_stop: bool, optional
+            If True, raise error when training is stopped by handler.
+            Default is False.
 
         Examples
         --------
@@ -568,9 +631,6 @@ class PhlowerTrainer:
                     output,
                     trigger=PhlowerHandlerTrigger.epoch_completed,
                 )
-                if self._handlers.terminate_training:
-                    _logger.info("Training process is killed by handler.")
-                    break
 
         _cleanup_parallel()
         return train_last_loss

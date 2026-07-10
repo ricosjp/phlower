@@ -1,8 +1,5 @@
-import pytest
-
 from phlower.services.trainer._handler_functions import NaNStoppingHandler
 from phlower.utils.enums import PhlowerHandlerTrigger
-from phlower.utils.exceptions import PhlowerNaNDetectedError
 
 
 def test__name():
@@ -21,5 +18,5 @@ def test__raise_when_nan():
 
     handler(0.1)
 
-    with pytest.raises(PhlowerNaNDetectedError):
-        handler(float("nan"))
+    result = handler(float("nan"))
+    assert result.terminate_training
