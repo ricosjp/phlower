@@ -143,9 +143,14 @@ class PhlowerTrainer:
         yaml_file = ph_directory.find_yaml_file(cls._SAVED_SETTING_NAME)
         setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
 
+        setting = PhlowerSetting.rewrite_model_initializer(
+            reference_setting=setting,
+            initializer_type=TrainerInitializeType.restart.value,
+            reference_directory=model_directory,
+        )
         # initialize model
         setting.model.resolve()
-        trainer = PhlowerTrainer(setting, restart_directory=model_directory)
+        trainer = PhlowerTrainer(setting)
 
         # reinit for restart
         trainer._reinit_for_restart(model_directory, decrypt_key=decrypt_key)
@@ -194,7 +199,6 @@ class PhlowerTrainer:
     def __init__(
         self,
         setting: PhlowerSetting,
-        restart_directory: pathlib.Path | None = None,
     ):
         """Initialize PhlowerTrainer without updating trainer's
          inner state.
@@ -222,7 +226,6 @@ class PhlowerTrainer:
         # initializer
         self._state_setup = _TrainingStateSetup(
             setting=self._setting,
-            restart_directory=restart_directory,
         )
 
         # initialize handler
@@ -908,7 +911,6 @@ class PhlowerTrainer:
         )
 
         self._handlers.load_state_dict(checkpoint["handler_runners"])
-
         self._start_epoch = int(checkpoint["epoch"]) + 1
         self._offset_time = checkpoint["elapsed_time"]
 
@@ -919,7 +921,6 @@ class PhlowerTrainer:
                 f"{self._setting.training.n_epoch} epochs."
             )
 
-        # self.loss = checkpoint['loss']
         _logger.info(
             f"{snapshot_file.file_path} is successfully loaded for restart."
         )
@@ -961,13 +962,8 @@ def _cleanup_parallel():
 
 
 class _TrainingStateSetup:
-    def __init__(
-        self,
-        setting: PhlowerSetting,
-        restart_directory: pathlib.Path | None = None,
-    ):
+    def __init__(self, setting: PhlowerSetting):
         self._setting = setting
-        self._restart_directory = restart_directory
         self._checkpoint_file = self._determine_checkpoint_file()
 
     def _determine_checkpoint_file(self) -> PhlowerCheckpointFile | None:
@@ -982,9 +978,9 @@ class _TrainingStateSetup:
                     selection_mode="best",
                 )
             case TrainerInitializeType.restart:
-                assert self._restart_directory is not None
+                assert init_setting.reference_directory is not None
                 return select_snapshot_file(
-                    self._restart_directory, selection_mode="latest"
+                    init_setting.reference_directory, selection_mode="latest"
                 )
             case _:
                 raise NotImplementedError(
@@ -1045,15 +1041,22 @@ class _TrainingStateSetup:
                 return _scheduled_optimizer
 
             case TrainerInitializeType.restart:
-                assert self._restart_directory is not None
                 _checkpoint = self._checkpoint_file.load(
                     map_location=map_location,
                     weights_only=False,
                     decrypt_key=decrypt_key,
                 )
-                _scheduled_optimizer.load_state_dict(
-                    _checkpoint[TrainerSavedKeyType.scheduled_optimizer.value]
-                )
+                if (
+                    _checkpoint.get(
+                        TrainerSavedKeyType.scheduled_optimizer.value
+                    )
+                    is not None
+                ):
+                    _scheduled_optimizer.load_state_dict(
+                        _checkpoint[
+                            TrainerSavedKeyType.scheduled_optimizer.value
+                        ]
+                    )
                 return _scheduled_optimizer
 
     def setup_parallel_model(

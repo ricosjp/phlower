@@ -1,6 +1,6 @@
 [project]
 name = "phlower"
-version = "0.4.0-dev1"
+version = "0.4.0-dev2"
 description = "This is a Python package which helps you handle GNN especially for physics problems."
 authors = [{ name = "RICOS Co. Ltd." }]
 requires-python = ">=3.11,<4.0"

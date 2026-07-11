@@ -15,6 +15,7 @@ from phlower.nn import PhlowerGroupModule
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings._record_io import LogRecordIO
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
+from phlower.utils.enums import TrainerSavedKeyType
 from phlower.utils.typing import AfterEvaluationOutput
 
 
@@ -112,14 +113,16 @@ class LoggingRunner:
             model = model.module
 
         data = {
-            "epoch": info.epoch,
-            "validation_loss": info.validation_eval_loss,
-            "model_state_dict": _get_model_state_dict(
+            TrainerSavedKeyType.epoch: info.epoch,
+            TrainerSavedKeyType.validation_loss: info.validation_eval_loss,
+            TrainerSavedKeyType.model_state_dict: _get_model_state_dict(
                 model, fsdp_sharded=fsdp_sharded
             ),
-            # "scheduled_optimizer": scheduled_optimizer.state_dict(),
-            "elapsed_time": info.elapsed_time,
-            "handler_runners": handlers.state_dict(),
+            TrainerSavedKeyType.scheduled_optimizer: (
+                scheduled_optimizer.state_dict()
+            ),
+            TrainerSavedKeyType.elapsed_time: info.elapsed_time,
+            TrainerSavedKeyType.handler_runners: handlers.state_dict(),
         }
 
         if rank == 0:

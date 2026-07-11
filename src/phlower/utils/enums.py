@@ -25,8 +25,12 @@ class ModelSelectionType(Enum):
 
 
 class TrainerSavedKeyType(StrEnum):
+    epoch = "epoch"
+    validation_loss = "validation_loss"
     model_state_dict = "model_state_dict"
     scheduled_optimizer = "scheduled_optimizer"
+    elapsed_time = "elapsed_time"
+    handler_runners = "handler_runners"
 
 
 class LossType(Enum):

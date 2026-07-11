@@ -12,20 +12,27 @@ import torch
 import torch.multiprocessing as mp
 import yaml
 
-from phlower.io import PhlowerDirectory, PhlowerYamlFile, select_snapshot_file
+from phlower.io import (
+    PhlowerDirectory,
+    PhlowerYamlFile,
+    select_snapshot_file,
+)
 from phlower.services.trainer import PhlowerTrainer
+from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
 from phlower.settings import PhlowerSetting
 from phlower.settings._trainer_setting import (
     ParallelSetting,
     TrainerInitializerSetting,
 )
+from phlower.testing import assert_hash_equal
 from phlower.utils.exceptions import (
     PhlowerHandlerStopTraining,
     PhlowerRestartTrainingCompletedError,
 )
-from phlower.utils.typing import IPhlowerHandler
+from phlower.utils.typing import AfterEvaluationOutput, IPhlowerHandler
 
 _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
+_OUTPUT_PRETRAINED_DIR = pathlib.Path(__file__).parent / "_out_pretrained"
 _OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
 _OUTPUT_SLIDING_DIR = pathlib.Path(__file__).parent / "_out_time_series"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
@@ -113,7 +120,7 @@ def prepare_sample_preprocessed_files_with_nan_values():
     np.save(u_file, u)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def simple_training(prepare_sample_preprocessed_files: None) -> float:
     phlower_path = PhlowerDirectory(_OUTPUT_DIR)
 
@@ -129,6 +136,28 @@ def simple_training(prepare_sample_preprocessed_files: None) -> float:
     output_directory = _OUTPUT_DIR / "model"
     if output_directory.exists():
         shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return loss
+
+
+@pytest.fixture()
+def simple_pretrained_training(simple_training: float) -> float:
+    phlower_path = PhlowerDirectory(_OUTPUT_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_pretrained.yml")
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_PRETRAINED_DIR / "model"
+    _initialize_tmp_output_directory(_OUTPUT_PRETRAINED_DIR)
 
     loss = trainer.train(
         train_directories=preprocessed_directories,
@@ -190,19 +219,26 @@ def test__training_with_multiple_batch_size(
 
 @pytest.fixture
 def perform_restart() -> Callable[[int | None], None]:
-    def restart_training(n_epoch: int | None = None):
-        with open(_SETTINGS_DIR / "train.yml") as fr:
+    def restart_training(
+        n_epoch: int | None = None,
+        restart_directory: pathlib.Path | None = None,
+    ):
+        restart_directory = restart_directory or _OUTPUT_DIR / "model"
+
+        # -- To reproduce stopped situation,
+        # we forcefully overwrite the setting yaml
+        with open(restart_directory / "model.yml") as fr:
             content = yaml.load(fr, Loader=yaml.SafeLoader)
 
         if n_epoch is not None:
             # NOTE: overwrite n_epoch to restart
             content["training"]["n_epoch"] = n_epoch
 
-        setting = PhlowerSetting(**content)
-        trainer = PhlowerTrainer.from_setting(setting)
+        with open(restart_directory / "model.yml", "w") as fw:
+            yaml.safe_dump(content, fw)
+        # --
 
-        restart_directory = _OUTPUT_DIR / "model"
-        trainer._reinit_for_restart(restart_directory=restart_directory)
+        trainer = PhlowerTrainer.restart_from(restart_directory)
 
         phlower_path = PhlowerDirectory(_OUTPUT_DIR)
         preprocessed_directories = list(
@@ -983,3 +1019,91 @@ def test_simple_training_with_updating_yaml(
         validation_directories=preprocessed_directories,
         output_directory=output_directory,
     )
+
+
+def test__get_same_pth_when_restart(
+    simple_training: float,
+    perform_restart: Callable[[int | None], None],
+):
+    before_snapshot = select_snapshot_file(_OUTPUT_DIR / "model", "latest")
+
+    restart_directory = _OUTPUT_DIR / "restart_model"
+    # This is for getting the initialized weight in trainer
+    with mock.patch.object(TrainingRunner, "run"):
+        with mock.patch.object(
+            EvaluationRunner,
+            "run",
+            return_value=AfterEvaluationOutput(
+                epoch=10,
+                train_eval_loss=0.0,
+                elapsed_time=0.0,
+                output_directory=restart_directory,
+            ),
+        ):
+            perform_restart(n_epoch=11)
+
+    before_content = before_snapshot.load(
+        map_location="cpu", weights_only=False
+    )
+    restart_content = select_snapshot_file(
+        _OUTPUT_DIR / "model", "latest"
+    ).load(map_location="cpu", weights_only=False)
+
+    assert restart_content["epoch"] != before_content["epoch"]
+
+    # Check if the model state dict and optimizer state dict
+    #  are the same after restart
+
+    assert_hash_equal(
+        before_content["model_state_dict"], restart_content["model_state_dict"]
+    )
+    assert_hash_equal(
+        before_content["scheduled_optimizer"],
+        restart_content["scheduled_optimizer"],
+    )
+
+    # Check if the model state dict and optimizer state dict
+    #  are different from other snapshot files
+    other_shapshot = select_snapshot_file(
+        _OUTPUT_DIR / "model", "specified", target_epoch=5
+    ).load(map_location="cpu", weights_only=False)
+    with pytest.raises(AssertionError):
+        assert_hash_equal(
+            other_shapshot["model_state_dict"],
+            restart_content["model_state_dict"],
+        )
+
+    with pytest.raises(AssertionError):
+        assert_hash_equal(
+            other_shapshot["scheduled_optimizer"],
+            restart_content["scheduled_optimizer"],
+        )
+
+
+def test__can_restart_when_original_directory_is_missing(
+    simple_pretrained_training: float,
+    perform_restart: Callable[[int | None], None],
+):
+    # Emulate the situation that the original directory is missing
+    shutil.rmtree(_OUTPUT_DIR / "model")
+
+    n_snapshots = len(
+        list(
+            (_OUTPUT_PRETRAINED_DIR / "model/weights").glob(
+                "snapshot_epoch_*.pth"
+            )
+        )
+    )
+    assert n_snapshots == 10
+    perform_restart(
+        n_epoch=13, restart_directory=_OUTPUT_PRETRAINED_DIR / "model"
+    )
+
+    n_snapshots = len(
+        list(
+            (_OUTPUT_PRETRAINED_DIR / "model/weights").glob(
+                "snapshot_epoch_*.pth"
+            )
+        )
+    )
+    assert n_snapshots == 13
