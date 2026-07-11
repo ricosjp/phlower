@@ -14,7 +14,9 @@ training:
     - handler: EarlyStopping
       parameters:
         patience: 10
-
+  initializer_setting:
+    type_name: pretrained
+    reference_directory: "tests/test_services/test_trainer/_out/model"
 
 model:
   inputs:

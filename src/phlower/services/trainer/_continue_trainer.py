@@ -36,11 +36,6 @@ class ContinueState(NamedTuple):
     def initialize_output_directory(
         self, output_directory: pathlib.Path
     ) -> ContinueState:
-        assert self.output_directory is None, (
-            "output_directory is already set. "
-            "Cannot set output_directory again."
-            "Use StateUpdater to update the state instead."
-        )
         return ContinueState(
             current_count=self.current_count,
             output_directory=output_directory,
@@ -59,7 +54,7 @@ class ContinueState(NamedTuple):
         )
 
 
-class StateUpdater:
+class StateUpdator:
     def __init__(
         self,
         cont0_output_directory: pathlib.Path,
@@ -144,6 +139,8 @@ class PhlowerContinueTrainer:
         current_count: int = 0,
         cont0_output_directory: pathlib.Path | None = None,
         trainer: PhlowerTrainer | None = None,
+        prev_output_directory: pathlib.Path | None = None,
+        promote_next_state: bool = False,
     ):
         self._cont0_output_directory: pathlib.Path | None = (
             cont0_output_directory
@@ -152,12 +149,13 @@ class PhlowerContinueTrainer:
         # NOTE: This attribute is updated during training
         self._state = ContinueState(
             current_count=current_count,
-            output_directory=None,
+            output_directory=prev_output_directory,
             setting=setting,
             preset_trainer=trainer,
         )
         self._renderer: Callable[[pathlib.Path], None] | None = None
         self._extra_handlers: dict[str, tuple[IPhlowerHandler, bool]] = {}
+        self._promote_next_state = promote_next_state
 
     @classmethod
     def restart_from(
@@ -166,22 +164,15 @@ class PhlowerContinueTrainer:
         decrypt_key: bytes | None = None,
     ) -> PhlowerContinueTrainer:
 
-        try:
-            trainer = PhlowerTrainer.restart_from(
-                model_directory=model_directory,
-                decrypt_key=decrypt_key,
-            )
-        except PhlowerRestartTrainingCompletedError as ex:
-            raise NotImplementedError(
-                "Restarting training from a completed training"
-                " is not supported yet."
-            ) from ex
-
         status = _retrieve_continue_status(model_directory)
         if status is None:
             _logger.info(
                 "Cannot retrieve continue status from model directory. "
                 "Assuming this is the first run of training."
+            )
+            trainer = PhlowerTrainer.restart_from(
+                model_directory=model_directory,
+                decrypt_key=decrypt_key,
             )
             return PhlowerContinueTrainer(
                 setting=trainer._setting,
@@ -189,12 +180,47 @@ class PhlowerContinueTrainer:
             )
 
         current_count, cont0_output_directory = status
-        return PhlowerContinueTrainer(
-            setting=trainer._setting,
-            current_count=current_count,
-            cont0_output_directory=cont0_output_directory,
-            trainer=trainer,
-        )
+        try:
+            trainer = PhlowerTrainer.restart_from(
+                model_directory=model_directory,
+                decrypt_key=decrypt_key,
+            )
+            return PhlowerContinueTrainer(
+                setting=trainer._setting,
+                current_count=current_count,
+                cont0_output_directory=cont0_output_directory,
+                trainer=trainer,
+            )
+        except PhlowerRestartTrainingCompletedError as ex:
+            _logger.info(
+                "Training is already completed. "
+                "Try to increment the continue_count and restart training."
+            )
+            setting = PhlowerSetting.read_yaml(
+                model_directory / "model.yml", decrypt_key=decrypt_key
+            )
+            if current_count == setting.training.continue_setting.stop_count:
+                raise PhlowerRestartTrainingCompletedError(
+                    "Continue training is also completed."
+                ) from ex
+
+            # create initialized trainer
+            setting = PhlowerSetting.rewrite_model_initializer(
+                reference_setting=setting,
+                initializer_type="pretrained",
+                reference_directory=model_directory,
+            )
+            trainer = PhlowerTrainer.from_setting(
+                setting, decrypt_key=decrypt_key
+            )
+            return PhlowerContinueTrainer(
+                setting=trainer._setting,
+                current_count=current_count,
+                cont0_output_directory=cont0_output_directory,
+                trainer=trainer,
+                promote_next_state=True,
+                prev_output_directory=model_directory,
+            )
 
     @classmethod
     def from_setting(
@@ -308,29 +334,16 @@ class PhlowerContinueTrainer:
             None
         """
 
-        if self._cont0_output_directory is None:
-            self._cont0_output_directory = output_directory
-
-        if self._cont0_output_directory.parent != output_directory.parent:
-            _logger.info(
-                "The parent directory of the output_directory must be the same "
-                "as the parent directory of the cont0_output_directory."
-                "This may be caused by restarting training in a different "
-                "directory than the original training."
-                f"cont0_output_directory: {self._cont0_output_directory}, "
-                f"output_directory: {output_directory}",
-            )
-            _logger.info(
-                "cont0_output_directory will be set as "
-                "output_directory.parent / cont0_output_directory.name."
-            )
-            self._cont0_output_directory = (
-                output_directory.parent / self._cont0_output_directory.name
-            )
-
-        # set output_directory for the first training
-        self._state = self._state.initialize_output_directory(output_directory)
-
+        self._cont0_output_directory = self._resolve_cont0_output_directory(
+            output_directory
+        )
+        state_updater = StateUpdator(
+            cont0_output_directory=self._cont0_output_directory,
+            continue_setting=self._state.setting.training.continue_setting,
+        )
+        self._state = self._resolve_state(
+            state_updator=state_updater, output_directory=output_directory
+        )
         # NOTE: The first training should be done
         # in case restarting from a previous checkpoint.
         _ = self._train(
@@ -348,16 +361,11 @@ class PhlowerContinueTrainer:
             )
             return
 
-        state_updater = StateUpdater(
-            cont0_output_directory=self._cont0_output_directory,
-            continue_setting=self._state.setting.training.continue_setting,
-        )
         current_count = self._state.current_count
         end_count = self._state.setting.training.continue_setting.stop_count
 
         for _ in range(current_count + 1, end_count + 1):
             self._state = state_updater.update(prev_state=self._state)
-            self._save_continue_state(self._state)
             _ = self._train(
                 train_directories=train_directories,
                 validation_directories=validation_directories,
@@ -368,6 +376,56 @@ class PhlowerContinueTrainer:
 
         return None
 
+    def _resolve_cont0_output_directory(
+        self, output_directory: pathlib.Path
+    ) -> pathlib.Path:
+
+        if self._state.current_count == 0:
+            return output_directory
+
+        if self._cont0_output_directory is None:
+            raise ValueError(
+                "cont0_output_directory is not set. "
+                "Cannot continue training without cont0_output_directory."
+                "It seems that the trainer is failed to restore "
+                "the continue state from the model directory. "
+            )
+
+        if self._cont0_output_directory.parent != output_directory.parent:
+            _logger.info(
+                "The parent directory of the output_directory must be the "
+                "same as the parent directory of cont0_output_directory."
+                "This may be caused by restarting training in a different "
+                "directory than the original training."
+                f"cont0_output_directory: {self._cont0_output_directory}, "
+                f"output_directory: {output_directory}",
+            )
+            _logger.info(
+                "cont0_output_directory will be set as "
+                "output_directory.parent / cont0_output_directory.name."
+            )
+            return output_directory.parent / self._cont0_output_directory.name
+
+        return self._cont0_output_directory
+
+    def _resolve_state(
+        self, state_updator: StateUpdator, output_directory: pathlib.Path
+    ) -> ContinueState:
+        if not self._promote_next_state:
+            _state = self._state.initialize_output_directory(output_directory)
+            return _state
+
+        # This is a following case:
+        # model_cont_3 is completely finished,
+        # and the next training is model_cont_4.
+        if output_directory == self._state.output_directory:
+            return state_updator.update(prev_state=self._state)
+
+        _tmp = state_updator.update(prev_state=self._state)
+        return _tmp.initialize_output_directory(
+            output_directory.parent / _tmp.output_directory.name
+        )
+
     def _train(
         self,
         train_directories: list[pathlib.Path] | None = None,
@@ -376,6 +434,9 @@ class PhlowerContinueTrainer:
         decrypt_key: bytes | None = None,
         encrypt_key: bytes | None = None,
     ):
+        if self._state.current_count > 0:
+            self._save_continue_state(self._state)
+
         trainer = self._state.setup_trainer(decrypt_key=decrypt_key)
         trainer.update_handlers_activity(
             continue_count=self._state.current_count
@@ -403,6 +464,13 @@ class PhlowerContinueTrainer:
             "continue_count": state.current_count,
             "cont0_output_directory": str(self._cont0_output_directory),
         }
+        if (state.output_directory / "continue_state.yml").exists():
+            _logger.info(
+                "continue_state.yml already exists. "
+                "Overwriting the file with the new state."
+            )
+            return
+
         _ = PhlowerYamlFile.save(
             output_directory=state.output_directory,
             file_basename="continue_state",
@@ -511,4 +579,4 @@ def _retrieve_continue_status(
         return None
 
     num = items[-2].removeprefix("cont")
-    return int(num)
+    return int(num), model_directory.parent / "_".join(items[:-2])

@@ -7,11 +7,11 @@ import pytest
 import scipy.sparse as sp
 import yaml
 
-from phlower.io import PhlowerDirectory
+from phlower.io import PhlowerDirectory, select_snapshot_file
 from phlower.services.trainer import PhlowerContinueTrainer
 from phlower.services.trainer._continue_trainer import (
     ContinueState,
-    StateUpdater,
+    StateUpdator,
 )
 from phlower.settings import PhlowerSetting
 from phlower.utils.exceptions import PhlowerHandlerStopTraining
@@ -223,19 +223,36 @@ def test__stop_if_no_error_handlers_are_set(
 
 
 @pytest.mark.parametrize(
+    "base_output_directory", [_OUT_CONTINUE_DIR / "base_attempt"]
+)
+@pytest.mark.parametrize(
+    "restart_output_directory",
+    [
+        _OUT_CONTINUE_DIR / "restart_attempt_new",
+        _OUT_CONTINUE_DIR / "base_attempt",
+    ],
+)
+@pytest.mark.parametrize(
     "yaml_filename",
     [
         "train_wo_continue.yml",
     ],
 )
 def test__restart_first_attempt(
-    yaml_filename: str, prepare_sample_preprocessed_files: None
+    base_output_directory: pathlib.Path,
+    restart_output_directory: pathlib.Path,
+    yaml_filename: str,
+    prepare_sample_preprocessed_files: None,
 ):
-    output_base_dir = _OUT_CONTINUE_DIR / "restart_first_attempt"
-    _train(yaml_filename, output_base_dir)
+
+    _initialize_tmp_output_directory(base_output_directory)
+    _initialize_tmp_output_directory(restart_output_directory)
+    _train(yaml_filename, base_output_directory)
 
     # --- Overwrite setting file to mock the stopped training
-    setting = PhlowerSetting.read_yaml(output_base_dir / "model/model.yml")
+    setting = PhlowerSetting.read_yaml(
+        base_output_directory / "model/model.yml"
+    )
     setting = _update_training_setting(
         setting,
         {
@@ -247,36 +264,42 @@ def test__restart_first_attempt(
             },
         },
     )
-    with open(output_base_dir / "model/model.yml", "w") as fw:
+    with open(base_output_directory / "model/model.yml", "w") as fw:
         yaml.safe_dump(setting.model_dump(), fw)
 
     # ---
 
-    n_cont = len(list(output_base_dir.glob("model_cont*")))
+    n_cont = len(list(base_output_directory.glob("model_cont*")))
     assert n_cont == 0
 
     # Restart the training
-
-    trainer = PhlowerContinueTrainer.restart_from(output_base_dir / "model")
-    phlower_path = PhlowerDirectory(_OUT_CONTINUE_DIR)
-    preprocessed_directories = list(
-        phlower_path.find_directory(
-            required_filename="preprocessed", recursive=True
-        )
+    trainer = PhlowerContinueTrainer.restart_from(
+        base_output_directory / "model"
     )
     trainer.train(
-        output_directory=output_base_dir / "model",
-        train_directories=preprocessed_directories,
-        validation_directories=preprocessed_directories,
+        output_directory=restart_output_directory / "model",
     )
 
-    n_epochs = len(list(output_base_dir.glob("model/weights/*.pth")))
-    assert n_epochs == 5
+    snapshot = select_snapshot_file(
+        restart_output_directory / "model/weights", "latest"
+    )
+    snapshot = snapshot.load(map_location="cpu", weights_only=False)
+    assert snapshot["epoch"] == 4
 
-    n_cont = len(list(output_base_dir.glob("model_cont*")))
+    n_cont = len(list(restart_output_directory.glob("model_cont*")))
     assert n_cont == 2
 
 
+@pytest.mark.parametrize(
+    "base_output_directory", [_OUT_CONTINUE_DIR / "base_attempt"]
+)
+@pytest.mark.parametrize(
+    "restart_output_directory",
+    [
+        _OUT_CONTINUE_DIR / "restart_attempt_new",
+        _OUT_CONTINUE_DIR / "base_attempt",
+    ],
+)
 @pytest.mark.parametrize(
     "yaml_filename",
     [
@@ -284,14 +307,17 @@ def test__restart_first_attempt(
     ],
 )
 def test__restart_continue_attempt(
-    yaml_filename: str, prepare_sample_preprocessed_files: None
+    base_output_directory: pathlib.Path,
+    restart_output_directory: pathlib.Path,
+    yaml_filename: str,
+    prepare_sample_preprocessed_files: None,
 ):
-    output_base_dir = _OUT_CONTINUE_DIR / "restart_cont_attempt"
-    _train(yaml_filename, output_base_dir)
+    _initialize_tmp_output_directory(base_output_directory)
+    _initialize_tmp_output_directory(restart_output_directory)
+    _train(yaml_filename, base_output_directory)
 
-    cont_dirs = sorted(output_base_dir.glob("model_cont*"))
-    n_cont = len(cont_dirs)
-    assert n_cont == 3
+    cont_dirs = sorted(base_output_directory.glob("model_cont*"))
+    assert len(cont_dirs) == 3
 
     # --- Overwrite setting file to mock the stopped training
     setting = PhlowerSetting.read_yaml(cont_dirs[-1] / "model.yml")
@@ -312,92 +338,132 @@ def test__restart_continue_attempt(
     # ---
 
     # Restart the training
-
     trainer = PhlowerContinueTrainer.restart_from(cont_dirs[-1])
-    phlower_path = PhlowerDirectory(_OUT_CONTINUE_DIR)
-    preprocessed_directories = list(
-        phlower_path.find_directory(
-            required_filename="preprocessed", recursive=True
-        )
-    )
     trainer.train(
-        output_directory=cont_dirs[-1],
-        train_directories=preprocessed_directories,
-        validation_directories=preprocessed_directories,
+        output_directory=restart_output_directory / cont_dirs[-1].name,
     )
 
-    n_cont = len(list(output_base_dir.glob("model_cont*")))
-    assert n_cont == 5
+    actual_counts = []
+    for yaml_file in restart_output_directory.glob("**/continue_state.yml"):
+        with (yaml_file).open() as fr:
+            content = yaml.safe_load(fr.read())
+        actual_counts.append(content["continue_count"])
+
+    if restart_output_directory == base_output_directory:
+        assert sorted(actual_counts) == [1, 2, 3, 4, 5]
+    else:
+        assert sorted(actual_counts) == [3, 4, 5]
+
+    cont_dirs = sorted(restart_output_directory.glob("model_cont[4-5]*"))
+    assert len(cont_dirs) == 2
 
 
 @pytest.mark.parametrize(
-    "yaml_filename",
+    "base_output_directory", [_OUT_CONTINUE_DIR / "base_attempt"]
+)
+@pytest.mark.parametrize(
+    "restart_output_directory",
     [
-        "train_wo_continue.yml",
+        _OUT_CONTINUE_DIR / "restart_attempt_new",
+        _OUT_CONTINUE_DIR / "base_attempt",
     ],
 )
-def test__restart_first_attempt_when_output_directory_is_not_the_same(
-    yaml_filename: str, prepare_sample_preprocessed_files: None
-):
-    output_base_dir = _OUT_CONTINUE_DIR / "restart_first_attempt"
-    _train(yaml_filename, output_base_dir)
-
-    # --- Overwrite setting file to mock the stopped training
-    setting = PhlowerSetting.read_yaml(output_base_dir / "model/model.yml")
-    setting = _update_training_setting(
-        setting,
-        {
-            "n_epoch": 5,
-            "continue_setting": {
-                "stop_count": 2,
-                "continue_type": "lr_decay",
-                "parameters": {"lr_factor": 0.5},
-            },
-        },
-    )
-    with open(output_base_dir / "model/model.yml", "w") as fw:
-        yaml.safe_dump(setting.model_dump(), fw)
-
-    # ---
-
-    n_cont = len(list(output_base_dir.glob("model_cont*")))
-    assert n_cont == 0
-
-    # Restart the training
-
-    new_output_dir = output_base_dir.parent / "restart_first_attempt_new"
-    trainer = PhlowerContinueTrainer.restart_from(output_base_dir / "model")
-    phlower_path = PhlowerDirectory(_OUT_CONTINUE_DIR)
-    preprocessed_directories = list(
-        phlower_path.find_directory(
-            required_filename="preprocessed", recursive=True
-        )
-    )
-    trainer.train(
-        output_directory=new_output_dir / "model",
-        train_directories=preprocessed_directories,
-        validation_directories=preprocessed_directories,
-    )
-
-    n_epochs = len(list(new_output_dir.glob("model/weights/*.pth")))
-    assert n_epochs == 2  # 5 - 3 = 2
-
-
 @pytest.mark.parametrize(
     "yaml_filename",
     [
         "train_cont_3_w_lr_decay.yml",
     ],
 )
-def test__restart_continue_attempt_when_output_directory_is_not_the_same(
-    yaml_filename: str, prepare_sample_preprocessed_files: None
+def test__restart_continue_attempt_from_finished_continue_status(
+    base_output_directory: pathlib.Path,
+    restart_output_directory: pathlib.Path,
+    yaml_filename: str,
+    prepare_sample_preprocessed_files: None,
 ):
-    output_base_dir = _OUT_CONTINUE_DIR / "restart_cont_attempt"
-    _train(yaml_filename, output_base_dir)
+    _initialize_tmp_output_directory(base_output_directory)
+    _initialize_tmp_output_directory(restart_output_directory)
+    _train(yaml_filename, base_output_directory)
 
-    cont_dirs = sorted(output_base_dir.glob("model_cont*"))
+    prev_cont_dirs = sorted(base_output_directory.glob("model_cont*"))
+    n_cont = len(prev_cont_dirs)
+    assert n_cont == 3
+
+    # --- Overwrite setting file to mock the stopped training
+    setting = PhlowerSetting.read_yaml(prev_cont_dirs[-1] / "model.yml")
+    setting = _update_training_setting(
+        setting,
+        {
+            "continue_setting": {
+                "stop_count": 5,
+                "continue_type": "lr_decay",
+                "parameters": {"lr_factor": 0.5},
+            },
+        },
+    )
+    with open(prev_cont_dirs[-1] / "model.yml", "w") as fw:
+        yaml.safe_dump(setting.model_dump(), fw)
+
+    # ---
+
+    # Restart the training
+    trainer = PhlowerContinueTrainer.restart_from(prev_cont_dirs[-1])
+    phlower_path = PhlowerDirectory(_OUT_CONTINUE_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+    trainer.train(
+        output_directory=restart_output_directory / prev_cont_dirs[-1].name,
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+    )
+
+    # check model_cont4 and model_cont5 are created
+    cont_dirs = sorted(restart_output_directory.glob("model_cont[4-5]*"))
+    assert len(cont_dirs) == 2
+
+    setting = PhlowerSetting.read_yaml(cont_dirs[0] / "model.yml")
+    assert setting.training.initializer_setting.type_name == "pretrained"
+    assert str(setting.training.initializer_setting.reference_directory) == str(
+        prev_cont_dirs[-1]
+    )
+
+
+@pytest.mark.parametrize(
+    "base_output_directory", [_OUT_CONTINUE_DIR / "base_attempt"]
+)
+@pytest.mark.parametrize(
+    "restart_output_directory",
+    [
+        _OUT_CONTINUE_DIR / "restart_attempt_new",
+        _OUT_CONTINUE_DIR / "base_attempt",
+    ],
+)
+@pytest.mark.parametrize(
+    "yaml_filename",
+    [
+        "train_cont_3_w_lr_decay.yml",
+    ],
+)
+def test__restart_continue_attempt_for_backward_compat(
+    base_output_directory: pathlib.Path,
+    restart_output_directory: pathlib.Path,
+    yaml_filename: str,
+    prepare_sample_preprocessed_files: None,
+):
+    _initialize_tmp_output_directory(base_output_directory)
+    _initialize_tmp_output_directory(restart_output_directory)
+    _train(yaml_filename, base_output_directory)
+
+    cont_dirs = sorted(base_output_directory.glob("model_cont*"))
     n_cont = len(cont_dirs)
     assert n_cont == 3
+
+    # NOTE: Emulate the old version
+    for cont_dir in cont_dirs:
+        (cont_dir / "continue_state.yml").unlink()
+    # ------
 
     # --- Overwrite setting file to mock the stopped training
     setting = PhlowerSetting.read_yaml(cont_dirs[-1] / "model.yml")
@@ -418,8 +484,6 @@ def test__restart_continue_attempt_when_output_directory_is_not_the_same(
     # ---
 
     # Restart the training
-
-    output_base_dir_new = _OUT_CONTINUE_DIR / "restart_cont_attempt_new"
     trainer = PhlowerContinueTrainer.restart_from(cont_dirs[-1])
     phlower_path = PhlowerDirectory(_OUT_CONTINUE_DIR)
     preprocessed_directories = list(
@@ -428,13 +492,20 @@ def test__restart_continue_attempt_when_output_directory_is_not_the_same(
         )
     )
     trainer.train(
-        output_directory=output_base_dir_new / "model",
+        output_directory=restart_output_directory / cont_dirs[-1].name,
         train_directories=preprocessed_directories,
         validation_directories=preprocessed_directories,
     )
 
-    n_cont = len(list(output_base_dir_new.glob("model_cont*")))
-    assert n_cont == 2  # 1 cont starts from the intermediate, 2 cont are new
+    # check model_cont4 and model_cont5 are created
+    n_cont = len(list(restart_output_directory.glob("model_cont[4-5]*")))
+    assert n_cont == 2
+
+    # Check latest snapshot is epoch 4 in model_cont3
+    latest_snapshot = sorted(
+        (restart_output_directory / cont_dirs[-1].name).glob("weights/*.pth")
+    )[-1]
+    assert "epoch_4" in latest_snapshot.name
 
 
 # endregion
@@ -457,7 +528,7 @@ def test__updated_state_for_common_items(
     setting = PhlowerSetting.read_yaml(_SETTING_DIR / yaml_filename)
     cont_setting = setting.training.continue_setting
 
-    state_updator = StateUpdater(tmp_path, cont_setting)
+    state_updator = StateUpdator(tmp_path, cont_setting)
     state = ContinueState(
         current_count=current_count, output_directory=tmp_path, setting=setting
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+from typing import Literal
 
 import pydantic
 from packaging.version import Version
@@ -110,6 +111,26 @@ class PhlowerSetting(pydantic.BaseModel):
         path = PhlowerYamlFile(file_path)
         data = path.load(decrypt_key=decrypt_key)
         return PhlowerSetting.read_dictionary(data)
+
+    @classmethod
+    def rewrite_model_initializer(
+        cls,
+        reference_setting: PhlowerSetting,
+        initializer_type: Literal["none", "pretrained", "restart"],
+        reference_directory: pathlib.Path | None = None,
+    ) -> PhlowerSetting:
+        return PhlowerSetting.model_validate(
+            reference_setting.model_dump()
+            | {
+                "training": reference_setting.training.model_dump()
+                | {
+                    "initializer_setting": {
+                        "type_name": initializer_type,
+                        "reference_directory": reference_directory,
+                    }
+                }
+            }
+        )
 
 
 def _format_loc(location: list[str], ref: dict | None = None) -> str:
