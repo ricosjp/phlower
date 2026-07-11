@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.DeepSets
+===================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: DeepSets
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~DeepSets.forward
+   
+   
+      ~DeepSets.from_setting
+   
+   
+   
+   
+   
+   
+      ~DeepSets.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DeepSets.T_destination
+      ~DeepSets.call_super_init
+      ~DeepSets.dump_patches
+      ~DeepSets.training
+   
+   

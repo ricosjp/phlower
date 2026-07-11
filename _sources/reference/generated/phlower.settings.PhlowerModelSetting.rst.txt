@@ -1,0 +1,93 @@
+﻿:orphan:
+
+phlower.settings.PhlowerModelSetting
+====================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerModelSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+      ~PhlowerModelSetting.check_duplicate_names
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerModelSetting.get_name_to_dimensions
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerModelSetting.resolve
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerModelSetting.model_computed_fields
+      ~PhlowerModelSetting.model_config
+      ~PhlowerModelSetting.model_extra
+      ~PhlowerModelSetting.model_fields
+      ~PhlowerModelSetting.model_fields_set
+      ~PhlowerModelSetting.inputs
+      ~PhlowerModelSetting.labels
+      ~PhlowerModelSetting.fields
+      ~PhlowerModelSetting.network
+   
+   

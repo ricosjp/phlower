@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.IsoGCN
+=================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: IsoGCN
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~IsoGCN.forward
+   
+   
+      ~IsoGCN.from_setting
+   
+   
+   
+   
+   
+   
+      ~IsoGCN.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~IsoGCN.T_destination
+      ~IsoGCN.call_super_init
+      ~IsoGCN.dump_patches
+      ~IsoGCN.training
+   
+   
