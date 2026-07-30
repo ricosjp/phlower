@@ -1,0 +1,97 @@
+misc:
+
+  tests:
+    MLP0: [10, 20, 25]
+    MLP1: [1, 1]
+    MLP2: [1, 1]
+    Slip0: [27, 25]
+    MLP3: [25, 20, 5]
+
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 10
+
+    - name: feature1
+      members:
+        - name: feature1
+          n_last_dim: 1
+
+    - name: feature2
+      members:
+        - name: feature2
+          n_last_dim: 1
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 10
+      - name: feature1
+        n_last_dim: 1
+      - name: feature2
+        n_last_dim: 1
+
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - Slip0
+        nn_parameters:
+          nodes: [-1, 20, 25]
+          activations: ["Identity", "identity"]
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - feature1
+        output_key: mlp1
+        destinations:
+          - Slip0
+        nn_parameters:
+          nodes: [-1, 1]
+          activations: ["identity"]
+
+      - nn_type: MLP
+        name: MLP2
+        input_keys:
+          - feature2
+        output_key: mlp2
+        destinations:
+          - Slip0
+        nn_parameters:
+          nodes: [-1, 1]
+          activations: ["identity"]
+
+      - nn_type: Slip
+        name: Slip0
+        input_keys:
+          - mlp0
+          - mlp1
+          - mlp2
+        output_key: slip0
+        destinations:
+          - MLP3
+        nn_parameters:
+          normal_name: "mlp1"
+          flag_name: "mlp2_missing"
+
+      - nn_type: MLP
+        name: MLP3
+        input_keys:
+          - slip0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 20, 5]
+          activations: ["Identity", "identity"]
