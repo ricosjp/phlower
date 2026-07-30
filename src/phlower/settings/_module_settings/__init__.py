@@ -57,6 +57,7 @@ from phlower.settings._module_settings._share_setting import ShareSetting
 from phlower.settings._module_settings._similarity_equivariant_mlp_setting import (  # noqa: E501
     SimilarityEquivariantMLPSetting,
 )
+from phlower.settings._module_settings._slip_setting import SlipSetting
 from phlower.settings._module_settings._spmm_setting import SPMMSetting
 from phlower.settings._module_settings._tcn_setting import TCNSetting
 from phlower.settings._module_settings._time_series_to_features_setting import (
@@ -94,6 +95,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     SPMMSetting,
     ShareSetting,
     SimilarityEquivariantMLPSetting,
+    SlipSetting,
     TCNSetting,
     TimeSeriesToFeaturesSetting,
     TransolverAttentionSetting,

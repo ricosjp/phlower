@@ -28,6 +28,7 @@ from phlower.nn._core_modules._share import Share
 from phlower.nn._core_modules._similarity_equivariant_mlp import (
     SimilarityEquivariantMLP,
 )
+from phlower.nn._core_modules._slip import Slip
 from phlower.nn._core_modules._spmm import SPMM
 from phlower.nn._core_modules._tcn import TCN
 from phlower.nn._core_modules._time_series_to_features import (
@@ -65,6 +66,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     Residual,
     Share,
     SimilarityEquivariantMLP,
+    Slip,
     SPMM,
     TCN,
     TimeSeriesToFeatures,
