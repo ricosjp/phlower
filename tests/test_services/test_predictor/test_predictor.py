@@ -354,3 +354,65 @@ def test__predict_with_time_series_sliding_window(
             assert (
                 result.prediction_data[k].shape[0] == 12
             )  # expected time steps
+
+
+@pytest.fixture(scope="module")
+def simple_training_with_debug(
+    perform_scaling: pathlib.Path,
+) -> tuple[float, pathlib.Path]:
+    phlower_path = PhlowerDirectory(OUTPUT_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = PhlowerSetting.read_yaml(
+        DATA_DIR / "simple_train_with_debug_parameters.yml"
+    )
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = OUTPUT_DIR / "model_debug"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return loss, output_directory
+
+
+def test__predict_with_debug_parameters(
+    simple_training_with_debug: tuple[float, pathlib.Path],
+):
+    _, model_directory = simple_training_with_debug
+
+    predictor = PhlowerPredictor.from_pathes(
+        model_directory=model_directory,
+        predict_setting_yaml=DATA_DIR / "predict.yml",
+        scaling_setting_yaml=OUTPUT_DIR / "preprocessed/preprocess.yml",
+    )
+
+    phlower_path = PhlowerDirectory(model_directory.parent)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    for _ in predictor.predict(
+        preprocessed_data=preprocessed_directories, perform_inverse_scaling=True
+    ):
+        pass
+
+    assert (model_directory / "debug_predictions").exists()
+
+    batch_dirs = list(
+        (model_directory / "debug_predictions").glob("**/batch_*")
+    )
+    assert len(batch_dirs) == len(
+        preprocessed_directories
+    )  # one batch per preprocessed directory
