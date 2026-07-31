@@ -52,6 +52,54 @@ def test__can_pass_parameters_via_setting(
     assert model._dropout_rate == dropout
 
 
+def test__learnable_temperature_by_default():
+    model = TransolverAttention(nodes=[16, 16, 16], heads=8)
+
+    assert isinstance(model._temperature, torch.nn.Parameter)
+    assert model._temperature.shape == (1, 8, 1, 1)
+    assert torch.all(model._temperature == 0.5)
+
+
+@pytest.mark.parametrize(
+    "temperature, desired",
+    [(None, (16 // 8) ** 0.5), (0.5, 0.5), (2.0, 2.0)],
+)
+def test__fixed_temperature(temperature: float | None, desired: float):
+    model = TransolverAttention(
+        nodes=[16, 16, 16],
+        heads=8,
+        learnable_temperature=False,
+        temperature=temperature,
+    )
+
+    assert not isinstance(model._temperature, torch.nn.Parameter)
+    assert model._temperature == pytest.approx(desired)
+
+
+def test__raise_error_when_temperature_set_with_learnable():
+    with pytest.raises(ValueError):
+        _ = TransolverAttention(
+            nodes=[16, 16, 16],
+            heads=8,
+            learnable_temperature=True,
+            temperature=0.5,
+        )
+
+
+@pytest.mark.parametrize("learnable_temperature", [True, False])
+def test__forward_with_temperature_options(learnable_temperature: bool):
+    model = TransolverAttention(
+        nodes=[8, 16, 8],
+        heads=8,
+        learnable_temperature=learnable_temperature,
+    )
+    _tensor = phlower_tensor(np.random.rand(10, 8), dtype=torch.float32)
+
+    result = model.forward(phlower_tensor_collection({"input": _tensor}))
+
+    assert result.shape == (10, 8)
+
+
 @pytest.mark.parametrize(
     "nodes, heads, slice_num, dropout",
     [

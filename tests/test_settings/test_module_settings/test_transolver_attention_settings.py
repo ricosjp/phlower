@@ -95,6 +95,54 @@ def test__raise_error_when_invalid_dropout(dropout: float):
 
 
 @pytest.mark.parametrize(
+    "learnable_temperature, temperature",
+    [
+        (True, None),
+        (False, None),
+        (False, 0.5),
+        (False, 4.0),
+    ],
+)
+def test__can_accept_valid_temperature(
+    learnable_temperature: bool, temperature: float | None
+):
+    _ = TransolverAttentionSetting(
+        nodes=[16, 16, 16],
+        heads=8,
+        learnable_temperature=learnable_temperature,
+        temperature=temperature,
+    )
+
+
+@pytest.mark.parametrize("temperature", [0.0, -0.5, -2.0])
+def test__raise_error_when_invalid_temperature(temperature: float):
+    with pytest.raises(ValueError):
+        _ = TransolverAttentionSetting(
+            nodes=[16, 16, 16],
+            heads=8,
+            learnable_temperature=False,
+            temperature=temperature,
+        )
+
+
+def test__raise_error_when_temperature_set_with_learnable():
+    with pytest.raises(ValueError):
+        _ = TransolverAttentionSetting(
+            nodes=[16, 16, 16],
+            heads=8,
+            learnable_temperature=True,
+            temperature=0.5,
+        )
+
+
+def test__learnable_temperature_by_default():
+    setting = TransolverAttentionSetting(nodes=[16, 16, 16], heads=8)
+
+    assert setting.learnable_temperature
+    assert setting.temperature is None
+
+
+@pytest.mark.parametrize(
     "nodes, heads",
     [
         ([16, 17, 16], 8),

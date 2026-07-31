@@ -44,6 +44,13 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         Number of slice tokens. Default is 32.
     dropout: float
         Dropout rate. Default is 0.0.
+    learnable_temperature: bool
+        If True (default), the slice-softmax temperature is a per-head
+        learnable parameter, as in the original Transolver.
+        If False, a fixed divisor is used instead (see temperature).
+    temperature: float | None
+        Fixed slice-softmax divisor used when learnable_temperature is
+        False. Default is None, which means sqrt(inner_dim // heads).
     unbatch_key: str | None
         Key of the unbatch operation.
 
@@ -89,6 +96,8 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         heads: int = 8,
         slice_num: int = 32,
         dropout: float = 0.0,
+        learnable_temperature: bool = True,
+        temperature: float | None = None,
         unbatch_key: str | None = None,
     ):
         super().__init__()
@@ -104,9 +113,20 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         dim_head = inner_dim // heads
 
         # Temperature parameter for slicing
-        self._temperature = torch.nn.Parameter(
-            torch.ones([1, heads, 1, 1]) * 0.5
-        )
+        self._learnable_temperature = learnable_temperature
+        if learnable_temperature:
+            if temperature is not None:
+                raise ValueError(
+                    "temperature (fixed divisor) cannot be set when "
+                    "learnable_temperature is True."
+                )
+            self._temperature = torch.nn.Parameter(
+                torch.ones([1, heads, 1, 1]) * 0.5
+            )
+        else:
+            self._temperature = (
+                temperature if temperature is not None else dim_head**0.5
+            )
 
         # Projections for point tokens
         self._to_k_x = torch.nn.Linear(in_dim, inner_dim)
@@ -190,9 +210,12 @@ class TransolverAttention(IPhlowerCoreModule, torch.nn.Module):
         v_x = einops.rearrange(v_x, "b n (h f) -> b h n f", h=self._heads)
 
         # Soft-assign each point to slices
-        slice_weights = self._to_slice_weights(k_x)  # B H N S (S = slice_num)
+        temperature = self._temperature
+        if self._learnable_temperature:
+            temperature = torch.clamp(temperature, min=0.1)
+        logits = self._to_slice_weights(k_x)  # B H N S (S = slice_num)
         slice_weights = torch.nn.functional.softmax(
-            slice_weights / self._temperature, dim=-1
+            logits / temperature, dim=-1
         )
 
         # Aggregate points to slices
