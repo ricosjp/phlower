@@ -19,6 +19,8 @@ class TransolverAttentionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     heads: int = Field(8, frozen=True)
     slice_num: int = Field(32, frozen=True)
     dropout: float = Field(0.0, frozen=True)
+    learnable_temperature: bool = Field(True, frozen=True)
+    temperature: float | None = Field(None, frozen=True, gt=0)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -93,6 +95,15 @@ class TransolverAttentionSetting(IPhlowerLayerParameters, pydantic.BaseModel):
                 f"input: {val}"
             )
         return val
+
+    @pydantic.model_validator(mode="after")
+    def check_temperature_usage(self) -> Self:
+        if self.learnable_temperature and self.temperature is not None:
+            raise ValueError(
+                "temperature (fixed divisor) cannot be set when "
+                "learnable_temperature is True in TransolverAttentionSetting."
+            )
+        return self
 
     @pydantic.model_validator(mode="after")
     def check_heads_divisibility(self) -> Self:
