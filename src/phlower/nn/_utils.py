@@ -144,7 +144,7 @@ class _DumpEnRouteTensorHook(PhlowerForwardHook):
             *,
             state: CalculationState | None = None,
         ):
-            if state is None or state.mode != "training":
+            if state is None or state.mode == "validation":
                 _logger.info(
                     f"Dumping en route tensor for {unique_name} is skipped"
                     " because calculation state is not provided "

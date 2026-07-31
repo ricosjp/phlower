@@ -29,7 +29,7 @@ from phlower.settings import (
     PhlowerPredictorSetting,
     PhlowerSetting,
 )
-from phlower.utils import get_logger
+from phlower.utils import get_logger, now_datetime_string
 from phlower.utils.calculation_state import CalculationState
 
 _logger = get_logger(__name__)
@@ -346,8 +346,10 @@ class PhlowerPredictor:
         with self._predict_context_manager():
             for idx, batch in enumerate(data_loader):
                 state = CalculationState(
-                    mode="predicting",
+                    mode="prediction",
+                    current_epoch=0,
                     current_batch_iteration=idx,
+                    output_directory=self._determine_debug_output_directory(),
                 )
 
                 batch: LumpedTensorData
@@ -379,14 +381,21 @@ class PhlowerPredictor:
         _label_key_map = _DictKeyValueFlipper(self._determine_label_key_map())
 
         with self._predict_context_manager():
-            for batch in data_loader:
+            for idx, batch in enumerate(data_loader):
+                state = CalculationState(
+                    mode="prediction",
+                    current_epoch=0,
+                    current_batch_iteration=idx,
+                    output_directory=self._determine_debug_output_directory(),
+                )
+
                 batch: LumpedTensorData
                 helper = SlidingWindowHelper(
                     batch,
                     self._predict_setting.time_series_sliding,
                 )
                 self._model.eval()
-                h = _batch_forward(self._model, helper)
+                h = _batch_forward(self._model, helper, state=state)
 
                 h = h.to_phlower_arrays_dict()
                 _logger.info("Finished prediction")
@@ -430,6 +439,12 @@ class PhlowerPredictor:
                         input_data=x_data,
                         answer_data=answer_data,
                     )
+
+    def _determine_debug_output_directory(self) -> pathlib.Path:
+        return (
+            self._model_directory.path
+            / f"debug_predictions/{now_datetime_string()}"
+        )
 
 
 class _DictKeyValueFlipper:
@@ -495,5 +510,10 @@ def _batch_forward(
             state=state,
         )
         predicted.append(h)
+
+    if isinstance(model, PhlowerGroupModule):
+        # When the model is DistributedDataParallel,
+        # finalize_debug cannnot be called.
+        model.finalize_debug()
 
     return merge_slided_outputs(predicted)
