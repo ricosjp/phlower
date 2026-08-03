@@ -19,6 +19,7 @@ from phlower.io import (
 )
 from phlower.services.trainer import PhlowerTrainer
 from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
+from phlower.services.trainer._runners._trainer import _BatchStepRunner
 from phlower.settings import PhlowerSetting
 from phlower.settings._trainer_setting import (
     ParallelSetting,
@@ -747,9 +748,7 @@ def test__n_call_times_when_time_sliding(
     if output_directory.exists():
         shutil.rmtree(output_directory)
 
-    with mock.patch(
-        "phlower.services.trainer._runners._trainer._training_batch_step_w_slide"
-    ) as mocked:
+    with mock.patch.object(_BatchStepRunner, "run") as mocked:
         mocked.side_effect = lambda x, y, z, w, state: (0.0, {})
 
         trainer.train(
@@ -1107,3 +1106,51 @@ def test__can_restart_when_original_directory_is_missing(
         )
     )
     assert n_snapshots == 13
+
+
+@pytest.mark.parametrize(
+    "yaml_file, n_desired_loss_interval",
+    [
+        (_SETTINGS_DIR / "train_with_gradient_accumulation.yml", 3),
+        (_SETTINGS_DIR / "train_with_gradient_accumulation_and_sliding.yml", 2),
+    ],
+)
+def test__train_with_gradient_accumulation_steps(
+    yaml_file: str,
+    n_desired_loss_interval: int,
+    prepare_time_sliding_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
+
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )[:1]  # Use only one directory for this test
+
+    setting = PhlowerSetting.read_yaml(yaml_file)
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_SLIDING_DIR / "model_gradient_accumulation"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    _ = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+    # check log.csv
+    df = pd.read_csv(
+        output_directory / "log.csv",
+        header=0,
+        index_col=None,
+        skipinitialspace=True,
+    )
+
+    # check if the loss is logged at the desired interval
+    losses = df.loc[:, "train_loss"].to_numpy()
+
+    # loss_steps = losses
+    for i in range(0, len(losses), n_desired_loss_interval):
+        assert np.unique(losses[i : i + n_desired_loss_interval]).size == 1

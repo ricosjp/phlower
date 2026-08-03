@@ -220,6 +220,12 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     batch size. Defaults to 1
     """
 
+    gradient_accumulation_steps: int = Field(1, ge=1)
+    """
+    Number of steps to accumulate gradients before performing an optimizer step.
+    This is useful for simulating larger batch sizes when memory is limited.
+    """
+
     num_workers: int = 0
     """
     the number of cores. Defaults to 0.
