@@ -41,6 +41,9 @@ class TrainingRunner:
         self._trainer_setting = trainer_setting
         self._loss_calculator = loss_calculator
         self._handlers = handlers
+        self._batch_step_runner = _BatchStepRunner(
+            gradient_accumulation_steps=self._trainer_setting.gradient_accumulation_steps
+        )
 
     def run(
         self,
@@ -72,6 +75,7 @@ class TrainingRunner:
                 model,
                 self._loss_calculator,
                 self._handlers,
+                self._batch_step_runner,
                 state=state,
             )
             train_pbar.update(
@@ -127,6 +131,7 @@ class TrainingRunner:
                 model,
                 self._loss_calculator,
                 self._handlers,
+                self._batch_step_runner,
                 state=state,
             )
             train_pbar.update(
@@ -158,6 +163,7 @@ def training_batch_step(
     model: torch.nn.Module,
     loss_calculator: LossCalculator,
     handlers: PhlowerHandlersRunner,
+    batch_step_runner: _BatchStepRunner,
     state: CalculationState | None = None,
 ) -> tuple[float, dict[str, float]]:
     helper = SlidingWindowHelper(
@@ -166,7 +172,7 @@ def training_batch_step(
     )
     assert len(helper) > 0, "No sliding windows are generated."
     for _slided_batch in helper:
-        last_loss, detached_losses = _training_batch_step_w_slide(
+        last_loss, detached_losses = batch_step_runner.run(
             _slided_batch,
             scheduled_optimizer,
             model,
@@ -179,39 +185,80 @@ def training_batch_step(
     return last_loss, detached_losses
 
 
-def _training_batch_step_w_slide(
-    tr_batch: LumpedTensorData,
-    scheduled_optimizer: PhlowerOptimizerWrapper,
-    model: PhlowerGroupModule | torch.nn.Module,
-    loss_calculator: LossCalculator,
-    *,
-    state: CalculationState | None = None,
-) -> tuple[float, dict[str, float]]:
-    scheduled_optimizer.zero_grad()
+# region Batch Step
 
-    h = model.forward(
-        tr_batch.x_data, field_data=tr_batch.field_data, state=state
-    )
 
-    losses = loss_calculator.calculate(
-        h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
-    )
-    detached_losses = {k: v.item() for k, v in losses.to_numpy().items()}
-    loss = loss_calculator.aggregate(losses)
-    loss.backward()
+class _UpdateTimingCounter:
+    def __init__(self, n_size: int):
+        self._count = 0
+        assert n_size > 0, "n_size must be greater than 0."
+        self._n_size = n_size
 
-    scheduled_optimizer.step_optimizer()
-    scheduled_optimizer.zero_grad()
-    _last_loss = loss.detach().to_tensor().float().item()
+    def reset(self) -> None:
+        self._count = 0
 
-    del loss
-    # NOTE: This is necessary to use less memory
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    def increment(self) -> None:
+        self._count += 1
+        self._count %= self._n_size
 
-    if isinstance(model, PhlowerGroupModule):
-        # When the model is DistributedDataParallel,
-        # finalize_debug cannnot be called.
-        model.finalize_debug()
+    @property
+    def n_size(self) -> int:
+        return self._n_size
 
-    return _last_loss, detached_losses
+    @property
+    def count(self) -> int:
+        return self._count
+
+    @property
+    def is_full(self) -> bool:
+        return (self._count + 1) % self._n_size == 0
+
+
+class _BatchStepRunner:
+    def __init__(self, gradient_accumulation_steps: int = 1):
+        self._update_counter = _UpdateTimingCounter(gradient_accumulation_steps)
+
+    def run(
+        self,
+        tr_batch: LumpedTensorData,
+        scheduled_optimizer: PhlowerOptimizerWrapper,
+        model: PhlowerGroupModule | torch.nn.Module,
+        loss_calculator: LossCalculator,
+        *,
+        state: CalculationState | None = None,
+    ) -> tuple[float, dict[str, float]]:
+
+        if self._update_counter.count == 0:
+            scheduled_optimizer.zero_grad()
+
+        h = model.forward(
+            tr_batch.x_data, field_data=tr_batch.field_data, state=state
+        )
+
+        losses = loss_calculator.calculate(
+            h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
+        )
+        loss = loss_calculator.aggregate(losses)
+        (loss / self._update_counter.n_size).backward()
+
+        if self._update_counter.is_full:
+            scheduled_optimizer.step_optimizer()
+
+            # NOTE: This is necessary to use less memory
+            scheduled_optimizer.zero_grad()
+
+        _detached_losses = {k: v.item() for k, v in losses.to_numpy().items()}
+        _last_loss = loss.detach().to_tensor().float().item()
+
+        del loss
+        # NOTE: This is necessary to use less memory
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        if isinstance(model, PhlowerGroupModule):
+            # When the model is DistributedDataParallel,
+            # finalize_debug cannnot be called.
+            model.finalize_debug()
+
+        self._update_counter.increment()
+        return _last_loss, _detached_losses
