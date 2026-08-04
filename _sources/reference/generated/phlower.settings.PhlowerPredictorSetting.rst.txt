@@ -1,0 +1,99 @@
+﻿:orphan:
+
+phlower.settings.PhlowerPredictorSetting
+========================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerPredictorSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+      ~PhlowerPredictorSetting.check_valid_selection_mode
+   
+   
+      ~PhlowerPredictorSetting.check_valid_target_epoch
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerPredictorSetting.model_computed_fields
+      ~PhlowerPredictorSetting.model_config
+      ~PhlowerPredictorSetting.model_extra
+      ~PhlowerPredictorSetting.model_fields
+      ~PhlowerPredictorSetting.model_fields_set
+      ~PhlowerPredictorSetting.selection_mode
+      ~PhlowerPredictorSetting.device
+      ~PhlowerPredictorSetting.log_file_name
+      ~PhlowerPredictorSetting.saved_setting_filename
+      ~PhlowerPredictorSetting.batch_size
+      ~PhlowerPredictorSetting.num_workers
+      ~PhlowerPredictorSetting.non_blocking
+      ~PhlowerPredictorSetting.pin_memory
+      ~PhlowerPredictorSetting.random_seed
+      ~PhlowerPredictorSetting.target_epoch
+      ~PhlowerPredictorSetting.output_to_scaler_name
+      ~PhlowerPredictorSetting.use_inference_mode
+      ~PhlowerPredictorSetting.time_series_sliding
+   
+   

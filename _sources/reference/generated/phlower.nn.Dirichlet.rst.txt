@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Dirichlet
+====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Dirichlet
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Dirichlet.forward
+   
+   
+      ~Dirichlet.from_setting
+   
+   
+   
+   
+   
+   
+      ~Dirichlet.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Dirichlet.T_destination
+      ~Dirichlet.call_super_init
+      ~Dirichlet.dump_patches
+      ~Dirichlet.training
+   
+   
