@@ -15,8 +15,7 @@ from phlower.settings._module_settings import SlipSetting
 
 class Slip(IPhlowerCoreModule, torch.nn.Module):
     """Slip is a neural network module that applies the slip
-    boundary condition ``u <- u - (u . n) n`` on nodes where the flag
-    field is one.
+    boundary condition ``u <- u - (u . n) n`` on the slip boundary nodes.
 
     The three inputs are identified by name:
     the surface normal ``(N, d, 1)`` and the flag ``(N, 1)``,
@@ -28,10 +27,10 @@ class Slip(IPhlowerCoreModule, torch.nn.Module):
     activation: str
         Name of the activation function to apply to the output.
     normal_name: str
-        Name of the surface normal field.
+        Name of the surface normal field. NaN is treated as zero.
     flag_name: str
         Name of the flag field, which is one on slip boundary nodes and
-        zero elsewhere.
+        NaN or zero elsewhere.
     nodes: list[int] | None (optional)
         List of feature dimension sizes (The last value of tensor shape).
         Defaults to None.
@@ -124,6 +123,9 @@ class Slip(IPhlowerCoreModule, torch.nn.Module):
                 "feature dimension of normal and flag must be 1 in Slip. "
                 f"actual: normal {normal.shape[-1]}, flag {flag.shape[-1]}"
             )
+
+        normal = torch.nan_to_num(normal)
+        flag = torch.nan_to_num(flag)
 
         equation = self._create_equation(value, normal, flag)
         normal_component = einsum(
