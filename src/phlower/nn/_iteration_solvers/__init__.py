@@ -2,6 +2,9 @@ from phlower.nn._interface_iteration_solver import IFIterationSolver
 from phlower.nn._iteration_solvers._barzilai_borwein_solver import (
     BarzilaiBorweinSolver,
 )
+from phlower.nn._iteration_solvers._bicgstab_solver import (
+    BiCGStabSolver,
+)
 from phlower.nn._iteration_solvers._conjugate_gradient_solver import (
     ConjugateGradientSolver,
 )
@@ -16,6 +19,7 @@ _name2solver: dict[str, type[IFIterationSolver]] = {
     PhlowerIterationSolverType.simple.name: SimpleIterationSolver,
     PhlowerIterationSolverType.bb.name: BarzilaiBorweinSolver,
     PhlowerIterationSolverType.cg.name: ConjugateGradientSolver,
+    PhlowerIterationSolverType.bicgstab.name: BiCGStabSolver,
 }
 
 
