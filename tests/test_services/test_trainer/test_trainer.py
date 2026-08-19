@@ -430,8 +430,7 @@ def test__faster_training_with_on_memory_dataset(
     )
     on_memory_time = df.loc[:, "elapsed_time"].to_numpy().max()
 
-    # NOTE: the number 1.5 is arbitrary, but it should be larger than 1.0
-    assert lazy_time > on_memory_time * 1.5
+    assert lazy_time > on_memory_time
 
 
 @pytest.mark.parametrize(

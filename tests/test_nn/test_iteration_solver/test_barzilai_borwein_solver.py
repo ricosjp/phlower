@@ -226,7 +226,7 @@ def test__initialize_from_setting(
     solver = BarzilaiBorweinSolver.from_setting(setting)
 
     assert solver._operator_keys == expected_operator_keys
-    assert solver._keys == update_keys or target_keys
+    assert solver._keys == (update_keys or target_keys)
     assert solver.convergence_threshold == 0.01
     assert solver.max_iterations == 100
     assert solver.divergence_threshold == 100
