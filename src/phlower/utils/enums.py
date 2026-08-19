@@ -83,6 +83,7 @@ class PhlowerIterationSolverType(StrEnum):
     simple = "simple"
     bb = "bb"  # barzilai_borwein
     cg = "cg"  # conjugate gradient
+    bicgstab = "bicgstab"  # BiCGStab
 
 
 class PhlowerCGPreconditionType(StrEnum):
