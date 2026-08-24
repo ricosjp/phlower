@@ -73,6 +73,12 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
 
         self._pooling_operator = PoolingSelector.select(pool_operator_name)
 
+        if self._unbatch_key is None:
+            _logger.info(
+                "Unbatch key is not specified. "
+                "Pooling will be applied to the entire tensor."
+            )
+
     def resolve(
         self, *, parent: IReadonlyReferenceGroup | None = None, **kwards
     ) -> None: ...
@@ -130,14 +136,19 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
     def _unbatch(
         self, target: PhlowerTensor, field_data: ISimulationField | None
     ) -> list[PhlowerTensor]:
-        if (field_data is None) or (self._unbatch_key is None):
-            _logger.info(
-                "batch info is not passed to Pooling. "
-                "Unbatch operation is skipped."
-            )
-            return [target]
 
-        return unbatch(
-            target,
-            n_nodes=field_data.get_batched_n_nodes(self._unbatch_key),
-        )
+        has_unbatch_key = self._unbatch_key is not None
+        has_field_data = field_data is not None
+
+        if has_unbatch_key and not has_field_data:
+            raise ValueError(
+                "Unbatch key is specified, but field data is not provided."
+            )
+
+        if has_unbatch_key and has_field_data:
+            return unbatch(
+                target,
+                n_nodes=field_data.get_batched_n_nodes(self._unbatch_key),
+            )
+
+        return [target]

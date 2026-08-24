@@ -151,6 +151,11 @@ class BarzilaiBorweinSolver(IFIterationSolver):
 
         # for backward compatibility
         self._skip_last_update = skip_last_update
+        if self._skip_last_update:
+            _logger.warning(
+                "Skip the last update for backward compatibility. "
+                "Set skip_last_update as False to avoid this message."
+            )
 
     @property
     def max_iterations(self) -> int:
@@ -221,10 +226,6 @@ class BarzilaiBorweinSolver(IFIterationSolver):
             _logger.warning(_diverged_msg)
 
         if self._skip_last_update:
-            _logger.info(
-                "Skip the last update for backward compatibility. "
-                "Set skip_last_update as False to avoid this message."
-            )
             return h_inputs.mask(self._keys)
 
         if (

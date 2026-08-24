@@ -240,6 +240,24 @@ def test__pooling_for_batched_tensor(
         assert result.dimension is None
 
 
+def test__raise_error_when_pooling_for_batched_tensor_wo_batch_key():
+
+    _tensor = phlower_tensor(
+        np.random.rand(10, 5),
+        dtype=torch.float32,
+    )
+    model = Pooling(
+        pool_operator_name=PoolingType.max,
+        unbatch_key="sample",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Unbatch key is specified, but field data is not provided",
+    ):
+        _ = model.forward(phlower_tensor_collection({"input": _tensor}))
+
+
 @pytest.mark.parametrize(
     "input_shape, pooling_dimension",
     [
