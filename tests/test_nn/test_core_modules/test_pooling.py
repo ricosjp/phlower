@@ -238,3 +238,48 @@ def test__pooling_for_batched_tensor(
         )
     else:
         assert result.dimension is None
+
+
+@pytest.mark.parametrize(
+    "input_shape, pooling_dimension",
+    [
+        ((10, 5), None),
+        ((10, 5), 1),
+        ((2, 10, 3, 1), None),
+        ((2, 10, 3, 1), 0),
+        ((2, 10, 3, 1), 1),
+    ],
+)
+def test__pooling_with_expanding(
+    input_shape: tuple[int],
+    pooling_dimension: int | None,
+):
+    _tensor = phlower_tensor(
+        np.random.rand(*input_shape),
+        dtype=torch.float32,
+    )
+
+    model_wo_expand = Pooling(
+        pool_operator_name=PoolingType.max,
+        pooling_dimension=pooling_dimension,
+        expand_after_pooling=False,
+    )
+
+    model = Pooling(
+        pool_operator_name=PoolingType.max,
+        pooling_dimension=pooling_dimension,
+        expand_after_pooling=True,
+    )
+
+    result_actual = model.forward(phlower_tensor_collection({"input": _tensor}))
+    assert tuple(result_actual.shape) == input_shape
+
+    # Check if the result is equal to the original tensor
+    # along the pooling dimension
+    result_expected = (
+        model_wo_expand.forward(phlower_tensor_collection({"input": _tensor}))
+        .to_tensor()
+        .expand_as(_tensor.to_tensor())
+    )
+
+    torch.testing.assert_close(result_actual.to_tensor(), result_expected)

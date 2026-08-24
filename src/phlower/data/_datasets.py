@@ -471,10 +471,12 @@ def _extract_member_arrays(
             pass
         elif member.n_last_dim == 1:
             _arr = _arr[..., np.newaxis]
+
         else:
             raise ValueError(
                 "Last dimension does not match. "
-                f"setting: {member.n_last_dim}, actual: {_arr.shape[-1]}"
+                f"setting: {member.n_last_dim}, actual: {_arr.shape}, "
+                f"{member=}"
             )
 
         if member.index_first_dim is not None:

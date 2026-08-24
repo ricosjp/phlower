@@ -570,7 +570,8 @@ class PhlowerAdaptorGroupModule(
             f"input_keys: {self._input_keys}\noutput_keys: {self._output_keys}"
         )
 
-    def draw(self, output_directory: pathlib.Path, recursive: bool): ...
+    def draw(self, output_directory: pathlib.Path, recursive: bool):
+        self._group.draw(output_directory, recursive)
 
     def get_core_module(
         self,

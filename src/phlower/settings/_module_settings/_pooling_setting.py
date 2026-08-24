@@ -12,10 +12,30 @@ from phlower.utils.enums import PoolingType
 
 
 class PoolingSetting(IPhlowerLayerParameters, pydantic.BaseModel):
-    unbatch_key: str | None = Field(None, frozen=True)
     nodes: list[int] | None = Field(None)
+
+    unbatch_key: str | None = Field(None, frozen=True)
+    """
+    Name of key to unbatch input tensor.
+    If None, input tensor is not unbatched.
+    """
+
     pool_operator_name: PoolingType | str = Field("max", frozen=True)
+    """
+    Name of pooling operator. Choose from "max" or "mean". Defaults to "max".
+    """
+
     pooling_dimension: int | None = Field(None, frozen=True)
+    """
+    Dimension along which pooling operation is applied.
+    If None, the dimension of vertexes is used. (default: None)
+    """
+
+    expand_after_pooling: bool = Field(False, frozen=True)
+    """
+    If True, the output tensor will be expanded to the same dimension
+    as the input tensor after pooling.
+    """
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
