@@ -62,12 +62,14 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
         nodes: list[int] | None = None,
         unbatch_key: str | None = None,
         pooling_dimension: int | None = None,
+        expand_after_pooling: bool = False,
     ):
         super().__init__()
         self._nodes = nodes
         self._pool_operator_name = pool_operator_name
         self._unbatch_key = unbatch_key
         self._pooling_dimension = pooling_dimension
+        self._expand_after_pooling = expand_after_pooling
 
         self._pooling_operator = PoolingSelector.select(pool_operator_name)
 
@@ -112,7 +114,12 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
             dim = target.shape_pattern.nodes_dim
         else:
             dim = self._pooling_dimension
+
         _value = self._pooling_operator([target.to_tensor()], dim)
+
+        if self._expand_after_pooling:
+            _value = _value.expand_as(target.to_tensor())
+
         return phlower_tensor(
             tensor=_value,
             dimension=target.dimension,
@@ -125,7 +132,7 @@ class Pooling(IPhlowerCoreModule, torch.nn.Module):
     ) -> list[PhlowerTensor]:
         if (field_data is None) or (self._unbatch_key is None):
             _logger.info(
-                "batch info is not passed to DeepSets. "
+                "batch info is not passed to Pooling. "
                 "Unbatch operation is skipped."
             )
             return [target]
