@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Proportional
+=======================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Proportional
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Proportional.forward
+   
+   
+      ~Proportional.from_setting
+   
+   
+   
+   
+   
+   
+      ~Proportional.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Proportional.T_destination
+      ~Proportional.call_super_init
+      ~Proportional.dump_patches
+      ~Proportional.training
+   
+   

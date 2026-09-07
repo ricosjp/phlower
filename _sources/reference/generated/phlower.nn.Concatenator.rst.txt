@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Concatenator
+=======================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Concatenator
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Concatenator.forward
+   
+   
+      ~Concatenator.from_setting
+   
+   
+   
+   
+   
+   
+      ~Concatenator.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Concatenator.T_destination
+      ~Concatenator.call_super_init
+      ~Concatenator.dump_patches
+      ~Concatenator.training
+   
+   

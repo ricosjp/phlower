@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.EdgeDifference
+=========================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: EdgeDifference
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~EdgeDifference.forward
+   
+   
+      ~EdgeDifference.from_setting
+   
+   
+   
+   
+   
+   
+      ~EdgeDifference.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EdgeDifference.T_destination
+      ~EdgeDifference.call_super_init
+      ~EdgeDifference.dump_patches
+      ~EdgeDifference.training
+   
+   

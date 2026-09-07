@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.EdgeGather
+=====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: EdgeGather
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~EdgeGather.forward
+   
+   
+      ~EdgeGather.from_setting
+   
+   
+   
+   
+   
+   
+      ~EdgeGather.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EdgeGather.T_destination
+      ~EdgeGather.call_super_init
+      ~EdgeGather.dump_patches
+      ~EdgeGather.training
+   
+   

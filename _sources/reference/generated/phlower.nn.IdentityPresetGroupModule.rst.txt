@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.IdentityPresetGroupModule
+====================================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: IdentityPresetGroupModule
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~IdentityPresetGroupModule.forward
+   
+   
+      ~IdentityPresetGroupModule.from_setting
+   
+   
+   
+   
+   
+   
+      ~IdentityPresetGroupModule.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~IdentityPresetGroupModule.T_destination
+      ~IdentityPresetGroupModule.call_super_init
+      ~IdentityPresetGroupModule.dump_patches
+      ~IdentityPresetGroupModule.training
+   
+   
