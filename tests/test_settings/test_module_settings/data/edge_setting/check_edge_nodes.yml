@@ -1,0 +1,101 @@
+misc:
+
+  tests:
+    MLP0: [3, 8]
+    EdgeDifference0: [3, 4]
+    EdgeGather0: [8, 16]
+    Concatenator0: [20, 20]
+    MLP1: [20, 8]
+    EdgeToNodeSum0: [8, 8]
+    MLP2: [8, 5]
+
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 3
+
+  network:
+    nn_type: GROUP
+    name: EDGE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 3
+
+    outputs:
+      - name: out_feature0
+        n_last_dim: 5
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: mlp0
+        destinations:
+          - EdgeGather0
+        nn_parameters:
+          nodes: [-1, 8]
+          activations: ["identity"]
+
+      - nn_type: EdgeDifference
+        name: EdgeDifference0
+        input_keys:
+          - feature0
+        output_key: edge_difference0
+        destinations:
+          - Concatenator0
+        nn_parameters:
+          support_name: "support1"
+          with_norm: true
+
+      - nn_type: EdgeGather
+        name: EdgeGather0
+        input_keys:
+          - mlp0
+        output_key: edge_gather0
+        destinations:
+          - Concatenator0
+        nn_parameters:
+          support_name: "support1"
+
+      - nn_type: Concatenator
+        name: Concatenator0
+        input_keys:
+          - edge_difference0
+          - edge_gather0
+        output_key: concatenator0
+        destinations:
+          - MLP1
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - concatenator0
+        output_key: mlp1
+        destinations:
+          - EdgeToNodeSum0
+        nn_parameters:
+          nodes: [-1, 8]
+          activations: ["identity"]
+
+      - nn_type: EdgeToNodeSum
+        name: EdgeToNodeSum0
+        input_keys:
+          - mlp1
+        output_key: edge_to_node_sum0
+        destinations:
+          - MLP2
+        nn_parameters:
+          support_name: "support1"
+
+      - nn_type: MLP
+        name: MLP2
+        input_keys:
+          - edge_to_node_sum0
+        output_key: out_feature0
+        nn_parameters:
+          nodes: [-1, 5]
+          activations: ["identity"]

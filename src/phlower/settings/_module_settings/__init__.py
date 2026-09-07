@@ -19,6 +19,15 @@ from phlower.settings._module_settings._deepsets_setting import DeepSetsSetting
 from phlower.settings._module_settings._dirichlet_setting import (
     DirichletSetting,
 )
+from phlower.settings._module_settings._edge_difference_setting import (
+    EdgeDifferenceSetting,
+)
+from phlower.settings._module_settings._edge_gather_setting import (
+    EdgeGatherSetting,
+)
+from phlower.settings._module_settings._edge_to_node_sum_setting import (
+    EdgeToNodeSumSetting,
+)
 from phlower.settings._module_settings._einsum_setting import EinsumSetting
 from phlower.settings._module_settings._en_equivariant_mlp_setting import (
     EnEquivariantMLPSetting,
@@ -75,6 +84,9 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     ContractionSetting,
     DeepSetsSetting,
     DirichletSetting,
+    EdgeDifferenceSetting,
+    EdgeGatherSetting,
+    EdgeToNodeSumSetting,
     EinsumSetting,
     EnEquivariantMLPSetting,
     EnEquivariantTCNSetting,
