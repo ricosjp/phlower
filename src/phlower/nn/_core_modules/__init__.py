@@ -7,6 +7,9 @@ from phlower.nn._core_modules._conjugate_gradient_solver import (
 from phlower.nn._core_modules._contraction import Contraction
 from phlower.nn._core_modules._deepsets import DeepSets
 from phlower.nn._core_modules._dirichlet import Dirichlet
+from phlower.nn._core_modules._edge_difference import EdgeDifference
+from phlower.nn._core_modules._edge_gather import EdgeGather
+from phlower.nn._core_modules._edge_to_node_sum import EdgeToNodeSum
 from phlower.nn._core_modules._einsum import Einsum
 from phlower.nn._core_modules._en_equivariant_mlp import EnEquivariantMLP
 from phlower.nn._core_modules._en_equivariant_tcn import EnEquivariantTCN
@@ -47,6 +50,9 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     ConjugateGradientSolver,
     Contraction,
     DeepSets,
+    EdgeDifference,
+    EdgeGather,
+    EdgeToNodeSum,
     EnEquivariantMLP,
     EnEquivariantTCN,
     Einsum,

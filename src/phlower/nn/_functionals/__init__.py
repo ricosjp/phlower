@@ -8,4 +8,5 @@ from phlower.nn._functionals._activations import (
     leaky_relum0p5,
     truncated_atanh,
 )
+from phlower.nn._functionals._edge import extract_edge_indices
 from phlower.nn._functionals._pooling import PoolingSelector

@@ -109,6 +109,41 @@ def test__forward_and_backward(
     loss.backward()
 
 
+@pytest.mark.parametrize("yaml_file, n_nodes", [("meshgraphnet.yml", 20)])
+def test__forward_and_backward_meshgraphnet_blocks(
+    yaml_file: str, n_nodes: int
+):
+    setting_file = _SAMPLE_SETTING_DIR / yaml_file
+    setting = PhlowerSetting.read_yaml(setting_file)
+
+    setting.model.network.resolve(is_first=True)
+    group = PhlowerGroupModule.from_setting(setting.model.network)
+
+    phlower_tensors = phlower_tensor_collection(
+        {"point": phlower_tensor(torch.rand(n_nodes, 3))}
+    )
+
+    adjacency = np.triu(np.random.rand(n_nodes, n_nodes) > 0.5, k=1)
+    adjacency = adjacency + adjacency.T + np.eye(n_nodes, dtype=bool)
+    nodal_nadj = phlower_tensor(
+        torch.from_numpy(adjacency.astype(np.float32)).to_sparse()
+    )
+    field_data = SimulationField(field_tensors={"support1": nodal_nadj})
+
+    output = group.forward(data=phlower_tensors, field_data=field_data)
+
+    actual = output.unique_item()
+    assert actual.shape == (n_nodes, 2)
+
+    dummy_label = torch.rand(*actual.shape)
+    loss = torch.nn.functional.mse_loss(actual, dummy_label)
+
+    loss.backward()
+
+    grads = [p.grad for p in group.parameters()]
+    assert all(g is not None for g in grads)
+
+
 @pytest.mark.parametrize(
     "yaml_file, time_series_length",
     [

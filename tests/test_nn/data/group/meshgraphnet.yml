@@ -1,0 +1,236 @@
+model:
+  inputs:
+    - name: point
+      members:
+        - name: point
+          n_last_dim: 3
+
+  fields:
+    - name: support1
+
+  network:
+    nn_type: GROUP
+    name: MESHGRAPHNET
+    inputs:
+      - name: point
+        n_last_dim: 3
+
+    outputs:
+      - name: out_feature0
+        n_last_dim: 2
+
+    modules:
+      # encoder: point -> node latent h0 + edge latent e0
+      - nn_type: GROUP
+        name: encoder
+        destinations:
+          - block1
+        modules:
+          - nn_type: MLP
+            name: node_mlp
+            input_keys:
+              - point
+            destinations:
+              - node_ln
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: node_ln
+            output_key: h0
+            nn_parameters:
+              nodes: [-1, 8]
+          - nn_type: EdgeDifference
+            name: edge_feature
+            input_keys:
+              - point
+            destinations:
+              - edge_mlp
+            nn_parameters:
+              support_name: support1
+              with_norm: true
+          - nn_type: MLP
+            name: edge_mlp
+            destinations:
+              - edge_ln
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: edge_ln
+            output_key: e0
+            nn_parameters:
+              nodes: [-1, 8]
+
+      # decoder: node latent -> output
+      - nn_type: GROUP
+        name: decoder
+        modules:
+          - nn_type: MLP
+            name: mlp
+            output_key: out_feature0
+            nn_parameters:
+              nodes: [-1, 8, 2]
+              activations: ["relu", "identity"]
+
+      # message-passing blocks
+      # edge update: e <- e + MLP([e, h_i, h_j]); node update: h <- h + MLP([h, sum e])
+      - nn_type: GROUP
+        name: block1
+        destinations:
+          - block2
+        modules:
+          - nn_type: Identity
+            name: in_h
+            input_keys:
+              - h0
+            destinations:
+              - gather
+              - cat_h
+              - res_h
+          - nn_type: Identity
+            name: in_e
+            input_keys:
+              - e0
+            destinations:
+              - cat_e
+              - res_e
+          - nn_type: EdgeGather
+            name: gather
+            destinations:
+              - cat_e
+            nn_parameters:
+              support_name: support1
+          - nn_type: Concatenator
+            name: cat_e
+            destinations:
+              - mlp_e
+          - nn_type: MLP
+            name: mlp_e
+            destinations:
+              - ln_e
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: ln_e
+            destinations:
+              - res_e
+            nn_parameters:
+              nodes: [-1, 8]
+          - nn_type: Reducer
+            name: res_e
+            destinations:
+              - edge_sum
+              - out_e
+            nn_parameters:
+              operator: add
+          - nn_type: Identity
+            name: out_e
+            output_key: e1
+          - nn_type: EdgeToNodeSum
+            name: edge_sum
+            destinations:
+              - cat_h
+            nn_parameters:
+              support_name: support1
+          - nn_type: Concatenator
+            name: cat_h
+            destinations:
+              - mlp_h
+          - nn_type: MLP
+            name: mlp_h
+            destinations:
+              - ln_h
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: ln_h
+            destinations:
+              - res_h
+            nn_parameters:
+              nodes: [-1, 8]
+          - nn_type: Reducer
+            name: res_h
+            output_key: h1
+            nn_parameters:
+              operator: add
+
+      - nn_type: GROUP
+        name: block2
+        destinations:
+          - decoder
+        modules:
+          - nn_type: Identity
+            name: in_h
+            input_keys:
+              - h1
+            destinations:
+              - gather
+              - cat_h
+              - res_h
+          - nn_type: Identity
+            name: in_e
+            input_keys:
+              - e1
+            destinations:
+              - cat_e
+              - res_e
+          - nn_type: EdgeGather
+            name: gather
+            destinations:
+              - cat_e
+            nn_parameters:
+              support_name: support1
+          - nn_type: Concatenator
+            name: cat_e
+            destinations:
+              - mlp_e
+          - nn_type: MLP
+            name: mlp_e
+            destinations:
+              - ln_e
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: ln_e
+            destinations:
+              - res_e
+            nn_parameters:
+              nodes: [-1, 8]
+          - nn_type: Reducer
+            name: res_e
+            destinations:
+              - edge_sum
+            nn_parameters:
+              operator: add
+          - nn_type: EdgeToNodeSum
+            name: edge_sum
+            destinations:
+              - cat_h
+            nn_parameters:
+              support_name: support1
+          - nn_type: Concatenator
+            name: cat_h
+            destinations:
+              - mlp_h
+          - nn_type: MLP
+            name: mlp_h
+            destinations:
+              - ln_h
+            nn_parameters:
+              nodes: [-1, 8, 8]
+              activations: ["relu", "identity"]
+          - nn_type: LayerNorm
+            name: ln_h
+            destinations:
+              - res_h
+            nn_parameters:
+              nodes: [-1, 8]
+          - nn_type: Reducer
+            name: res_h
+            output_key: h2
+            nn_parameters:
+              operator: add
