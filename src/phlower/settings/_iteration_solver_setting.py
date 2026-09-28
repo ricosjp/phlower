@@ -288,6 +288,70 @@ class BarzilaiBoweinSolverSetting(
         return self.update_keys
 
 
+class BroydenSolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
+    convergence_threshold: float = pydantic.Field(0.01, gt=0)
+    """
+    Convergence threshold for the solver.
+    """
+
+    max_iterations: int = pydantic.Field(100, gt=0)
+    """
+    Maximum number of iterations for the solver.
+    """
+
+    divergence_threshold: float = pydantic.Field(100, gt=0)
+    """
+    Divergence threshold for the solver.
+    """
+
+    memory_length: int = pydantic.Field(10, gt=0)
+    """
+    Maximum number of recent (s, y) pairs retained for limited-memory Broyden.
+    """
+
+    update_keys: list[str] = pydantic.Field(default_factory=list)
+    """
+    List of variable names to be updated by the solver.
+    """
+
+    operator_keys: list[str] = pydantic.Field(default_factory=list)
+    """
+    List of residual variable names to calculate residuals for.
+    If empty list is given, residual values are calculated for
+    subtracting values of update_keys.
+    """
+
+    exit_before_update_when_diverged: bool = False
+    """
+    Whether to exit the iteration before updating variables when diverged.
+    If False, the solver will update variables even when diverged,
+    and then exit the iteration. Defaults to False.
+    """
+
+    # special keyword to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(
+        extra="forbid", frozen=True, validate_default=True
+    )
+
+    @pydantic.model_validator(mode="after")
+    def empty_list_is_not_allowed(self) -> list[str]:
+        assert len(self.update_keys) > 0, (
+            "Set at least one update item for update_keys in solver settings"
+        )
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def convergence_must_be_less_than_divergence(self) -> Self:
+        assert self.convergence_threshold < self.divergence_threshold, (
+            "convergence threshold must be less than divergence_threshold"
+        )
+        return self
+
+    def get_update_keys(self) -> list[str]:
+        return self.update_keys
+
+
 CGPreconditionParameters = Annotated[
     ICGPreconditionSetting,
     PlainValidator(_cg_precondition_validate),
@@ -485,6 +549,7 @@ _name_to_setting: dict[str, IPhlowerIterationSolverSetting] = {
     PhlowerIterationSolverType.bb.value: BarzilaiBoweinSolverSetting,
     PhlowerIterationSolverType.cg.value: ConjugateGradientSolverSetting,
     PhlowerIterationSolverType.bicgstab.value: BiCGStabSolverSetting,
+    PhlowerIterationSolverType.broyden.value: BroydenSolverSetting,
 }
 
 

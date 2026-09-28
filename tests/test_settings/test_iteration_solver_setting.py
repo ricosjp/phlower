@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 from phlower.settings import GroupModuleSetting
 from phlower.settings._iteration_solver_setting import (
     BarzilaiBoweinSolverSetting,
+    BroydenSolverSetting,
     ConjugateGradientSolverSetting,
     EmptySolverSetting,
     SimpleSolverSetting,
@@ -230,6 +231,114 @@ def test__default_value_of_skip_last_update(
 
 
 # endregion
+
+
+# region test for Broyden setting
+
+
+@pytest.mark.parametrize(
+    "convergence_threshold, divergence_threshold,"
+    " max_iterations, memory_length",
+    [
+        (10, -0.001, 100, 10),
+        (2, 100, -123, 10),
+        (3, -100, -20, 10),
+        (-0.210, 0.001, 100, 10),
+        (-3, 100, -20, 10),
+        (0.01, 100, 100, -1),
+        (0.01, 100, 100, 0),
+    ],
+)
+def test__raise_error_for_invalid_args_in_broyden_setting(
+    convergence_threshold: float,
+    divergence_threshold: float,
+    max_iterations: int,
+    memory_length: int,
+):
+    with pytest.raises(pydantic.ValidationError):
+        _ = BroydenSolverSetting(
+            update_keys=["sample"],
+            convergence_threshold=convergence_threshold,
+            divergence_threshold=divergence_threshold,
+            max_iterations=max_iterations,
+            memory_length=memory_length,
+        )
+
+
+@pytest.mark.parametrize(
+    "convergence_threshold, divergence_threshold",
+    [(1000, 0.00001), (10000, 10000), (0.333, 0.222)],
+)
+def test__raise_error_when_convergence_is_greater_than_divergence_in_broyden(
+    convergence_threshold: float, divergence_threshold: float
+):
+    with pytest.raises(pydantic.ValidationError) as ex:
+        _ = BroydenSolverSetting(
+            update_keys=["sample"],
+            convergence_threshold=convergence_threshold,
+            divergence_threshold=divergence_threshold,
+        )
+
+    assert "convergence threshold must be less than d" in str(ex.value)
+
+
+def test__raise_error_when_empty_targets_in_broyden_setting():
+    with pytest.raises(pydantic.ValidationError) as ex:
+        _ = BroydenSolverSetting(
+            update_keys=[],
+        )
+
+    assert "Set at least one update item" in str(ex.value)
+
+
+def test__raise_error_when_unknown_field_in_broyden_setting():
+    with pytest.raises(pydantic.ValidationError):
+        _ = BroydenSolverSetting(update_keys=["aaa"], bb_type="long")
+
+
+@pytest.mark.parametrize("target_keys", [[], ["a"]])
+def test__broyden_rejects_legacy_target_keys(target_keys: list[str]):
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        BroydenSolverSetting(update_keys=["a"], target_keys=target_keys)
+
+    assert any(
+        error["loc"] == ("target_keys",) and error["type"] == "extra_forbidden"
+        for error in exc_info.value.errors()
+    )
+
+
+def test__broyden_update_and_residual_keys():
+    setting = BroydenSolverSetting(
+        update_keys=["a", "b"],
+        operator_keys=["c", "d", "e"],
+        convergence_threshold=0.1,
+        max_iterations=10,
+        divergence_threshold=50,
+        memory_length=7,
+    )
+
+    assert setting.update_keys == ["a", "b"]
+    assert setting.operator_keys == ["c", "d", "e"]
+    assert setting.memory_length == 7
+    assert "skip_last_update" not in setting.model_dump()
+
+
+@pytest.mark.parametrize("skip_last_update", [False, True])
+def test__broyden_rejects_legacy_skip_last_update(skip_last_update: bool):
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        BroydenSolverSetting(
+            update_keys=["a"], skip_last_update=skip_last_update
+        )
+
+    assert any(
+        error["loc"] == ("skip_last_update",)
+        and error["type"] == "extra_forbidden"
+        for error in exc_info.value.errors()
+    )
+
+
+# endregion
+
 
 # region test for conjugate gradient setting
 
