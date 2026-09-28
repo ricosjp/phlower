@@ -5,6 +5,7 @@ from phlower.nn._iteration_solvers._barzilai_borwein_solver import (
 from phlower.nn._iteration_solvers._bicgstab_solver import (
     BiCGStabSolver,
 )
+from phlower.nn._iteration_solvers._broyden_solver import BroydenSolver
 from phlower.nn._iteration_solvers._conjugate_gradient_solver import (
     ConjugateGradientSolver,
 )
@@ -20,6 +21,7 @@ _name2solver: dict[str, type[IFIterationSolver]] = {
     PhlowerIterationSolverType.bb.name: BarzilaiBorweinSolver,
     PhlowerIterationSolverType.cg.name: ConjugateGradientSolver,
     PhlowerIterationSolverType.bicgstab.name: BiCGStabSolver,
+    PhlowerIterationSolverType.broyden.name: BroydenSolver,
 }
 
 

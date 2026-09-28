@@ -150,7 +150,10 @@ class GroupModuleSetting(
 
     none: No iteration.
     simple: run iteration until calculated value is converged.
-    bb: Barzilan-Borwein method is used to converge iteration results.
+    bb: Barzilai-Borwein method is used to converge iteration results.
+    cg: Conjugate gradient method is used to converge iteration results.
+    broyden: limited-memory good Broyden method is used
+      to converge iteration results.
     """
 
     is_steady_problem: bool = Field(False, frozen=True)
