@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Handle NaN filling value in Slip module 
 * Add `BiCG` solver module
 * Add expand option in `Pooling` module
+* Add `Broyden` solver iteration method
+* Add the modules necessary for building `MeshGraphNets` (MGN)
 
 ### Maintenance
 

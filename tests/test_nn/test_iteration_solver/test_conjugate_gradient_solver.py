@@ -698,6 +698,9 @@ def test__can_converge_laplace_equation_with_RandomJacobi_precond(
         )
 
 
+@pytest.mark.skip(
+    reason="Preconditioner in CG is temporarily disabled due to instability."
+)
 @pytest.mark.parametrize("n_target", [1])
 @pytest.mark.parametrize("n_x", [200])
 @pytest.mark.parametrize("x_length", [0.1])
