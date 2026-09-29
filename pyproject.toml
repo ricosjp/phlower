@@ -44,7 +44,7 @@ classifiers = [
 
 [dependency-groups]
 graphlow = [
-    "graphlow @ git+https://github.com/ricosjp/graphlow.git@develop; python_version >= '3.12'",
+    "graphlow >= 0.1.0; python_version >= '3.12'",
 ]
 dev = [
     "pytest>=8.0.2",
