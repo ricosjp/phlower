@@ -7,6 +7,7 @@ from phlower.data import (
     DataLoaderBuilder,
     LazyPhlowerDataset,
     OnMemoryPhlowerDataSet,
+    RandomPointSampler,
 )
 from phlower.settings import PhlowerSetting
 
@@ -75,6 +76,7 @@ def prepare_datasets(
             field_settings=setting.model.fields,
             directories=train_directories,
             decrypt_key=decrypt_key,
+            random_sampler=RandomPointSampler(),
         )
         validation_dataset = LazyPhlowerDataset(
             input_settings=setting.model.inputs,
@@ -82,6 +84,7 @@ def prepare_datasets(
             field_settings=setting.model.fields,
             directories=validation_directories,
             decrypt_key=decrypt_key,
+            random_sampler=RandomPointSampler(),
         )
     else:
         train_dataset = OnMemoryPhlowerDataSet.create(
@@ -90,6 +93,7 @@ def prepare_datasets(
             field_settings=setting.model.fields,
             directories=train_directories,
             decrypt_key=decrypt_key,
+            random_sampler=RandomPointSampler(),
         )
         validation_dataset = OnMemoryPhlowerDataSet.create(
             input_settings=setting.model.inputs,
@@ -97,5 +101,6 @@ def prepare_datasets(
             field_settings=setting.model.fields,
             directories=validation_directories,
             decrypt_key=decrypt_key,
+            random_sampler=RandomPointSampler(),
         )
     return train_dataset, validation_dataset

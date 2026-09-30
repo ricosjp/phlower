@@ -5,3 +5,4 @@ from phlower.data._datasets import (
     OnMemoryPhlowerDataSet,
 )
 from phlower.data._lumped_data import LumpedArrayData, LumpedTensorData
+from phlower.data._sampler import RandomPointSampler

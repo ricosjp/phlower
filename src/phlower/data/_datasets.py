@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import pathlib
 from functools import reduce
+from logging import getLogger
 from typing import Literal, overload
 
 import numpy as np
@@ -20,7 +21,10 @@ from phlower.settings import (
 from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
 from phlower.utils.typing import ArrayDataType
 
+from ._sampler import RandomPointSampler
 from ._utils import BatchModeHolder
+
+_logger = getLogger(__name__)
 
 
 class IPhlowerDataset(metaclass=abc.ABCMeta):
@@ -57,6 +61,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
+        random_sampler: RandomPointSampler | None = None,
     ) -> OnMemoryPhlowerDataSet:
         field_settings = field_settings or []
 
@@ -78,6 +83,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
             field_settings=field_settings,
             allow_no_y_data=allow_no_y_data,
             decrypt_key=decrypt_key,
+            random_sampler=random_sampler,
         )
 
     def __init__(
@@ -89,6 +95,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
+        random_sampler: RandomPointSampler | None = None,
     ):
         self._loaded_data = loaded_data
         self._input_settings = input_settings
@@ -101,21 +108,36 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
 
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
+        self._random_sampler = random_sampler
 
     def __len__(self):
         return len(self._loaded_data)
 
     def __getitem__(self, idx: int) -> LumpedArrayData:
+
+        # NOTE: Generate random_sampler for each call to __getitem__
+        # to ensure that the random sampling is independent
+        # for each data item and epoch.
+        if self._random_sampler is not None:
+            self._random_sampler.reset()
+
         x_data = self._setup_data(
-            idx, self._input_settings, allow_missing=False
+            idx,
+            self._input_settings,
+            allow_missing=False,
+            random_sampler=self._random_sampler,
         )
         y_data = self._setup_data(
             idx,
             self._label_settings,
             allow_missing=self._allow_no_y_data,
+            random_sampler=self._random_sampler,
         )
         field_data = self._setup_data(
-            idx, self._field_settings, allow_missing=False
+            idx,
+            self._field_settings,
+            allow_missing=False,
+            random_sampler=self._random_sampler,
         )
         return LumpedArrayData(
             x_data=x_data, y_data=y_data, field_data=field_data
@@ -146,12 +168,14 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         index: int,
         variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
+        random_sampler: RandomPointSampler,
     ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
         _dict = {
             setting.name: _apply_setting(
                 dict_arrs=self._loaded_data[index],
                 io_setting=setting,
                 allow_missing=allow_missing,
+                random_sampler=random_sampler,
             )
             for setting in variable_settings
         }
@@ -169,6 +193,28 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
 class LazyPhlowerDataset(Dataset, IPhlowerDataset):
     """This Dataset reads input file every time to get data"""
 
+    @classmethod
+    def create(
+        cls,
+        input_settings: list[ArrayDataIOSetting],
+        label_settings: list[ArrayDataIOSetting],
+        directories: list[pathlib.Path],
+        *,
+        field_settings: list[FieldIOSettingType] | None = None,
+        allow_no_y_data: bool = False,
+        decrypt_key: bytes | None = None,
+        random_sampler: RandomPointSampler | None = None,
+    ) -> OnMemoryPhlowerDataSet:
+        return LazyPhlowerDataset(
+            input_settings=input_settings,
+            label_settings=label_settings,
+            directories=directories,
+            field_settings=field_settings,
+            allow_no_y_data=allow_no_y_data,
+            decrypt_key=decrypt_key,
+            random_sampler=random_sampler,
+        )
+
     def __init__(
         self,
         input_settings: list[ArrayDataIOSetting],
@@ -178,6 +224,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         field_settings: list[FieldIOSettingType] | None = None,
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
+        random_sampler: RandomPointSampler | None = None,
     ):
         self._input_settings = input_settings
         self._label_settings = (
@@ -190,22 +237,34 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
 
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
+        self._random_sampler = random_sampler
 
     def __len__(self):
         return len(self._directories)
 
     def __getitem__(self, idx: int) -> LumpedArrayData:
+
+        if self._random_sampler is not None:
+            self._random_sampler.reset()
+
         data_directory = self._directories[idx]
         x_data = self._setup_data(
-            data_directory, self._input_settings, allow_missing=False
+            data_directory,
+            self._input_settings,
+            allow_missing=False,
+            random_sampler=self._random_sampler,
         )
         y_data = self._setup_data(
             data_directory,
             self._label_settings,
             allow_missing=self._allow_no_y_data,
+            random_sampler=self._random_sampler,
         )
         field_data = self._setup_data(
-            data_directory, self._field_settings, allow_missing=False
+            data_directory,
+            self._field_settings,
+            allow_missing=False,
+            random_sampler=self._random_sampler,
         )
         return LumpedArrayData(
             x_data=x_data,
@@ -246,6 +305,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         data_directory: PhlowerDirectory,
         variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
+        random_sampler: RandomPointSampler,
     ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
 
         return _load_data(
@@ -253,6 +313,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             settings=variable_settings,
             allow_missing=allow_missing,
             decrypt_key=self._decrypt_key,
+            random_sampler=random_sampler,
         )
 
     def get_batch_mode_holder(self) -> BatchModeHolder:
@@ -271,6 +332,7 @@ def _load_data(
     allow_missing: bool,
     decrypt_key: bytes | None = None,
     skip_apply_setting: Literal[False] | None = ...,
+    random_sampler: RandomPointSampler | None = None,
 ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]: ...
 
 
@@ -281,6 +343,7 @@ def _load_data(
     allow_missing: bool,
     decrypt_key: bytes | None = None,
     skip_apply_setting: Literal[True] = True,
+    random_sampler: RandomPointSampler | None = None,
 ) -> dict[str, np.ndarray | pv.DataSet]: ...
 
 
@@ -290,6 +353,7 @@ def _load_data(
     allow_missing: bool,
     decrypt_key: bytes | None = None,
     skip_apply_setting: bool = False,
+    random_sampler: RandomPointSampler | None = None,
 ) -> (
     dict[str, IPhlowerArray | PyVistaMeshAdapter]
     | dict[str, np.ndarray | pv.DataSet]
@@ -323,7 +387,10 @@ def _load_data(
 
     _collected = {
         setting.name: _apply_setting(
-            _results, setting, allow_missing=allow_missing
+            _results,
+            setting,
+            allow_missing=allow_missing,
+            random_sampler=random_sampler,
         )
         for setting in settings
     }
@@ -374,12 +441,16 @@ def _apply_setting(
     dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
     io_setting: FieldIOSettingType,
     allow_missing: bool = False,
+    random_sampler: RandomPointSampler | None = None,
 ) -> IPhlowerArray | PyVistaMeshAdapter | None:
 
     match io_setting:
         case ArrayDataIOSetting():
             return _apply_setting_to_array(
-                dict_arrs, io_setting, allow_missing=allow_missing
+                dict_arrs,
+                io_setting,
+                allow_missing=allow_missing,
+                random_sampler=random_sampler,
             )
         case MeshDataIOSetting():
             return _apply_setting_to_mesh(
@@ -414,6 +485,7 @@ def _apply_setting_to_array(
     dict_arrs: dict[str, np.ndarray | IPhlowerArray | pv.PointGrid],
     io_setting: FieldIOSettingType,
     allow_missing: bool = False,
+    random_sampler: RandomPointSampler | None = None,
 ) -> IPhlowerArray | pv.UnstructuredGrid | None:
     member_arrs: list[np.ndarray] = _extract_member_arrays(
         io_setting, dict_arrs
@@ -442,7 +514,14 @@ def _apply_setting_to_array(
 
     # -- random sampling
     if io_setting.random_sampling.is_active:
-        _array = _random_sampled_array(io_setting, _array)
+        if random_sampler is None:
+            _logger.info(
+                f"Random sampling is active for {io_setting.name}, "
+                "but no RandomSampler is provided. "
+                "Random sampling will not be applied."
+            )
+        else:
+            _array = random_sampler.sample(io_setting, _array)
 
     return _array
 
@@ -483,50 +562,6 @@ def _extract_member_arrays(
             _arr = _arr[member.index_first_dim]
         member_arrs.append(_arr)
     return member_arrs
-
-
-def _random_sampled_array(
-    io_setting: ArrayDataIOSetting, array: IPhlowerArray
-) -> IPhlowerArray:
-    if io_setting.is_voxel:
-        raise ValueError(
-            "Random sampling is not supported for voxel data. "
-            "Please set `random_sampling.is_active` to False "
-            f"for {io_setting.name}."
-        )
-
-    # NOTE: SO far, we assume that
-    # array's shape is (<n_times>, n_nodes, n_features)
-    n_node_index = 1 if array.is_time_series else 0
-    n_nodes = array.shape[n_node_index]
-    selected_indices = np.random.choice(
-        n_nodes,
-        size=io_setting.random_sampling.n_sampled_points,
-        replace=False,
-    )
-
-    ndarray = array.to_numpy()
-    if n_node_index == 0:
-        return phlower_array(
-            ndarray[selected_indices, ...],
-            is_time_series=array.is_time_series,
-            is_voxel=array.is_voxel,
-            dimensions=array.dimension,
-            dtype=ndarray.dtype,
-        )
-    if n_node_index == 1:
-        return phlower_array(
-            ndarray[:, selected_indices, ...],
-            is_time_series=array.is_time_series,
-            is_voxel=array.is_voxel,
-            dimensions=array.dimension,
-            dtype=ndarray.dtype,
-        )
-
-    raise ValueError(
-        "Unexpected error in random sampling. "
-        f"n_node_index: {n_node_index}, array shape: {array.shape}"
-    )
 
 
 # endregion

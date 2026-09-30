@@ -341,3 +341,35 @@ def test__missing_promotion_keys(file_name: str):
         match="Please check the configuration of input_keys_promoting_to_field",
     ):
         setting.resolve()
+
+
+@pytest.mark.parametrize(
+    "content, expected_msg",
+    [
+        (
+            {"is_active": True},
+            "n_sampled_points must be set",
+        ),
+        (
+            {"is_active": True, "n_sampled_points": 10, "same_as": "feature1"},
+            "same_as and n_sampled_points cannot be set simultaneously.",
+        ),
+    ],
+)
+def test__disallow_same_as_and_n_sampled_points_together(
+    content: dict[str, object], expected_msg: str
+):
+    with pytest.raises(ValueError, match=expected_msg):
+        PhlowerModelSetting.model_validate(
+            {
+                "inputs": [
+                    {
+                        "name": "feature0",
+                        "members": [{"name": "feature0"}],
+                        "random_sampling": content,
+                    }
+                ],
+                "labels": [],
+                "fields": [],
+            }
+        )
