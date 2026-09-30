@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.FixedNorm
+====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: FixedNorm
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~FixedNorm.forward
+   
+   
+      ~FixedNorm.from_setting
+   
+   
+   
+   
+   
+   
+      ~FixedNorm.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FixedNorm.T_destination
+      ~FixedNorm.call_super_init
+      ~FixedNorm.dump_patches
+      ~FixedNorm.training
+   
+   
