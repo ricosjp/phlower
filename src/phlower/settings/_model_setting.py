@@ -47,8 +47,32 @@ class _RandomSamplingSetting(pydantic.BaseModel):
     If None is set, all samples are used.
     """
 
+    same_as: str | None = None
+    """
+    Name of another feature array to share the same random sampling indices.
+    If None is set, the random sampling indices are generated independently.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    @pydantic.model_validator(mode="after")
+    def check_n_sampled_points(self) -> Self:
+        if not self.is_active:
+            return self
+
+        if (self.same_as is None) and (self.n_sampled_points is None):
+            raise ValueError(
+                "n_sampled_points must be set "
+                "when is_active is True and same_as is None."
+            )
+
+        if (self.same_as is not None) and (self.n_sampled_points is not None):
+            raise ValueError(
+                "same_as and n_sampled_points cannot be set simultaneously"
+            )
+
+        return self
 
 
 class ArrayDataIOSetting(pydantic.BaseModel):

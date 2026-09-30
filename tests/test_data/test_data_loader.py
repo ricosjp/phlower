@@ -2,6 +2,7 @@ import pathlib
 import sys
 from collections.abc import Callable
 
+import numpy as np
 import pytest
 import torch
 import yaml
@@ -13,6 +14,7 @@ from phlower.data import (
     LazyPhlowerDataset,
     LumpedTensorData,
     OnMemoryPhlowerDataSet,
+    RandomPointSampler,
 )
 from phlower.settings import (
     ArrayDataIOSetting,
@@ -493,10 +495,14 @@ def test__consider_batch_mode(
 
 @pytest.mark.parametrize("batch_size", [1, 2, 3])
 @pytest.mark.parametrize("yaml_file_name", ["sample_random_sampling.yml"])
+@pytest.mark.parametrize(
+    "dataset_type", [OnMemoryPhlowerDataSet, LazyPhlowerDataset]
+)
 def test__random_sampling(
     batch_size: int,
     yaml_file_name: str,
     create_dataset_with_n_nodes_100: pathlib.Path,
+    dataset_type: type[OnMemoryPhlowerDataSet] | type[LazyPhlowerDataset],
 ):
     output_base_directory = create_dataset_with_n_nodes_100
     directories = [
@@ -517,11 +523,12 @@ def test__random_sampling(
         }
     )
 
-    dataset = OnMemoryPhlowerDataSet.create(
+    dataset = dataset_type.create(
         input_settings=setting.model.inputs,
         label_settings=setting.model.labels,
         field_settings=setting.model.fields,
         directories=directories,
+        random_sampler=RandomPointSampler(),
     )
     builder = DataLoaderBuilder.from_setting(setting.training)
 
@@ -545,6 +552,149 @@ def test__random_sampling(
                 item.y_data[name].n_vertices()
                 == int(tests["labels"][name]) * batch_size
             )
+
+
+@pytest.mark.parametrize(
+    "yaml_file_name", ["sample_random_sampling_with_sameas.yml"]
+)
+@pytest.mark.parametrize(
+    "dataset_type", [OnMemoryPhlowerDataSet, LazyPhlowerDataset]
+)
+def test__random_sampling_with_sameas_option(
+    yaml_file_name: str,
+    create_dataset_with_n_nodes_100: pathlib.Path,
+    dataset_type: type[OnMemoryPhlowerDataSet] | type[LazyPhlowerDataset],
+):
+    output_base_directory = create_dataset_with_n_nodes_100
+    directories = [output_base_directory / v for v in ["data0"]]
+
+    yaml_path = _DATA_DIR / yaml_file_name
+    with yaml_path.open() as f:
+        yaml_content = yaml.safe_load(f)
+    misc = yaml_content.pop("misc")
+    setting = PhlowerSetting.model_validate(yaml_content)
+
+    dataset = dataset_type.create(
+        input_settings=setting.model.inputs,
+        label_settings=setting.model.labels,
+        field_settings=setting.model.fields,
+        directories=directories,
+        random_sampler=RandomPointSampler(),
+    )
+    builder = DataLoaderBuilder.from_setting(setting.training)
+
+    dataloader = builder.create(dataset, drop_last=True)
+
+    answer = misc["tests"]["desired_n_points"]
+
+    f0_items = []
+    # NOTE: Only 1 data directory is used,
+    # 5 iterations are performed
+    for _ in range(5):
+        for item in dataloader:
+            item: LumpedTensorData
+
+            f0 = item.x_data["feature0"]
+            f1 = item.x_data["feature1"]
+            torch.testing.assert_close(f0.to_tensor(), f1.to_tensor())
+
+            assert f0.n_vertices() == int(answer["inputs"]["feature0"])
+
+            y0 = item.y_data["feature3"]
+            assert y0.n_vertices() == int(answer["labels"]["feature3"])
+
+            f0_items.append(f0.to_tensor())
+
+    # Check if random sampling is run at each iteration
+    for i in range(len(f0_items) - 1):
+        assert not torch.equal(f0_items[i], f0_items[i + 1])
+
+
+@pytest.mark.parametrize(
+    "yaml_file_name", ["sample_random_full_sampling_with_sameas.yml"]
+)
+@pytest.mark.parametrize(
+    "dataset_type", [OnMemoryPhlowerDataSet, LazyPhlowerDataset]
+)
+def test__input_and_label_relationship_random_sampling_with_sameas_option(
+    yaml_file_name: str,
+    create_dataset_with_n_nodes_100: pathlib.Path,
+    dataset_type: type[OnMemoryPhlowerDataSet] | type[LazyPhlowerDataset],
+):
+    output_base_directory = create_dataset_with_n_nodes_100
+    directories = [output_base_directory / v for v in ["data0"]]
+
+    yaml_path = _DATA_DIR / yaml_file_name
+    with yaml_path.open() as f:
+        yaml_content = yaml.safe_load(f)
+    setting = PhlowerSetting.model_validate(yaml_content)
+
+    dataset = dataset_type.create(
+        input_settings=setting.model.inputs,
+        label_settings=setting.model.labels,
+        field_settings=setting.model.fields,
+        directories=directories,
+        random_sampler=RandomPointSampler(),
+    )
+    builder = DataLoaderBuilder.from_setting(setting.training)
+
+    dataloader = builder.create(dataset, drop_last=True)
+
+    rmse_list = []
+
+    # NOTE: Only 1 data directory is used,
+    # 5 iterations are performed
+    for _ in range(5):
+        for item in dataloader:
+            item: LumpedTensorData
+
+            f0 = item.x_data["feature0"]
+            f3 = item.y_data["feature3"]
+
+            assert f0.n_vertices() == f3.n_vertices()
+
+            rmse = torch.sqrt(
+                torch.mean((f0.to_tensor() - f3.to_tensor()) ** 2)
+            )
+            rmse_list.append(rmse.numpy().item())
+
+    assert len(rmse_list) > 1
+    for i in range(len(rmse_list) - 1):
+        np.testing.assert_almost_equal(
+            rmse_list[i], rmse_list[i + 1], decimal=6
+        )
+
+
+def test__disable_random_sampling(
+    create_dataset_with_n_nodes_100: pathlib.Path,
+):
+    output_base_directory = create_dataset_with_n_nodes_100
+    directories = [output_base_directory / v for v in ["data0"]]
+
+    yaml_path = _DATA_DIR / "sample_random_sampling.yml"
+    with yaml_path.open() as f:
+        yaml_content = yaml.safe_load(f)
+    setting = PhlowerSetting.model_validate(yaml_content)
+
+    dataset = LazyPhlowerDataset.create(
+        input_settings=setting.model.inputs,
+        label_settings=setting.model.labels,
+        field_settings=setting.model.fields,
+        directories=directories,
+        random_sampler=None,  # Disable random sampling
+    )
+    builder = DataLoaderBuilder.from_setting(setting.training)
+
+    dataloader = builder.create(dataset, drop_last=True)
+
+    # Disable random sampling
+    for item in dataloader:
+        item: LumpedTensorData
+        for name in item.x_data.keys():
+            assert item.x_data[name].n_vertices() == 100
+
+        for name in item.y_data.keys():
+            assert item.y_data[name].n_vertices() == 100
 
 
 # endregion
