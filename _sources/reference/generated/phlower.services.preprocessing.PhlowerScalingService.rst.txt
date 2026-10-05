@@ -1,0 +1,46 @@
+﻿:orphan:
+
+phlower.services.preprocessing.PhlowerScalingService
+====================================================
+
+.. currentmodule:: phlower.services.preprocessing
+
+.. autoclass:: PhlowerScalingService
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+      ~PhlowerScalingService.__init__
+   
+   
+      ~PhlowerScalingService.fit_transform_all
+   
+   
+      ~PhlowerScalingService.from_setting
+   
+   
+      ~PhlowerScalingService.from_yaml
+   
+   
+      ~PhlowerScalingService.inverse_transform
+   
+   
+      ~PhlowerScalingService.lazy_fit_all
+   
+   
+      ~PhlowerScalingService.save
+   
+   
+      ~PhlowerScalingService.transform
+   
+   
+
+
+
+   
+   
+   

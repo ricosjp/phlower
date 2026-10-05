@@ -1,0 +1,148 @@
+﻿:orphan:
+
+phlower.nn.Residual
+===================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Residual
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Residual.forward
+   
+   
+      ~Residual.from_setting
+   
+   
+   
+   
+   
+   
+      ~Residual.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Residual.T_destination
+      ~Residual.all_symbols
+      ~Residual.call_super_init
+      ~Residual.dump_patches
+      ~Residual.training
+   
+   

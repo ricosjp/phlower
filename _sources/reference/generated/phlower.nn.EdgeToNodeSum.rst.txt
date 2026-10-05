@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.EdgeToNodeSum
+========================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: EdgeToNodeSum
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~EdgeToNodeSum.forward
+   
+   
+      ~EdgeToNodeSum.from_setting
+   
+   
+   
+   
+   
+   
+      ~EdgeToNodeSum.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EdgeToNodeSum.T_destination
+      ~EdgeToNodeSum.call_super_init
+      ~EdgeToNodeSum.dump_patches
+      ~EdgeToNodeSum.training
+   
+   
