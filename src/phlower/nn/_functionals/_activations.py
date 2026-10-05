@@ -84,6 +84,7 @@ class ActivationSelector:
         "cos": torch.cos,
         "exp": torch.exp,
         "truncated_atanh": truncated_atanh,
+        "reciprocal": torch.reciprocal,
     }
 
     @staticmethod

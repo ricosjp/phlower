@@ -71,6 +71,7 @@ class ActivationType(StrEnum):
     sin = "sin"
     cos = "cos"
     exp = "exp"
+    reciprocal = "reciprocal"
 
 
 class PoolingType(StrEnum):
