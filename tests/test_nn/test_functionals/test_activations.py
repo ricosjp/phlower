@@ -102,3 +102,10 @@ def test__gelu_with_phlower_tensor():
     y = phlower.nn.functional.gelu(x)
     assert isinstance(y, PhlowerTensor)
     assert y.shape == x.shape
+
+
+def test__reciprocal():
+    x = phlower_tensor(np.random.rand(10) + 1)
+    y = torch.reciprocal(x)
+    assert isinstance(y, PhlowerTensor)
+    np.testing.assert_allclose((x * y).to_numpy(), 1.0)
