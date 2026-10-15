@@ -26,6 +26,26 @@ def test__is_parent():
     assert scaler.is_parent_scaler
 
 
+def test__component_axis_requires_component_wise():
+    with pytest.raises(pydantic.ValidationError, match="component_wise"):
+        _ = ScalerInputParameters(method="standardize", component_axis=-2)
+
+
+def test__component_axis_is_resolved():
+    setting = PhlowerScalingSetting(
+        variable_name_to_scalers={
+            "nodal_u": {
+                "method": "standardize",
+                "component_wise": True,
+                "component_axis": -2,
+            }
+        }
+    )
+    resolved = setting.resolve_scalers()
+
+    assert resolved[0].component_axis == -2
+
+
 @pytest.mark.parametrize(
     "method, variable_name, desired",
     [
@@ -407,3 +427,10 @@ def test__validate_isoam(scalers: dict):
     setting = PhlowerScalingSetting(variable_name_to_scalers=scalers)
     with pytest.raises(ValueError):
         _ = setting.resolve_scalers()[0]
+
+
+def test__component_axis_must_be_negative():
+    with pytest.raises(pydantic.ValidationError, match="less than 0"):
+        _ = ScalerInputParameters(
+            method="standardize", component_wise=True, component_axis=1
+        )
