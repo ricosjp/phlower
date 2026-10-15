@@ -48,6 +48,9 @@ from phlower.settings._module_settings._layer_scaler_setting import (
     LayerScalerSetting,
     LayerScalingMethod,
 )
+from phlower.settings._module_settings._mean_constrained_sigmoid_setting import (  # noqa: E501
+    MeanConstrainedSigmoidSetting,
+)
 from phlower.settings._module_settings._mlp_setting import MLPSetting
 from phlower.settings._module_settings._nan_to_num_setting import (
     NaNToNumSetting,
@@ -81,6 +84,7 @@ _layer_settings: list[type[IPhlowerLayerParameters]] = [
     ActivationSetting,
     ConcatenatorSetting,
     ConjugateGradientSolverSetting,
+    MeanConstrainedSigmoidSetting,
     ContractionSetting,
     DeepSetsSetting,
     DirichletSetting,

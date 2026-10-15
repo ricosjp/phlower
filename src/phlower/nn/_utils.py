@@ -226,7 +226,7 @@ class _DumpEnRouteTensorHook(PhlowerForwardHook):
                         _logger.warning(_msg)
                         np.save(output_path, np.nan)
                     else:
-                        np.save(output_path, _raw_tensor.grad.numpy())
+                        np.save(output_path, _raw_tensor.grad.to("cpu").numpy())
 
             return None
 
