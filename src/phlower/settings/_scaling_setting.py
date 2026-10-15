@@ -28,6 +28,7 @@ class IScalerParameter(metaclass=abc.ABCMeta):
 class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
     method: str
     component_wise: bool = False
+    component_axis: int = pydantic.Field(-1, lt=0)
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
     join_fitting: bool = True
 
@@ -46,6 +47,12 @@ class ScalerInputParameters(IScalerParameter, pydantic.BaseModel):
         if not v:
             raise ValueError("join_fitting must be True except same_as.")
         return v
+
+    @pydantic.model_validator(mode="after")
+    def _check_component_axis(self) -> Self:
+        if self.component_axis != -1 and not self.component_wise:
+            raise ValueError("component_axis requires component_wise: true.")
+        return self
 
     @pydantic.field_validator("method")
     @classmethod
@@ -141,6 +148,7 @@ class ScalerResolvedParameter:
     fitting_members: list[str]
     method: str
     component_wise: bool = False
+    component_axis: int = pydantic.Field(-1, lt=0)
     join_fitting: bool = True
     parameters: dict[str, Any] = pydantic.Field(default_factory=lambda: {})
 

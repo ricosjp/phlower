@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
+import numpy as np
 from phlower_tensor import IPhlowerArray, phlower_array
 
 from phlower.io._files import IPhlowerNumpyFile
@@ -22,6 +25,7 @@ class PhlowerScalerWrapper:
         _cls = cls(
             method=setting.method,
             componentwise=setting.component_wise,
+            component_axis=setting.component_axis,
             parameters=setting.parameters,
         )
         return _cls
@@ -31,6 +35,7 @@ class PhlowerScalerWrapper:
         method: str,
         *,
         componentwise: bool = False,
+        component_axis: int = -1,
         parameters: dict | None = None,
     ):
         if parameters is None:
@@ -38,6 +43,7 @@ class PhlowerScalerWrapper:
         self.method_name = method
         self._scaler = scale_functions.create_scaler(method, **parameters)
         self.componentwise = componentwise
+        self.component_axis = component_axis
 
     @property
     def use_diagonal(self) -> bool:
@@ -47,7 +53,9 @@ class PhlowerScalerWrapper:
         return self._scaler.is_erroneous()
 
     def partial_fit(self, data: ArrayDataType) -> None:
-        wrapped_data = phlower_array(data)
+        wrapped_data = self._move_component_axis(
+            phlower_array(data), to_last=True
+        )
         reshaped_data = wrapped_data.reshape(
             componentwise=self.componentwise,
             skip_nan=True,
@@ -63,24 +71,49 @@ class PhlowerScalerWrapper:
         return
 
     def transform(self, data: ArrayDataType) -> IPhlowerArray:
-        wrapped_data = phlower_array(data)
-        result = wrapped_data.apply(
-            self._scaler.transform,
-            componentwise=self.componentwise,
-            skip_nan=False,
-            use_diagonal=False,
-        )
-        return result
+        return self._apply(self._scaler.transform, data)
 
     def inverse_transform(self, data: ArrayDataType) -> ArrayDataType:
-        wrapped_data = phlower_array(data)
+        return self._apply(self._scaler.inverse_transform, data)
+
+    def _apply(
+        self,
+        function: Callable[[ArrayDataType], ArrayDataType],
+        data: ArrayDataType,
+    ) -> IPhlowerArray:
+        wrapped_data = self._move_component_axis(
+            phlower_array(data), to_last=True
+        )
         result = wrapped_data.apply(
-            self._scaler.inverse_transform,
+            function,
             componentwise=self.componentwise,
             skip_nan=False,
             use_diagonal=False,
         )
-        return result
+        return self._move_component_axis(result, to_last=False)
+
+    def _move_component_axis(
+        self, data: IPhlowerArray, to_last: bool
+    ) -> IPhlowerArray:
+        """Move the component axis to the last axis, where the scaler
+        sees the components, or back to its place."""
+        if self.component_axis == -1:
+            return data
+        if len(data.shape) < 1 - self.component_axis:
+            raise ValueError(
+                f"Data of shape {data.shape} has no axis {self.component_axis} "
+                "of components."
+            )
+
+        source, destination = (self.component_axis, -1)
+        if not to_last:
+            source, destination = destination, source
+        return phlower_array(
+            np.moveaxis(data.to_numpy(), source, destination),
+            is_time_series=data.is_time_series,
+            is_voxel=data.is_voxel,
+            dimensions=data.dimension,
+        )
 
     def lazy_partial_fit(
         self,
@@ -97,6 +130,7 @@ class PhlowerScalerWrapper:
         _setting = ScalerInputParameters(
             method=self.method_name,
             component_wise=self.componentwise,
+            component_axis=self.component_axis,
             parameters=self._scaler.get_dumped_data(),
         )
         return _setting
