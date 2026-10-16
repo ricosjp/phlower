@@ -80,3 +80,19 @@ def test__predict_setting(
             time_series_sliding=time_series_sliding,
         )
     assert setting.time_series_sliding.is_active == desired_active
+
+
+def test__raise_error_when_treat_as_samples():
+    with pytest.raises(ValueError, match="treat_as_samples"):
+        PhlowerPredictorSetting(
+            selection_mode="best",
+            time_series_sliding={"is_active": True, "treat_as_samples": True},
+        )
+
+
+def test__treat_as_samples_is_ignored_when_inactive():
+    setting = PhlowerPredictorSetting(
+        selection_mode="best",
+        time_series_sliding={"is_active": False, "treat_as_samples": True},
+    )
+    assert not setting.time_series_sliding.windows_as_samples()

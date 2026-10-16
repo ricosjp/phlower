@@ -91,3 +91,98 @@ def test__reload_dumped_data_when_validation_same_as_training():
     reloaded = TimeSeriesSlidingSetting.model_validate(dumped)
 
     assert setting == reloaded
+
+
+@pytest.mark.parametrize(
+    "is_active, treat_as_samples, in_sequence, as_samples",
+    [
+        (True, False, True, False),
+        (True, True, False, True),
+        (False, False, False, False),
+        (False, True, False, False),
+    ],
+)
+def test__windows_in_sequence_or_as_samples(
+    is_active: bool, treat_as_samples: bool, in_sequence: bool, as_samples: bool
+):
+    setting = SlidingWindowForStage(
+        is_active=is_active, treat_as_samples=treat_as_samples
+    )
+    assert setting.windows_in_sequence() == in_sequence
+    assert setting.windows_as_samples() == as_samples
+
+
+@pytest.mark.parametrize(
+    "is_active, treat_as_samples, desired_training",
+    [
+        (True, True, True),
+        (True, False, False),
+        (False, True, False),
+    ],
+)
+def test__training_evaluation_window_settings(
+    is_active: bool, treat_as_samples: bool, desired_training: bool
+):
+    setting = TimeSeriesSlidingSetting(
+        training_window_settings=SlidingWindowForStage(
+            is_active=is_active,
+            treat_as_samples=treat_as_samples,
+            inputs=SlidingWindow(offset=0, size=2, stride=1),
+            labels=SlidingWindow(offset=0, size=2, stride=1),
+        ),
+        validation_window_settings=SlidingWindowForStage(
+            inputs=SlidingWindow(offset=0, size=3, stride=1),
+            labels=SlidingWindow(offset=0, size=3, stride=1),
+        ),
+    )
+
+    desired = (
+        setting.training_window_settings
+        if desired_training
+        else setting.validation_window_settings
+    )
+    assert setting.training_evaluation_window_settings() == desired
+
+
+@pytest.mark.parametrize(
+    "parameters, name, index, desired",
+    [
+        ({"offset": 0, "size": 2, "stride": 1}, "u", 3, slice(3, 5)),
+        (
+            {
+                "u": {"offset": 0, "size": 2, "stride": 1},
+                "p": {"offset": 1, "size": 1, "stride": 2},
+            },
+            "p",
+            3,
+            slice(7, 8),
+        ),
+    ],
+)
+def test__get_slice(parameters: dict, name: str, index: int, desired: slice):
+    window_parameters = SlidingWindowParameters.model_validate(parameters)
+    assert window_parameters.get_slice(name, index) == desired
+
+
+@pytest.mark.parametrize(
+    "name_to_time_length, desired",
+    [
+        ({"u": 5, "p": 8}, {4}),
+        ({"u": 5, "p": 6}, {4, 3}),
+        ({"u": 1}, {0}),
+        ({}, set()),
+    ],
+)
+def test__get_unique_window_counts(
+    name_to_time_length: dict[str, int], desired: set
+):
+    window_parameters = SlidingWindowParameters.model_validate(
+        {
+            "u": {"offset": 0, "size": 2, "stride": 1},
+            "p": {"offset": 1, "size": 1, "stride": 2},
+        }
+    )
+    assert (
+        window_parameters.get_unique_window_counts(name_to_time_length)
+        == desired
+    )

@@ -410,8 +410,8 @@ class PhlowerTrainer:
 
         train_last_loss: float | None = None
 
-        _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
-        _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_dataset))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_dataset))
 
         logging_runner.show_overview(device=self._setting.training.device)
 
@@ -574,8 +574,8 @@ class PhlowerTrainer:
 
         train_last_loss: float | None = None
 
-        _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
-        _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_dataset))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_dataset))
 
         self._model = self._state_setup.setup_parallel_model(
             model=self._model, rank=rank, decrypt_key=decrypt_key
@@ -747,8 +747,8 @@ class PhlowerTrainer:
 
         train_last_loss: float | None = None
 
-        _train_batch_pbar = PhlowerProgressBar(total=len(train_directories))
-        _val_batch_pbar = PhlowerProgressBar(total=len(validation_directories))
+        _train_batch_pbar = PhlowerProgressBar(total=len(train_dataset))
+        _val_batch_pbar = PhlowerProgressBar(total=len(validation_dataset))
 
         self._model = self._state_setup.setup_parallel_model(
             model=self._model, rank=rank, decrypt_key=decrypt_key

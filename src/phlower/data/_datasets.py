@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import abc
 import pathlib
+from collections.abc import Callable
 from functools import reduce
 from logging import getLogger
-from typing import Literal, overload
+from typing import Literal, NamedTuple, overload
 
 import numpy as np
 import pyvista as pv
@@ -17,6 +18,10 @@ from phlower.settings import (
     ArrayDataIOSetting,
     FieldIOSettingType,
     MeshDataIOSetting,
+    SlidingWindowForStage,
+)
+from phlower.settings._time_series_sliding_setting import (
+    SlidingWindowParameters,
 )
 from phlower.utils._extended_simulation_field import PyVistaMeshAdapter
 from phlower.utils.typing import ArrayDataType
@@ -62,6 +67,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         random_sampler: RandomPointSampler | None = None,
+        window_setting: SlidingWindowForStage | None = None,
     ) -> OnMemoryPhlowerDataSet:
         field_settings = field_settings or []
 
@@ -84,6 +90,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
             allow_no_y_data=allow_no_y_data,
             decrypt_key=decrypt_key,
             random_sampler=random_sampler,
+            window_setting=window_setting,
         )
 
     def __init__(
@@ -96,6 +103,7 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         random_sampler: RandomPointSampler | None = None,
+        window_setting: SlidingWindowForStage | None = None,
     ):
         self._loaded_data = loaded_data
         self._input_settings = input_settings
@@ -109,9 +117,15 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
         self._random_sampler = random_sampler
+        self._window_setting = window_setting
+        self._sample_indices = _construct_sample_indices(
+            window_setting,
+            n_data=len(loaded_data),
+            create_time_series_dataset=self._create_time_series_dataset,
+        )
 
     def __len__(self):
-        return len(self._loaded_data)
+        return len(self._sample_indices)
 
     def __getitem__(self, idx: int) -> LumpedArrayData:
 
@@ -121,20 +135,31 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         if self._random_sampler is not None:
             self._random_sampler.reset()
 
+        data_index, window_index = self._sample_indices[idx]
+        x_windows, y_windows = {}, {}
+        if window_index is not None:
+            x_windows = _get_time_windows(
+                self._window_setting.inputs, self._input_settings, window_index
+            )
+            y_windows = _get_time_windows(
+                self._window_setting.labels, self._label_settings, window_index
+            )
         x_data = self._setup_data(
-            idx,
+            data_index,
             self._input_settings,
             allow_missing=False,
             random_sampler=self._random_sampler,
+            time_windows=x_windows,
         )
         y_data = self._setup_data(
-            idx,
+            data_index,
             self._label_settings,
             allow_missing=self._allow_no_y_data,
             random_sampler=self._random_sampler,
+            time_windows=y_windows,
         )
         field_data = self._setup_data(
-            idx,
+            data_index,
             self._field_settings,
             allow_missing=False,
             random_sampler=self._random_sampler,
@@ -169,17 +194,28 @@ class OnMemoryPhlowerDataSet(Dataset, IPhlowerDataset):
         variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
         random_sampler: RandomPointSampler,
+        time_windows: dict[str, slice] | None = None,
     ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
+        time_windows = time_windows or {}
         _dict = {
             setting.name: _apply_setting(
                 dict_arrs=self._loaded_data[index],
                 io_setting=setting,
                 allow_missing=allow_missing,
                 random_sampler=random_sampler,
+                time_window=time_windows.get(setting.name),
             )
             for setting in variable_settings
         }
         return {name: v for name, v in _dict.items() if v is not None}
+
+    def _create_time_series_dataset(self) -> OnMemoryPhlowerDataSet:
+        return OnMemoryPhlowerDataSet(
+            loaded_data=self._loaded_data,
+            input_settings=_time_series_settings(self._input_settings),
+            label_settings=_time_series_settings(self._label_settings),
+            allow_no_y_data=self._allow_no_y_data,
+        )
 
     def get_batch_mode_holder(self) -> BatchModeHolder:
         return _get_batch_mode_holder(self)
@@ -204,7 +240,8 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         random_sampler: RandomPointSampler | None = None,
-    ) -> OnMemoryPhlowerDataSet:
+        window_setting: SlidingWindowForStage | None = None,
+    ) -> LazyPhlowerDataset:
         return LazyPhlowerDataset(
             input_settings=input_settings,
             label_settings=label_settings,
@@ -213,6 +250,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             allow_no_y_data=allow_no_y_data,
             decrypt_key=decrypt_key,
             random_sampler=random_sampler,
+            window_setting=window_setting,
         )
 
     def __init__(
@@ -225,6 +263,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         allow_no_y_data: bool = False,
         decrypt_key: bytes | None = None,
         random_sampler: RandomPointSampler | None = None,
+        window_setting: SlidingWindowForStage | None = None,
     ):
         self._input_settings = input_settings
         self._label_settings = (
@@ -238,27 +277,44 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         self._allow_no_y_data = allow_no_y_data
         self._decrypt_key = decrypt_key
         self._random_sampler = random_sampler
+        self._window_setting = window_setting
+        self._sample_indices = _construct_sample_indices(
+            window_setting,
+            n_data=len(self._directories),
+            create_time_series_dataset=self._create_time_series_dataset,
+        )
 
     def __len__(self):
-        return len(self._directories)
+        return len(self._sample_indices)
 
     def __getitem__(self, idx: int) -> LumpedArrayData:
 
         if self._random_sampler is not None:
             self._random_sampler.reset()
 
-        data_directory = self._directories[idx]
+        data_index, window_index = self._sample_indices[idx]
+        data_directory = self._directories[data_index]
+        x_windows, y_windows = {}, {}
+        if window_index is not None:
+            x_windows = _get_time_windows(
+                self._window_setting.inputs, self._input_settings, window_index
+            )
+            y_windows = _get_time_windows(
+                self._window_setting.labels, self._label_settings, window_index
+            )
         x_data = self._setup_data(
             data_directory,
             self._input_settings,
             allow_missing=False,
             random_sampler=self._random_sampler,
+            time_windows=x_windows,
         )
         y_data = self._setup_data(
             data_directory,
             self._label_settings,
             allow_missing=self._allow_no_y_data,
             random_sampler=self._random_sampler,
+            time_windows=y_windows,
         )
         field_data = self._setup_data(
             data_directory,
@@ -306,6 +362,7 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
         variable_settings: list[ArrayDataIOSetting],
         allow_missing: bool,
         random_sampler: RandomPointSampler,
+        time_windows: dict[str, slice] | None = None,
     ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]:
 
         return _load_data(
@@ -314,6 +371,16 @@ class LazyPhlowerDataset(Dataset, IPhlowerDataset):
             allow_missing=allow_missing,
             decrypt_key=self._decrypt_key,
             random_sampler=random_sampler,
+            time_windows=time_windows,
+        )
+
+    def _create_time_series_dataset(self) -> LazyPhlowerDataset:
+        return LazyPhlowerDataset(
+            input_settings=_time_series_settings(self._input_settings),
+            label_settings=_time_series_settings(self._label_settings),
+            directories=[d.path for d in self._directories],
+            allow_no_y_data=self._allow_no_y_data,
+            decrypt_key=self._decrypt_key,
         )
 
     def get_batch_mode_holder(self) -> BatchModeHolder:
@@ -333,6 +400,7 @@ def _load_data(
     decrypt_key: bytes | None = None,
     skip_apply_setting: Literal[False] | None = ...,
     random_sampler: RandomPointSampler | None = None,
+    time_windows: dict[str, slice] | None = None,
 ) -> dict[str, IPhlowerArray | PyVistaMeshAdapter]: ...
 
 
@@ -344,6 +412,7 @@ def _load_data(
     decrypt_key: bytes | None = None,
     skip_apply_setting: Literal[True] = True,
     random_sampler: RandomPointSampler | None = None,
+    time_windows: dict[str, slice] | None = None,
 ) -> dict[str, np.ndarray | pv.DataSet]: ...
 
 
@@ -354,6 +423,7 @@ def _load_data(
     decrypt_key: bytes | None = None,
     skip_apply_setting: bool = False,
     random_sampler: RandomPointSampler | None = None,
+    time_windows: dict[str, slice] | None = None,
 ) -> (
     dict[str, IPhlowerArray | PyVistaMeshAdapter]
     | dict[str, np.ndarray | pv.DataSet]
@@ -385,12 +455,14 @@ def _load_data(
     if skip_apply_setting:
         return _results
 
+    time_windows = time_windows or {}
     _collected = {
         setting.name: _apply_setting(
             _results,
             setting,
             allow_missing=allow_missing,
             random_sampler=random_sampler,
+            time_window=time_windows.get(setting.name),
         )
         for setting in settings
     }
@@ -442,6 +514,7 @@ def _apply_setting(
     io_setting: FieldIOSettingType,
     allow_missing: bool = False,
     random_sampler: RandomPointSampler | None = None,
+    time_window: slice | None = None,
 ) -> IPhlowerArray | PyVistaMeshAdapter | None:
 
     match io_setting:
@@ -451,6 +524,7 @@ def _apply_setting(
                 io_setting,
                 allow_missing=allow_missing,
                 random_sampler=random_sampler,
+                time_window=time_window,
             )
         case MeshDataIOSetting():
             return _apply_setting_to_mesh(
@@ -486,6 +560,7 @@ def _apply_setting_to_array(
     io_setting: FieldIOSettingType,
     allow_missing: bool = False,
     random_sampler: RandomPointSampler | None = None,
+    time_window: slice | None = None,
 ) -> IPhlowerArray | pv.UnstructuredGrid | None:
     member_arrs: list[np.ndarray] = _extract_member_arrays(
         io_setting, dict_arrs
@@ -495,6 +570,12 @@ def _apply_setting_to_array(
         if allow_missing:
             return None
         raise ValueError(f"Arrays for {io_setting.name} are missing.")
+
+    # Slice in time before concatenating and casting,
+    # which copy the arrays.
+    member_arrs = [
+        _slice_time(arr, io_setting, time_window) for arr in member_arrs
+    ]
 
     _array = (
         member_arrs[0]
@@ -508,10 +589,6 @@ def _apply_setting_to_array(
         dimensions=io_setting.physical_dimension,
         dtype=io_setting.dtype,
     )
-    # -- time slice
-    if io_setting.time_slice is not None:
-        _array = _array.slice_along_time_axis(io_setting.time_slice_object)
-
     # -- random sampling
     if io_setting.random_sampling.is_active:
         if random_sampler is None:
@@ -564,8 +641,144 @@ def _extract_member_arrays(
     return member_arrs
 
 
+def _slice_time(
+    arr: np.ndarray,
+    io_setting: ArrayDataIOSetting,
+    time_window: slice | None,
+) -> np.ndarray:
+    if io_setting.time_slice is None and time_window is None:
+        return arr
+
+    if not isinstance(arr, np.ndarray):
+        raise ValueError(
+            f"Time slicing of {io_setting.name} needs a dense array."
+        )
+    if io_setting.time_slice is not None:
+        arr = arr[io_setting.time_slice_object]
+    if time_window is not None:
+        arr = arr[time_window]
+    return arr
+
+
 # endregion
 
+
+# region windows as samples
+
+
+class SampleIndex(NamedTuple):
+    data_index: int
+    window_index: int | None
+
+
+class SampleIndices:
+    """Data index and window index of every sample of a dataset.
+
+    Only the cumulative number of windows of each data is stored,
+    so that no list of every sample is created.
+    """
+
+    def __init__(
+        self, n_data: int, n_windows_per_data: np.ndarray | None = None
+    ):
+        self._cumulative_n_windows = (
+            None
+            if n_windows_per_data is None
+            else np.cumsum(n_windows_per_data)
+        )
+        self._n_samples = (
+            n_data
+            if n_windows_per_data is None
+            else int(np.sum(n_windows_per_data))
+        )
+
+    def __len__(self) -> int:
+        return self._n_samples
+
+    def __getitem__(self, index: int) -> SampleIndex:
+        if not -self._n_samples <= index < self._n_samples:
+            raise IndexError(
+                f"Index {index} is out of range for {self._n_samples} samples."
+            )
+        if index < 0:
+            index += self._n_samples
+        if self._cumulative_n_windows is None:
+            return SampleIndex(data_index=index, window_index=None)
+
+        data_index = int(
+            np.searchsorted(self._cumulative_n_windows, index, side="right")
+        )
+        first_sample_index = (
+            0
+            if data_index == 0
+            else int(self._cumulative_n_windows[data_index - 1])
+        )
+        return SampleIndex(
+            data_index=data_index, window_index=index - first_sample_index
+        )
+
+
+def _construct_sample_indices(
+    window_setting: SlidingWindowForStage | None,
+    n_data: int,
+    create_time_series_dataset: Callable[[], IPhlowerDataset],
+) -> SampleIndices:
+    """Indices of the samples of a dataset.
+
+    When windows are samples, every window of every data is a sample.
+    Otherwise, every data is a sample and the window index is None.
+    """
+    if window_setting is None or not window_setting.windows_as_samples():
+        return SampleIndices(n_data)
+
+    time_series_dataset = create_time_series_dataset()
+    n_windows_per_data = np.empty(n_data, dtype=np.int64)
+    for i in range(n_data):
+        sample = time_series_dataset[i]
+        counts = window_setting.inputs.get_unique_window_counts(
+            {name: array.shape[0] for name, array in sample.x_data.items()}
+        ) | window_setting.labels.get_unique_window_counts(
+            {name: array.shape[0] for name, array in sample.y_data.items()}
+        )
+        if len(counts) == 0:
+            raise ValueError(
+                "treat_as_samples needs time series inputs or labels."
+            )
+        if len(counts) > 1:
+            raise ValueError(
+                "The number of windows must be the same for all time series "
+                f"of data {i}. Found: {sorted(counts)}"
+            )
+        n_windows = counts.pop()
+        if n_windows == 0:
+            raise ValueError(
+                f"No window is found in data {i}. "
+                "The time series is shorter than the window."
+            )
+        n_windows_per_data[i] = n_windows
+    return SampleIndices(n_data, n_windows_per_data)
+
+
+def _time_series_settings(
+    io_settings: list[ArrayDataIOSetting],
+) -> list[ArrayDataIOSetting]:
+    return [setting for setting in io_settings if setting.is_time_series]
+
+
+def _get_time_windows(
+    window_parameters: SlidingWindowParameters,
+    io_settings: list[ArrayDataIOSetting],
+    window_index: int,
+) -> dict[str, slice]:
+    """Slice of the window of each time series variable."""
+    return {
+        setting.name: window_parameters.get_slice(setting.name, window_index)
+        for setting in io_settings
+        if setting.is_time_series
+    }
+
+
+# endregion
 
 # region utility functions for batch mode
 

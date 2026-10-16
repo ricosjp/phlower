@@ -14,6 +14,17 @@ class SlidingWindowParameters(pydantic.RootModel):
 
         return self.root[name]
 
+    def get_slice(self, name: str, index: int) -> slice:
+        return self.get_window(name).get_slice(index)
+
+    def get_unique_window_counts(
+        self, name_to_time_length: dict[str, int]
+    ) -> set[int]:
+        return {
+            self.get_window(name).get_total_items(time_length)
+            for name, time_length in name_to_time_length.items()
+        }
+
 
 class SlidingWindowForStage(pydantic.BaseModel):
     is_active: bool = True
@@ -39,8 +50,19 @@ class SlidingWindowForStage(pydantic.BaseModel):
     Sliding window settings for label data.
     """
 
+    treat_as_samples: bool = False
+    """
+    If True, every sliding window is one sample of the dataset.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    def windows_in_sequence(self) -> bool:
+        return self.is_active and not self.treat_as_samples
+
+    def windows_as_samples(self) -> bool:
+        return self.is_active and self.treat_as_samples
 
 
 class TimeSeriesSlidingSetting(pydantic.BaseModel):
@@ -111,3 +133,10 @@ class TimeSeriesSlidingSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    def training_evaluation_window_settings(self) -> SlidingWindowForStage:
+        # Training data whose windows are samples is already cut
+        # into windows, so it is evaluated as it is.
+        if self.training_window_settings.windows_as_samples():
+            return self.training_window_settings
+        return self.validation_window_settings
