@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Pooling
+==================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Pooling
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Pooling.forward
+   
+   
+      ~Pooling.from_setting
+   
+   
+   
+   
+   
+   
+      ~Pooling.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Pooling.T_destination
+      ~Pooling.call_super_init
+      ~Pooling.dump_patches
+      ~Pooling.training
+   
+   
