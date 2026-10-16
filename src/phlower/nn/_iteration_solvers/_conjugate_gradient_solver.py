@@ -357,19 +357,17 @@ class ConjugateGradientSolver_Core(torch.autograd.Function):
             preconditioner=self._preconditioner,
         )  # because A = A^T
 
-        grad_b_new = dict(zip(keys, grad_b, strict=True))
+        adjoint = dict(zip(keys, grad_b, strict=True))
+        grad_b_core = tuple(adjoint[key] for key in self._update_keys)
+
+        # Implicit differentiation gives no gradient through the initial guess.
+        # Keep the adjoint separate from gradients returned to the inputs.
+        input_grads = {
+            key: torch.zeros_like(tensor)
+            for key, tensor in zip(keys, x_tensors, strict=True)
+        }
         for key, right_key in self._dict_variable_to_right.items():
-            grad_b_new[right_key] = grad_b_new[right_key] + grad_b_new[key]
-
-        grad_b = tuple(grad_b_new.values())
-
-        grad_b_core = tuple(
-            [
-                grad_b_tmp
-                for key, grad_b_tmp in zip(keys, grad_b, strict=True)
-                if key in self._update_keys
-            ]
-        )
+            input_grads[right_key] = input_grads[right_key] + adjoint[key]
 
         new_x_tensors = x_tensors
 
@@ -394,7 +392,7 @@ class ConjugateGradientSolver_Core(torch.autograd.Function):
             if c_requires_grad:
                 torch.autograd.backward(tensors, grad_tensors=grad_tensors)
 
-        return grad_b + tuple(None for _ in range(4))
+        return tuple(input_grads.values()) + tuple(None for _ in range(4))
 
 
 class ConjugateGradientSolver(IFIterationSolver):
