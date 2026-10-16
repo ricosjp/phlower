@@ -26,7 +26,7 @@ class SlidingWindowHelper:
         self._total_size = self._deterimine_total_size()
 
     def _deterimine_total_size(self) -> int:
-        if self._window_setting.is_active is False:
+        if not self._window_setting.windows_in_sequence():
             return 1
 
         input_strided_size = _check_length(
@@ -50,7 +50,7 @@ class SlidingWindowHelper:
         return self._total_size
 
     def __iter__(self) -> Iterator[LumpedTensorData]:
-        if self._window_setting.is_active is False:
+        if not self._window_setting.windows_in_sequence():
             yield self._lumped_data
             return
 
@@ -59,9 +59,7 @@ class SlidingWindowHelper:
                 x_data=phlower_tensor_collection(
                     {
                         k: v.slice_time(
-                            self._window_setting.inputs.get_window(k).get_slice(
-                                i
-                            ),
+                            self._window_setting.inputs.get_slice(k, i),
                             keep_time_series=True,
                         )
                         if v.is_time_series
@@ -72,9 +70,7 @@ class SlidingWindowHelper:
                 y_data=phlower_tensor_collection(
                     {
                         k: v.slice_time(
-                            self._window_setting.labels.get_window(k).get_slice(
-                                i
-                            ),
+                            self._window_setting.labels.get_slice(k, i),
                             keep_time_series=True,
                         )
                         if v.is_time_series
@@ -127,13 +123,13 @@ def _check_length(
     collection: IPhlowerTensorCollections,
     window_parameters: SlidingWindowParameters,
 ) -> int:
-    _lengths: set[int] = set()
-    for k, v in collection.items():
-        if not v.is_time_series:
-            continue
-
-        window = window_parameters.get_window(k)
-        _lengths.add(window.get_total_items(v.time_series_length))
+    _lengths = window_parameters.get_unique_window_counts(
+        {
+            k: v.time_series_length
+            for k, v in collection.items()
+            if v.is_time_series
+        }
+    )
 
     if len(_lengths) > 1:
         raise ValueError(

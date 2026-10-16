@@ -9,6 +9,7 @@ from phlower_tensor.collections import (
 from phlower.data import LumpedTensorData
 from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
 from phlower.settings._time_series_sliding_setting import (
+    SlidingWindowForStage,
     TimeSeriesSlidingSetting,
 )
 
@@ -259,3 +260,18 @@ def test__merge_slided_outputs_for_single_outputs(
         else:
             assert actual.is_time_series is True
             assert actual.time_series_length == desired_time_series[i]
+
+
+def test__sliding_window_helper_when_windows_are_samples():
+    lumped_data = create_lumped_time_series_data_sample(1, 1)
+    setting = SlidingWindowForStage(
+        inputs={"offset": 0, "size": 1, "stride": 1},
+        labels={"offset": 0, "size": 1, "stride": 1},
+        treat_as_samples=True,
+    )
+    helper = SlidingWindowHelper(
+        lumped_data=lumped_data, sliding_setting=setting
+    )
+
+    assert len(helper) == 1
+    assert_equal_tensor_collections(list(helper)[0], lumped_data)

@@ -69,6 +69,7 @@ def prepare_datasets(
 
     """
 
+    sliding = setting.training.time_series_sliding
     if setting.training.lazy_load:
         train_dataset = LazyPhlowerDataset(
             input_settings=setting.model.inputs,
@@ -77,6 +78,7 @@ def prepare_datasets(
             directories=train_directories,
             decrypt_key=decrypt_key,
             random_sampler=RandomPointSampler(),
+            window_setting=sliding.training_window_settings,
         )
         validation_dataset = LazyPhlowerDataset(
             input_settings=setting.model.inputs,
@@ -85,6 +87,7 @@ def prepare_datasets(
             directories=validation_directories,
             decrypt_key=decrypt_key,
             random_sampler=RandomPointSampler(),
+            window_setting=sliding.validation_window_settings,
         )
     else:
         train_dataset = OnMemoryPhlowerDataSet.create(
@@ -94,6 +97,7 @@ def prepare_datasets(
             directories=train_directories,
             decrypt_key=decrypt_key,
             random_sampler=RandomPointSampler(),
+            window_setting=sliding.training_window_settings,
         )
         validation_dataset = OnMemoryPhlowerDataSet.create(
             input_settings=setting.model.inputs,
@@ -102,5 +106,6 @@ def prepare_datasets(
             directories=validation_directories,
             decrypt_key=decrypt_key,
             random_sampler=RandomPointSampler(),
+            window_setting=sliding.validation_window_settings,
         )
     return train_dataset, validation_dataset

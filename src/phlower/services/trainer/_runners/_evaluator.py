@@ -10,6 +10,7 @@ from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.utils import SlidingWindowHelper
 from phlower.settings import (
     PhlowerTrainerSetting,
+    SlidingWindowForStage,
 )
 from phlower.utils import PhlowerProgressBar, StopWatch
 from phlower.utils.calculation_state import CalculationState
@@ -52,6 +53,7 @@ class EvaluationRunner:
     ) -> AfterEvaluationOutput:
         # So far, state is only used for training when debugging
         state = CalculationState(mode="validation")
+        sliding = self._trainer_setting.time_series_sliding
 
         if not self._trainer_setting.evaluation_for_training:
             train_eval_loss = np.average(info.train_losses)
@@ -66,6 +68,7 @@ class EvaluationRunner:
                 loss_function=self._loss_calculator,
                 pbar=train_pbar,
                 pbar_title="batch train loss",
+                window_setting=sliding.training_evaluation_window_settings(),
                 state=state,
             )
 
@@ -80,6 +83,7 @@ class EvaluationRunner:
                 loss_function=self._loss_calculator,
                 pbar=validation_pbar,
                 pbar_title="batch val loss",
+                window_setting=sliding.validation_window_settings,
                 state=state,
             )
 
@@ -105,6 +109,8 @@ class EvaluationRunner:
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch | None,
     ) -> AfterEvaluationOutput:
+        sliding = self._trainer_setting.time_series_sliding
+
         if not self._trainer_setting.evaluation_for_training:
             train_eval_loss = np.average(info.train_losses)
             train_loss_details = _aggregate_loss_details(
@@ -119,6 +125,7 @@ class EvaluationRunner:
                 pbar=train_pbar,
                 pbar_title=f"batch train loss (GPU rank:{rank})",
                 rank=rank,
+                window_setting=sliding.training_evaluation_window_settings(),
             )
 
         if validation_loader is None:
@@ -134,6 +141,7 @@ class EvaluationRunner:
                     pbar=validation_pbar,
                     pbar_title=f"batch val loss (GPU rank:{rank})",
                     rank=rank,
+                    window_setting=sliding.validation_window_settings,
                 )
             )
 
@@ -155,6 +163,7 @@ class EvaluationRunner:
         loss_function: LossCalculator,
         pbar: PhlowerProgressBar,
         pbar_title: str,
+        window_setting: SlidingWindowForStage,
         state: CalculationState | None = None,
     ) -> tuple[float, dict[str, float] | None]:
         results: list[float] = []
@@ -169,10 +178,7 @@ class EvaluationRunner:
                     device=self._trainer_setting.get_device(rank),
                     non_blocking=self._trainer_setting.non_blocking,
                 )
-                helper = SlidingWindowHelper(
-                    batch,
-                    self._trainer_setting.time_series_sliding.validation_window_settings,
-                )
+                helper = SlidingWindowHelper(batch, window_setting)
                 _loss_list, _loss_details = _evaluation_batch_step(
                     helper, model, loss_function, self._handlers, state=state
                 )
@@ -210,6 +216,7 @@ class EvaluationRunner:
         pbar: PhlowerProgressBar,
         pbar_title: str,
         rank: int,
+        window_setting: SlidingWindowForStage,
     ) -> tuple[float, dict[str, float] | None]:
         results: list[float] = []
         results_details: list[dict[str, np.ndarray]] = []
@@ -227,10 +234,7 @@ class EvaluationRunner:
                     device=device,
                     non_blocking=self._trainer_setting.non_blocking,
                 )
-                helper = SlidingWindowHelper(
-                    batch,
-                    self._trainer_setting.time_series_sliding.validation_window_settings,
-                )
+                helper = SlidingWindowHelper(batch, window_setting)
 
                 _loss_list, _loss_details = _evaluation_batch_step(
                     helper,

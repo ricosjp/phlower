@@ -1,3 +1,4 @@
+import math
 import pathlib
 import random
 import shutil
@@ -18,6 +19,7 @@ from phlower.io import (
     select_snapshot_file,
 )
 from phlower.services.trainer import PhlowerTrainer
+from phlower.services.trainer._dataloader_helper import prepare_datasets
 from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
 from phlower.services.trainer._runners._trainer import _BatchStepRunner
 from phlower.settings import PhlowerSetting
@@ -756,6 +758,157 @@ def test__n_call_times_when_time_sliding(
             output_directory=output_directory,
         )
         assert mocked.call_count == n_expected_called
+
+
+def _read_window_samples_setting(lazy_load: bool = False) -> PhlowerSetting:
+    setting = PhlowerSetting.read_yaml(
+        _SETTINGS_DIR / "train_for_window_samples.yml"
+    )
+    return setting.model_copy(
+        update={
+            "training": setting.training.model_copy(
+                update={"lazy_load": lazy_load}
+            )
+        }
+    )
+
+
+@pytest.mark.parametrize("lazy_load", [True, False])
+def test__train_with_windows_as_samples(
+    prepare_time_sliding_sample_preprocessed_files: None,
+    lazy_load: bool,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = _read_window_samples_setting(lazy_load)
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_SLIDING_DIR / "model_window_samples"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+    assert np.isfinite(loss)
+
+
+def test__train_with_windows_as_samples_and_validation_in_sequence(
+    prepare_time_sliding_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = _read_window_samples_setting()
+    sliding = setting.training.time_series_sliding
+    # The training data is evaluated every epoch: its windows must not
+    # be cut again by the validation windows in sequence.
+    sliding = sliding.model_copy(
+        update={
+            "validation_window_settings": (
+                sliding.training_window_settings.model_copy(
+                    update={"treat_as_samples": False}
+                )
+            )
+        }
+    )
+    setting = setting.model_copy(
+        update={
+            "training": setting.training.model_copy(
+                update={"time_series_sliding": sliding}
+            )
+        }
+    )
+    assert setting.training.evaluation_for_training
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_SLIDING_DIR / "model_window_samples"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    loss = trainer.train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+
+    assert np.isfinite(loss)
+
+
+def test__n_call_times_when_windows_are_samples(
+    prepare_time_sliding_sample_preprocessed_files: None,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = _read_window_samples_setting()
+
+    # --- check the setting
+    n_time_series = 10
+    n_offset = 2
+    n_size = 3
+    n_stride = 1
+    # ----
+
+    n_samples = len(preprocessed_directories) * (
+        1 + (n_time_series - n_offset - n_size) // n_stride
+    )
+    n_expected_called = setting.training.n_epoch * math.ceil(
+        n_samples / setting.training.batch_size
+    )
+
+    trainer = PhlowerTrainer.from_setting(setting)
+    output_directory = _OUTPUT_SLIDING_DIR / "model_window_samples"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    with mock.patch.object(_BatchStepRunner, "run") as mocked:
+        mocked.side_effect = lambda x, y, z, w, state: (0.0, {})
+
+        trainer.train(
+            train_directories=preprocessed_directories,
+            validation_directories=preprocessed_directories,
+            output_directory=output_directory,
+        )
+        assert mocked.call_count == n_expected_called
+
+
+@pytest.mark.parametrize("lazy_load", [True, False])
+def test__windows_are_samples_only_for_training(
+    prepare_time_sliding_sample_preprocessed_files: None,
+    lazy_load: bool,
+):
+    phlower_path = PhlowerDirectory(_OUTPUT_SLIDING_DIR)
+    preprocessed_directories = list(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+    setting = _read_window_samples_setting(lazy_load)
+    train_dataset, validation_dataset = prepare_datasets(
+        setting, preprocessed_directories, preprocessed_directories
+    )
+
+    # 10 time steps, offset 2, size 3, stride 1 -> 6 windows
+    assert len(train_dataset) == 6 * len(preprocessed_directories)
+    assert len(validation_dataset) == len(preprocessed_directories)
 
 
 # endregion

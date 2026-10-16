@@ -105,6 +105,17 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
             raise ValueError(f"{name} selection mode does not exist.")
         return name
 
+    @pydantic.field_validator("time_series_sliding")
+    @classmethod
+    def check_not_treat_as_samples(
+        cls, value: SlidingWindowForStage
+    ) -> SlidingWindowForStage:
+        if value.windows_as_samples():
+            raise ValueError(
+                "treat_as_samples is only for training. Set it false."
+            )
+        return value
+
     @pydantic.model_validator(mode="after")
     def check_valid_target_epoch(self) -> Self:
         if self.selection_mode != "specified":
