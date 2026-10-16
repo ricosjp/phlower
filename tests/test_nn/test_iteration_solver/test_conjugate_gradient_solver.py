@@ -508,6 +508,179 @@ def test__check_gradient_value(n_x: int, x_length: float):
     """
 
 
+def _small_spd_matrices(theta: torch.Tensor) -> dict[str, torch.Tensor]:
+    return {
+        "x": torch.tensor([[3.0, 0.4], [0.4, 1.7]], dtype=torch.float64)
+        + theta * torch.tensor([[0.5, 0.1], [0.1, 0.3]], dtype=torch.float64),
+        "y": torch.tensor([[2.4, -0.3], [-0.3, 3.2]], dtype=torch.float64)
+        + theta * torch.tensor([[0.2, 0.05], [0.05, 0.6]], dtype=torch.float64),
+    }
+
+
+def _run_small_spd_cg(
+    input_tensors: dict[str, torch.Tensor],
+    right_keys: dict[str, str],
+    matrices: dict[str, torch.Tensor],
+) -> dict[str, torch.Tensor]:
+    inputs = phlower_tensor_collection(input_tensors)
+    update_keys = list(right_keys)
+
+    def step_forward(
+        h: IPhlowerTensorCollections,
+    ) -> IPhlowerTensorCollections:
+        return phlower_tensor_collection(
+            {key: -(matrices[key] @ h[key].to_tensor()) for key in update_keys}
+        )
+
+    problem = _GroupOptimizeProblem(
+        initials=inputs, step_forward=step_forward, steady_mode=True
+    )
+    solver = ConjugateGradientSolver(
+        max_iterations=10,
+        convergence_threshold=1.0e-12,
+        divergence_threshold=1.0e8,
+        initial_convergence_threshold=1.0e-30,
+        update_keys=update_keys,
+        operator_keys=update_keys,
+        dict_variable_to_right=right_keys,
+        dict_variable_to_dirichlet={},
+        exact_backward_flag=False,
+    )
+    result = solver.run(inputs, problem)
+    assert solver.get_converged()
+    return {key: result[key].to_tensor() for key in update_keys}
+
+
+def test__custom_backward_initial_guess_has_zero_gradient():
+    initial = torch.tensor(
+        [[0.6], [-0.2]], dtype=torch.float64, requires_grad=True
+    )
+    right = torch.tensor(
+        [[1.2], [-0.7]], dtype=torch.float64, requires_grad=True
+    )
+    theta = torch.tensor(0.7, dtype=torch.float64, requires_grad=True)
+    weight = torch.tensor([[0.8], [-1.3]], dtype=torch.float64)
+
+    matrix = _small_spd_matrices(theta)["x"]
+    solution = _run_small_spd_cg(
+        {"x": initial, "b": right}, {"x": "b"}, {"x": matrix}
+    )["x"]
+    expected_solution = torch.linalg.solve(matrix.detach(), right.detach())
+    torch.testing.assert_close(solution, expected_solution, atol=1e-12, rtol=0)
+    (weight * solution).sum().backward()
+
+    theta_reference = theta.detach().clone().requires_grad_()
+    reference = torch.linalg.solve(
+        _small_spd_matrices(theta_reference)["x"], right.detach()
+    )
+    expected_theta = torch.autograd.grad(
+        (weight * reference).sum(), theta_reference
+    )[0]
+    expected_right = torch.linalg.solve(matrix.detach().T, weight)
+    torch.testing.assert_close(
+        initial.grad, torch.zeros_like(initial), atol=1e-12, rtol=0
+    )
+    torch.testing.assert_close(right.grad, expected_right, atol=1e-12, rtol=0)
+    torch.testing.assert_close(theta.grad, expected_theta, atol=1e-12, rtol=0)
+
+
+def test__custom_backward_shared_parameter_does_not_include_initial_guess():
+    theta = torch.tensor(0.7, dtype=torch.float64, requires_grad=True)
+    base_initial = torch.tensor([[0.6], [-0.2]], dtype=torch.float64)
+    base_right = torch.tensor([[1.2], [-0.7]], dtype=torch.float64)
+    direction = torch.tensor([[0.2], [-0.1]], dtype=torch.float64)
+    weight = torch.tensor([[0.8], [-1.3]], dtype=torch.float64)
+
+    initial = base_initial + theta.square() * direction
+    right = base_right + theta * direction
+    solution = _run_small_spd_cg(
+        {"x": initial, "b": right},
+        {"x": "b"},
+        {"x": _small_spd_matrices(theta)["x"]},
+    )["x"]
+    (weight * solution).sum().backward()
+
+    theta_reference = theta.detach().clone().requires_grad_()
+    expected_solution = torch.linalg.solve(
+        _small_spd_matrices(theta_reference)["x"],
+        base_right + theta_reference * direction,
+    )
+    expected_theta = torch.autograd.grad(
+        (weight * expected_solution).sum(), theta_reference
+    )[0]
+    torch.testing.assert_close(
+        solution, expected_solution.detach(), atol=1e-12, rtol=0
+    )
+    torch.testing.assert_close(theta.grad, expected_theta, atol=1e-12, rtol=0)
+
+
+@pytest.mark.parametrize(
+    ("input_order", "right_keys"),
+    [
+        (["b_y", "y", "b_x", "x"], {"x": "b_x", "y": "b_y"}),
+        (["b", "y", "x"], {"x": "b", "y": "b"}),
+        (["y", "b", "x"], {"x": "x", "y": "b"}),
+        (["y", "x"], {"x": "y", "y": "x"}),
+    ],
+    ids=["permuted-keys", "shared-right", "self-alias", "cross-alias"],
+)
+def test__custom_backward_multiple_keys_and_right_aliases(
+    input_order: list[str], right_keys: dict[str, str]
+):
+    values = {
+        "x": [[0.6], [-0.2]],
+        "y": [[-0.4], [0.5]],
+        "b_x": [[1.2], [-0.7]],
+        "b_y": [[-0.3], [0.9]],
+        "b": [[0.8], [-0.5]],
+    }
+    inputs = {
+        key: torch.tensor(values[key], dtype=torch.float64, requires_grad=True)
+        for key in input_order
+    }
+    theta = torch.tensor(0.7, dtype=torch.float64, requires_grad=True)
+    matrices = _small_spd_matrices(theta)
+    weights = {
+        "x": torch.tensor([[0.8], [-1.3]], dtype=torch.float64),
+        "y": torch.tensor([[-0.6], [0.9]], dtype=torch.float64),
+    }
+    solution = _run_small_spd_cg(inputs, right_keys, matrices)
+    loss = sum((weights[key] * solution[key]).sum() for key in right_keys)
+    loss.backward()
+
+    reference_inputs = {
+        key: value.detach().clone().requires_grad_()
+        for key, value in inputs.items()
+    }
+    reference_theta = theta.detach().clone().requires_grad_()
+    reference_matrices = _small_spd_matrices(reference_theta)
+    reference_solution = {
+        key: torch.linalg.solve(
+            reference_matrices[key], reference_inputs[right]
+        )
+        for key, right in right_keys.items()
+    }
+    reference_loss = sum(
+        (weights[key] * reference_solution[key]).sum() for key in right_keys
+    )
+    reference_loss.backward()
+
+    for key in right_keys:
+        torch.testing.assert_close(
+            solution[key], reference_solution[key], atol=1e-12, rtol=0
+        )
+    for key in input_order:
+        expected_grad = reference_inputs[key].grad
+        if expected_grad is None:
+            expected_grad = torch.zeros_like(reference_inputs[key])
+        torch.testing.assert_close(
+            inputs[key].grad, expected_grad, atol=1e-12, rtol=0
+        )
+    torch.testing.assert_close(
+        theta.grad, reference_theta.grad, atol=1e-12, rtol=0
+    )
+
+
 @pytest.mark.gpu_test
 @pytest.mark.parametrize("n_mat", [1000000])
 def test__check_memory_usage(n_mat: int):
