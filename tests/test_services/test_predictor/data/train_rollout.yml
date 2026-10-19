@@ -1,0 +1,76 @@
+
+scaling:
+  variable_name_to_scalers:
+    nodal_u:
+      method: standardize
+      component_wise: true
+    nodal_du:
+      method: std_scale
+      component_wise: true
+    nodal_p: standardize
+    nodal_dp: std_scale
+
+training:
+  n_epoch: 2
+  loss_setting:
+    name2loss:
+      du: "mse"
+      dp: "mse"
+  optimizer_setting:
+    optimizer: Adam
+
+
+model:
+  inputs:
+    - name: u
+      is_time_series: true
+      time_slice: [0, -1]
+      members:
+        - name: nodal_u
+          n_last_dim: 2
+    - name: p
+      is_time_series: true
+      time_slice: [0, -1]
+      members:
+        - name: nodal_p
+          n_last_dim: 1
+
+  labels:
+    - name: du
+      is_time_series: true
+      members:
+        - name: nodal_du
+          n_last_dim: 2
+    - name: dp
+      is_time_series: true
+      members:
+        - name: nodal_dp
+          n_last_dim: 1
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    outputs:
+      - name: du
+        n_last_dim: 2
+      - name: dp
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP_U
+        input_keys:
+          - u
+        output_key: du
+        nn_parameters:
+          nodes: [-1, 8, 2]
+          activations: ["tanh", "identity"]
+
+      - nn_type: MLP
+        name: MLP_P
+        input_keys:
+          - p
+        output_key: dp
+        nn_parameters:
+          nodes: [-1, 8, 1]
+          activations: ["tanh", "identity"]

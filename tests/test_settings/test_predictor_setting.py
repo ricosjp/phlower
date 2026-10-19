@@ -28,6 +28,73 @@ def test__raise_error_not_existing_selection_mode(mode_name: str):
     assert f"{mode_name} selection mode does not exist" in str(ex.value)
 
 
+def test__rollout_setting():
+    setting = PhlowerPredictorSetting(
+        selection_mode="best",
+        rollout={
+            "variables": [
+                {"state_variable": "u", "increment_variable": "du"},
+                {"state_variable": "p", "increment_variable": "dp"},
+            ],
+            "n_steps": 10,
+        },
+    )
+
+    assert [v.state_variable for v in setting.rollout.variables] == ["u", "p"]
+    assert setting.rollout.n_steps == 10
+
+
+@pytest.mark.parametrize(
+    "rollout, message",
+    [
+        ({"variables": []}, "at least 1 item"),
+        (
+            {
+                "variables": [
+                    {"state_variable": "u", "increment_variable": "du"},
+                    {"state_variable": "u", "increment_variable": "dp"},
+                ]
+            },
+            "Duplicate state_variable",
+        ),
+        (
+            {
+                "variables": [
+                    {"state_variable": "u", "increment_variable": "du"},
+                    {"state_variable": "p", "increment_variable": "du"},
+                ]
+            },
+            "Duplicate increment_variable",
+        ),
+        (
+            {
+                "variables": [
+                    {"state_variable": "u", "increment_variable": "du"}
+                ],
+                "n_steps": 0,
+            },
+            "greater than 0",
+        ),
+    ],
+)
+def test__raise_error_for_invalid_rollout_setting(rollout: dict, message: str):
+    with pytest.raises(ValueError, match=message):
+        PhlowerPredictorSetting(selection_mode="best", rollout=rollout)
+
+
+def test__rollout_cannot_be_used_with_sliding_window():
+    with pytest.raises(ValueError, match="rollout cannot"):
+        PhlowerPredictorSetting(
+            selection_mode="latest",
+            rollout={
+                "variables": [
+                    {"state_variable": "u", "increment_variable": "du"}
+                ]
+            },
+            time_series_sliding={"is_active": True},
+        )
+
+
 @pytest.mark.parametrize("target_epoch", [0, 100, 20, 51])
 @given(
     selection_type=st.sampled_from(ModelSelectionType),

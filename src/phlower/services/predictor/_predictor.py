@@ -22,6 +22,7 @@ from phlower.services.predictor._result import (
     PhlowerInverseScaledPredictionResult,
     PhlowerPredictionResult,
 )
+from phlower.services.predictor._rollout import Rollout
 from phlower.services.preprocessing import PhlowerScalingService
 from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
 from phlower.settings import (
@@ -119,6 +120,8 @@ class PhlowerPredictor:
         else:
             self._predict_context_manager = torch.no_grad
 
+        self._rollout = self._create_rollout()
+
     def _determine_label_key_map(self) -> dict[str, str]:
         to_scaler_name: dict[str, str] = {}
 
@@ -133,9 +136,28 @@ class PhlowerPredictor:
 
         return to_scaler_name
 
-    def _determine_prediction_key_map(self) -> dict[str, str]:
+    def _determine_output_key_map(self) -> dict[str, str]:
         label_key_map = self._determine_label_key_map()
         return self._predict_setting.output_to_scaler_name | label_key_map
+
+    def _determine_prediction_key_map(self) -> dict[str, str]:
+        key_map = self._determine_output_key_map()
+        if self._rollout is not None:
+            key_map |= self._rollout.state_key_map()
+        return key_map
+
+    def _create_rollout(self) -> Rollout | None:
+        if self._predict_setting.rollout is None:
+            return None
+        if self._scalers is None:
+            raise ValueError("rollout needs the scaling setting.")
+
+        return Rollout.from_setting(
+            self._predict_setting.rollout,
+            model_setting=self._model_setting,
+            output_key_map=self._determine_output_key_map(),
+            scalers=self._scalers,
+        )
 
     @overload
     def predict(
@@ -356,12 +378,8 @@ class PhlowerPredictor:
                 # HACK: Need to unbatch ?
                 assert batch.n_data == 1
 
-                helper = SlidingWindowHelper(
-                    batch,
-                    self._predict_setting.time_series_sliding,
-                )
                 self._model.eval()
-                h = _batch_forward(self._model, helper, state=state)
+                h = self._forward(batch, state=state)
 
                 if return_only_prediction:
                     yield PhlowerPredictionResult(prediction_data=h)
@@ -390,12 +408,8 @@ class PhlowerPredictor:
                 )
 
                 batch: LumpedTensorData
-                helper = SlidingWindowHelper(
-                    batch,
-                    self._predict_setting.time_series_sliding,
-                )
                 self._model.eval()
-                h = _batch_forward(self._model, helper, state=state)
+                h = self._forward(batch, state=state)
 
                 h = h.to_phlower_arrays_dict()
                 _logger.info("Finished prediction")
@@ -439,6 +453,17 @@ class PhlowerPredictor:
                         input_data=x_data,
                         answer_data=answer_data,
                     )
+
+    def _forward(
+        self, batch: LumpedTensorData, state: CalculationState
+    ) -> IPhlowerTensorCollections:
+        if self._rollout is None:
+            helper = SlidingWindowHelper(
+                batch, self._predict_setting.time_series_sliding
+            )
+            return _batch_forward(self._model, helper, state=state)
+
+        return self._rollout.run(self._model, batch, state=state)
 
     def _determine_debug_output_directory(self) -> pathlib.Path:
         return (

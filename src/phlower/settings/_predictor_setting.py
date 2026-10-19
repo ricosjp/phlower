@@ -12,6 +12,55 @@ from phlower.settings._time_series_sliding_setting import (
 from phlower.utils.enums import ModelSelectionType
 
 
+class RolloutVariableSetting(pydantic.BaseModel):
+    state_variable: str
+    """
+    Name of the input variable which is updated at every step.
+    """
+
+    increment_variable: str
+    """
+    Name of the output variable which is added to the state.
+    """
+
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+
+class RolloutSetting(pydantic.BaseModel):
+    """Predict a time series by applying the model step by step.
+
+    At every step, the increment predicted by the model is added to
+    the state in the unit of the data before scaling, and the new state
+    is the input of the next step. The model sees one time step of the
+    inputs at a time, so it must be a one-step model.
+    """
+
+    variables: list[RolloutVariableSetting] = pydantic.Field(min_length=1)
+    """
+    Pairs of state and increment, all updated at every step.
+    """
+
+    n_steps: int | None = pydantic.Field(None, gt=0)
+    """
+    Number of steps. Defaults to None, which means the time length
+    of the states.
+    """
+
+    model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    @pydantic.model_validator(mode="after")
+    def check_variables(self) -> Self:
+        states = [v.state_variable for v in self.variables]
+        increments = [v.increment_variable for v in self.variables]
+        if len(set(states)) != len(states):
+            raise ValueError(f"Duplicate state_variable found: {states}")
+        if len(set(increments)) != len(increments):
+            raise ValueError(
+                f"Duplicate increment_variable found: {increments}"
+            )
+        return self
+
+
 class PhlowerPredictorSetting(pydantic.BaseModel):
     selection_mode: str
     """
@@ -94,8 +143,20 @@ class PhlowerPredictorSetting(pydantic.BaseModel):
     Defaults to inactive.
     """
 
+    rollout: RolloutSetting | None = None
+    """
+    Setting for rollout, which needs the scaling setting.
+    Defaults to None, no rollout.
+    """
+
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    @pydantic.model_validator(mode="after")
+    def check_rollout_without_sliding(self) -> Self:
+        if self.rollout is not None and self.time_series_sliding.is_active:
+            raise ValueError("rollout cannot be used with time_series_sliding.")
+        return self
 
     @pydantic.field_validator("selection_mode")
     @classmethod
