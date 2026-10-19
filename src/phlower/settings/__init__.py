@@ -14,6 +14,10 @@ from phlower.settings._phlower_setting import (
     PhlowerPredictorSetting,
     PhlowerSetting,
 )
+from phlower.settings._predictor_setting import (
+    RolloutSetting,
+    RolloutVariableSetting,
+)
 from phlower.settings._scaling_setting import (
     PhlowerScalingSetting,
     ScalerInputParameters,

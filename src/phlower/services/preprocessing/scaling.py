@@ -381,6 +381,9 @@ class PhlowerScalingService:
             for name, scaler_name in _filtered
         }
 
+    def is_scaler_exist(self, variable_name: str) -> bool:
+        return self._scaling_setting.is_scaler_exist(variable_name)
+
     def _filter_scalable_variables(
         self, variable_names: list[str], raise_missing_message: bool = False
     ) -> list[tuple[str, str]]:

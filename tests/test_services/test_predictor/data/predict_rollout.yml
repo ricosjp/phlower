@@ -1,0 +1,9 @@
+
+prediction:
+  selection_mode: latest
+  rollout:
+    variables:
+      - state_variable: u
+        increment_variable: du
+      - state_variable: p
+        increment_variable: dp

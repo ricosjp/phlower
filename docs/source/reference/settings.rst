@@ -10,6 +10,8 @@ settings
     PhlowerSetting
     PhlowerTrainerSetting
     PhlowerPredictorSetting
+    RolloutSetting
+    RolloutVariableSetting
     PhlowerModelSetting
     GroupModuleSetting
     ModuleSetting
