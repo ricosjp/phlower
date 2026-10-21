@@ -236,7 +236,10 @@ class _BatchStepRunner:
         )
 
         losses = loss_calculator.calculate(
-            h, tr_batch.y_data, batch_info_dict=tr_batch.y_batch_info
+            h,
+            tr_batch.y_data,
+            batch_info_dict=tr_batch.y_batch_info,
+            field_data=tr_batch.field_data,
         )
         loss = loss_calculator.aggregate(losses)
         (loss / self._update_counter.n_size).backward()

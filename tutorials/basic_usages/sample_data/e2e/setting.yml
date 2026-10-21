@@ -31,8 +31,9 @@ training:
     parameters:
       lr: 0.0001
   loss_setting:
-    name2loss:
-      nodal_last_u: "mse"
+    losses:
+      - variable: nodal_last_u
+        loss_function: "mse"
 
 model:
   inputs:

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import pathlib
 import socket
-from collections.abc import Iterable
 from functools import cached_property
-from typing import Any, Literal, cast
+from typing import Any, Literal, Self, cast
 
 import pydantic
-import pydantic.dataclasses as dc
 import torch
 from pydantic import Field
+from typing_extensions import deprecated
 
 from phlower.settings._continue_settings import ContinueSetting
 from phlower.settings._handler_settings import (
@@ -28,16 +27,70 @@ from phlower.utils.enums import TrainerInitializeType
 _logger = get_logger(__name__)
 
 
-@dc.dataclass(frozen=True, config=pydantic.ConfigDict(extra="forbid"))
-class LossSetting:
-    name2loss: dict[str, str]
+class EachLossSetting(pydantic.BaseModel):
+    variable: str
     """
-    Dictionary which maps name of target variable to name of loss function.
+    Name of the output variable to compute the loss of.
     """
 
-    name2weight: dict[str, float] | None = None
+    loss_function: str
     """
-    Dictionary which maps weight value to name of output variable.
+    Name of the loss function.
+    """
+
+    name: str
+    """
+    Name of the loss. Defaults to the name of the variable.
+    """
+
+    weight: float = 1.0
+    """
+    Weight of the loss when aggregating the losses of all variables.
+    Defaults to 1.0.
+    """
+
+    mask: str | None = None
+    """
+    Name of a variable of shape (n_nodes, 1), set in model.fields.
+    It is 1 on the nodes to compute the loss on and 0 elsewhere,
+    so it must not be scaled (identity).
+    Defaults to None.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _default_name(cls, values: dict) -> dict:
+        if values.get("name") is None:
+            values = {**values, "name": values.get("variable")}
+        return values
+
+
+class LossSetting(pydantic.BaseModel):
+    losses: list[EachLossSetting] = Field(default_factory=list)
+    """
+    Settings of the loss of each output variable.
+    """
+
+    name2loss: dict[str, str] | None = Field(
+        None,
+        deprecated=deprecated("name2loss is deprecated. Use losses instead."),
+        exclude=True,
+    )
+    """
+    Deprecated: Dictionary which maps name of target variable
+    to name of loss function.
+    """
+
+    name2weight: dict[str, float] | None = Field(
+        None,
+        deprecated=deprecated("name2weight is deprecated. Use losses instead."),
+        exclude=True,
+    )
+    """
+    Deprecated: Dictionary which maps weight value to name of output variable.
     Defaults to None. If None, total loss value is calculated
      as summation of all loss values.
     """
@@ -48,13 +101,54 @@ class LossSetting:
     Choose from "sum" or "mean". Defaults to "sum".
     """
 
-    def loss_names(self) -> Iterable[str]:
-        """get registered loss names
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _backward_compatibility(cls, values: dict) -> dict:
+        name2loss = values.get("name2loss")
+        name2weight = values.get("name2weight")
+        if not name2loss:
+            if name2weight:
+                raise ValueError("name2weight needs name2loss.")
+            return values
+
+        if values.get("losses"):
+            raise ValueError("Cannot provide both 'losses' and 'name2loss'.")
+
+        name2weight = name2weight or {}
+        values = {**values}
+        values["losses"] = [
+            {
+                "variable": variable,
+                "loss_function": loss_function,
+                "weight": name2weight.get(variable, 1.0),
+            }
+            for variable, loss_function in name2loss.items()
+        ]
+        values.pop("name2loss")
+        values.pop("name2weight", None)
+        return values
+
+    @pydantic.model_validator(mode="after")
+    def _check_unique(self) -> Self:
+        names = [v.name for v in self.losses]
+        if len(names) != len(set(names)):
+            raise ValueError(f"Duplicate loss names found: {names}")
+
+        variables = self.loss_variable_names()
+        if len(variables) != len(set(variables)):
+            raise ValueError(f"Duplicate loss variables found: {variables}")
+        return self
+
+    def loss_names(self) -> list[str]:
+        """get names of the losses
 
         Returns:
-            Iterable[str]: names of loss functions
+            list[str]: names of the losses
         """
-        return self.name2loss.values()
+        return [v.name for v in self.losses]
 
     def loss_variable_names(self) -> list[str]:
         """get variable names
@@ -62,7 +156,7 @@ class LossSetting:
         Returns:
             list[str]: variable names
         """
-        return list(self.name2loss.keys())
+        return [v.variable for v in self.losses]
 
 
 class SchedulerSetting(pydantic.BaseModel):
@@ -181,9 +275,7 @@ class ParallelSetting(pydantic.BaseModel):
 
 
 class PhlowerTrainerSetting(pydantic.BaseModel):
-    loss_setting: LossSetting = Field(
-        default_factory=lambda: LossSetting(name2loss={})
-    )
+    loss_setting: LossSetting = Field(default_factory=LossSetting)
     """
     setting for loss function
     """

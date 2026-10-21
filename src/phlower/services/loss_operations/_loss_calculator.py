@@ -4,14 +4,18 @@ import abc
 from typing import Literal
 
 import torch
-from phlower_tensor import GraphBatchInfo, PhlowerTensor
+from phlower_tensor import GraphBatchInfo, ISimulationField, PhlowerTensor
 from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
 from phlower_tensor.functionals import unbatch
 
-from phlower.settings._trainer_setting import PhlowerTrainerSetting
+from phlower.settings._trainer_setting import (
+    EachLossSetting,
+    LossSetting,
+    PhlowerTrainerSetting,
+)
 from phlower.utils import get_logger
 from phlower.utils.typing import LossFunctionType
 
@@ -108,6 +112,8 @@ class ILossCalculator(metaclass=abc.ABCMeta):
         self,
         prediction: IPhlowerTensorCollections,
         answer: IPhlowerTensorCollections,
+        batch_info_dict: dict[str, GraphBatchInfo],
+        field_data: ISimulationField | None = None,
     ) -> IPhlowerTensorCollections:
         raise NotImplementedError()
 
@@ -126,32 +132,44 @@ class LossCalculator(ILossCalculator):
         cls,
         setting: PhlowerTrainerSetting,
     ) -> LossCalculator:
-        return LossCalculator(**setting.loss_setting.__dict__)
+        return LossCalculator(
+            losses=setting.loss_setting.losses,
+            aggregation_method=setting.loss_setting.aggregation_method,
+        )
 
     def __init__(
         self,
-        name2loss: dict[str, str],
+        losses: list[EachLossSetting | dict] | None = None,
+        name2loss: dict[str, str] | None = None,
         name2weight: dict[str, float] | None = None,
         aggregation_method: Literal["sum", "mean"] = "sum",
     ):
-        self._name2loss = name2loss
-        self._name2weight = name2weight
+        setting = LossSetting(
+            losses=losses or [],
+            name2loss=name2loss,
+            name2weight=name2weight,
+            aggregation_method=aggregation_method,
+        )
+        self._variable2loss = {v.variable: v for v in setting.losses}
+        self._name2weight = {v.name: v.weight for v in setting.losses}
         self._aggregation_method = aggregation_method
         self._check_loss_function_exists()
 
     def get_loss_function(self, variable_name: str) -> LossFunctionType:
-        if variable_name not in self._name2loss:
+        if variable_name not in self._variable2loss:
             raise ValueError(
                 "Loss function is missing. "
                 f"Loss function for {variable_name} is not defined."
             )
-        loss_name = self._name2loss[variable_name]
+        loss_name = self._variable2loss[variable_name].loss_function
         return PhlowerLossFunctionsFactory.get(loss_name)
 
     def _check_loss_function_exists(self) -> None:
-        for loss_name in self._name2loss.values():
-            if PhlowerLossFunctionsFactory.get(loss_name) is None:
-                raise ValueError(f"Unknown loss function name: {loss_name}")
+        for loss in self._variable2loss.values():
+            if PhlowerLossFunctionsFactory.get(loss.loss_function) is None:
+                raise ValueError(
+                    f"Unknown loss function name: {loss.loss_function}"
+                )
 
     def aggregate(self, losses: IPhlowerTensorCollections) -> PhlowerTensor:
         match self._aggregation_method:
@@ -170,17 +188,18 @@ class LossCalculator(ILossCalculator):
         prediction: IPhlowerTensorCollections,
         answer: IPhlowerTensorCollections,
         batch_info_dict: dict[str, GraphBatchInfo],
+        field_data: ISimulationField | None = None,
     ) -> IPhlowerTensorCollections:
         loss_items: dict[str, torch.Tensor] = {}
 
-        if not set(answer.keys()).issubset(set(self._name2loss.keys())):
+        if not set(answer.keys()).issubset(set(self._variable2loss.keys())):
             raise ValueError(
                 f"Some answer keys {list(answer.keys())} "
                 "are not found in loss function settings "
-                f"{self._name2loss}."
+                f"{list(self._variable2loss.keys())}."
             )
 
-        for key in self._name2loss.keys():
+        for key, loss_setting in self._variable2loss.items():
             if key not in prediction.keys():
                 raise ValueError(
                     f"{key} is not found in predictions. "
@@ -196,8 +215,18 @@ class LossCalculator(ILossCalculator):
                     f" answer keys: {list(answer.keys())}"
                 )
 
-            if key in batch_info_dict:
+            if loss_setting.mask is not None:
+                _masks = _unbatch_mask(loss_setting.mask, field_data)
+                # NOTE: The mask gives the batch info of a prediction
+                # without answer.
+                batch_info = batch_info_dict.get(
+                    key, field_data.get_batch_info(loss_setting.mask)
+                )
+            else:
+                _masks = None
                 batch_info = batch_info_dict.get(key)
+
+            if batch_info is not None:
                 _preds = unbatch(prediction[key], batch_info)
             else:
                 # NOTE: If batch_info_dict is None, we assume that
@@ -212,7 +241,17 @@ class LossCalculator(ILossCalculator):
             else:
                 _answers = [None] * len(_preds)
 
-            loss_items[key] = torch.mean(
+            if _masks is not None:
+                _preds = [
+                    _select_nodes(p, m)
+                    for p, m in zip(_preds, _masks, strict=True)
+                ]
+                _answers = [
+                    a if a is None else _select_nodes(a, m)
+                    for a, m in zip(_answers, _masks, strict=True)
+                ]
+
+            loss_items[loss_setting.name] = torch.mean(
                 torch.stack(
                     [
                         loss_func(p, a)
@@ -222,3 +261,35 @@ class LossCalculator(ILossCalculator):
             )
 
         return phlower_tensor_collection(loss_items)
+
+
+def _unbatch_mask(
+    mask_name: str, field_data: ISimulationField | None
+) -> list[PhlowerTensor]:
+    if field_data is None or mask_name not in field_data:
+        raise ValueError(f"Mask field {mask_name} is not found.")
+
+    mask = field_data[mask_name]
+    values = mask.to_tensor()
+    if ((values != 0) & (values != 1)).any():
+        raise ValueError(
+            f"Mask field {mask_name} must be 0 or 1. It must not be scaled."
+        )
+    return unbatch(mask, field_data.get_batch_info(mask_name))
+
+
+def _select_nodes(tensor: PhlowerTensor, mask: PhlowerTensor) -> PhlowerTensor:
+    if tensor.is_voxel:
+        raise ValueError("Mask of the loss is not supported for voxel data.")
+    if tuple(mask.shape) != (tensor.n_vertices(), 1):
+        raise ValueError(
+            f"Mask of shape {tuple(mask.shape)} does not match "
+            f"the tensor of shape {tuple(tensor.shape)}."
+        )
+
+    indices = torch.nonzero(mask.to_tensor().flatten()).squeeze(-1)
+    if len(indices) == 0:
+        raise ValueError("No node is selected by the mask in a sample.")
+    # NOTE: Indexing keeps the physical dimension of the tensor,
+    # which torch.index_select does not support.
+    return tensor[(slice(None),) * tensor.shape_pattern.nodes_dim + (indices,)]
