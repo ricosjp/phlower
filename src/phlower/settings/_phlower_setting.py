@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import pathlib
-from typing import Literal
+from typing import Literal, Self
 
 import pydantic
 from packaging.version import Version
@@ -69,6 +69,20 @@ class PhlowerSetting(pydantic.BaseModel):
                 f"File version: {version}, program: {__version__}"
             )
         return version
+
+    @pydantic.model_validator(mode="after")
+    def check_loss_masks(self) -> Self:
+        if self.training is None or self.model is None:
+            return self
+
+        field_names = {v.name for v in self.model.fields}
+        for loss in self.training.loss_setting.losses:
+            if loss.mask is not None and loss.mask not in field_names:
+                raise ValueError(
+                    f"Mask {loss.mask} of the loss {loss.name} "
+                    "is not found in model.fields."
+                )
+        return self
 
     @classmethod
     def read_dictionary(

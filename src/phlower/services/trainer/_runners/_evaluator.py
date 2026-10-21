@@ -281,6 +281,7 @@ def _evaluation_batch_step(
             h,
             _batch.y_data,
             batch_info_dict=_batch.y_batch_info,
+            field_data=_batch.field_data,
         )
         detached_val_loss = (
             loss_calculator.aggregate(val_losses)

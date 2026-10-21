@@ -77,3 +77,25 @@ def test__raise_user_firendly_error_messages(
 
     assert expected_location in str(ex.value)
     assert expected_msg in str(ex.value)
+
+
+def test__raise_error_when_loss_mask_is_not_a_field():
+    yaml_file = PhlowerYamlFile("tests/test_settings/data/e2e/setting1.yml")
+    content = yaml_file.load()
+    content["training"] = {
+        "loss_setting": {
+            "losses": [
+                {
+                    "variable": "out_feature0",
+                    "loss_function": "mse",
+                    "mask": "nodal_mask",
+                }
+            ]
+        }
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Mask nodal_mask of the loss out_feature0 is not found",
+    ):
+        _ = PhlowerSetting.read_dictionary(content)

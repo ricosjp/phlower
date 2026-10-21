@@ -381,7 +381,7 @@ class PhlowerTrainer:
         logging_runner = LoggingRunner(
             output_directory,
             log_every_n_epoch=self._setting.training.log_every_n_epoch,
-            loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+            loss_keys=self._setting.training.loss_setting.loss_names(),
         )
 
         # when restart training, skip is allowed
@@ -543,7 +543,7 @@ class PhlowerTrainer:
             logging_runner = LoggingRunner(
                 output_directory,
                 log_every_n_epoch=self._setting.training.log_every_n_epoch,
-                loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+                loss_keys=self._setting.training.loss_setting.loss_names(),
                 parallel_mode=self._setting.training.parallel_setting.parallel_type,
             )
 
@@ -715,7 +715,7 @@ class PhlowerTrainer:
         logging_runner = LoggingRunner(
             output_directory,
             log_every_n_epoch=self._setting.training.log_every_n_epoch,
-            loss_keys=self._setting.training.loss_setting.loss_variable_names(),
+            loss_keys=self._setting.training.loss_setting.loss_names(),
             parallel_mode=self._setting.training.parallel_setting.parallel_type,
         )
 

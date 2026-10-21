@@ -93,6 +93,10 @@ def create_sample_preprocessed_data(output_base_dir: pathlib.Path):
             preprocessed_dir / "nodal_last_p.npy", nodal_last_p.astype(dtype)
         )
 
+        nodal_mask = np.zeros((n_nodes, 1))
+        nodal_mask[: n_nodes // 2] = 1.0
+        np.save(preprocessed_dir / "nodal_mask.npy", nodal_mask.astype(dtype))
+
         rng = np.random.default_rng()
         nodal_nadj = sp.random(n_nodes, n_nodes, density=0.1, random_state=rng)
         sp.save_npz(
@@ -537,6 +541,10 @@ def simple_training_with_yaml(
             _SETTINGS_DIR / "train_for_multiple_targets_not_evaluating.yml",
             _OUTPUT_DIR / "model_for_multiple_targets_not_evaluating",
         ),
+        (
+            _SETTINGS_DIR / "train_for_masked_loss.yml",
+            _OUTPUT_DIR / "model_for_masked_loss",
+        ),
     ],
 )
 def test__dumped_details_training_log(
@@ -561,14 +569,13 @@ def test__dumped_details_training_log(
     train_loss_details = df.filter(regex=r"^details_tr")
 
     # check train loss details
-    loss_weights = setting.training.loss_setting.name2weight
-    if loss_weights is None:
-        weights = dict.fromkeys(train_loss_details.columns, 1.0)
-    else:
-        weights = {
-            name: loss_weights[name.removeprefix("details_tr/")]
-            for name in train_loss_details.columns
-        }
+    loss_weights = {
+        v.name: v.weight for v in setting.training.loss_setting.losses
+    }
+    weights = {
+        name: loss_weights[name.removeprefix("details_tr/")]
+        for name in train_loss_details.columns
+    }
 
     _details = np.stack(
         [train_loss_details.loc[:, k].to_numpy() * weights[k] for k in weights],
@@ -581,13 +588,10 @@ def test__dumped_details_training_log(
     # check validation loss
     validation_loss = df.loc[:, "validation_loss"].to_numpy()
     validation_loss_details = df.filter(regex=r"^details_val")
-    if loss_weights is None:
-        weights = dict.fromkeys(validation_loss_details.columns, 1.0)
-    else:
-        weights = {
-            name: loss_weights[name.removeprefix("details_val/")]
-            for name in validation_loss_details.columns
-        }
+    weights = {
+        name: loss_weights[name.removeprefix("details_val/")]
+        for name in validation_loss_details.columns
+    }
 
     _vl_details = np.stack(
         [

@@ -5,6 +5,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from phlower.settings import PhlowerTrainerSetting
+from phlower.settings._trainer_setting import LossSetting
 from phlower.utils import OptimizerSelector, SchedulerSelector
 
 
@@ -148,7 +149,7 @@ def test__raise_error_when_not_implemented_optimizer(name: str):
 def test__default_trainer_setting():
     setting = PhlowerTrainerSetting()
 
-    assert setting.loss_setting.name2loss == {}
+    assert setting.loss_setting.losses == []
     assert setting.loss_setting.aggregation_method == "sum"
     assert setting.optimizer_setting.optimizer == "Adam"
     assert len(setting.scheduler_settings) == 0
@@ -237,3 +238,79 @@ def test__optimizer_setting_parameter_parsing(
 
     assert actual_lr == expected_lr
     assert actual_weight_decay == expected_weight_decay
+
+
+def test__loss_setting_from_name2loss():
+    setting = LossSetting(
+        name2loss={"u": "mse", "p": "mse"}, name2weight={"p": 0.5}
+    )
+
+    assert "name2loss" not in setting.model_dump()
+    assert setting.loss_names() == ["u", "p"]
+    assert setting.loss_variable_names() == ["u", "p"]
+    assert [v.loss_function for v in setting.losses] == ["mse", "mse"]
+    assert [v.weight for v in setting.losses] == [1.0, 0.5]
+    assert [v.mask for v in setting.losses] == [None, None]
+
+
+def test__loss_setting_from_losses():
+    setting = LossSetting(
+        losses=[
+            {
+                "name": "loss_u",
+                "variable": "u",
+                "loss_function": "mse",
+                "weight": 2.0,
+                "mask": "loss_mask",
+            },
+            {"variable": "p", "loss_function": "mse"},
+        ]
+    )
+
+    assert setting.loss_names() == ["loss_u", "p"]
+    assert setting.loss_variable_names() == ["u", "p"]
+    assert setting.losses[0].mask == "loss_mask"
+    assert setting.losses[1].weight == 1.0
+
+
+def test__dumped_loss_setting_can_be_reloaded():
+    setting = LossSetting(name2loss={"u": "mse"}, name2weight={"u": 0.5})
+    reloaded = LossSetting.model_validate(setting.model_dump())
+
+    assert reloaded == setting
+
+
+@pytest.mark.parametrize(
+    "content, desired_msg",
+    [
+        (
+            {
+                "name2loss": {"u": "mse"},
+                "losses": [{"variable": "u", "loss_function": "mse"}],
+            },
+            "Cannot provide both",
+        ),
+        ({"name2weight": {"u": 0.5}}, "needs name2loss"),
+        (
+            {
+                "losses": [
+                    {"name": "a", "variable": "u", "loss_function": "mse"},
+                    {"name": "b", "variable": "u", "loss_function": "mse"},
+                ]
+            },
+            "Duplicate loss variables",
+        ),
+        (
+            {
+                "losses": [
+                    {"name": "loss", "variable": "u", "loss_function": "mse"},
+                    {"name": "loss", "variable": "p", "loss_function": "mse"},
+                ]
+            },
+            "Duplicate loss names",
+        ),
+    ],
+)
+def test__raise_error_for_invalid_loss_setting(content: dict, desired_msg: str):
+    with pytest.raises(ValueError, match=desired_msg):
+        LossSetting(**content)

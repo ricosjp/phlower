@@ -3,7 +3,12 @@ import pathlib
 import numpy as np
 import pytest
 import torch
-from phlower_tensor import GraphBatchInfo, PhlowerTensor, phlower_tensor
+from phlower_tensor import (
+    GraphBatchInfo,
+    PhlowerTensor,
+    SimulationField,
+    phlower_tensor,
+)
 from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
@@ -14,6 +19,7 @@ from phlower.services.loss_operations import (
     LossCalculator,
     PhlowerLossFunctionsFactory,
 )
+from phlower.services.loss_operations._loss_calculator import _select_nodes
 from phlower.settings import PhlowerSetting
 
 DATA_DIR = pathlib.Path(__file__).parent / "data"
@@ -365,3 +371,183 @@ def test__compute_losses_for_value_which_does_not_have_batch_info():
     assert torch.allclose(
         actual["nodal_residual"].to_tensor(), expected.to_tensor()
     )
+
+
+def test__loss_names_and_weights_from_losses():
+    calculator = LossCalculator(
+        losses=[
+            {
+                "name": "loss_u",
+                "variable": "nodal_u",
+                "loss_function": "mse",
+                "weight": 2.0,
+            },
+            {"variable": "nodal_p", "loss_function": "mse"},
+        ]
+    )
+    predictions, answers, batch_info = create_random_dataset(
+        {"nodal_u": [(10, 3, 1)], "nodal_p": [(10, 1)]}
+    )
+
+    losses = calculator.calculate(predictions, answers, batch_info)
+    assert set(losses.keys()) == {"loss_u", "nodal_p"}
+
+    desired = 2.0 * losses["loss_u"].to_tensor() + losses["nodal_p"].to_tensor()
+    np.testing.assert_almost_equal(
+        calculator.aggregate(losses).numpy().item(), desired.item()
+    )
+
+
+def _masked_loss_calculator() -> LossCalculator:
+    return LossCalculator(
+        losses=[
+            {"variable": "nodal_u", "loss_function": "mse", "mask": "loss_mask"}
+        ]
+    )
+
+
+def _create_mask_field(masks: list[np.ndarray]) -> SimulationField:
+    batched_masks, batch_info = to_batch([phlower_tensor(m) for m in masks])
+    return SimulationField(
+        field_tensors=phlower_tensor_collection({"loss_mask": batched_masks}),
+        batch_info={"loss_mask": batch_info},
+    )
+
+
+@pytest.mark.parametrize(
+    "n_nodes, masked_nodes, is_time_series",
+    [
+        ([10, 13], [[0, 3, 4], [1, 12]], False),
+        ([10], [[2, 5, 6, 7]], True),
+    ],
+)
+def test__calculate_masked_loss(
+    n_nodes: list[int], masked_nodes: list[list[int]], is_time_series: bool
+):
+    shape = (3, 1)
+    preds, answers, masks, desired = [], [], [], []
+    for n, nodes in zip(n_nodes, masked_nodes, strict=True):
+        t_shape = (1, n, *shape) if is_time_series else (n, *shape)
+        p = np.random.randn(*t_shape)
+        a = np.random.randn(*t_shape)
+        m = np.zeros((n, 1))
+        m[nodes] = 1.0
+        preds.append(phlower_tensor(p, is_time_series=is_time_series))
+        answers.append(phlower_tensor(a, is_time_series=is_time_series))
+        masks.append(m)
+        diff = (p - a)[:, nodes] if is_time_series else (p - a)[nodes]
+        desired.append(np.mean(diff**2))
+
+    preds, info = to_batch(preds)
+    answers, _ = to_batch(answers)
+
+    actual = _masked_loss_calculator().calculate(
+        phlower_tensor_collection({"nodal_u": preds}),
+        phlower_tensor_collection({"nodal_u": answers}),
+        {"nodal_u": info},
+        field_data=_create_mask_field(masks),
+    )
+
+    np.testing.assert_almost_equal(
+        actual["nodal_u"].numpy().item(), np.mean(desired)
+    )
+
+
+def test__calculate_masked_residual_loss():
+    n_nodes = [10, 13]
+    masked_nodes = [[0, 3, 4], [1, 12]]
+    preds, masks, desired = [], [], []
+    for n, nodes in zip(n_nodes, masked_nodes, strict=True):
+        p = np.random.randn(n, 3, 1)
+        m = np.zeros((n, 1))
+        m[nodes] = 1.0
+        preds.append(phlower_tensor(p))
+        masks.append(m)
+        desired.append(np.mean(p[nodes] ** 2))
+
+    preds, _ = to_batch(preds)
+    calculator = LossCalculator(
+        losses=[
+            {
+                "variable": "nodal_r",
+                "loss_function": "residual_mse",
+                "mask": "loss_mask",
+            }
+        ]
+    )
+
+    actual = calculator.calculate(
+        phlower_tensor_collection({"nodal_r": preds}),
+        phlower_tensor_collection({}),
+        {},
+        field_data=_create_mask_field(masks),
+    )
+
+    np.testing.assert_almost_equal(
+        actual["nodal_r"].numpy().item(), np.mean(desired)
+    )
+
+
+def test__raise_error_when_mask_field_is_missing():
+    predictions, answers, batch_info = create_random_dataset(
+        {"nodal_u": [(10, 3, 1)]}
+    )
+
+    with pytest.raises(ValueError, match="Mask field loss_mask"):
+        _masked_loss_calculator().calculate(predictions, answers, batch_info)
+
+
+@pytest.mark.parametrize(
+    "mask, desired_msg",
+    [
+        (np.zeros((10, 1)), "No node is selected"),
+        (np.ones((9, 1)), "does not match"),
+        (np.ones((10, 2)), "does not match"),
+        # A 0/1 mask after standard scaling
+        (np.repeat([[-1.0], [1.0]], 5, axis=0), "must be 0 or 1"),
+    ],
+)
+def test__raise_error_for_invalid_mask(mask: np.ndarray, desired_msg: str):
+    predictions, answers, batch_info = create_random_dataset(
+        {"nodal_u": [(10, 3)]}
+    )
+
+    with pytest.raises(ValueError, match=desired_msg):
+        _masked_loss_calculator().calculate(
+            predictions,
+            answers,
+            batch_info,
+            field_data=_create_mask_field([mask]),
+        )
+
+
+def test__raise_error_for_mask_on_voxel_data():
+    voxel = phlower_tensor(np.random.rand(2, 2, 2, 3), is_voxel=True)
+    mask = phlower_tensor(np.ones((8, 1)))
+
+    with pytest.raises(ValueError, match="not supported for voxel"):
+        _select_nodes(voxel, mask)
+
+
+def test__raise_error_for_time_series_mask():
+    tensor = phlower_tensor(np.random.rand(10, 3))
+    mask = phlower_tensor(np.ones((5, 10, 1)), is_time_series=True)
+
+    with pytest.raises(ValueError, match="does not match"):
+        _select_nodes(tensor, mask)
+
+
+@pytest.mark.parametrize("is_time_series", [False, True])
+def test__select_nodes_keeps_dimension(is_time_series: bool):
+    value = np.random.rand(*((1, 5, 3) if is_time_series else (5, 3)))
+    tensor = phlower_tensor(
+        value, dimension={"L": 1, "T": -1}, is_time_series=is_time_series
+    )
+    mask = phlower_tensor(np.array([[1.0], [0.0], [1.0], [0.0], [0.0]]))
+
+    actual = _select_nodes(tensor, mask)
+
+    desired = value[:, [0, 2]] if is_time_series else value[[0, 2]]
+    np.testing.assert_array_almost_equal(actual.numpy(), desired)
+    assert actual.dimension == tensor.dimension
+    assert actual.is_time_series == is_time_series
