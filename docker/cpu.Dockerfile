@@ -19,5 +19,10 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends make git \
  && rm -rf /var/lib/apt/lists/*
 
+# Due to secrity issue, we disable pip
+# https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
+RUN python3 -m pip uninstall -y pip
+
  # Enable to use uv
 COPY --from=uv_builder /root/.local/bin/uv /root/.local/bin/uvx /bin/
+

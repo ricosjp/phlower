@@ -87,7 +87,11 @@ conflicts = [
     { extra = "cu124" },
   ],
 ]
+exclude-newer = "7 days"
 
+
+[tool.uv.audit]
+malware-check = true
 
 [tool.uv.sources]
 phlower-tensor = { path = "libs/phlower_tensor" }

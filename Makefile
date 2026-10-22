@@ -10,6 +10,14 @@ reset:
 	rm -r ./.venv || true
 	rm uv.lock || true
 
+.PHONY: show_system
+show_system:
+	@uv run python3 -c "import platform; print(platform.system(), platform.release(), platform.version())"
+	@uv --version
+	@uv run python3 --version
+	@uv run python3 -m pip --version || true
+
+
 .PHONY: install
 install:
 	uv sync --refresh --reinstall --python ${PYTHON_VERSION} --extra ${CUDA_TAG} --group dev --group docs ${GRAPHLOW_TAG}
