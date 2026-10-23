@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Reducer
+==================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Reducer
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Reducer.forward
+   
+   
+      ~Reducer.from_setting
+   
+   
+   
+   
+   
+   
+      ~Reducer.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Reducer.T_destination
+      ~Reducer.call_super_init
+      ~Reducer.dump_patches
+      ~Reducer.training
+   
+   
