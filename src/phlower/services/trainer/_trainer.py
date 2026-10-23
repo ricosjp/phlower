@@ -40,7 +40,11 @@ from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._loggings import LoggingRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
 from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
-from phlower.services.utils import TrainingTerminatedState
+from phlower.services.utils import (
+    TrainingTerminatedState,
+    compute_noise_fractions,
+    create_noise_aware_scaler,
+)
 from phlower.settings import (
     PhlowerDataSetting,
     PhlowerSetting,
@@ -377,6 +381,8 @@ class PhlowerTrainer:
                 "No training or validation directories are found. "
                 "Please check the setting file."
             )
+        self._overwrite_setting(data_setting.training, decrypt_key)
+        noise_scaler = create_noise_aware_scaler(self._setting)
 
         logging_runner = LoggingRunner(
             output_directory,
@@ -438,6 +444,7 @@ class PhlowerTrainer:
                 train_loader=train_loader,
                 scheduled_optimizer=_scheduled_optimizer,
                 train_pbar=_train_batch_pbar,
+                noise_scaler=noise_scaler,
             )
 
             output = self._evaluation_runner.run(
@@ -449,6 +456,7 @@ class PhlowerTrainer:
                 train_pbar=_train_batch_pbar,
                 validation_pbar=_val_batch_pbar,
                 timer=_timer,
+                noise_scaler=noise_scaler,
             )
 
             logging_runner.run(
@@ -538,6 +546,8 @@ class PhlowerTrainer:
                 "No training or validation directories are found. "
                 "Please check the setting file."
             )
+        self._overwrite_setting(data_setting.training, decrypt_key)
+        noise_scaler = create_noise_aware_scaler(self._setting)
 
         if rank == 0:
             logging_runner = LoggingRunner(
@@ -604,6 +614,7 @@ class PhlowerTrainer:
                 train_loader=train_loader,
                 scheduled_optimizer=_scheduled_optimizer,
                 train_pbar=_train_batch_pbar,
+                noise_scaler=noise_scaler,
             )
 
             output = self._evaluation_runner.parallel_run(
@@ -615,6 +626,7 @@ class PhlowerTrainer:
                 train_pbar=_train_batch_pbar,
                 validation_pbar=_val_batch_pbar,
                 timer=_timer,
+                noise_scaler=noise_scaler,
             )
 
             # Valid output object is returned only from rank 0
@@ -711,6 +723,8 @@ class PhlowerTrainer:
                 "No training or validation directories are found. "
                 "Please check the setting file."
             )
+        self._overwrite_setting(data_setting.training, decrypt_key)
+        noise_scaler = create_noise_aware_scaler(self._setting)
 
         logging_runner = LoggingRunner(
             output_directory,
@@ -779,6 +793,7 @@ class PhlowerTrainer:
                 train_loader=train_loader,
                 scheduled_optimizer=_scheduled_optimizer,
                 train_pbar=_train_batch_pbar,
+                noise_scaler=noise_scaler,
             )
 
             output = self._evaluation_runner.parallel_run(
@@ -790,6 +805,7 @@ class PhlowerTrainer:
                 train_pbar=_train_batch_pbar,
                 validation_pbar=_val_batch_pbar,
                 timer=_timer,
+                noise_scaler=noise_scaler,
             )
 
             logging_runner.run(
@@ -818,6 +834,31 @@ class PhlowerTrainer:
 
         _cleanup_parallel()
         return train_last_loss
+
+    def _overwrite_setting(
+        self,
+        train_directories: list[pathlib.Path],
+        decrypt_key: bytes | None = None,
+    ) -> None:
+        """Overwrite the setting items which are defined only after
+        the training directories are fixed.
+        """
+        noise = self._setting.training.noise
+        if len(noise) == 0:
+            return
+
+        fractions = compute_noise_fractions(
+            noise, train_directories, decrypt_key=decrypt_key
+        )
+        training = self._setting.training.model_copy(
+            update={
+                "noise": [
+                    v.model_copy(update={"fraction": fraction})
+                    for v, fraction in zip(noise, fractions, strict=True)
+                ]
+            }
+        )
+        self._setting = self._setting.model_copy(update={"training": training})
 
     def _save_setting_if_necessary(
         self,

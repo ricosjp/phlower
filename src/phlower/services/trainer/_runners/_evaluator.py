@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
-from phlower.services.utils import SlidingWindowHelper
+from phlower.services.utils import INoiseAwareScaler, SlidingWindowHelper
 from phlower.settings import (
     PhlowerTrainerSetting,
     SlidingWindowForStage,
@@ -50,6 +50,7 @@ class EvaluationRunner:
         train_pbar: PhlowerProgressBar,
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch,
+        noise_scaler: INoiseAwareScaler,
     ) -> AfterEvaluationOutput:
         # So far, state is only used for training when debugging
         state = CalculationState(mode="validation")
@@ -70,6 +71,7 @@ class EvaluationRunner:
                 pbar_title="batch train loss",
                 window_setting=sliding.training_evaluation_window_settings(),
                 state=state,
+                noise_scaler=noise_scaler,
             )
 
         if validation_loader is None:
@@ -85,6 +87,7 @@ class EvaluationRunner:
                 pbar_title="batch val loss",
                 window_setting=sliding.validation_window_settings,
                 state=state,
+                noise_scaler=noise_scaler,
             )
 
         return AfterEvaluationOutput(
@@ -108,6 +111,7 @@ class EvaluationRunner:
         train_pbar: PhlowerProgressBar,
         validation_pbar: PhlowerProgressBar,
         timer: StopWatch | None,
+        noise_scaler: INoiseAwareScaler,
     ) -> AfterEvaluationOutput:
         sliding = self._trainer_setting.time_series_sliding
 
@@ -126,6 +130,7 @@ class EvaluationRunner:
                 pbar_title=f"batch train loss (GPU rank:{rank})",
                 rank=rank,
                 window_setting=sliding.training_evaluation_window_settings(),
+                noise_scaler=noise_scaler,
             )
 
         if validation_loader is None:
@@ -142,6 +147,7 @@ class EvaluationRunner:
                     pbar_title=f"batch val loss (GPU rank:{rank})",
                     rank=rank,
                     window_setting=sliding.validation_window_settings,
+                    noise_scaler=noise_scaler,
                 )
             )
 
@@ -165,6 +171,8 @@ class EvaluationRunner:
         pbar_title: str,
         window_setting: SlidingWindowForStage,
         state: CalculationState | None = None,
+        *,
+        noise_scaler: INoiseAwareScaler,
     ) -> tuple[float, dict[str, float] | None]:
         results: list[float] = []
         results_details: list[dict[str, np.ndarray]] = []
@@ -180,7 +188,12 @@ class EvaluationRunner:
                 )
                 helper = SlidingWindowHelper(batch, window_setting)
                 _loss_list, _loss_details = _evaluation_batch_step(
-                    helper, model, loss_function, self._handlers, state=state
+                    helper,
+                    model,
+                    loss_function,
+                    self._handlers,
+                    state=state,
+                    noise_scaler=noise_scaler,
                 )
                 results.extend(_loss_list)
                 results_details.extend(_loss_details)
@@ -217,6 +230,7 @@ class EvaluationRunner:
         pbar_title: str,
         rank: int,
         window_setting: SlidingWindowForStage,
+        noise_scaler: INoiseAwareScaler,
     ) -> tuple[float, dict[str, float] | None]:
         results: list[float] = []
         results_details: list[dict[str, np.ndarray]] = []
@@ -241,6 +255,7 @@ class EvaluationRunner:
                     model,
                     loss_function,
                     self._handlers,
+                    noise_scaler=noise_scaler,
                 )
 
                 pbar.update(
@@ -269,11 +284,14 @@ def _evaluation_batch_step(
     loss_calculator: LossCalculator,
     handlers: PhlowerHandlersRunner,
     state: CalculationState | None = None,
+    *,
+    noise_scaler: INoiseAwareScaler,
 ) -> tuple[list[float], dict[str, float] | None]:
     results: list[float] = []
     results_details: list[dict[str, np.ndarray]] = []
 
     for _batch in sliding_window_helper:
+        _batch = noise_scaler.apply(_batch, add_noise=False)
         h = model.forward(
             _batch.x_data, field_data=_batch.field_data, state=state
         )

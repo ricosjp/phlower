@@ -56,6 +56,9 @@ class MinMaxScaler(preprocessing.MinMaxScaler, IPhlowerScaler):
     def use_diagonal(self) -> bool:
         return False
 
+    def is_fitted(self) -> bool:
+        return hasattr(self, "scale_")
+
     def is_erroneous(self) -> bool:
         return False
 

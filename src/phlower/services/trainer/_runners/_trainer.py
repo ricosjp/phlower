@@ -12,7 +12,7 @@ from phlower.nn import PhlowerGroupModule
 from phlower.services.loss_operations import LossCalculator
 from phlower.services.trainer._handlers import PhlowerHandlersRunner
 from phlower.services.trainer._optimizer import PhlowerOptimizerWrapper
-from phlower.services.utils import SlidingWindowHelper
+from phlower.services.utils import INoiseAwareScaler, SlidingWindowHelper
 from phlower.settings import (
     PhlowerTrainerSetting,
 )
@@ -54,6 +54,7 @@ class TrainingRunner:
         train_loader: DataLoader,
         scheduled_optimizer: PhlowerOptimizerWrapper,
         train_pbar: PhlowerProgressBar,
+        noise_scaler: INoiseAwareScaler,
     ) -> AfterEpochTrainingInfo:
         train_losses: list[float] = []
         train_loss_details: list[dict[str, float]] = []
@@ -77,6 +78,7 @@ class TrainingRunner:
                 self._handlers,
                 self._batch_step_runner,
                 state=state,
+                noise_scaler=noise_scaler,
             )
             train_pbar.update(
                 trick=self._trainer_setting.batch_size,
@@ -103,6 +105,7 @@ class TrainingRunner:
         train_loader: DataLoader,
         scheduled_optimizer: PhlowerOptimizerWrapper,
         train_pbar: PhlowerProgressBar,
+        noise_scaler: INoiseAwareScaler,
     ) -> AfterEpochTrainingInfo:
         _train_losses: list[float] = []
         _train_loss_details: list[dict[str, float]] = []
@@ -110,6 +113,7 @@ class TrainingRunner:
         # In DDP, each process should set epoch
         #  for sampler at the beginning of each epoch
         train_loader.sampler.set_epoch(epoch)
+        noise_scaler.set_rank(rank)
         device = self._trainer_setting.get_device(rank)
         model.train()
         for idx, tr_batch in enumerate(train_loader):
@@ -133,6 +137,7 @@ class TrainingRunner:
                 self._handlers,
                 self._batch_step_runner,
                 state=state,
+                noise_scaler=noise_scaler,
             )
             train_pbar.update(
                 trick=self._trainer_setting.batch_size,
@@ -165,6 +170,8 @@ def training_batch_step(
     handlers: PhlowerHandlersRunner,
     batch_step_runner: _BatchStepRunner,
     state: CalculationState | None = None,
+    *,
+    noise_scaler: INoiseAwareScaler,
 ) -> tuple[float, dict[str, float]]:
     helper = SlidingWindowHelper(
         tr_batch,
@@ -172,6 +179,7 @@ def training_batch_step(
     )
     assert len(helper) > 0, "No sliding windows are generated."
     for _slided_batch in helper:
+        _slided_batch = noise_scaler.apply(_slided_batch, add_noise=True)
         last_loss, detached_losses = batch_step_runner.run(
             _slided_batch,
             scheduled_optimizer,

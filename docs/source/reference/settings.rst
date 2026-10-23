@@ -9,6 +9,7 @@ settings
 
     PhlowerSetting
     PhlowerTrainerSetting
+    NoiseSetting
     PhlowerPredictorSetting
     RolloutSetting
     RolloutVariableSetting

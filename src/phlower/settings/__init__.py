@@ -27,4 +27,7 @@ from phlower.settings._time_series_sliding_setting import (
     SlidingWindowForStage,
     TimeSeriesSlidingSetting,
 )
-from phlower.settings._trainer_setting import PhlowerTrainerSetting
+from phlower.settings._trainer_setting import (
+    NoiseSetting,
+    PhlowerTrainerSetting,
+)

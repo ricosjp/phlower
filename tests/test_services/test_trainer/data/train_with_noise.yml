@@ -1,0 +1,72 @@
+
+scaling:
+  variable_name_to_scalers:
+    nodal_u:
+      method: standardize
+      component_wise: true
+    nodal_du:
+      method: std_scale
+      component_wise: true
+    nodal_mask: identity
+
+training:
+  batch_size: 2
+  n_epoch: 2
+  loss_setting:
+    name2loss:
+      du: "mse"
+  noise:
+    - input_variable: u
+      increment_variable: du
+      std: 0.1
+      mask: nodal_mask
+  time_series_sliding:
+    validation_same_as_training: true
+    training_window_settings:
+      inputs:
+        offset: 0
+        size: 1
+        stride: 1
+      labels:
+        offset: 0
+        size: 1
+        stride: 1
+
+
+model:
+  inputs:
+    - name: u
+      is_time_series: true
+      time_slice: [0, -1]
+      members:
+        - name: nodal_u
+          n_last_dim: 2
+
+  labels:
+    - name: du
+      is_time_series: true
+      members:
+        - name: nodal_du
+          n_last_dim: 2
+
+  fields:
+    - name: nodal_mask
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    outputs:
+      - name: du
+        n_last_dim: 2
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - u
+        output_key: du
+        nn_parameters:
+          nodes: [-1, 8, 2]
+
+prediction:
+  selection_mode: latest

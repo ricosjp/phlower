@@ -24,7 +24,11 @@ from phlower.services.predictor._result import (
 )
 from phlower.services.predictor._rollout import Rollout
 from phlower.services.preprocessing import PhlowerScalingService
-from phlower.services.utils import SlidingWindowHelper, merge_slided_outputs
+from phlower.services.utils import (
+    SlidingWindowHelper,
+    create_noise_aware_scaler,
+    merge_slided_outputs,
+)
 from phlower.settings import (
     PhlowerModelSetting,
     PhlowerPredictorSetting,
@@ -96,11 +100,12 @@ class PhlowerPredictor:
         else:
             self._scalers = None
 
-        self._model_setting = _load_model_setting(
+        saved_setting = _load_saved_setting(
             model_directory=self._model_directory,
             file_basename=predict_setting.saved_setting_filename,
             decrypt_key=decrypt_key,
         )
+        self._model_setting = saved_setting.model
         # NOTE: it is necessary to resolve information of modules
         #  which need reference module.
         # Resolving cost is O(N). N is the number of modules
@@ -120,6 +125,10 @@ class PhlowerPredictor:
         else:
             self._predict_context_manager = torch.no_grad
 
+        scaling = None if scaling_setting is None else scaling_setting.scaling
+        self._noise_scaler = create_noise_aware_scaler(
+            saved_setting.model_copy(update={"scaling": scaling})
+        )
         self._rollout = self._create_rollout()
 
     def _determine_label_key_map(self) -> dict[str, str]:
@@ -157,6 +166,7 @@ class PhlowerPredictor:
             model_setting=self._model_setting,
             output_key_map=self._determine_output_key_map(),
             scalers=self._scalers,
+            noise_scaler=self._noise_scaler,
         )
 
     @overload
@@ -457,13 +467,15 @@ class PhlowerPredictor:
     def _forward(
         self, batch: LumpedTensorData, state: CalculationState
     ) -> IPhlowerTensorCollections:
-        if self._rollout is None:
-            helper = SlidingWindowHelper(
-                batch, self._predict_setting.time_series_sliding
-            )
-            return _batch_forward(self._model, helper, state=state)
+        if self._rollout is not None:
+            return self._rollout.run(self._model, batch, state=state)
 
-        return self._rollout.run(self._model, batch, state=state)
+        batch = self._noise_scaler.apply(batch, add_noise=False)
+        helper = SlidingWindowHelper(
+            batch, self._predict_setting.time_series_sliding
+        )
+        h = _batch_forward(self._model, helper, state=state)
+        return self._noise_scaler.remove_training_scaling(h)
 
     def _determine_debug_output_directory(self) -> pathlib.Path:
         return (
@@ -488,16 +500,16 @@ class _DictKeyValueFlipper:
         return {self._key_backward_map[k]: v for k, v in data.items()}
 
 
-def _load_model_setting(
+def _load_saved_setting(
     model_directory: PhlowerDirectory,
     file_basename: str,
     decrypt_key: bytes | None = None,
-) -> PhlowerModelSetting:
+) -> PhlowerSetting:
     yaml_file = model_directory.find_yaml_file(file_base_name=file_basename)
     setting = PhlowerSetting.read_yaml(yaml_file, decrypt_key=decrypt_key)
     if setting.model is None:
         raise ValueError(f"model setting is not found in {yaml_file.file_path}")
-    return setting.model
+    return setting
 
 
 def _load_model(
