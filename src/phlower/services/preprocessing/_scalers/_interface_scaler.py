@@ -21,6 +21,9 @@ class IPhlowerScaler(metaclass=abc.ABCMeta):
     def is_erroneous(self) -> bool: ...
 
     @abc.abstractmethod
+    def is_fitted(self) -> bool: ...
+
+    @abc.abstractmethod
     def transform(self, data: ArrayDataType) -> np.ndarray: ...
 
     @abc.abstractmethod

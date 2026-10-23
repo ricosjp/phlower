@@ -1,0 +1,58 @@
+
+# Fitted scalers, given as their parameters
+scaling:
+  variable_name_to_scalers:
+    nodal_u:
+      method: standardize
+      component_wise: true
+      parameters:
+        mean_: [1.0]
+        scale_: [2.0]
+        var_: [4.0]
+    nodal_du:
+      method: std_scale
+      component_wise: true
+      parameters:
+        scale_: [3.0]
+        var_: [9.0]
+
+training:
+  noise:
+    - input_variable: u
+      increment_variable: du
+      std: 0.5
+      mask: nodal_mask
+      fraction: 0.5
+
+model:
+  inputs:
+    - name: u
+      members:
+        - name: nodal_u
+
+  labels:
+    - name: du
+      members:
+        - name: nodal_du
+
+  fields:
+    - name: nodal_mask
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: u
+        n_last_dim: 1
+    outputs:
+      - name: du
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - u
+        output_key: du
+        nn_parameters:
+          nodes: [-1, 1]

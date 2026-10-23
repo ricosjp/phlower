@@ -13,6 +13,7 @@ from phlower_tensor.collections import (
 from phlower.data import LumpedTensorData
 from phlower.nn import PhlowerGroupModule
 from phlower.services.preprocessing import PhlowerScalingService
+from phlower.services.utils import INoiseAwareScaler
 from phlower.settings import PhlowerModelSetting, RolloutSetting
 from phlower.utils.calculation_state import CalculationState
 
@@ -27,6 +28,7 @@ class Rollout:
         model_setting: PhlowerModelSetting,
         output_key_map: dict[str, str],
         scalers: PhlowerScalingService,
+        noise_scaler: INoiseAwareScaler,
     ) -> Rollout:
         variables = _resolve_rollout_variables(
             setting,
@@ -34,17 +36,24 @@ class Rollout:
             output_key_map=output_key_map,
             scalers=scalers,
         )
-        return cls(variables, n_steps=setting.n_steps, scalers=scalers)
+        return cls(
+            variables,
+            n_steps=setting.n_steps,
+            scalers=scalers,
+            noise_scaler=noise_scaler,
+        )
 
     def __init__(
         self,
         variables: list[_RolloutVariable],
         n_steps: int | None,
         scalers: PhlowerScalingService,
+        noise_scaler: INoiseAwareScaler,
     ):
         self._variables = variables
         self._n_steps = n_steps
         self._scalers = scalers
+        self._noise_scaler = noise_scaler
 
     def state_key_map(self) -> dict[str, str]:
         return {v.state: v.state_scaler for v in self._variables}
@@ -86,7 +95,9 @@ class Rollout:
         for step in range(n_steps):
             inputs = other_inputs.snapshot(step)
             inputs.update(currents)
+            inputs = self._noise_scaler.apply(inputs)
             h = model.forward(inputs, field_data=batch.field_data, state=state)
+            h = self._noise_scaler.remove_training_scaling(h)
 
             increments = _to_numpy_dict(
                 self._scalers.inverse_transform(

@@ -18,6 +18,8 @@ from phlower.io import (
     PhlowerYamlFile,
     select_snapshot_file,
 )
+from phlower.services.predictor import PhlowerPredictor
+from phlower.services.preprocessing import PhlowerScalingService
 from phlower.services.trainer import PhlowerTrainer
 from phlower.services.trainer._dataloader_helper import prepare_datasets
 from phlower.services.trainer._runners import EvaluationRunner, TrainingRunner
@@ -38,6 +40,7 @@ _OUTPUT_DIR = pathlib.Path(__file__).parent / "_out"
 _OUTPUT_PRETRAINED_DIR = pathlib.Path(__file__).parent / "_out_pretrained"
 _OUTPUT_NAN_DIR = pathlib.Path(__file__).parent / "_out_nan"
 _OUTPUT_SLIDING_DIR = pathlib.Path(__file__).parent / "_out_time_series"
+_OUTPUT_NOISE_DIR = pathlib.Path(__file__).parent / "_out_noise"
 _SETTINGS_DIR = pathlib.Path(__file__).parent / "data"
 
 
@@ -913,6 +916,153 @@ def test__windows_are_samples_only_for_training(
     # 10 time steps, offset 2, size 3, stride 1 -> 6 windows
     assert len(train_dataset) == 6 * len(preprocessed_directories)
     assert len(validation_dataset) == len(preprocessed_directories)
+
+
+# endregion
+
+
+# region: test for training noise
+
+_NOISE_N_TIMES = 5
+
+
+@pytest.fixture(scope="module")
+def prepare_noise_sample_preprocessed_files() -> None:
+    _initialize_tmp_output_directory(_OUTPUT_NOISE_DIR)
+
+    interim_directories = []
+    for i, n_nodes in enumerate([10, 20]):
+        interim_dir = _OUTPUT_NOISE_DIR / f"interim/case_{i}"
+        interim_dir.mkdir(parents=True)
+        u = np.random.randn(_NOISE_N_TIMES, n_nodes, 2).astype(np.float32)
+        np.save(interim_dir / "nodal_u.npy", u)
+        np.save(interim_dir / "nodal_du.npy", u[1:] - u[:-1])
+        mask = np.zeros((n_nodes, 1), dtype=np.float32)
+        mask[: n_nodes // 2] = 1.0
+        np.save(interim_dir / "nodal_mask.npy", mask)
+        interim_directories.append(interim_dir)
+
+    scaling = PhlowerScalingService.from_yaml(
+        _SETTINGS_DIR / "train_with_noise.yml"
+    )
+    scaling.fit_transform_all(
+        interim_data_directories=interim_directories,
+        output_base_directory=_OUTPUT_NOISE_DIR / "preprocessed",
+        max_process=1,
+    )
+
+
+def _noise_preprocessed_directories() -> list[pathlib.Path]:
+    phlower_path = PhlowerDirectory(_OUTPUT_NOISE_DIR / "preprocessed")
+    return sorted(
+        phlower_path.find_directory(
+            required_filename="preprocessed", recursive=True
+        )
+    )
+
+
+def _read_fitted_noise_setting() -> PhlowerSetting:
+    """Setting with the scalers fitted by the fixture."""
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_with_noise.yml")
+    fitted = PhlowerSetting.read_yaml(
+        _OUTPUT_NOISE_DIR / "preprocessed/preprocess.yml"
+    )
+    return setting.model_copy(update={"scaling": fitted.scaling})
+
+
+@pytest.fixture(scope="module")
+def noise_training(
+    prepare_noise_sample_preprocessed_files: None,
+) -> tuple[float, pathlib.Path]:
+    preprocessed_directories = _noise_preprocessed_directories()
+    output_directory = _OUTPUT_NOISE_DIR / "model"
+
+    loss = PhlowerTrainer.from_setting(_read_fitted_noise_setting()).train(
+        train_directories=preprocessed_directories,
+        validation_directories=preprocessed_directories,
+        output_directory=output_directory,
+    )
+    return loss, output_directory
+
+
+def test__train_and_predict_with_noise(
+    noise_training: tuple[float, pathlib.Path],
+):
+    loss, output_directory = noise_training
+    assert np.isfinite(loss)
+
+    # The fraction of the noisy entries is saved with the model
+    saved = PhlowerSetting.read_yaml(
+        PhlowerYamlFile(output_directory / "model.yml")
+    )
+    assert saved.training.noise[0].fraction == 0.5
+
+    setting = _read_fitted_noise_setting()
+    predictor = PhlowerPredictor(
+        model_directory=output_directory,
+        predict_setting=setting.prediction,
+        scaling_setting=setting,
+    )
+    result = next(
+        predictor.predict(
+            _noise_preprocessed_directories()[:1],
+            perform_inverse_scaling=True,
+        )
+    )
+    assert result.prediction_data["nodal_du"].shape == (
+        _NOISE_N_TIMES - 1,
+        10,
+        2,
+    )
+
+
+def test__overwrite_fraction_set_in_setting(
+    prepare_noise_sample_preprocessed_files: None,
+):
+    setting = _read_fitted_noise_setting()
+    noise = [
+        v.model_copy(update={"fraction": 0.25}) for v in setting.training.noise
+    ]
+    setting = setting.model_copy(
+        update={
+            "training": setting.training.model_copy(update={"noise": noise})
+        }
+    )
+    trainer = PhlowerTrainer.from_setting(setting)
+
+    trainer._overwrite_setting(_noise_preprocessed_directories())
+
+    assert trainer._setting.training.noise[0].fraction == 0.5
+
+
+def test__raise_error_when_scaling_is_not_fitted(
+    prepare_noise_sample_preprocessed_files: None,
+):
+    preprocessed_directories = _noise_preprocessed_directories()
+    setting = PhlowerSetting.read_yaml(_SETTINGS_DIR / "train_with_noise.yml")
+
+    output_directory = _OUTPUT_NOISE_DIR / "model_not_fitted"
+    if output_directory.exists():
+        shutil.rmtree(output_directory)
+
+    with pytest.raises(ValueError, match="is not fitted"):
+        PhlowerTrainer.from_setting(setting).train(
+            train_directories=preprocessed_directories,
+            validation_directories=preprocessed_directories,
+            output_directory=output_directory,
+        )
+
+
+def test__predictor_needs_scaling_for_model_trained_with_noise(
+    noise_training: tuple[float, pathlib.Path],
+):
+    _, output_directory = noise_training
+
+    with pytest.raises(ValueError, match="Noise needs the scaling setting"):
+        PhlowerPredictor(
+            model_directory=output_directory,
+            predict_setting=_read_fitted_noise_setting().prediction,
+        )
 
 
 # endregion

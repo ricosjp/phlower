@@ -52,6 +52,9 @@ class PhlowerScalerWrapper:
     def is_erroneous(self) -> bool:
         return self._scaler.is_erroneous()
 
+    def is_fitted(self) -> bool:
+        return self._scaler.is_fitted()
+
     def partial_fit(self, data: ArrayDataType) -> None:
         wrapped_data = self._move_component_axis(
             phlower_array(data), to_last=True

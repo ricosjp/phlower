@@ -314,3 +314,62 @@ def test__dumped_loss_setting_can_be_reloaded():
 def test__raise_error_for_invalid_loss_setting(content: dict, desired_msg: str):
     with pytest.raises(ValueError, match=desired_msg):
         LossSetting(**content)
+
+
+def test__noise_setting():
+    setting = PhlowerTrainerSetting(
+        noise=[
+            {
+                "input_variable": "u",
+                "increment_variable": "du",
+                "std": 0.02,
+                "mask": "nodal_normal",
+            }
+        ]
+    )
+
+    noise = setting.noise[0]
+    assert noise.std == 0.02
+    assert noise.mask == "nodal_normal"
+    assert noise.fraction is None
+
+
+@pytest.mark.parametrize(
+    "noise, message",
+    [
+        (
+            [{"input_variable": "u", "increment_variable": "du", "std": 0.0}],
+            "greater than 0",
+        ),
+        (
+            [
+                {
+                    "input_variable": "u",
+                    "increment_variable": "du",
+                    "std": 1,
+                    "fraction": 1.5,
+                }
+            ],
+            "less than or equal to 1",
+        ),
+        (
+            [
+                {"input_variable": "u", "increment_variable": "du", "std": 1},
+                {"input_variable": "u", "increment_variable": "dv", "std": 1},
+            ],
+            "Duplicate input_variable",
+        ),
+        (
+            [
+                {"input_variable": "u", "increment_variable": "du", "std": 1},
+                {"input_variable": "v", "increment_variable": "du", "std": 1},
+            ],
+            "Duplicate increment_variable",
+        ),
+    ],
+)
+def test__raise_error_for_invalid_noise_setting(
+    noise: list[dict], message: str
+):
+    with pytest.raises(ValueError, match=message):
+        PhlowerTrainerSetting(noise=noise)

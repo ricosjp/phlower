@@ -159,6 +159,60 @@ class LossSetting(pydantic.BaseModel):
         return [v.variable for v in self.losses]
 
 
+class NoiseSetting(pydantic.BaseModel):
+    """Gaussian noise added to an input during training.
+
+    The same noise is subtracted from the label which is the increment of
+    the input, so that the model learns to correct the noise.
+
+    The data is rescaled with the std `s'` of the noisy data.
+    With `s` the std of the clean data fitted at preprocessing
+    (of the input or of the increment respectively),
+    `std` the std of the noise, `fraction` the fraction of the nodes
+    receiving noise (fraction of ones in `mask`):
+    s' = sqrt(s^2 + std^2 * fraction) and r = s / s', the model sees
+    r * (scaled input + noise / s) and the label
+    r * (scaled increment - noise / s). At prediction, the input is
+    r * scaled input and the output is divided by r before the inverse
+    scaling.
+
+    With linear scalers other than standardize and std_scale, s is the
+    scale of the scaler and r = 1. Nonlinear scalers are not supported.
+    """
+
+    input_variable: str
+    """
+    Name of the input of the model to add the noise to.
+    """
+
+    increment_variable: str
+    """
+    Name of the label of the model which is the increment of input_variable.
+    """
+
+    std: float = Field(gt=0)
+    """
+    Standard deviation of the noise, in the unit of the unscaled data.
+    """
+
+    mask: str | None = None
+    """
+    Name of a variable of shape (n_nodes, 1), set in model.fields, which is
+    1 on the nodes receiving noise and 0 elsewhere.
+    """
+
+    fraction: float | None = Field(None, ge=0.0, le=1.0)
+    """
+    Fraction of the nodes receiving noise (mask 1) in the training data.
+    Always computed and overwritten by the trainer, so a value set by
+    the user is ignored. It is written in the saved setting, so that
+    the predictor can recompute r.
+    """
+
+    # special keyward to forbid extra fields in pydantic
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
+
+
 class SchedulerSetting(pydantic.BaseModel):
     scheduler: str
     """
@@ -361,6 +415,12 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
     Defaults to inactive.
     """
 
+    noise: list[NoiseSetting] = Field(default_factory=list)
+    """
+    Noise added to the inputs during training.
+    Defaults to no noise.
+    """
+
     parallel_setting: ParallelSetting = Field(
         default_factory=lambda: ParallelSetting(is_active=False)
     )
@@ -408,6 +468,14 @@ class PhlowerTrainerSetting(pydantic.BaseModel):
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(frozen=True, extra="forbid")
+
+    @pydantic.model_validator(mode="after")
+    def _check_unique_noise(self) -> Self:
+        for key in ("input_variable", "increment_variable"):
+            names = [getattr(v, key) for v in self.noise]
+            if len(names) != len(set(names)):
+                raise ValueError(f"Duplicate {key} found in noise: {names}")
+        return self
 
     def get_early_stopping_patience(self) -> int | None:
         for setting in self.handler_settings:

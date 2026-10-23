@@ -1,0 +1,81 @@
+
+# Noise on u and on v, whose scalers are the same as u and du's.
+# The scalers and the fraction are the same as in training_noise.yml.
+scaling:
+  variable_name_to_scalers:
+    nodal_u:
+      method: standardize
+      component_wise: true
+      parameters:
+        mean_: [1.0]
+        scale_: [2.0]
+        var_: [4.0]
+    nodal_du:
+      method: std_scale
+      component_wise: true
+      parameters:
+        scale_: [3.0]
+        var_: [9.0]
+    nodal_v:
+      same_as: nodal_u
+    nodal_dv:
+      same_as: nodal_du
+
+training:
+  noise:
+    - input_variable: u
+      increment_variable: du
+      std: 0.5
+      fraction: 0.5
+    - input_variable: v
+      increment_variable: dv
+      std: 2.0
+      fraction: 0.5
+
+model:
+  inputs:
+    - name: u
+      members:
+        - name: nodal_u
+    - name: v
+      members:
+        - name: nodal_v
+
+  labels:
+    - name: du
+      members:
+        - name: nodal_du
+    - name: dv
+      members:
+        - name: nodal_dv
+
+  network:
+    nn_type: GROUP
+    name: DEMO
+    inputs:
+      - name: u
+        n_last_dim: 1
+      - name: v
+        n_last_dim: 1
+    outputs:
+      - name: du
+        n_last_dim: 1
+      - name: dv
+        n_last_dim: 1
+
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - u
+        output_key: du
+        nn_parameters:
+          nodes: [-1, 1]
+
+      - nn_type: MLP
+        name: MLP1
+        input_keys:
+          - v
+        output_key: dv
+        nn_parameters:
+          nodes: [-1, 1]

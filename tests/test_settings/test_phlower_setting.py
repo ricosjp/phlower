@@ -99,3 +99,24 @@ def test__raise_error_when_loss_mask_is_not_a_field():
         match="Mask nodal_mask of the loss out_feature0 is not found",
     ):
         _ = PhlowerSetting.read_dictionary(content)
+
+
+def test__raise_error_when_noise_mask_is_not_a_field():
+    yaml_file = PhlowerYamlFile("tests/test_settings/data/e2e/setting1.yml")
+    content = yaml_file.load()
+    content["training"] = {
+        "noise": [
+            {
+                "input_variable": "feature0",
+                "increment_variable": "out_feature0",
+                "std": 0.1,
+                "mask": "nodal_mask",
+            }
+        ]
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Mask nodal_mask of the noise on feature0 is not found",
+    ):
+        _ = PhlowerSetting.read_dictionary(content)

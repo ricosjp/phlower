@@ -84,6 +84,20 @@ class PhlowerSetting(pydantic.BaseModel):
                 )
         return self
 
+    @pydantic.model_validator(mode="after")
+    def check_noise_masks(self) -> Self:
+        if self.training is None or self.model is None:
+            return self
+
+        field_names = {v.name for v in self.model.fields}
+        for noise in self.training.noise:
+            if noise.mask is not None and noise.mask not in field_names:
+                raise ValueError(
+                    f"Mask {noise.mask} of the noise on "
+                    f"{noise.input_variable} is not found in model.fields."
+                )
+        return self
+
     @classmethod
     def read_dictionary(
         cls,

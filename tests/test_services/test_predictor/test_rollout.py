@@ -96,6 +96,29 @@ def trained_model(tmp_path_factory: pytest.TempPathFactory) -> _TrainedModel:
     )
 
 
+@pytest.fixture(scope="module")
+def trained_model_with_noise(
+    trained_model: _TrainedModel, tmp_path_factory: pytest.TempPathFactory
+) -> _TrainedModel:
+    """The same model trained with noise on u and p."""
+    content = _load_yaml(_TRAIN_YAML)
+    content["scaling"] = _load_yaml(trained_model.scaling_yaml)["scaling"]
+    content["training"]["noise"] = [
+        {"input_variable": "u", "increment_variable": "du", "std": 0.5},
+        {"input_variable": "p", "increment_variable": "dp", "std": 0.5},
+    ]
+    trainer = PhlowerTrainer.from_setting(
+        PhlowerSetting.read_dictionary(content)
+    )
+    model_directory = tmp_path_factory.mktemp("rollout_with_noise") / "model"
+    trainer.train(
+        output_directory=model_directory,
+        train_directories=trained_model.preprocessed_directories,
+        validation_directories=trained_model.preprocessed_directories,
+    )
+    return trained_model._replace(model_directory=model_directory)
+
+
 def _create_predictor(
     trained_model: _TrainedModel, **rollout
 ) -> PhlowerPredictor:
@@ -103,6 +126,18 @@ def _create_predictor(
         model_directory=trained_model.model_directory,
         predict_setting=PhlowerPredictorSetting(
             **_prediction_setting(**rollout)
+        ),
+        scaling_setting=PhlowerSetting.read_yaml(trained_model.scaling_yaml),
+    )
+
+
+def _create_one_step_predictor(
+    trained_model: _TrainedModel,
+) -> PhlowerPredictor:
+    return PhlowerPredictor(
+        model_directory=trained_model.model_directory,
+        predict_setting=PhlowerPredictorSetting(
+            **_prediction_setting() | {"rollout": None}
         ),
         scaling_setting=PhlowerSetting.read_yaml(trained_model.scaling_yaml),
     )
@@ -170,13 +205,7 @@ def test__rollout_takes_other_inputs_from_data(trained_model: _TrainedModel):
     directories = trained_model.preprocessed_directories
     predictor = _create_predictor(trained_model, variables=_ONLY_U)
     actual = list(predictor.predict(directories, perform_inverse_scaling=True))
-    one_step = PhlowerPredictor(
-        model_directory=trained_model.model_directory,
-        predict_setting=PhlowerPredictorSetting(
-            **_prediction_setting() | {"rollout": None}
-        ),
-        scaling_setting=PhlowerSetting.read_yaml(trained_model.scaling_yaml),
-    )
+    one_step = _create_one_step_predictor(trained_model)
     desired = list(one_step.predict(directories, perform_inverse_scaling=True))
 
     # NOTE: p is taken from the data at every step,
@@ -184,6 +213,32 @@ def test__rollout_takes_other_inputs_from_data(trained_model: _TrainedModel):
     assert len(actual) > 0
     for actual_result, desired_result in zip(actual, desired, strict=True):
         assert "nodal_p" not in actual_result.prediction_data
+        np.testing.assert_array_almost_equal(
+            actual_result.prediction_data["nodal_dp"],
+            desired_result.prediction_data["nodal_dp"],
+            decimal=5,
+        )
+
+
+def test__rollout_rescales_with_noise(
+    trained_model_with_noise: _TrainedModel,
+):
+    directories = trained_model_with_noise.preprocessed_directories
+    predictor = _create_predictor(trained_model_with_noise, variables=_ONLY_U)
+    actual = list(predictor.predict(directories, perform_inverse_scaling=True))
+    one_step = _create_one_step_predictor(trained_model_with_noise)
+    desired = list(one_step.predict(directories, perform_inverse_scaling=True))
+
+    # NOTE: The first step starts from the data and p is taken from
+    # the data at every step, so du at the first step and dp are the same
+    # as without rollout, which rescales the whole batch at once.
+    assert len(actual) > 0
+    for actual_result, desired_result in zip(actual, desired, strict=True):
+        np.testing.assert_array_almost_equal(
+            actual_result.prediction_data["nodal_du"][0],
+            desired_result.prediction_data["nodal_du"][0],
+            decimal=5,
+        )
         np.testing.assert_array_almost_equal(
             actual_result.prediction_data["nodal_dp"],
             desired_result.prediction_data["nodal_dp"],
