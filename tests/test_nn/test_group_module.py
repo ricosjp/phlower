@@ -177,6 +177,44 @@ def test__forward_time_series_mode(yaml_file: str, time_series_length: int):
     assert out.time_series_length == time_series_length
 
 
+def test__forward_once_without_time_series_input():
+    setting = PhlowerSetting.read_yaml(
+        _SAMPLE_SETTING_DIR / "forward_time_series_any.yml"
+    )
+    setting.model.network.resolve(is_first=True)
+    group = PhlowerGroupModule.from_setting(setting.model.network)
+
+    input_tensor = phlower_tensor(torch.rand(10, 3))
+    boundary = torch.rand(10, 1)
+    actual = group.forward(
+        phlower_tensor_collection(
+            {
+                "sample_input": input_tensor,
+                "time_series_boundary": phlower_tensor(boundary),
+            }
+        ),
+        field_data=None,
+    ).unique_item()
+    desired = group.forward(
+        phlower_tensor_collection(
+            {
+                "sample_input": input_tensor,
+                "time_series_boundary": phlower_tensor(
+                    boundary[None], is_time_series=True
+                ),
+            }
+        ),
+        field_data=None,
+    ).unique_item()
+
+    # NOTE: The step without a time axis equals
+    # the first step of a time series of length 1.
+    assert not actual.is_time_series
+    np.testing.assert_array_almost_equal(
+        actual.numpy(), desired.numpy()[0], decimal=5
+    )
+
+
 @pytest.mark.parametrize("yaml_file", ["forward_time_series.yml"])
 def test__calculation_graph_when_time_series_mode(yaml_file: str):
     setting_file = _SAMPLE_SETTING_DIR / yaml_file
@@ -206,7 +244,12 @@ def test__calculation_graph_when_time_series_mode(yaml_file: str):
 
 @pytest.mark.parametrize(
     "input_time_series, time_series_length, expected",
-    [([5, 0, 0], 5, 5), ([0, 0, 0], 3, 3), ([6, 6, 0], -1, 6)],
+    [
+        ([5, 0, 0], 5, 5),
+        ([0, 0, 0], 3, 3),
+        ([6, 6, 0], -1, 6),
+        ([0, 0, 0], -1, 1),
+    ],
 )
 @mock.patch("phlower.nn._group_module.reduce_stack")
 def test__forward_count_when_time_series_input(
@@ -242,6 +285,62 @@ def test__forward_count_when_time_series_input(
         group.forward(mock_input, field_data=None)
 
         assert mocked.call_count == expected
+
+
+def _create_group_with_inputs(
+    time_series_length: int | None, input_time_series: list[int]
+) -> tuple[PhlowerGroupModule, IPhlowerTensorCollections]:
+    group = PhlowerGroupModule(
+        name="test_group",
+        modules=[],
+        no_grad=False,
+        inputs=[{"name": "input"}],
+        destinations=["next_group"],
+        output_keys=["output"],
+        is_steady_problem=False,
+        iteration_solver=None,
+        time_series_length=time_series_length,
+    )
+    inputs = phlower_tensor_collection(
+        {
+            f"input_{i}": phlower_tensor(
+                torch.rand(t, 10, 1), is_time_series=True
+            )
+            if t > 0
+            else phlower_tensor(torch.rand(10, 1))
+            for i, t in enumerate(input_time_series)
+        }
+    )
+    return group, inputs
+
+
+@pytest.mark.parametrize(
+    "time_series_length, input_time_series, expected",
+    [
+        (None, [5, 0], False),
+        (0, [5, 0], False),
+        (3, [0, 0], True),
+        (-1, [5, 0], True),
+        (-1, [0, 0], False),
+    ],
+)
+def test__do_time_series_iteration(
+    time_series_length: int | None,
+    input_time_series: list[int],
+    expected: bool,
+):
+    group, inputs = _create_group_with_inputs(
+        time_series_length, input_time_series
+    )
+
+    assert group.do_time_series_iteration(inputs) == expected
+
+
+def test__raise_error_when_no_time_axis_to_iterate_over():
+    group, inputs = _create_group_with_inputs(-1, [0, 0])
+
+    with pytest.raises(ValueError, match="no time axis"):
+        group._forward_time_series(inputs, field_data=None)
 
 
 @pytest.mark.parametrize(

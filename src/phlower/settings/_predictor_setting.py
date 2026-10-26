@@ -32,7 +32,8 @@ class RolloutSetting(pydantic.BaseModel):
     At every step, the increment predicted by the model is added to
     the state in the unit of the data before scaling, and the new state
     is the input of the next step. The model sees one time step of the
-    inputs at a time, so it must be a one-step model.
+    inputs at a time, so it must be a one-step model. A model with
+    `time_series_length: -1` runs once at every step.
     """
 
     variables: list[RolloutVariableSetting] = pydantic.Field(min_length=1)

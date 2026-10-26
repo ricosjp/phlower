@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 from typing import NamedTuple
 
 import numpy as np
@@ -246,6 +247,38 @@ def test__rollout_rescales_with_noise(
         )
 
 
+def test__rollout_with_time_loop_network(
+    trained_model: _TrainedModel, tmp_path: pathlib.Path
+):
+    # NOTE: The time loop adds no parameters,
+    # so the network with it loads the same weights.
+    model_directory = tmp_path / "model"
+    shutil.copytree(trained_model.model_directory, model_directory)
+    saved = _load_yaml(model_directory / "model.yml")
+    saved["model"]["network"]["time_series_length"] = -1
+    with open(model_directory / "model.yml", "w") as fw:
+        yaml.safe_dump(saved, fw)
+    predictor = _create_predictor(
+        trained_model._replace(model_directory=model_directory)
+    )
+    directories = trained_model.preprocessed_directories
+    actual = list(predictor.predict(directories, perform_inverse_scaling=True))
+    desired = list(
+        _create_predictor(trained_model).predict(
+            directories, perform_inverse_scaling=True
+        )
+    )
+
+    assert len(actual) > 0
+    for actual_result, desired_result in zip(actual, desired, strict=True):
+        for name in ["nodal_u", "nodal_du", "nodal_p", "nodal_dp"]:
+            np.testing.assert_array_almost_equal(
+                actual_result.prediction_data[name],
+                desired_result.prediction_data[name],
+                decimal=5,
+            )
+
+
 def test__rollout_without_inverse_scaling(trained_model: _TrainedModel):
     predictor = _create_predictor(trained_model, n_steps=3)
 
@@ -270,7 +303,7 @@ def _scaling_service(
     )
 
 
-@pytest.mark.parametrize("time_series_length", [None, 0])
+@pytest.mark.parametrize("time_series_length", [None, 0, -1])
 def test__resolve_rollout_variables(time_series_length: int | None):
     actual = _resolve_rollout_variables(
         RolloutSetting(variables=_U_AND_P),
@@ -315,13 +348,6 @@ def _model_with_states_sharing_a_member() -> dict:
 @pytest.mark.parametrize(
     "variables, model, key_map, scaler_names, message",
     [
-        (
-            _U_AND_P,
-            _model_with_time_series_length(-1),
-            _KEY_MAP,
-            None,
-            "network iterates over time",
-        ),
         (
             _U_AND_P,
             _model_with_time_series_length(3),
