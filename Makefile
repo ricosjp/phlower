@@ -1,6 +1,5 @@
 IN_PROJECT?=true
 VERSION=`uv version --short`
-IMAGE_VERSION = 0.4.0
 CUDA_TAG = cu124
 GRAPHLOW_TAG = --group graphlow
 PYTHON_VERSION = 3.12
