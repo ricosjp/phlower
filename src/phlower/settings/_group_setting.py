@@ -172,6 +172,8 @@ class GroupModuleSetting(
     time_series_length: int | None = Field(None, frozen=True)
     """
     If feed integer value, do iteration to output time series tensor.
+    -1 iterates over the time axis of the inputs. When no input has
+    a time axis, -1 runs the group once without iteration.
     """
 
     # special keyward to forbid extra fields in pydantic

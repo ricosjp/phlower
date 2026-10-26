@@ -161,8 +161,10 @@ def _resolve_rollout_variables(
 
     output_key_map maps the outputs to the names of their scalers.
     """
+    # NOTE: -1 runs the network once on the inputs of a step,
+    # which have no time axis.
     time_series_length = model_setting.network.time_series_length
-    if time_series_length:
+    if time_series_length is not None and time_series_length > 0:
         raise ValueError(
             "Rollout needs a one-step model, but the network iterates "
             f"over time with time_series_length: {time_series_length}."

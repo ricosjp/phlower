@@ -202,9 +202,12 @@ class PhlowerGroupModule(
     def name(self) -> str:
         return self._name
 
-    @property
-    def do_time_series_iteration(self) -> bool:
-        return self._time_series_length != 0
+    def do_time_series_iteration(self, data: IPhlowerTensorCollections) -> bool:
+        if self._time_series_length == -1:
+            # NOTE: -1 loops over the time axis of the inputs. Inputs without
+            # a time axis are one time step, such as those of a rollout step.
+            return data.get_time_series_length() > 0
+        return self._time_series_length > 0
 
     def get_display_info(self) -> str:
         return (
@@ -286,7 +289,7 @@ class PhlowerGroupModule(
             field=field_data,
             replacement_keys=self._promotion_input_keys,
         ) as context:
-            if self.do_time_series_iteration:
+            if self.do_time_series_iteration(context.source):
                 return self._forward_time_series(
                     context.source,
                     field_data=context.field_data,
@@ -317,6 +320,10 @@ class PhlowerGroupModule(
             if self._time_series_length > 0
             else data.get_time_series_length()
         )
+        if _time_series_length == 0:
+            raise ValueError(
+                f"The inputs of {self.name} have no time axis to iterate over."
+            )
 
         for time_index in range(_time_series_length):
             inputs = data.snapshot(time_index).clone()
