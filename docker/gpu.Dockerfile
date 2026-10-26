@@ -14,7 +14,7 @@ RUN sh /uv-installer.sh && rm /uv-installer.sh
 FROM nvidia/cuda:12.4.1-runtime-ubuntu20.04 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USE_PYTHON_VERSION
-RUN apt update && apt install -y make
+RUN apt update && apt install -y --no-install-recommends  make ca-certificates
 
 COPY --from=uv_builder /root/.local/bin/uv /root/.local/bin/uvx /bin/
 
@@ -28,7 +28,7 @@ ARG USE_PYTHON_VERSION
 WORKDIR /workspace
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends make git \
+ && apt-get install -y --no-install-recommends make git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
  # Enable to use uv
