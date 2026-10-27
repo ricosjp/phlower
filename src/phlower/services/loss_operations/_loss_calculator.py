@@ -290,6 +290,4 @@ def _select_nodes(tensor: PhlowerTensor, mask: PhlowerTensor) -> PhlowerTensor:
     indices = torch.nonzero(mask.to_tensor().flatten()).squeeze(-1)
     if len(indices) == 0:
         raise ValueError("No node is selected by the mask in a sample.")
-    # NOTE: Indexing keeps the physical dimension of the tensor,
-    # which torch.index_select does not support.
-    return tensor[(slice(None),) * tensor.shape_pattern.nodes_dim + (indices,)]
+    return torch.index_select(tensor, tensor.shape_pattern.nodes_dim, indices)
