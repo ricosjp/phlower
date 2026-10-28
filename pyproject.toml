@@ -89,6 +89,7 @@ conflicts = [
 ]
 exclude-newer = "7 days"
 
+preview-features = ["malware-check"]
 
 [tool.uv.audit]
 malware-check = true
