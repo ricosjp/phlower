@@ -5,8 +5,13 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_DEPTH: 0
 
+  # see: https://docs.astral.sh/uv/guides/integration/gitlab/
+  # GitLab CI creates a separate mountpoint for the build directory,
+  # so we need to copy instead of using hard links.
+  UV_LINK_MODE: copy
+
 stages:
-  - setup
+  - check_system
   - test
   - document_test
   - deploy
@@ -16,66 +21,30 @@ default:
   before_script:
     - tar -xzf venv.tar.gz || true
 
-setup_cpu_env_py311:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cpu
-  stage: setup
-  before_script: []
+
+check_system:
+  stage: check_system
   script:
-    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.11"
-    - tar -czf venv.tar.gz .venv
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.12"
     - make show_system
   tags:
     - no-gpu
-  artifacts:
-    paths:
-      - venv.tar.gz
-  dependencies: []
-
-
-setup_cpu_env_py312:
-  stage: setup
-  before_script: []
-  script:
-    - make install CUDA_TAG="cpu"
-    - tar -czf venv.tar.gz .venv
-    - make show_system
-  tags:
-    - no-gpu
-  artifacts:
-    paths:
-      - venv.tar.gz
-  dependencies: []
-
-
-setup_gpu_env_py312:
-  image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
-  stage: setup
-  before_script: []
-  script:
-    - make install CUDA_TAG="cu124"
-    - tar -czf venv.tar.gz .venv
-    - make show_system
-  tags:
-    - no-gpu
-  artifacts:
-    paths:
-      - venv.tar.gz
   dependencies: []
 
 
 lint:
   stage: test
   script:
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.12"
     - make lint
   tags:
     - no-gpu
-  needs:
-    - job: setup_cpu_env_py312
-      artifacts: true
+  dependencies: []
 
 pytest_with_py312:
   stage: test
   script:
+    - make install CUDA_TAG="cpu"
     - make test
     - uv run coverage html -d coverage
     - uv run coverage xml
@@ -91,19 +60,16 @@ pytest_with_py312:
   tags:
     - no-gpu
     - GenuineIntel
-  needs:
-    - job: setup_cpu_env_py312
-      artifacts: true
+  dependencies: []
 
 
 pytest_with_py311:
   stage: test
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py311-cpu
   script:
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.11"
     - make test
-  needs:
-    - job: setup_cpu_env_py311
-      artifacts: true
+  dependencies: []
 
 
 e2e_test:
@@ -112,15 +78,14 @@ e2e_test:
   variables:
     NCCL_DEBUG: "INFO"
   script:
+    - make install CUDA_TAG="cu124"
     - uv run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make e2e_test
   tags:
     - multi-gpu
     - GenuineIntel
     - sm_75
-  needs:
-    - job: setup_gpu_env_py312
-      artifacts: true
+  dependencies: []
 
 gpu_test:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
@@ -128,32 +93,31 @@ gpu_test:
   variables:
     NCCL_DEBUG: "INFO"
   script:
+    - make install CUDA_TAG="cu124"
     - make gpu_test
   tags:
     - multi-gpu
     - GenuineIntel
     - sm_75
-  needs:
-    - job: setup_gpu_env_py312
-      artifacts: true
+  dependencies: []
 
 examples:
   image: ${PHLOWER_IMAGE_REGISTRY}:${PHLOWER_IMAGE_VERSION}-py312-cu124
   stage: test
   script:
+    - make install CUDA_TAG="cu124"
     - uv run python3 -c "import torch; print(torch.cuda.get_arch_list())"
     - make examples
   tags:
     - gpu
     - GenuineIntel
     - sm_75
-  needs:
-    - job: setup_gpu_env_py312
-      artifacts: true
+  dependencies: []
 
 pages_test:
   stage: document_test
   script:
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.12"
     - uv sync --extra cpu --group docs
     - make document
   tags:
@@ -162,13 +126,12 @@ pages_test:
   artifacts:
     paths:
       - docs/build/html/
-  needs:
-    - job: setup_cpu_env_py312
-      artifacts: true
+  dependencies: []
 
 pages:
   stage: deploy
   script:
+    - make install CUDA_TAG="cpu" GRAPHLOW_TAG="" PYTHON_VERSION="3.12"
     - mkdir public
     - cp -r docs/build/html/* public/
   artifacts:
@@ -176,8 +139,6 @@ pages:
       - public
   needs:
     - job: pages_test
-      artifacts: true
-    - job: setup_cpu_env_py312
       artifacts: true
   only:
     - main
