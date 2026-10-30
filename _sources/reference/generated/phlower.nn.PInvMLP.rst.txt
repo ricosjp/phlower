@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.PInvMLP
+==================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: PInvMLP
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PInvMLP.forward
+   
+   
+      ~PInvMLP.from_setting
+   
+   
+   
+   
+   
+   
+      ~PInvMLP.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PInvMLP.T_destination
+      ~PInvMLP.call_super_init
+      ~PInvMLP.dump_patches
+      ~PInvMLP.training
+   
+   
