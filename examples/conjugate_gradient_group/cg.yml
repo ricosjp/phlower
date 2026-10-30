@@ -22,6 +22,9 @@ training:
     - handler: NaNStoppingHandler
       parameters: {}
 
+prediction:
+  selection_mode: train_best
+
 model:
   inputs:
     - name: phi_init

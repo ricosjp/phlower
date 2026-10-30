@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
-import phlower
 from phlower.services.predictor import (
     PhlowerPredictor,
 )
 from phlower.services.trainer import PhlowerTrainer
+from phlower.settings import PhlowerSetting
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     if data_directory.exists():
         shutil.rmtree(data_directory)
 
-    setting = phlower.settings.PhlowerSetting.read_yaml("cg.yml")
+    setting = PhlowerSetting.read_yaml("cg.yml")
 
     generate_data(setting.data.training[0])
 
@@ -28,9 +28,7 @@ def main():
     # Predict
     predictor = PhlowerPredictor(
         model_directory=output_directory,
-        predict_setting=phlower.settings.PhlowerPredictorSetting(
-            selection_mode="train_best",
-        ),
+        predict_setting=setting.prediction,
     )
     results = list(
         predictor.predict(
@@ -79,9 +77,8 @@ def generate_data(output_directory: pathlib.Path):
     n_points = 10
     length = 2.0
 
-    dx = length / n_points
+    dx = length / (n_points - 1)
     dt = 0.1
-    n_t = round(1.0 / dt)
     a = 1.0
     m = 2
     k = 0.1
@@ -89,7 +86,7 @@ def generate_data(output_directory: pathlib.Path):
     phi_right = -1.5 + length
 
     x = np.linspace(0.0, length, n_points)[:, None]
-    t = np.linspace(0, 1.0, n_t)
+    t = np.arange(0, 1.0, dt)
     phi = (
         -x * (x - length) / 2
         - 1.5
