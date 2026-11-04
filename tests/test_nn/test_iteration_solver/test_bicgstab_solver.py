@@ -121,6 +121,42 @@ class PoissonModel:
         )
 
 
+class RowScaledPoissonModel(PoissonModel):
+    """
+    PoissonModel whose rows are scaled by factors in [1, 10^max_log_scale].
+    Row scaling does not change the solution, but makes the diagonal vary
+    widely so that Jacobi preconditioning is effective.
+    """
+
+    def __init__(
+        self,
+        n_x: int,
+        x_length: float = 1.0,
+        keys: str = "x",
+        max_log_scale: float = 3.0,
+        seed: int = 0,
+    ):
+        self.max_log_scale = max_log_scale
+        self.seed = seed
+        super().__init__(n_x, x_length=x_length, keys=keys)
+
+    def _generate_laplacian_matrix(
+        self, mesh: pv.UnstructuredGrid
+    ) -> PhlowerTensor:
+        sp_d = super()._generate_laplacian_matrix(mesh)._tensor.coalesce()
+
+        rng = np.random.default_rng(self.seed)
+        scale = torch.from_numpy(
+            10.0 ** rng.uniform(0.0, self.max_log_scale, sp_d.shape[0])
+        ).to(dtype)
+        indices = sp_d.indices()
+        values = sp_d.values() * scale[indices[0]]
+
+        return phlower_tensor(
+            torch.sparse_coo_tensor(indices, values, sp_d.shape).coalesce()
+        )
+
+
 class ConvectiveDiffusion:
     def __init__(self, n_x: int, keys: str = "x"):
         self.keys = keys
@@ -1104,15 +1140,15 @@ def test__can_converge_laplace_equation_with_RandomJacobi_precond(
         )
 
 
-@pytest.mark.skip(
-    reason="Preconditioner in BiCG is temporarily disabled due to instability."
-)
-@pytest.mark.parametrize("n_target", [1])
-@pytest.mark.parametrize("n_x", [200])
+@pytest.mark.parametrize("n_target", [1, 2])
+@pytest.mark.parametrize("n_x", [10, 20])
 @pytest.mark.parametrize("x_length", [0.1])
 def test__check_iterations_with_precond(
     n_target: int, n_x: int, x_length: float
 ):
+    # The diagonal of a plain Laplacian is almost uniform, where Jacobi
+    # preconditioning hardly reduces iterations. Use a row-scaled operator
+    # with a widely varying diagonal instead.
     torch.manual_seed(0)
     operator_keys = [f"x{i}" for i in range(n_target)]
     solver = BiCGStabSolver(
@@ -1138,11 +1174,11 @@ def test__check_iterations_with_precond(
         },
         precondition_type="random_jacobi",
         precondition_parameters=RandomJacobiCGPreconditionSetting(
-            num_of_trials=3000
+            num_of_trials=1000
         ),
     )
 
-    poisson_model = PoissonModel(n_x, x_length, keys=operator_keys)
+    poisson_model = RowScaledPoissonModel(n_x, x_length, keys=operator_keys)
     n = poisson_model.n
 
     dict_inputs = {}
@@ -1172,6 +1208,15 @@ def test__check_iterations_with_precond(
         steady_mode=True,
     )
     _ = solver.run(inputs, problem)
-    _ = RandomJacobisolver.run(inputs, problem)
+    h = RandomJacobisolver.run(inputs, problem)
 
-    assert RandomJacobisolver._n_iterated < solver._n_iterated
+    assert RandomJacobisolver.get_converged()
+    assert RandomJacobisolver._n_iterated < 0.5 * solver._n_iterated
+
+    for i, target in enumerate(operator_keys):
+        actual = h[target]
+        desired = (x_length - poisson_model.pos[:, [0]]) / x_length * (i + 1)
+        scale = np.max(desired)
+        np.testing.assert_array_almost_equal(
+            actual.numpy() / scale, desired / scale, decimal=2
+        )

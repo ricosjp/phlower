@@ -166,7 +166,6 @@ def _bicgstab_iteration(
     rho = 1.0
     rho_prev = 1.0
     alpha = 1.0
-    beta = 0.0
     omega = 1.0
     v = 0.0
 
@@ -216,7 +215,7 @@ def _bicgstab_iteration(
         )
         t = self._apply_dirichlet(t, dirichlet, factor=0.0)
 
-        # omega = (AM^-1, s) / (AM^-1s, AM^-1s)
+        # omega = (AM^-1s, s) / (AM^-1s, AM^-1s)
         omega = self._inner(
             t.mask(self._update_keys), s.mask(self._update_keys)
         ) / self._inner(t.mask(self._update_keys), t.mask(self._update_keys))
@@ -323,12 +322,10 @@ class BiCGStabSolver_Core(torch.autograd.Function):
         ctx: torch.autograd.function.FunctionCtx,
         *grad_outputs_core: tuple[torch.Tensor],
     ) -> tuple:
-        problem: IOptimizeProblem = ctx.phlower_iteration_problem
-        self: BiCGStabSolver = ctx.phlower_gradient_solver
-        keys: KeysView[str] = (
-            ctx.phlower_iteration_problem_initial_values.keys()
-        )
-        x_tensors: tuple[torch.Tensor] = ctx.saved_tensors
+        problem = ctx.phlower_iteration_problem
+        self = ctx.phlower_gradient_solver
+        keys = ctx.phlower_iteration_problem_initial_values.keys()
+        x_tensors = ctx.saved_tensors
 
         initial_values_zero = phlower_tensor_collection(
             {
@@ -359,19 +356,17 @@ class BiCGStabSolver_Core(torch.autograd.Function):
             preconditioner=self._preconditioner,
         )
 
-        grad_b_new = dict(zip(keys, grad_b, strict=True))
+        adjoint = dict(zip(keys, grad_b, strict=True))
+        grad_b_core = tuple(adjoint[key] for key in self._update_keys)
+
+        # Implicit differentiation gives no gradient through the initial guess.
+        # Keep the adjoint separate from gradients returned to the inputs.
+        input_grads = {
+            key: torch.zeros_like(tensor)
+            for key, tensor in zip(keys, x_tensors, strict=True)
+        }
         for key, right_key in self._dict_variable_to_right.items():
-            grad_b_new[right_key] = grad_b_new[right_key] + grad_b_new[key]
-
-        grad_b = tuple(grad_b_new.values())
-
-        grad_b_core = tuple(
-            [
-                grad_b_tmp
-                for key, grad_b_tmp in zip(keys, grad_b, strict=True)
-                if key in self._update_keys
-            ]
-        )
+            input_grads[right_key] = input_grads[right_key] + adjoint[key]
 
         with torch.enable_grad():
             new_x = phlower_tensor_collection(
@@ -397,7 +392,7 @@ class BiCGStabSolver_Core(torch.autograd.Function):
             if c_requires_grad:
                 torch.autograd.backward(tensors, grad_tensors=grad_tensors)
 
-        return grad_b + tuple(None for _ in range(4))
+        return tuple(input_grads.values()) + tuple(None for _ in range(4))
 
 
 class BiCGStabSolver(IFIterationSolver):
@@ -493,8 +488,8 @@ class BiCGStabSolver(IFIterationSolver):
                 problem=problem,
                 initial_values=initial_values,
             )
-            # Be careful that the same preconditioner cannot be applied to
-            # both forward and backward passes because A!=A^T
+            # Be careful that generally the same preconditioner cannot be
+            # applied to both forward and backward passes because A!=A^T
 
         if self._exact_backward_flag:
             b = phlower_tensor_collection(
@@ -514,7 +509,7 @@ class BiCGStabSolver(IFIterationSolver):
                 preconditioner=self._preconditioner,
             )
         else:
-            tensors = [initial_values[key]._tensor for key in keys]
+            tensors = [initial_values[key].to_tensor() for key in keys]
             dummy_tensor = torch.tensor(0.0, requires_grad=True)
             combined_args = (
                 tuple(tensors)

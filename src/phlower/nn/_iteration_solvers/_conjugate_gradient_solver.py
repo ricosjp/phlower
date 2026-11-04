@@ -167,7 +167,7 @@ class RandomJacobiPreconditioner(IPreconditioner):
         eps = 1.0e-6
         for key in x.keys():
             ans[key] = torch.where(
-                torch.abs(self.pred_diag[key]._tensor) > eps,
+                torch.abs(self.pred_diag[key].to_tensor()) > eps,
                 x[key] / self.pred_diag[key],
                 x[key],
             )
@@ -230,7 +230,7 @@ def _cg_core(
             z = preconditioner.apply(r)
             norm_rz_new = self._inner(r, z)
             p.update(
-                r + (norm_rz_new / norm_rz) * p.mask(self._update_keys),
+                z + (norm_rz_new / norm_rz) * p.mask(self._update_keys),
                 overwrite=True,
             )
             norm_rz = norm_rz_new
@@ -264,9 +264,9 @@ def _cg_core(
     outputs = []
     for key in initial_values.keys():
         if key in x.keys():
-            outputs.append(x[key]._tensor)
+            outputs.append(x[key].to_tensor())
         else:
-            outputs.append(initial_values[key]._tensor)
+            outputs.append(initial_values[key].to_tensor())
 
     return_vals = tuple(outputs)
 
@@ -386,8 +386,10 @@ class ConjugateGradientSolver_Core(torch.autograd.Function):
             for key, grad_b_tmp in zip(
                 self._update_keys, grad_b_core, strict=True
             ):
-                c_requires_grad = c_requires_grad | c[key]._tensor.requires_grad
-                tensors.append(c[key]._tensor)
+                c_requires_grad = (
+                    c_requires_grad | c[key].to_tensor().requires_grad
+                )
+                tensors.append(c[key].to_tensor())
                 grad_tensors.append(-grad_b_tmp)
             if c_requires_grad:
                 torch.autograd.backward(tensors, grad_tensors=grad_tensors)
@@ -509,7 +511,7 @@ class ConjugateGradientSolver(IFIterationSolver):
                 preconditioner=self._preconditioner,
             )
         else:
-            tensors = [initial_values[key]._tensor for key in keys]
+            tensors = [initial_values[key].to_tensor() for key in keys]
             dummy_tensor = torch.tensor(0.0, requires_grad=True)
             combined_args = (
                 tuple(tensors)
