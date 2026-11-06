@@ -283,7 +283,7 @@ def test__restart_first_attempt(
     snapshot = select_snapshot_file(
         restart_output_directory / "model/weights", "latest"
     )
-    snapshot = snapshot.load(map_location="cpu", weights_only=False)
+    snapshot = snapshot.load(map_location="cpu")
     assert snapshot["epoch"] == 4
 
     n_cont = len(list(restart_output_directory.glob("model_cont*")))

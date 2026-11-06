@@ -1,17 +1,33 @@
+import dataclasses as dc
 import io
 import os
 import pathlib
 import re
-from typing import Any
+from typing import Any, Literal
 
+import numpy as np
 import torch
+from numpy._core.multiarray import scalar
 
 from phlower import utils
 from phlower.io._files._interface import (
     IPhlowerCheckpointFile,
     to_pathlib_object,
 )
-from phlower.utils.enums import PhlowerFileExtType
+from phlower.utils.enums import PhlowerFileExtType, TrainerSavedKeyType
+
+
+@dc.dataclass(init=False, frozen=True)
+class _SerializeParams:
+    allowed_globals: tuple = (
+        scalar,
+        np.dtype,
+        np.dtypes.Float64DType,
+        TrainerSavedKeyType,
+    )
+    # These parameters are for backward compatibility during serialization
+    # Some handlers used to save numpy objects in the past,
+    # so we need to allow them during deserialization
 
 
 class PhlowerCheckpointFile(IPhlowerCheckpointFile):
@@ -96,20 +112,25 @@ class PhlowerCheckpointFile(IPhlowerCheckpointFile):
     def load(
         self,
         map_location: str | dict,
-        weights_only: bool = False,
+        weights_only: Literal[True] = True,
         *,
         decrypt_key: bytes = None,
     ) -> Any:  # noqa: ANN401
-        if self.is_encrypted:
-            return self._load_encrypted(
-                map_location=map_location,
-                weights_only=weights_only,
-                decrypt_key=decrypt_key,
+        if weights_only is False:
+            raise ValueError(
+                "weights_only=False is deprecated. "
+                "Only weights_only=True is allowed."
             )
-        else:
-            return self._load(
-                map_location=map_location, weights_only=weights_only
-            )
+
+        with torch.serialization.safe_globals(_SerializeParams.allowed_globals):
+            if self.is_encrypted:
+                return self._load_encrypted(
+                    map_location=map_location,
+                    weights_only=True,
+                    decrypt_key=decrypt_key,
+                )
+            else:
+                return self._load(map_location=map_location, weights_only=True)
 
     def _load(self, map_location: str | dict, weights_only: bool) -> Any:  # noqa: ANN401
         return torch.load(

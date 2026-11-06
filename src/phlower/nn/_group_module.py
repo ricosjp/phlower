@@ -420,24 +420,27 @@ class PhlowerGroupModule(
         self,
         checkpoint_file: IPhlowerCheckpointFile,
         map_location: str | dict | None = None,
-        weights_only: bool = False,
+        weights_only: bool = True,
         decrypt_key: bytes | None = None,
     ) -> None:
+        if weights_only is False:
+            raise ValueError(
+                "weights_only = False is deprecated. "
+                "Only weights_only=True is allowed."
+            )
+
         content = checkpoint_file.load(
             map_location=map_location,
-            weights_only=weights_only,
             decrypt_key=decrypt_key,
         )
 
-        key_name = TrainerSavedKeyType.model_state_dict.value
+        key_name = TrainerSavedKeyType.model_state_dict.name
         if key_name not in content:
             raise KeyError(
                 f"Key named {key_name} is not found in "
                 f"{checkpoint_file.file_path}"
             )
-        self.load_state_dict(
-            content[TrainerSavedKeyType.model_state_dict.value]
-        )
+        self.load_state_dict(content[TrainerSavedKeyType.model_state_dict.name])
 
     def get_core_module(self) -> IPhlowerCoreModule:
         return self

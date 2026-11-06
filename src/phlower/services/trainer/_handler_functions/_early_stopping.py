@@ -8,6 +8,8 @@ from collections import OrderedDict
 from collections.abc import Mapping
 from typing import cast
 
+import numpy as np
+
 from phlower.utils import get_logger
 from phlower.utils.enums import (
     PhlowerHandlerTrigger,
@@ -118,10 +120,15 @@ class EarlyStopping(IPhlowerHandler[AfterEvaluationOutput]):
         """Method returns state dict with ``counter`` and ``best_score``.
         Can be used to save internal state of the class.
         """
+        if isinstance(self.best_score, np.generic):
+            best_score = self.best_score.item()
+        else:
+            best_score = self.best_score
+
         return OrderedDict(
             [
                 ("counter", self.counter),
-                ("best_score", cast(float, self.best_score)),
+                ("best_score", cast(float, best_score)),
             ]
         )
 

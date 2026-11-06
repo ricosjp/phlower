@@ -133,3 +133,10 @@ def test__get_epoch_not_handled(path: str):
 
     with pytest.raises(ValueError):
         _ = phlower_path.epoch
+
+
+def test__disallow_weight_only_False():
+    with pytest.raises(ValueError, match="Only weights_only=True is allowed"):
+        PhlowerCheckpointFile("./aaa/snapshot_epoch_1.pth.enc").load(
+            map_location="cpu", weights_only=False
+        )
