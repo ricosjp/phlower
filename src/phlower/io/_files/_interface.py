@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import pathlib
+from typing import Literal
 
 from phlower_tensor import IPhlowerArray
 
@@ -71,7 +72,7 @@ class IPhlowerCheckpointFile(IPhlowerBaseFile, metaclass=abc.ABCMeta):
     def load(
         self,
         map_location: str | dict,
-        weights_only: bool,
+        weights_only: Literal[True] = True,
         *,
         decrypt_key: bytes = None,
     ) -> dict: ...

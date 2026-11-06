@@ -1347,12 +1347,10 @@ def test__get_same_pth_when_restart(
         ):
             perform_restart(n_epoch=11)
 
-    before_content = before_snapshot.load(
-        map_location="cpu", weights_only=False
-    )
+    before_content = before_snapshot.load(map_location="cpu")
     restart_content = select_snapshot_file(
         _OUTPUT_DIR / "model", "latest"
-    ).load(map_location="cpu", weights_only=False)
+    ).load(map_location="cpu")
 
     assert restart_content["epoch"] != before_content["epoch"]
 
@@ -1371,7 +1369,7 @@ def test__get_same_pth_when_restart(
     #  are different from other snapshot files
     other_shapshot = select_snapshot_file(
         _OUTPUT_DIR / "model", "specified", target_epoch=5
-    ).load(map_location="cpu", weights_only=False)
+    ).load(map_location="cpu")
     with pytest.raises(AssertionError):
         assert_hash_equal(
             other_shapshot["model_state_dict"],

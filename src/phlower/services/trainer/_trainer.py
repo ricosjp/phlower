@@ -947,7 +947,6 @@ class PhlowerTrainer:
         # Restore model and optimizer and tqdm
         checkpoint = snapshot_file.load(
             map_location=device,
-            weights_only=False,
             decrypt_key=decrypt_key,
         )
 
@@ -1084,7 +1083,6 @@ class _TrainingStateSetup:
             case TrainerInitializeType.restart:
                 _checkpoint = self._checkpoint_file.load(
                     map_location=map_location,
-                    weights_only=False,
                     decrypt_key=decrypt_key,
                 )
                 if (

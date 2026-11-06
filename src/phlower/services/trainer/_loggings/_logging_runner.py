@@ -113,16 +113,18 @@ class LoggingRunner:
             model = model.module
 
         data = {
-            TrainerSavedKeyType.epoch: info.epoch,
-            TrainerSavedKeyType.validation_loss: info.validation_eval_loss,
-            TrainerSavedKeyType.model_state_dict: _get_model_state_dict(
+            TrainerSavedKeyType.epoch.value: info.epoch,
+            TrainerSavedKeyType.validation_loss.value: (
+                info.validation_eval_loss
+            ),
+            TrainerSavedKeyType.model_state_dict.value: _get_model_state_dict(
                 model, fsdp_sharded=fsdp_sharded
             ),
-            TrainerSavedKeyType.scheduled_optimizer: (
+            TrainerSavedKeyType.scheduled_optimizer.value: (
                 scheduled_optimizer.state_dict()
             ),
-            TrainerSavedKeyType.elapsed_time: info.elapsed_time,
-            TrainerSavedKeyType.handler_runners: handlers.state_dict(),
+            TrainerSavedKeyType.elapsed_time.value: info.elapsed_time,
+            TrainerSavedKeyType.handler_runners.value: handlers.state_dict(),
         }
 
         if rank == 0:
