@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.MeanConstrainedSigmoid
+=================================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: MeanConstrainedSigmoid
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~MeanConstrainedSigmoid.forward
+   
+   
+      ~MeanConstrainedSigmoid.from_setting
+   
+   
+   
+   
+   
+   
+      ~MeanConstrainedSigmoid.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MeanConstrainedSigmoid.T_destination
+      ~MeanConstrainedSigmoid.call_super_init
+      ~MeanConstrainedSigmoid.dump_patches
+      ~MeanConstrainedSigmoid.training
+   
+   

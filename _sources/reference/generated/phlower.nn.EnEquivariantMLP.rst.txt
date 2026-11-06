@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.EnEquivariantMLP
+===========================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: EnEquivariantMLP
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~EnEquivariantMLP.forward
+   
+   
+      ~EnEquivariantMLP.from_setting
+   
+   
+   
+   
+   
+   
+      ~EnEquivariantMLP.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EnEquivariantMLP.T_destination
+      ~EnEquivariantMLP.call_super_init
+      ~EnEquivariantMLP.dump_patches
+      ~EnEquivariantMLP.training
+   
+   

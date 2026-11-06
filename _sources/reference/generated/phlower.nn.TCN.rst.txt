@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.TCN
+==============
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: TCN
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~TCN.forward
+   
+   
+      ~TCN.from_setting
+   
+   
+   
+   
+   
+   
+      ~TCN.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TCN.T_destination
+      ~TCN.call_super_init
+      ~TCN.dump_patches
+      ~TCN.training
+   
+   

@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Einsum
+=================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Einsum
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Einsum.forward
+   
+   
+      ~Einsum.from_setting
+   
+   
+   
+   
+   
+   
+      ~Einsum.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Einsum.T_destination
+      ~Einsum.call_super_init
+      ~Einsum.dump_patches
+      ~Einsum.training
+   
+   

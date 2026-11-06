@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.ConjugateGradientSolver
+==================================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: ConjugateGradientSolver
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~ConjugateGradientSolver.forward
+   
+   
+      ~ConjugateGradientSolver.from_setting
+   
+   
+   
+   
+   
+   
+      ~ConjugateGradientSolver.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ConjugateGradientSolver.T_destination
+      ~ConjugateGradientSolver.call_super_init
+      ~ConjugateGradientSolver.dump_patches
+      ~ConjugateGradientSolver.training
+   
+   

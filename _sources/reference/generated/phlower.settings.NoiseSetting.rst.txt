@@ -1,0 +1,85 @@
+﻿:orphan:
+
+phlower.settings.NoiseSetting
+=============================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: NoiseSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NoiseSetting.model_computed_fields
+      ~NoiseSetting.model_config
+      ~NoiseSetting.model_extra
+      ~NoiseSetting.model_fields
+      ~NoiseSetting.model_fields_set
+      ~NoiseSetting.input_variable
+      ~NoiseSetting.increment_variable
+      ~NoiseSetting.std
+      ~NoiseSetting.mask
+      ~NoiseSetting.fraction
+   
+   
