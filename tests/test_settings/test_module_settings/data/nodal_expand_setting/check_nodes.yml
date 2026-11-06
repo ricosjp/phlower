@@ -1,0 +1,55 @@
+misc:
+
+  tests:
+    MLP0: [12, 64, 64, 64]
+    POOL0: [64, 64]
+    Expand0: [64, 64]
+
+model:
+  inputs:
+    - name: feature0
+      members:
+        - name: feature0
+          n_last_dim: 12
+
+  network:
+    nn_type: GROUP
+    name: CYCLE_MODEL
+    inputs:
+      - name: feature0
+        n_last_dim: 12
+    
+    outputs:
+      - name: feature1
+        n_last_dim: 64
+    
+    modules:
+      - nn_type: MLP
+        name: MLP0
+        input_keys:
+          - feature0
+        output_key: out_feature0
+        destinations:
+          - Expand0
+          - POOL0
+        nn_parameters:
+          nodes: [-1, 64, 64, 64]
+
+      - nn_type: Pooling
+        name: POOL0
+        output_key: out_pool0
+        destinations:
+          - Expand0
+        nn_parameters:
+          pool_operator_name: max
+
+
+      - nn_type: NodalExpand
+        name: Expand0
+        input_keys:
+          - out_feature0
+          - out_pool0
+        output_key: feature1
+        nn_parameters:
+          reference_key: out_feature0
+

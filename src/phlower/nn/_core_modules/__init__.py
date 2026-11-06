@@ -24,6 +24,7 @@ from phlower.nn._core_modules._mean_constrained_sigmoid import (
 )
 from phlower.nn._core_modules._mlp import MLP
 from phlower.nn._core_modules._nan_to_num import NaNToNum
+from phlower.nn._core_modules._nodal_expand import NodalExpand
 from phlower.nn._core_modules._pinv_mlp import PInvMLP
 from phlower.nn._core_modules._pooling import Pooling
 from phlower.nn._core_modules._proportional import Proportional
@@ -68,6 +69,7 @@ _all_models: list[type[IPhlowerCoreModule]] = [
     MLP,
     MeanConstrainedSigmoid,
     NaNToNum,
+    NodalExpand,
     PInvMLP,
     Pooling,
     Proportional,
