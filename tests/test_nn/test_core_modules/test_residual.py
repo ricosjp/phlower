@@ -1,28 +1,62 @@
 from collections.abc import Callable
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import torch
-from phlower_tensor import PhlowerTensor
+from phlower_tensor import PhlowerTensor, phlower_tensor
 from phlower_tensor.collections import (
+    IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
 
-from phlower.nn import Residual
+from phlower.nn import PhlowerGroupModule, Residual
+from phlower.settings import PhlowerSetting
 from phlower.settings._module_settings import ResidualSetting
 from phlower.utils import create_simulation_field
 
 
-def test__can_call_parameters():
+class _DummyModule:
+    def __init__(self, input_keys: list[str], function: Callable):
+        self.input_keys = input_keys
+        self.function = function
+
+    def __call__(self, args: IPhlowerTensorCollections, **kwargs):
+        args = [args[key] for key in self.input_keys]
+        return self.function(*args)
+
+
+def create_parent_for_torch_func_like_residual(
+    setting: ResidualSetting, functions: dict[str, Callable]
+) -> MagicMock | None:
+    if setting.differentiation_backend != "torch.func":
+        return None
+
+    mock = MagicMock()
+    mock.search_module.side_effect = lambda x: _DummyModule(
+        input_keys=setting.symbols_from_input, function=functions[x]
+    )
+    return mock
+
+
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
+def test__can_call_parameters(differentiation_backend: str):
     model = Residual(
         symbols_from_input=["x", "y", "u"],
         symbols_from_field=["c"],
         equation="Diff(u, x) + Diff(u, y) - c",
+        differentiation_backend=differentiation_backend,
     )
 
     # To check Concatenator inherit torch.nn.Module appropriately
     _ = model.parameters()
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "inputs, field, equation",
     [
@@ -42,21 +76,23 @@ def test__parse_from_setting(
     inputs: list[str],
     field: list[str],
     equation: str,
+    differentiation_backend: str,
 ):
     setting = ResidualSetting(
         nodes=[-1, 1],
         symbols_from_input=inputs,
         symbols_from_field=field,
         equation=equation,
+        differentiation_backend=differentiation_backend,
     )
 
     model = Residual.from_setting(setting)
-
-    assert model._input_symbols == inputs
-    assert model._field_symbols == field
-    assert model._equation == equation
+    model.resolve()
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "u_func, v_func, equation, expected_func",
     [
@@ -103,6 +139,7 @@ def test__compute_residual(
     v_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     equation: str,
     expected_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    differentiation_backend: str,
 ):
     input_symbols = ["x", "y", "u", "v"]
     _setting = ResidualSetting(
@@ -112,6 +149,10 @@ def test__compute_residual(
         nodes=[-1, 1],
     )
     calculator = Residual.from_setting(_setting)
+    parent = create_parent_for_torch_func_like_residual(
+        _setting, {"u": u_func, "v": v_func}
+    )
+    calculator.resolve(parent=parent)
 
     data = phlower_tensor_collection(
         {
@@ -135,6 +176,9 @@ def test__compute_residual(
     assert actual.dimension == expected.dimension
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "u_func, v_func, Re_value, equation, expected_func",
     [
@@ -160,6 +204,7 @@ def test__compute_residual_with_constants(
     Re_value: float,
     equation: str,
     expected_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    differentiation_backend: str,
 ):
     input_symbols = ["x", "y", "u", "v"]
     constants = ["Re"]
@@ -170,6 +215,10 @@ def test__compute_residual_with_constants(
         nodes=[-1, 1],
     )
     calculator = Residual.from_setting(_setting)
+    parent = create_parent_for_torch_func_like_residual(
+        _setting, {"u": u_func, "v": v_func}
+    )
+    calculator.resolve(parent=parent)
 
     data = phlower_tensor_collection(
         {
@@ -197,3 +246,50 @@ def test__compute_residual_with_constants(
     assert isinstance(expected, PhlowerTensor)
     assert torch.allclose(actual.to_tensor(), expected.to_tensor())
     assert actual.dimension == expected.dimension
+
+
+def test__compare_residual():
+
+    # ----------- autograd
+    setting = PhlowerSetting.read_yaml(
+        Path(__file__).parent / "data/residual/laplacian_torch_autograd.yml"
+    )
+    setting.model.resolve()
+    model_autograd = PhlowerGroupModule.from_setting(
+        setting.model.network
+    ).double()
+
+    x = torch.rand(10, 3, 1, dtype=torch.float64, requires_grad=True)
+    y = torch.rand(10, 3, 1, dtype=torch.float64, requires_grad=True)
+    inputs = phlower_tensor_collection(
+        {"x": phlower_tensor(x), "y": phlower_tensor(y)}
+    )
+    autograd_laplacian = model_autograd(inputs, field_data=None)["laplacian"]
+    # ------------
+
+    # ------------ torch.func
+    setting = PhlowerSetting.read_yaml(
+        Path(__file__).parent / "data/residual/laplacian_torch_func.yml"
+    )
+    setting.model.resolve()
+    model_func = PhlowerGroupModule.from_setting(setting.model.network).double()
+
+    # Use the same weights for the MLP_U module in the functional model
+    # as in the autograd model
+    model_func.search_module("COMPUTE_U").search_module(
+        "MLP_U"
+    ).load_state_dict(model_autograd.search_module("MLP_U").state_dict())
+
+    x = x.detach().clone().requires_grad_(True)
+    y = y.detach().clone().requires_grad_(True)
+    inputs = phlower_tensor_collection(
+        {"x": phlower_tensor(x), "y": phlower_tensor(y)}
+    )
+    func_laplacian = model_func(inputs, field_data=None)["laplacian"]
+    # ------------
+
+    assert autograd_laplacian.to_tensor() is not None
+    assert func_laplacian.to_tensor() is not None
+    assert torch.allclose(
+        autograd_laplacian.to_tensor(), func_laplacian.to_tensor()
+    )

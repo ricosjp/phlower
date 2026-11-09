@@ -409,10 +409,15 @@ class PhlowerGroupModule(
     def get_destinations(self) -> list[str]:
         return self._destinations
 
-    def search_module(self, name: str) -> IPhlowerCoreModule:
+    def search_module(
+        self, name: str, return_adaptor: bool = False
+    ) -> IPhlowerCoreModule | IPhlowerModuleAdapter:
         for _module in self._phlower_modules:
-            if _module.name == name:
-                return _module.get_core_module()
+            if _module.name != name:
+                continue
+            if return_adaptor:
+                return _module
+            return _module.get_core_module()
 
         raise KeyError(f"Module {name} is not found in group {self.name}.")
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import pathlib
 from collections.abc import Callable
-from typing import Generic, Self, TypeVar
+from typing import Generic, Literal, Self, TypeVar, overload
 
 from phlower_tensor import ISimulationField, PhlowerTensor
 from phlower_tensor.collections import IPhlowerTensorCollections
@@ -60,8 +60,19 @@ IPhlowerCorePresetGroupModule = IGenericPhlowerCoreModule[
 
 
 class IReadonlyReferenceGroup(metaclass=abc.ABCMeta):
+    @overload
     @abc.abstractmethod
     def search_module(self, name: str) -> IPhlowerCoreModule: ...
+    @overload
+    @abc.abstractmethod
+    def search_module(
+        self, name: str, return_adaptor: Literal[False] = False
+    ) -> IPhlowerCoreModule: ...
+    @overload
+    @abc.abstractmethod
+    def search_module(
+        self, name: str, return_adaptor: Literal[True] = True
+    ) -> IPhlowerModuleAdapter: ...
 
     @abc.abstractmethod
     def get_unique_name(self) -> str:

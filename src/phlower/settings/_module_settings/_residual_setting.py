@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import Literal, Self
 
 import pydantic
 from pydantic import Field
@@ -26,11 +26,20 @@ class ResidualSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     symbols_from_field is a list of symbols corresponding to the field data.
     """
 
+    symbols_from_module: list[str] = Field(default_factory=list, frozen=True)
+    """
+    symbols_from_module is a list of symbols corresponding to the module outputs
+    """
+
     equation: str = Field(..., frozen=True)
     """
     equation is a string representing the equation to compute the residual.
     The equation can contain symbols from both input and field data.
     """
+
+    differentiation_backend: Literal["torch.autograd", "torch.func"] = Field(
+        "torch.autograd", frozen=True
+    )
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
@@ -65,7 +74,9 @@ class ResidualSetting(IPhlowerLayerParameters, pydantic.BaseModel):
         try:
             _ = parse_equation(
                 self.equation,
-                self.symbols_from_input + self.symbols_from_field,
+                self.symbols_from_input
+                + self.symbols_from_field
+                + self.symbols_from_module,
             )
         except Exception as ex:
             raise ValueError(

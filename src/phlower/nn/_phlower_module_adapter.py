@@ -77,6 +77,10 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         self._finalize_hooks: list[Callable[[], None]] = []
         self._parent_prefix = ""
 
+    @property
+    def input_keys(self) -> list[str]:
+        return self._input_keys
+
     def get_destinations(self) -> list[str]:
         return self._destinations
 

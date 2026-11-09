@@ -7,7 +7,7 @@ from sympy.parsing.sympy_parser import parse_expr
 def parse_equation(equation: str, symbols: list[str]) -> sm.Expr:
     # Diff is treated as special function
     _local_dict = {
-        "Diff": sm.Function("Diff"),
+        "Diff": sm.Function("Diff", nargs=2),
         "Integer": sm.Integer,
         "Float": sm.Float,
     }
