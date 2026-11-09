@@ -61,6 +61,13 @@ class ModuleSetting(IModuleSetting, pydantic.BaseModel):
     A Flag not to calculate gradient. Defauls to False.
     """
 
+    checkpoint: bool = Field(False, frozen=True)
+    """
+    Recompute this module during backward to reduce activation memory.
+    Supported for MLP, GCN, IsoGCN and EnEquivariantMLP without buffers.
+    Ignored while gradient calculation is disabled.
+    """
+
     nn_parameters_same_as: str | None = Field(None)
     """
     name of another module to copy nn_parameters.

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## UnReleased
 
+### Added
+
+* Add opt-in activation checkpointing for MLP, GCN, IsoGCN and EnEquivariantMLP modules via `checkpoint: true`
+
 
 ## [0.4.0] - 2026-09-26
 

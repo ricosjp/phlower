@@ -1,0 +1,58 @@
+
+
+
+model:
+  inputs:
+    - name: scalar
+      members:
+        - name: scalar
+          n_last_dim: 2
+
+    - name: neumann
+      members:
+        - name: neumann
+          n_last_dim: 2
+
+    - name: moment
+      members:
+        - name: feature1
+          n_last_dim: 1
+
+  fields:
+    - name: gx
+    - name: gy
+    - name: gz
+    
+  network:
+    nn_type: GROUP
+    name: GROUP1
+    inputs:
+      - name: scalar
+        n_last_dim: 2
+      - name: neumann
+        n_last_dim: 2
+      - name: moment
+        n_last_dim: 1
+    outputs:
+      - name: y
+        n_last_dim: 2
+    
+    modules:
+      - nn_type: IsoGCN
+        name: graph
+        input_keys: [scalar, neumann, moment]
+        output_key: y
+        checkpoint: {{checkpoint}}
+        no_grad: {{no_grad|default(false)}}
+        nn_parameters:
+          nodes: [-1, 2]
+          isoam_names: [gx, gy, gz]
+          propagations: [convolution]
+          self_network: 
+            activations: [identity]
+            bias: false
+          neumann_setting:
+            neumann_input_name: neumann
+            inversed_moment_name: moment
+            inversed_moment_source: input_data
+        coeff: -1.7

@@ -9,8 +9,15 @@ from phlower_tensor.collections import (
     IPhlowerTensorCollections,
     phlower_tensor_collection,
 )
+from torch.utils.checkpoint import checkpoint as activation_checkpoint
 
-from phlower.nn._core_modules import get_module
+from phlower.nn._core_modules import (
+    GCN,
+    MLP,
+    EnEquivariantMLP,
+    IsoGCN,
+    get_module,
+)
 from phlower.nn._interface_module import (
     IPhlowerCoreModule,
     IPhlowerModuleAdapter,
@@ -45,6 +52,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
             n_nodes=setting.nn_parameters.get_n_nodes(),
             coeff=setting.coeff,
             promoting_keys=setting.input_keys_promoting_to_field,
+            checkpoint=setting.checkpoint,
         )
         attach_debug_helper(mod, setting.debug_parameters)
         return mod
@@ -60,6 +68,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         n_nodes: list[int],
         coeff: float,
         promoting_keys: list[str] | None = None,
+        checkpoint: bool = False,
         **kwards,
     ) -> None:
         super().__init__(**kwards)
@@ -72,6 +81,18 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         self._n_nodes = n_nodes
         self._coeff = coeff
         self._promotion_input_keys = promoting_keys or []
+        self._checkpoint = checkpoint
+        if checkpoint and type(layer) not in (
+            MLP,
+            GCN,
+            IsoGCN,
+            EnEquivariantMLP,
+        ):
+            raise ValueError(
+                f"Activation checkpoint is not supported for {name}: "
+                f"{type(layer).__name__}. "
+                "Supported modules: MLP, GCN, IsoGCN, EnEquivariantMLP."
+            )
 
         self._forward_post_hooks: list[PhlowerForwardHook] = []
         self._finalize_hooks: list[Callable[[], None]] = []
@@ -129,6 +150,55 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
         state: CalculationState | None = None,
         **kwards,
     ) -> IPhlowerTensorCollections:
+        if self._checkpoint and not self._no_grad and torch.is_grad_enabled():
+            if any(True for _ in self._layer.buffers()):
+                raise ValueError(
+                    "Activation checkpoint does not support modules with "
+                    f"buffers: {self.get_unique_name()}"
+                )
+            inputs = data.mask(self._input_keys)
+
+            def recompute(*_tensors: torch.Tensor) -> IPhlowerTensorCollections:
+                # _tensors is unused: replay reads the captured inputs,
+                # field_data, state and kwards, plus self._layer's parameters.
+                # Non-reentrant checkpoint re-runs _forward during backward,
+                # so none of them may change until backward completes.
+                return self._forward(
+                    inputs, field_data=field_data, state=state, **kwards
+                )
+
+            # Pass the raw tensors for device/RNG detection; keep Phlower's
+            # wrappers in inputs to preserve dimensions and shape metadata.
+            ret = activation_checkpoint(
+                recompute,
+                *(v.to_tensor() for v in inputs.values()),
+                use_reentrant=False,
+                preserve_rng_state=True,
+            )
+        else:
+            ret = self._forward(
+                data, field_data=field_data, state=state, **kwards
+            )
+
+        # Debug hooks must run once, not again during recomputation.
+        for hook in self._forward_post_hooks:
+            hook(
+                name=self._name,
+                unique_name=self.get_unique_name(),
+                result=ret,
+                state=state,
+            )
+        return ret
+
+    def _forward(
+        self,
+        data: IPhlowerTensorCollections,
+        *,
+        field_data: ISimulationField | None = None,
+        state: CalculationState | None = None,
+        **kwards,
+    ) -> IPhlowerTensorCollections:
+        # Some layers pop inputs, so build a fresh collection on every replay.
         inputs = phlower_tensor_collection(
             {key: data[key] for key in self._input_keys}
         )
@@ -152,16 +222,7 @@ class PhlowerModuleAdapter(torch.nn.Module, IPhlowerModuleAdapter):
                     **kwards,
                 )
 
-            ret = phlower_tensor_collection({self._output_key: result})
-
-            for hook in self._forward_post_hooks:
-                hook(
-                    name=self._name,
-                    unique_name=self.get_unique_name(),
-                    result=ret,
-                    state=state,
-                )
-            return ret
+            return phlower_tensor_collection({self._output_key: result})
 
     def get_core_module(self) -> IPhlowerCoreModule:
         return self._layer
