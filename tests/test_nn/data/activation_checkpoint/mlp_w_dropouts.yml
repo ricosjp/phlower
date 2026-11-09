@@ -1,0 +1,30 @@
+
+model:
+  inputs:
+    - name: x
+      members:
+        - name: x
+          n_last_dim: 2
+    
+  network:
+    nn_type: GROUP
+    name: GROUP1
+    inputs:
+      - name: x
+        n_last_dim: 2
+    outputs:
+      - name: y
+        n_last_dim: 2
+    
+    modules:
+      - nn_type: MLP
+        name: mlp
+        input_keys: [x]
+        output_key: y
+        no_grad: {{no_grad|default(false)}}
+        checkpoint: {{checkpoint}}
+        nn_parameters:
+          nodes: [-1, 5, 2]
+          activations: [tanh, identity]
+          dropouts: [0.4, 0.0]
+        coeff: -1.7
