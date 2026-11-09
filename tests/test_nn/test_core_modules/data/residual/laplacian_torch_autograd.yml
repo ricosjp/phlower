@@ -1,0 +1,60 @@
+# Scalar field u(x, y), with residual Delta(u) = d_xx(u) + d_yy(u).
+model:
+  inputs:
+    - name: x
+      dtype: float64
+    - name: y
+      dtype: float64
+  network:
+    nn_type: GROUP
+    name: LAPLACIAN_PLAYGROUND
+    inputs:
+      - name: x
+        n_last_dim: 1
+      - name: y
+        n_last_dim: 1
+    outputs:
+      - name: solution
+        n_last_dim: 1
+      - name: laplacian
+        n_last_dim: 1
+    modules:
+      # Route the same coordinate tensors to the MLP and its derivatives.
+      - nn_type: Identity
+        name: IN_X
+        input_keys: [x]
+        output_key: x
+        destinations: [COORDINATES, LAPLACIAN]
+      - nn_type: Identity
+        name: IN_Y
+        input_keys: [y]
+        output_key: y
+        destinations: [COORDINATES, LAPLACIAN]
+      - nn_type: Concatenator
+        name: COORDINATES
+        input_keys: [x, y]
+        output_key: coordinates
+        destinations: [MLP_U]
+
+      - nn_type: MLP
+        name: MLP_U
+        input_keys: [coordinates]
+        output_key: solution
+        destinations: [OUT_U, LAPLACIAN]
+        nn_parameters:
+          nodes: [2, 24, 24, 24, 24, 1]
+          activations: [tanh, tanh, tanh, tanh, identity]
+          bias: true
+      - nn_type: Identity
+        name: OUT_U
+        input_keys: [solution]
+        output_key: solution
+      - nn_type: Residual
+        name: LAPLACIAN
+        input_keys: [x, y, solution]
+        output_key: laplacian
+        nn_parameters:
+          nodes: [-1, 1]
+          symbols_from_input: [x, y, solution]
+          symbols_from_field: []
+          equation: "Diff(Diff(solution, x), x) + Diff(Diff(solution, y), y)"

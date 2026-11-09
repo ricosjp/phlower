@@ -8,6 +8,9 @@ from phlower.settings._module_settings import ResidualSetting
 
 
 @pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
+@pytest.mark.parametrize(
     "nodes, symbols_from_input, symbols_from_field, equation",
     [
         ([-1, 1], ["x", "y", "u"], ["c"], "Diff(u, x) + Diff(u, y) - c"),
@@ -24,17 +27,22 @@ def test__can_accept_valid_n_nodes(
     symbols_from_input: list[str],
     symbols_from_field: list[str],
     equation: str,
+    differentiation_backend: str,
 ):
     setting = ResidualSetting(
         nodes=nodes,
         symbols_from_input=symbols_from_input,
         symbols_from_field=symbols_from_field,
         equation=equation,
+        differentiation_backend=differentiation_backend,
     )
     assert not setting.need_reference
     assert setting.get_n_nodes() == nodes
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "nodes, expected_msg",
     [
@@ -42,16 +50,22 @@ def test__can_accept_valid_n_nodes(
         ([10, -1], "nodes in Residual is inconsistent"),
     ],
 )
-def test__raise_error_when_invalid_n_nodes(nodes: list[int], expected_msg: str):
+def test__raise_error_when_invalid_n_nodes(
+    nodes: list[int], expected_msg: str, differentiation_backend: str
+):
     with pytest.raises(ValueError, match=expected_msg):
         _ = ResidualSetting(
             nodes=nodes,
             symbols_from_input=["x", "y", "u"],
             symbols_from_field=["c"],
             equation="Diff(u, x) + Diff(u, y) - c",
+            differentiation_backend=differentiation_backend,
         )
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "symbols_from_input, symbols_from_field, equation",
     [
@@ -71,6 +85,7 @@ def test__raise_error_when_failed_to_parse_equation(
     symbols_from_input: list[str],
     symbols_from_field: list[str],
     equation: str,
+    differentiation_backend: str,
 ):
     with pytest.raises(ValueError, match="Failed to parse equation"):
         _ = ResidualSetting(
@@ -78,9 +93,13 @@ def test__raise_error_when_failed_to_parse_equation(
             symbols_from_input=symbols_from_input,
             symbols_from_field=symbols_from_field,
             equation=equation,
+            differentiation_backend=differentiation_backend,
         )
 
 
+@pytest.mark.parametrize(
+    "differentiation_backend", ["torch.autograd", "torch.func"]
+)
 @pytest.mark.parametrize(
     "symbols_from_input, symbols_from_field",
     [
@@ -97,6 +116,7 @@ def test__raise_error_when_failed_to_parse_equation(
 def test__raise_error_when_symbols_are_not_unique(
     symbols_from_input: list[str],
     symbols_from_field: list[str],
+    differentiation_backend: str,
 ):
     with pytest.raises(ValueError, match="must be unique"):
         _ = ResidualSetting(
@@ -104,6 +124,7 @@ def test__raise_error_when_symbols_are_not_unique(
             symbols_from_input=symbols_from_input,
             symbols_from_field=symbols_from_field,
             equation="Diff(u, x) + Diff(u, y) - c",
+            differentiation_backend=differentiation_backend,
         )
 
 
