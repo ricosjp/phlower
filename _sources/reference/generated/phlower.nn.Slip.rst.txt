@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Slip
+===============
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Slip
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Slip.forward
+   
+   
+      ~Slip.from_setting
+   
+   
+   
+   
+   
+   
+      ~Slip.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Slip.T_destination
+      ~Slip.call_super_init
+      ~Slip.dump_patches
+      ~Slip.training
+   
+   

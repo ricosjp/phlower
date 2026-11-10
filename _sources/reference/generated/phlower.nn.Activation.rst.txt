@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Activation
+=====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Activation
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Activation.forward
+   
+   
+      ~Activation.from_setting
+   
+   
+   
+   
+   
+   
+      ~Activation.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Activation.T_destination
+      ~Activation.call_super_init
+      ~Activation.dump_patches
+      ~Activation.training
+   
+   
