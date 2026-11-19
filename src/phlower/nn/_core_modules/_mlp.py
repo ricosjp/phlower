@@ -12,6 +12,9 @@ from phlower.nn._interface_module import (
     IReadonlyReferenceGroup,
 )
 from phlower.settings._module_settings import MLPSetting
+from phlower.settings._module_settings._linear_init_setting import (
+    LinearInitSetting,
+)
 
 
 class MLP(torch.nn.Module, IPhlowerCoreModule):
@@ -29,6 +32,8 @@ class MLP(torch.nn.Module, IPhlowerCoreModule):
         Defaults to None.
     bias: bool
         Whether to use bias.
+    linear_init: LinearInitSetting | None
+        Optional truncated-normal or Xavier initialization for linear layers.
 
     Examples
     --------
@@ -72,6 +77,7 @@ class MLP(torch.nn.Module, IPhlowerCoreModule):
         activations: list[str] | None = None,
         dropouts: list[float] | None = None,
         bias: bool = True,
+        linear_init: LinearInitSetting | None = None,
     ) -> None:
         super().__init__()
 
@@ -81,7 +87,11 @@ class MLP(torch.nn.Module, IPhlowerCoreModule):
             dropouts = []
 
         self._chains = _utils.ExtendedLinearList(
-            nodes=nodes, activations=activations, dropouts=dropouts, bias=bias
+            nodes=nodes,
+            activations=activations,
+            dropouts=dropouts,
+            bias=bias,
+            linear_init=linear_init,
         )
         self._nodes = nodes
         self._activations = activations

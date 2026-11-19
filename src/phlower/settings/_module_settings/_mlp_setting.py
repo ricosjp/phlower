@@ -10,6 +10,9 @@ from phlower.settings._interface import (
     IPhlowerLayerParameters,
     IReadOnlyReferenceGroupSetting,
 )
+from phlower.settings._module_settings._linear_init_setting import (
+    LinearInitSetting,
+)
 
 
 class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
@@ -18,6 +21,7 @@ class MLPSetting(IPhlowerLayerParameters, pydantic.BaseModel):
     activations: list[str] = Field(default_factory=lambda: [], frozen=True)
     dropouts: list[float] = Field(default_factory=lambda: [], frozen=True)
     bias: bool = Field(True, frozen=True)
+    linear_init: LinearInitSetting | None = Field(None, frozen=True)
 
     # special keyward to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(extra="forbid", validate_assignment=True)
