@@ -7,6 +7,9 @@ import torch
 from phlower_tensor import PhlowerTensor
 
 from phlower.nn._functionals._activations import ActivationSelector
+from phlower.settings._module_settings._linear_init_setting import (
+    LinearInitSetting,
+)
 from phlower.utils.enums import ActivationType
 
 T = TypeVar("T")
@@ -17,6 +20,7 @@ class MLPConfiguration(NamedTuple):
     activations: list[str]
     dropouts: list[float]
     bias: bool = True
+    linear_init: LinearInitSetting | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -24,13 +28,18 @@ class MLPConfiguration(NamedTuple):
             "activations": self.activations,
             "dropouts": self.dropouts,
             "bias": self.bias,
+            "linear_init": (
+                self.linear_init.to_dict()
+                if self.linear_init is not None
+                else None
+            ),
         }
 
 
 class ExtendedLinearList(torch.nn.Module):
     @classmethod
     def from_config(cls, config: MLPConfiguration) -> ExtendedLinearList:
-        return ExtendedLinearList(**config.to_dict())
+        return ExtendedLinearList(**config._asdict())
 
     def __init__(
         self,
@@ -38,6 +47,7 @@ class ExtendedLinearList(torch.nn.Module):
         activations: list[str],
         bias: bool,
         dropouts: list[float] | None = None,
+        linear_init: LinearInitSetting | None = None,
     ) -> None:
         super().__init__()
 
@@ -62,8 +72,9 @@ class ExtendedLinearList(torch.nn.Module):
             ActivationSelector.select(name) for name in self._activations
         ]
 
-        # for m in self._linears:
-        #     torch.nn.init.xavier_uniform_(m.weight.data)
+        if linear_init is not None:
+            for layer in self._linears:
+                linear_init.apply(layer)
 
     def __len__(self) -> int:
         return len(self._linears)

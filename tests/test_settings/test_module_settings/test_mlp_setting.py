@@ -9,8 +9,6 @@ from hypothesis import assume, given, settings
 from phlower.settings import PhlowerModelSetting
 from phlower.settings._module_settings import MLPSetting
 
-_TEST_DATA_DIR = pathlib.Path(__file__).parent / "data/share_settings"
-
 
 @pytest.mark.parametrize(
     "nodes, activations, dropouts",
@@ -138,7 +136,11 @@ def test__nodes_after_resolve(yaml_file: str):
 
     for key, value in content["misc"]["tests"].items():
         target = setting.network.search_module_setting(key)
-        assert target.get_n_nodes() == value
+        assert target.get_n_nodes() == value["nodes"]
+        if target.linear_init is None:
+            assert value["linear_init"] is None
+        else:
+            assert target.linear_init.model_dump() == value["linear_init"]
 
 
 # endregion

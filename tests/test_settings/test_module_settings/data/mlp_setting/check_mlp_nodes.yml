@@ -1,9 +1,23 @@
 misc:
 
   tests:
-    MLP0: [12, 20, 10]
-    MLP1: [10, 20, 30]
-    MLP2: [30, 20, 5]
+    MLP0:
+      nodes: [12, 20, 10]
+      linear_init: null
+    MLP1:
+      nodes: [10, 20, 30]
+      linear_init:
+        kind: xavier_uniform
+        init_parameters:
+          gain: 1.5
+        zero_bias: false
+    MLP2:
+      nodes: [30, 20, 5]
+      linear_init:
+        kind: truncated_normal
+        init_parameters:
+          std: 0.02
+        zero_bias: true
 
 model:
   inputs:
@@ -40,7 +54,7 @@ model:
           - MLP1
         nn_parameters:
           nodes: [-1, 20, 10]
-          activations: ["Identity", "identity"]
+          activations: ["identity", "identity"]
 
       - nn_type: MLP
         name: MLP1
@@ -51,6 +65,11 @@ model:
           - MLP2
         nn_parameters:
           nodes: [-1, 20, 30]
+          linear_init:
+            kind: xavier_uniform
+            init_parameters:
+              gain: 1.5
+            zero_bias: false
 
       - nn_type: MLP
         name: MLP2
@@ -59,3 +78,8 @@ model:
         output_key: out_feature0
         nn_parameters:
           nodes: [-1, 20, 5]
+          linear_init:
+            kind: truncated_normal
+            init_parameters:
+              std: 0.02
+            zero_bias: true
