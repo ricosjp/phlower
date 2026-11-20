@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.MLP
+==============
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: MLP
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~MLP.forward
+   
+   
+      ~MLP.from_setting
+   
+   
+   
+   
+   
+   
+      ~MLP.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MLP.T_destination
+      ~MLP.call_super_init
+      ~MLP.dump_patches
+      ~MLP.training
+   
+   

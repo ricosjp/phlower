@@ -1,0 +1,149 @@
+﻿:orphan:
+
+phlower.nn.InterpolatorPresetGroupModule
+========================================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: InterpolatorPresetGroupModule
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~InterpolatorPresetGroupModule.forward
+   
+   
+      ~InterpolatorPresetGroupModule.from_setting
+   
+   
+   
+   
+   
+   
+      ~InterpolatorPresetGroupModule.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~InterpolatorPresetGroupModule.T_destination
+      ~InterpolatorPresetGroupModule.call_super_init
+      ~InterpolatorPresetGroupModule.dump_patches
+      ~InterpolatorPresetGroupModule.source_field_name_for_unbatch
+      ~InterpolatorPresetGroupModule.target_field_name_for_unbatch
+      ~InterpolatorPresetGroupModule.training
+   
+   

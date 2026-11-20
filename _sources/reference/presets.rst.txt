@@ -1,0 +1,12 @@
+.. currentmodule:: phlower.nn
+
+Preset group
+=============
+
+.. autosummary::
+    :toctree: generated
+    :template: autosummary/nn.rst
+    
+    IdentityPresetGroupModule
+    InterpolatorPresetGroupModule
+    

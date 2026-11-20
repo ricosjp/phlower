@@ -1,0 +1,99 @@
+﻿:orphan:
+
+phlower.settings.PhlowerScalingSetting
+======================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: PhlowerScalingSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerScalingSetting.get_scaler_name
+   
+   
+      ~PhlowerScalingSetting.get_variable_names
+   
+   
+      ~PhlowerScalingSetting.is_scaler_exist
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerScalingSetting.read_yaml
+   
+   
+      ~PhlowerScalingSetting.resolve_scalers
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~PhlowerScalingSetting.validate_scalers
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhlowerScalingSetting.model_computed_fields
+      ~PhlowerScalingSetting.model_config
+      ~PhlowerScalingSetting.model_extra
+      ~PhlowerScalingSetting.model_fields
+      ~PhlowerScalingSetting.model_fields_set
+      ~PhlowerScalingSetting.variable_name_to_scalers
+   
+   

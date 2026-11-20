@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.LayerScaler
+======================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: LayerScaler
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~LayerScaler.forward
+   
+   
+      ~LayerScaler.from_setting
+   
+   
+   
+   
+   
+   
+      ~LayerScaler.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LayerScaler.T_destination
+      ~LayerScaler.call_super_init
+      ~LayerScaler.dump_patches
+      ~LayerScaler.training
+   
+   

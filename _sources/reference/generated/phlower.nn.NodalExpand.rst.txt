@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.NodalExpand
+======================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: NodalExpand
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~NodalExpand.forward
+   
+   
+      ~NodalExpand.from_setting
+   
+   
+   
+   
+   
+   
+      ~NodalExpand.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NodalExpand.T_destination
+      ~NodalExpand.call_super_init
+      ~NodalExpand.dump_patches
+      ~NodalExpand.training
+   
+   

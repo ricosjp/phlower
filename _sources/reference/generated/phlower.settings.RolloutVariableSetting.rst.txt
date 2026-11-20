@@ -1,0 +1,82 @@
+﻿:orphan:
+
+phlower.settings.RolloutVariableSetting
+=======================================
+
+.. currentmodule:: phlower.settings
+
+.. autoclass:: RolloutVariableSetting
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~RolloutVariableSetting.model_computed_fields
+      ~RolloutVariableSetting.model_config
+      ~RolloutVariableSetting.model_extra
+      ~RolloutVariableSetting.model_fields
+      ~RolloutVariableSetting.model_fields_set
+      ~RolloutVariableSetting.state_variable
+      ~RolloutVariableSetting.increment_variable
+   
+   

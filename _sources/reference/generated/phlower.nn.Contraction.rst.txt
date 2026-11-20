@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.Contraction
+======================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: Contraction
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~Contraction.forward
+   
+   
+      ~Contraction.from_setting
+   
+   
+   
+   
+   
+   
+      ~Contraction.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Contraction.T_destination
+      ~Contraction.call_super_init
+      ~Contraction.dump_patches
+      ~Contraction.training
+   
+   

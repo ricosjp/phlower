@@ -1,0 +1,147 @@
+﻿:orphan:
+
+phlower.nn.LayerNorm
+====================
+
+.. currentmodule:: phlower.nn
+
+.. autoclass:: LayerNorm
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      ~LayerNorm.forward
+   
+   
+      ~LayerNorm.from_setting
+   
+   
+   
+   
+   
+   
+      ~LayerNorm.get_nn_name
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LayerNorm.T_destination
+      ~LayerNorm.call_super_init
+      ~LayerNorm.dump_patches
+      ~LayerNorm.training
+   
+   
