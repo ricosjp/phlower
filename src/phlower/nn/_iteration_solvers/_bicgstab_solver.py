@@ -30,6 +30,11 @@ from phlower.utils import get_logger
 _logger = get_logger(__name__)
 
 
+def _has_zero(values: IPhlowerTensorCollections) -> bool:
+    """Whether any key holds an exactly zero scalar (BiCGStab breakdown)."""
+    return any(bool((v.to_tensor() == 0).all()) for v in values.values())
+
+
 def rmatvec_core(
     problem: IOptimizeProblem,
     v: IPhlowerTensorCollections,
@@ -168,12 +173,15 @@ def _bicgstab_iteration(
     alpha = 1.0
     omega = 1.0
     v = 0.0
+    criteria = self._inner(
+        r.mask(self._update_keys), r.mask(self._update_keys)
+    ).apply(torch.linalg.norm)
 
     for itr in range(self._max_iterations):
         self._n_iterated += 1
 
         rho = self._inner(r.mask(self._update_keys), r0.mask(self._update_keys))
-        if rho == 0.0:
+        if _has_zero(rho):
             _logger.warning("BiCGStab solver has diverged (rho = 0).")
             self._is_converged = False
             break
@@ -204,6 +212,18 @@ def _bicgstab_iteration(
         # s(i) = r(i-1) - alpha v
         s = r | (r.mask(self._update_keys) - alpha * v)
 
+        # Stop at the half step when s is already small; otherwise t = A shat
+        # vanishes and omega becomes 0 / 0.
+        criteria = self._inner(
+            s.mask(self._update_keys), s.mask(self._update_keys)
+        ).apply(torch.linalg.norm)
+        if criteria < self._convergence_threshold:
+            x = x | (
+                x.mask(self._update_keys) + alpha * phat.mask(self._update_keys)
+            )
+            self._is_converged = True
+            break
+
         # shat = M^-1 s(i)
         shat = s | preconditioner.apply(s.mask(self._update_keys))
 
@@ -216,11 +236,19 @@ def _bicgstab_iteration(
         t = self._apply_dirichlet(t, dirichlet, factor=0.0)
 
         # omega = (AM^-1s, s) / (AM^-1s, AM^-1s)
-        omega = self._inner(
-            t.mask(self._update_keys), s.mask(self._update_keys)
-        ) / self._inner(t.mask(self._update_keys), t.mask(self._update_keys))
+        t_norm = self._inner(
+            t.mask(self._update_keys), t.mask(self._update_keys)
+        )
+        if _has_zero(t_norm):
+            _logger.warning("BiCGStab solver has diverged (t = 0).")
+            self._is_converged = False
+            break
+        omega = (
+            self._inner(t.mask(self._update_keys), s.mask(self._update_keys))
+            / t_norm
+        )
 
-        if omega == 0.0:
+        if _has_zero(omega):
             _logger.warning("BiCGStab solver has diverged (omega = 0).")
             self._is_converged = False
             break
