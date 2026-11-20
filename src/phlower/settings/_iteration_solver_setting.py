@@ -328,6 +328,28 @@ class BroydenSolverSetting(pydantic.BaseModel, IPhlowerIterationSolverSetting):
     and then exit the iteration. Defaults to False.
     """
 
+    exact_backward_flag: bool = pydantic.Field(default=True)
+    """
+    If True, the backward operation is strictly reversing of all the
+    Broyden iterations. If False, the gradient at the converged values is
+    computed by the adjoint method, which does not keep the iteration graph.
+    """
+
+    adjoint_max_iterations: int = 100
+    """
+    Maximum number of iteration for BiCGStab in adjoint method
+    """
+
+    adjoint_convergence_threshold: float = 1.0e-8
+    """
+    Convergence threshold for BiCGStab in adjoint method
+    """
+
+    adjoint_divergence_threshold: float = 1.0e8
+    """
+    Divergence threshold for BiCGStab in adjoint method
+    """
+
     # special keyword to forbid extra fields in pydantic
     model_config = pydantic.ConfigDict(
         extra="forbid", frozen=True, validate_default=True

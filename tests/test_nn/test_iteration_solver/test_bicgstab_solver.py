@@ -19,6 +19,7 @@ from scipy.spatial import KDTree
 from phlower.nn._group_module import _GroupOptimizeProblem
 from phlower.nn._iteration_solvers._bicgstab_solver import (
     BiCGStabSolver,
+    _bicgstab_core,
     rmatvec_core,
 )
 from phlower.settings._iteration_solver_setting import (
@@ -1220,3 +1221,37 @@ def test__check_iterations_with_precond(
         np.testing.assert_array_almost_equal(
             actual.numpy() / scale, desired / scale, decimal=2
         )
+
+
+@pytest.mark.parametrize("coef", [3.0, 0.5, 1.0])
+def test__converges_when_half_step_solves_exactly(coef: float):
+    # For a scalar system, s = r - alpha * v is exactly zero after the first
+    # half step, so omega would be 0 / 0 without the check on s.
+    solver = BiCGStabSolver(
+        max_iterations=10,
+        convergence_threshold=1.0e-12,
+        divergence_threshold=1.0e8,
+        update_keys=["x"],
+        dict_variable_to_right={},
+        dict_variable_to_dirichlet={},
+    )
+
+    def matvec(
+        h: IPhlowerTensorCollections,
+        update_keys: list[str],
+        operator_keys: list[str] | None = None,
+    ) -> IPhlowerTensorCollections:
+        return phlower_tensor_collection({"x": h["x"] * coef})
+
+    b = phlower_tensor_collection(
+        {"x": phlower_tensor(torch.tensor([1.0], dtype=dtype))}
+    )
+    x0 = phlower_tensor_collection(
+        {"x": phlower_tensor(torch.tensor([0.0], dtype=dtype))}
+    )
+
+    (actual,) = _bicgstab_core(matvec, b, x0, solver)
+
+    torch.testing.assert_close(actual, torch.tensor([1.0 / coef], dtype=dtype))
+    assert solver._is_converged
+    assert solver._n_iterated == 1

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import dataclasses as dc
 from collections import deque
+from functools import partial
 from typing import NamedTuple
 
 import torch
@@ -15,6 +17,10 @@ from phlower.nn._interface_iteration_solver import (
     IFIterationSolver,
     IOptimizeProblem,
 )
+from phlower.nn._iteration_solvers._bicgstab_solver import (
+    BiCGStabSolver,
+    _bicgstab_core,
+)
 from phlower.settings._iteration_solver_setting import (
     BroydenSolverSetting,
     IPhlowerIterationSolverSetting,
@@ -23,19 +29,29 @@ from phlower.utils import get_logger
 
 _logger = get_logger(__name__)
 
-# Relative threshold for rejecting unstable Broyden pairs.
-_EPS = 1e-8
 
-# Contract all elements to a scalar inner product.
-_INNER = "...,...->"
+@dc.dataclass(frozen=True, init=False)
+class _BroydenFixedParameters:
+    # Relative threshold for rejecting unstable Broyden pairs.
+    _EPS: float = 1e-8
+
+    # Contract all elements to a scalar inner product.
+    _INNER: str = "...,...->"
+
+    # All update keys are packed into this single key for the adjoint solve,
+    # so that the Krylov inner products cover the coupled system.
+    _ADJOINT_KEY: str = "_broyden_adjoint"
 
 
 def _inner(a: PhlowerTensor, b: PhlowerTensor) -> PhlowerTensor:
-    return functions.einsum(_INNER, a, b, dimension="auto")
+    return functions.einsum(
+        _BroydenFixedParameters._INNER, a, b, dimension="auto"
+    )
 
 
 def _factors(
-    history: deque[tuple[PhlowerTensor, PhlowerTensor]], eps: float = _EPS
+    history: deque[tuple[PhlowerTensor, PhlowerTensor]],
+    eps: float = _BroydenFixedParameters._EPS,
 ) -> list[tuple[PhlowerTensor, PhlowerTensor, PhlowerTensor]]:
     """Rebuild H factors from retained (s, y) pairs in oldest-first order.
 
@@ -69,7 +85,7 @@ def _insert_pair(
     s: PhlowerTensor,
     y: PhlowerTensor,
     history: deque[tuple[PhlowerTensor, PhlowerTensor]],
-    eps: float = _EPS,
+    eps: float = _BroydenFixedParameters._EPS,
 ) -> None:
     """Accept an (s, y) pair of iterate and residual differences when stable."""
     Hy = _apply_H(y, history)
@@ -140,6 +156,232 @@ class _IterataionStateChecker:
         )
 
 
+def _broyden_core(
+    problem: IOptimizeProblem,
+    initial_values: IPhlowerTensorCollections,
+    self: BroydenSolver,
+) -> IPhlowerTensorCollections:
+    h_inputs = initial_values
+    v = h_inputs.mask(self._keys)
+    self._check_finite(v, stage="initial values", iteration=0)
+
+    histories = {k: deque(maxlen=self._memory_length) for k in self._keys}
+    v_prev = None
+    R_prev = None
+
+    for _ in range(self.max_iterations):
+        R = problem.gradient(
+            h_inputs,
+            update_keys=self._keys,
+            operator_keys=self._operator_keys,
+        )
+
+        iteration = self._iterated_state.n_iterated + 1
+        self._check_finite(R, stage="residual", iteration=iteration)
+        criteria = R.apply(torch.linalg.norm)
+        self._check_finite(criteria, stage="residual norm", iteration=iteration)
+
+        if v_prev is not None:
+            for k in self._keys:
+                _insert_pair(
+                    s=v[k] - v_prev[k],
+                    y=R[k] - R_prev[k],
+                    history=histories[k],
+                )
+
+        self._iterated_state = self._iteration_checker.examine(
+            criteria=criteria, current_state=self._iterated_state
+        )
+
+        _finished = self._iterated_state.is_finished(self.max_iterations)
+
+        v_next = v - _apply_H_collection(R, histories, self._keys)
+
+        if _finished:
+            break
+
+        self._check_finite(v_next, stage="updated values", iteration=iteration)
+
+        h_inputs = h_inputs | v_next
+        v_prev, R_prev = v, R
+        v = v_next
+
+    if self._iterated_state.is_diverged:
+        _diverged_msg = self._iterated_state.get_diverged_message(criteria)
+        _logger.warning(_diverged_msg)
+
+    if (
+        self._iterated_state.is_diverged
+        and self._exit_before_update_when_diverged
+    ):
+        _logger.info(
+            "Exit before update."
+            "Set exit_before_update_when_diverged as False "
+            "to avoid this message."
+        )
+        return h_inputs.mask(self._keys)
+
+    self._check_finite(
+        v_next,
+        stage="updated values",
+        iteration=self._iterated_state.n_iterated,
+    )
+    h_inputs = h_inputs | v_next
+
+    return h_inputs.mask(self._keys)
+
+
+class _AdjointIdentity(torch.autograd.Function):
+    """Identity in forward; the backward solves the adjoint system.
+
+    Applied after the one-step re-evaluation z = x* - R(x*), the returned
+    w with (dR/dx)^T w = grad_output then propagates through z to every
+    tensor R depends on, including tensors held inside the problem.
+    """
+
+    @staticmethod
+    def forward(
+        ctx: torch.autograd.function.FunctionCtx,
+        solve_adjoint: partial,
+        *tensors: torch.Tensor,
+    ) -> tuple[torch.Tensor, ...]:
+        ctx.solve_adjoint = solve_adjoint
+        return tuple(t.view_as(t) for t in tensors)
+
+    @staticmethod
+    def backward(
+        ctx: torch.autograd.function.FunctionCtx,
+        *grad_outputs: torch.Tensor,
+    ) -> tuple:
+        return (None, *ctx.solve_adjoint(grad_outputs))
+
+
+def _solve_adjoint(
+    problem: IOptimizeProblem,
+    initial_values: IPhlowerTensorCollections,
+    x_star: IPhlowerTensorCollections,
+    self: BroydenSolver,
+    grad_outputs: tuple[torch.Tensor, ...],
+) -> tuple[torch.Tensor, ...]:
+    """Solve (dR/dx)^T w = grad_outputs at the converged point x*.
+
+    The residual is re-evaluated here so that its graph is only kept
+    while the backward runs.
+    """
+    keys = self._keys
+    x_leaf = phlower_tensor_collection({k: x_star[k].detach() for k in keys})
+    for k in keys:
+        x_leaf[k].to_tensor().requires_grad_(True)
+    with torch.enable_grad():
+        R = problem.gradient(
+            initial_values | x_leaf,
+            update_keys=keys,
+            operator_keys=self._operator_keys,
+        )
+    R_tensors = tuple(R[k].to_tensor() for k in keys)
+    x_tensors = tuple(x_leaf[k].to_tensor() for k in keys)
+    sizes = [t.numel() for t in x_tensors]
+
+    def _unpack(packed: torch.Tensor) -> tuple[torch.Tensor, ...]:
+        return tuple(
+            t.reshape(x.shape)
+            for t, x in zip(packed.split(sizes), x_tensors, strict=True)
+        )
+
+    def _pack(tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
+        return torch.cat([t.reshape(-1) for t in tensors])
+
+    def rmatvec(
+        v: IPhlowerTensorCollections,
+        update_keys: list[str],
+        operator_keys: list[str] | None = None,
+    ) -> IPhlowerTensorCollections:
+        grads = torch.autograd.grad(
+            R_tensors,
+            x_tensors,
+            grad_outputs=_unpack(
+                v[_BroydenFixedParameters._ADJOINT_KEY].to_tensor()
+            ),
+            retain_graph=True,
+            allow_unused=True,
+        )
+        grads = tuple(
+            torch.zeros_like(x) if g is None else g
+            for g, x in zip(grads, x_tensors, strict=True)
+        )
+        return phlower_tensor_collection(
+            {_BroydenFixedParameters._ADJOINT_KEY: _pack(grads)}
+        )
+
+    # Adjoint variables have units of dL/dx, so they are kept dimensionless.
+    b = phlower_tensor_collection(
+        {_BroydenFixedParameters._ADJOINT_KEY: _pack(grad_outputs)}
+    )
+    w0 = phlower_tensor_collection(
+        {
+            _BroydenFixedParameters._ADJOINT_KEY: torch.zeros_like(
+                b[_BroydenFixedParameters._ADJOINT_KEY].to_tensor()
+            )
+        }
+    )
+
+    self._adjoint_solver.zero_residuals()
+    (w,) = _bicgstab_core(rmatvec, b, w0, self._adjoint_solver)
+    if not torch.isfinite(w).all():
+        raise FloatingPointError(
+            "Broyden solver encountered NaN or Inf in the adjoint solution. "
+            "The Jacobian of the residual may be singular at the returned "
+            "values."
+        )
+    return _unpack(w)
+
+
+def _attach_implicit_gradient(
+    problem: IOptimizeProblem,
+    initial_values: IPhlowerTensorCollections,
+    x_star: IPhlowerTensorCollections,
+    self: BroydenSolver,
+) -> IPhlowerTensorCollections:
+    """Attach the implicit-function gradient to the converged values x*.
+
+    Returns x* unchanged in value. Its gradient is
+    dL/dtheta = w^T d(x - R)/dtheta with (dR/dx)^T w = dL/dx*.
+    """
+    keys = self._keys
+    with torch.enable_grad():
+        R = problem.gradient(
+            initial_values | x_star,
+            update_keys=keys,
+            operator_keys=self._operator_keys,
+        )
+        z = phlower_tensor_collection({k: x_star[k] - R[k] for k in keys})
+
+    if not any(z[k].to_tensor().requires_grad for k in keys):
+        return x_star
+
+    # Keep the converged values while gradients flow through z.
+    out = phlower_tensor_collection(
+        {k: x_star[k] + (z[k] - z[k].detach()) for k in keys}
+    )
+    solve_adjoint = partial(
+        _solve_adjoint, problem, initial_values, x_star, self
+    )
+    tensors = _AdjointIdentity.apply(
+        solve_adjoint, *[out[k].to_tensor() for k in keys]
+    )
+    return phlower_tensor_collection(
+        {
+            k: PhlowerTensor(
+                t,
+                dimension_tensor=out[k].dimension,
+                is_time_series=out[k].is_time_series,
+                is_voxel=out[k].is_voxel,
+            )
+            for k, t in zip(keys, tensors, strict=True)
+        }
+    )
+
+
 class BroydenSolver(IFIterationSolver):
     @classmethod
     def from_setting(
@@ -157,6 +399,10 @@ class BroydenSolver(IFIterationSolver):
         memory_length: int = 10,
         operator_keys: list[str] | None = None,
         exit_before_update_when_diverged: bool = False,
+        exact_backward_flag: bool = True,
+        adjoint_max_iterations: int = 100,
+        adjoint_convergence_threshold: float = 1.0e-12,
+        adjoint_divergence_threshold: float = 1.0e8,
     ) -> None:
         self._keys = update_keys
 
@@ -167,16 +413,32 @@ class BroydenSolver(IFIterationSolver):
             exit_before_update_when_diverged
         )
 
+        self._exact_backward_flag = exact_backward_flag
+
         self._iteration_checker = _IterataionStateChecker(
             max_iterations=max_iterations,
             convergence_threshold=convergence_threshold,
             divergence_threshold=divergence_threshold,
         )
+
         self._iterated_state = _IterationState(
             n_iterated=0,
             is_converged=False,
             is_diverged=False,
         )
+
+        # Thresholds apply to the squared residual norm of the adjoint system.
+        if exact_backward_flag:
+            self._adjoint_solver = None
+        else:
+            self._adjoint_solver = BiCGStabSolver(
+                max_iterations=adjoint_max_iterations,
+                convergence_threshold=adjoint_convergence_threshold,
+                divergence_threshold=adjoint_divergence_threshold,
+                update_keys=[_BroydenFixedParameters._ADJOINT_KEY],
+                dict_variable_to_right={},
+                dict_variable_to_dirichlet={},
+            )
 
     @property
     def max_iterations(self) -> int:
@@ -229,75 +491,19 @@ class BroydenSolver(IFIterationSolver):
 
         Checks cover the updated variables, residuals and their norms, and
         updates actually adopted, including the returned final update.
+
+        With exact_backward_flag, gradients are backpropagated through all
+        iterations. Otherwise, the iteration runs without a graph and the
+        gradient at the returned values is given by the adjoint method.
         """
-        h_inputs = initial_values
-        v = h_inputs.mask(self._keys)
-        self._check_finite(v, stage="initial values", iteration=0)
+        if self._exact_backward_flag:
+            return _broyden_core(problem, initial_values, self)
 
-        histories = {k: deque(maxlen=self._memory_length) for k in self._keys}
-        v_prev = None
-        R_prev = None
+        with torch.no_grad():
+            x_star = _broyden_core(problem, initial_values, self)
+        x_star = x_star.apply(lambda v: v.detach())
 
-        for _ in range(self.max_iterations):
-            R = problem.gradient(
-                h_inputs,
-                update_keys=self._keys,
-                operator_keys=self._operator_keys,
-            )
+        if not torch.is_grad_enabled():
+            return x_star
 
-            iteration = self._iterated_state.n_iterated + 1
-            self._check_finite(R, stage="residual", iteration=iteration)
-            criteria = R.apply(torch.linalg.norm)
-            self._check_finite(
-                criteria, stage="residual norm", iteration=iteration
-            )
-
-            if v_prev is not None:
-                for k in self._keys:
-                    _insert_pair(
-                        s=v[k] - v_prev[k],
-                        y=R[k] - R_prev[k],
-                        history=histories[k],
-                    )
-
-            self._iterated_state = self._iteration_checker.examine(
-                criteria=criteria, current_state=self._iterated_state
-            )
-
-            _finished = self._iterated_state.is_finished(self.max_iterations)
-
-            v_next = v - _apply_H_collection(R, histories, self._keys)
-
-            if _finished:
-                break
-
-            self._check_finite(
-                v_next, stage="updated values", iteration=iteration
-            )
-
-            h_inputs = h_inputs | v_next
-            v_prev, R_prev = v, R
-            v = v_next
-
-        if self._iterated_state.is_diverged:
-            _diverged_msg = self._iterated_state.get_diverged_message(criteria)
-            _logger.warning(_diverged_msg)
-
-        if (
-            self._iterated_state.is_diverged
-            and self._exit_before_update_when_diverged
-        ):
-            _logger.info(
-                "Exit before update."
-                "Set exit_before_update_when_diverged as False "
-                "to avoid this message."
-            )
-            return h_inputs.mask(self._keys)
-
-        self._check_finite(
-            v_next,
-            stage="updated values",
-            iteration=self._iterated_state.n_iterated,
-        )
-        h_inputs = h_inputs | v_next
-        return h_inputs.mask(self._keys)
+        return _attach_implicit_gradient(problem, initial_values, x_star, self)

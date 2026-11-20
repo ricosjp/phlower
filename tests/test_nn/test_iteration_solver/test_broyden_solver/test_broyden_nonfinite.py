@@ -105,7 +105,9 @@ def test_returns_pre_update_value_when_diverged_update_is_discarded() -> None:
 def test_preserves_finite_final_update_and_gradient() -> None:
     theta = torch.tensor([1e-6], dtype=torch.float64, requires_grad=True)
     problem = ConstantProblem({"x": -theta})
-    solver = BroydenSolver(3, 1e-5, 100, update_keys=["x"])
+    solver = BroydenSolver(
+        3, 1e-5, 100, update_keys=["x"], exact_backward_flag=True
+    )
     initial = phlower_tensor_collection(
         {
             "x": phlower_tensor(torch.zeros(1, dtype=torch.float64)),

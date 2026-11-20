@@ -54,6 +54,7 @@ def _run(
         divergence_threshold=divergence_threshold,
         update_keys=["x"],
         exit_before_update_when_diverged=exit_before_update_when_diverged,
+        exact_backward_flag=True,
     )
     initial = phlower_tensor_collection(
         {"x": phlower_tensor(problem._theta * 0.0)}
